@@ -1,3 +1,4 @@
+
 abstract type AbstractAssets{N,L,T<:Period,P<:PowerUnit} end
 Base.length(a::AbstractAssets) = length(a.names)
 

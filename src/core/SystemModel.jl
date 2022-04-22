@@ -1,3 +1,4 @@
+
 struct SystemModel{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit}
 
     regions::Regions{N,P}
