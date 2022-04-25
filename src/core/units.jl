@@ -1,5 +1,8 @@
 # Augment time units
 
+export timeunits, powerunits, energyunits #added by JosifFP
+
+
 unitsymbol(T::Type{<:Period}) = string(T)
 unitsymbol(::Type{Minute}) = "min"
 unitsymbol(::Type{Hour}) = "h"

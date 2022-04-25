@@ -7,24 +7,13 @@ Load a `SystemModel` from an appropriately-formatted HDF5 file on disk.
 function SystemModel(inputfile::String)
 
     system = h5open(inputfile, "r") do f::File
-
-        version, versionstring = readversion(f)
-
-        # Determine the appropriate version of the importer to use
-        return if (0,5,0) <= version < (0,7,0)
-            systemmodel_0_5(f)
-        else
-            error("PRAS file format $versionstring not supported by this version of PRASBase.")
-        end
-
+        SystemModel(f)
     end
-
     return system
-
 end
 
 
-function systemmodel_0_5(f::File)
+function SystemModel(f::File)
 
     metadata = attributes(f)
 
