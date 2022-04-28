@@ -1,7 +1,7 @@
 
 #using Reexport #Reexport must be defined before callling this file.\
 
-@reexport module Base
+@reexport module PBase
 
 import ..PRATS_VERSION
 

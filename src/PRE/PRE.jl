@@ -1,7 +1,7 @@
 @reexport module PRE
 
 #using MinCostFlows
-using ..Base
+using ..PBase
 
 import Base: -, broadcastable, getindex, merge!
 import Base.Threads: nthreads, @spawn
