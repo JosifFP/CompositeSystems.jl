@@ -1,21 +1,27 @@
 
-using PRATS, HDF5, Dates, TimeZones, Test, CSV, DataFrames, XLSX, PRAS
-import PRATS: Base, units, utils, SystemModel, assets, powerunits
+using  HDF5, Dates, TimeZones, Test, CSV, DataFrames, XLSX, PRATS
 import HDF5: File
 
 
 inputfile = "test/data/rts.pras"
-system = h5open(inputfile, "r")
+system = HDF5.h5open(inputfile, "r")
 
 #inputfile = "test/data/rts.hdf5"
 #xlsxfile = "test/data/rts/rts.xlsx"
-sys = PRAS.SystemModel("test/data/rts.pras")
-shortfalls, flows = PRAS.assess(sys, SequentialMonteCarlo(samples=1000), Shortfall(), Flow())
-lole =  PRAS.EUE(shortfalls, "1")
+#sys = PRAS.SystemModel("test/data/rts.pras")
+#shortfalls, flows = PRAS.assess(sys, SequentialMonteCarlo(samples=1000), Shortfall(), Flow())
+#lole =  PRAS.EUE(shortfalls, "1")
 
 
+"""
+Attempts to extract a vector of elements from an HDF5 compound datatype,
+corresponding to `field`.
+"""
+readvector(d::HDF5.Dataset, field::Union{Symbol,Int}) = readvector(read(d), field)
+readvector(d::Vector{<:NamedTuple}, field::Union{Symbol,Int}) = getindex.(d, field)
 
-f = h5open(inputfile, "r")
+
+f = HDF5.h5open(inputfile, "r")
 metadata = attributes(f)
 
     start_timestamp = ZonedDateTime(read(metadata["start_timestamp"]),
@@ -50,6 +56,7 @@ metadata = attributes(f)
         regionnames,
         Int.(read(f["regions/load"]))
     )
+    Int.(read(f["regions/load"]))
     regionlookup = Dict(n=>i for (i, n) in enumerate(regionnames))
     n_regions = length(regions)
 
@@ -79,20 +86,12 @@ metadata = attributes(f)
 
         region_gen_idxs = fill(1:0, n_regions)
 
-    end
+    #end
 
 
 
 
 
-
-
-    """
-    Attempts to extract a vector of elements from an HDF5 compound datatype,
-    corresponding to `field`.
-    """
-    readvector(d::HDF5.Dataset, field::Union{Symbol,Int}) = readvector(read(d), field)
-    readvector(d::Vector{<:NamedTuple}, field::Union{Symbol,Int}) = getindex.(d, field)
 #########################################################################################
 
 #f = XLSX.readxlsx(xlsxfile)
