@@ -1,7 +1,7 @@
 @reexport module PRE
 
-#using MinCostFlows
-using ..PBase
+using MinCostFlows
+using ..Root
 
 import Base: -, broadcastable, getindex, merge!
 import Base.Threads: nthreads, @spawn
@@ -54,7 +54,7 @@ MeanVariance = Series{
 
 include("metrics.jl")
 include("results/results.jl")
-include("simulations/SMC.jl")
+include("simulations/simulations.jl")
 include("utils.jl")
 
 end
