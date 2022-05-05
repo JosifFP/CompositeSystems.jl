@@ -6,7 +6,7 @@ using PRATS
 Profile.init(delay=0.01)
 loadfile = "test/data/rts_Load.xlsx"
 sys = PRATS.SystemModel(loadfile)
-simspec = SequentialMonteCarlo(samples=500,seed=1, threaded=false)
+simspec = SequentialMonteCarlo(samples=100,seed=1, threaded=false)
 
 resultspecs = (Shortfall(), Surplus(), Flow(), Utilization(),
                ShortfallSamples(), SurplusSamples(),
@@ -18,7 +18,7 @@ resultspecs = (Shortfall(), Surplus(), Flow(), Utilization(),
 
 
 Profile.clear()
-@profile (for i=1:100;
+@profile (for i=1:10;
 shortfall, surplus, flow, utilization, shortfallsamples, surplussamples, flowsamples,
                utilizationsamples, generatoravailability = assess(sys, simspec, resultspecs...); end)
 Profile.print()
