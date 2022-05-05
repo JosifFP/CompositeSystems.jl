@@ -25,7 +25,7 @@ export
     val, stderror,
 
     # Simulation specifications
-    Convolution, SequentialMonteCarlo,
+    SequentialMonteCarlo,
 
     # Result specifications
     Shortfall, ShortfallSamples, Surplus, SurplusSamples,
