@@ -11,7 +11,7 @@ studycase = [networkfile, loadfile]
 @time sys = PRATS.SystemModel(loadfile)
 #@time shortfalls = PRATS.assess(sys, SequentialMonteCarlo(samples=2_500), Shortfall())
 
-simspec = SequentialMonteCarlo(samples=500,seed=1, threaded=false)
+simspec = SequentialMonteCarlo(samples=100,seed=1, threaded=true)
 
 resultspecs = (Shortfall(), Surplus(), Flow(), Utilization(),
                ShortfallSamples(), SurplusSamples(),
@@ -19,11 +19,7 @@ resultspecs = (Shortfall(), Surplus(), Flow(), Utilization(),
                GeneratorAvailability())
 
                @time shortfall, surplus, flow, utilization, shortfallsamples, surplussamples, flowsamples,
-               utilizationsamples, generatoravailability = assess(sys, simspec, resultspecs...)
-
-
-
-
+               utilizationsamples, generatoravailability = assess(sys, simspec, resultspecs...);
 
 LOLE(shortfall)
 EUE(shortfall)
