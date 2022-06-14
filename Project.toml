@@ -24,11 +24,11 @@ XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 
 [compat]
 
+OnlineStatsBase = "1"
 Distributions = "0.25"
 Random123 = "1"
 StatsBase = "0.33"
 Decimals = "0.4"
-
 
 julia = "1"
 
