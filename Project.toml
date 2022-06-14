@@ -1,6 +1,6 @@
 name = "PRATS"
 uuid = "7a45a295-363c-483a-b9f8-681ff3b81924"
-authors = ["Josif Figueroa"]
+authors = ["Josif Figueroa <josif.figueroa@unb.ca"]
 version = "0.1.0"
 
 [deps]

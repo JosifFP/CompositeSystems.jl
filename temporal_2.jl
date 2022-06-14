@@ -1,3 +1,5 @@
+import Base.Broadcast: broadcastable
+
 using PRATS
 using Test
 using PRATS.CompositeAdequacy

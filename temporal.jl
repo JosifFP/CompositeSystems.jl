@@ -3,7 +3,7 @@ using Test
 using TimeZones
 import BenchmarkTools: @btime
 include("test/testsystems.jl")
-include("src/PRATS.jl")
+using PRATS.CompositeAdequacy
 
 timestamps_a = TestSystems.singlenode_a.timestamps
 timestamprow_a = permutedims(timestamps_a)
