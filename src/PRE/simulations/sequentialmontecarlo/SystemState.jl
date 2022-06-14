@@ -16,21 +16,21 @@ struct SystemState
 
     function SystemState(system::SystemModel)
 
-        ngens = length(system.generators)
+        ngens = Base.length(system.generators)
         gens_available = Vector{Bool}(undef, ngens)
         gens_nexttransition= Vector{Int}(undef, ngens)
 
-        nstors = length(system.storages)
+        nstors = Base.length(system.storages)
         stors_available = Vector{Bool}(undef, nstors)
         stors_nexttransition = Vector{Int}(undef, nstors)
         stors_energy = Vector{Int}(undef, nstors)
 
-        ngenstors = length(system.generatorstorages)
+        ngenstors = Base.length(system.generatorstorages)
         genstors_available = Vector{Bool}(undef, ngenstors)
         genstors_nexttransition = Vector{Int}(undef, ngenstors)
         genstors_energy = Vector{Int}(undef, ngenstors)
 
-        nlines = length(system.lines)
+        nlines = Base.length(system.lines)
         lines_available = Vector{Bool}(undef, nlines)
         lines_nexttransition = Vector{Int}(undef, nlines)
 
