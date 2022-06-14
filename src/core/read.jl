@@ -1,22 +1,17 @@
 function SystemModel(inputfile::String)
 
     f = Dict{Symbol,Any}()
-    XLSX.openxlsx(inputfile) do of
-        f[:loads] = XLSX.gettable(of["loads"])
-        f[:generators] = XLSX.gettable(of["generators"])
-        f[:storages] = XLSX.gettable(of["storages"])
-        f[:generatorstorages] = XLSX.gettable(of["generatorstorages"])
-        f[:interfaces] = XLSX.gettable(of["interfaces"])
-        f[:lines] = XLSX.gettable(of["lines"])
-        f[:regions] = string.(XLSX.gettable(of["regions"])[1][1])
+    XLSX.openxlsx(inputfile, enable_cache=false) do io
+        for i in 1:XLSX.sheetcount(io)
+            if XLSX.sheetnames(io)[i]=="regions" f[:regions] = string.(XLSX.gettable(io["regions"])[1][1])
+            else f[Symbol(XLSX.sheetnames(io)[i])] = XLSX.gettable(io[XLSX.sheetnames(io)[i]]) end
+        end
         f[:total_load] = zeros(Int64,length(f[:loads][1][1]))
-    end
+    end;
 
     D_generators = Dict(f[:generators][2][i] => f[:generators][1][i] for i in 1:length(f[:generators][2]))
     D_storages = Dict(f[:storages][2][i] => f[:storages][1][i] for i in 1:length(f[:storages][2]))
-    D_generatorstorages = Dict(f[:generatorstorages][2][i] => filter(!ismissing, f[:generatorstorages][1][i]) 
-    for i in 1:length(f[:generatorstorages][2])
-    )
+    D_generatorstorages = Dict(f[:generatorstorages][2][i] => filter(!ismissing, f[:generatorstorages][1][i]) for i in 1:length(f[:generatorstorages][2]))
     D_lines = Dict(f[:lines][2][i] => f[:lines][1][i] for i in 1:length(f[:lines][2]))
     D_interfaces = Dict(f[:interfaces][2][i] => f[:interfaces][1][i] for i in 1:length(f[:interfaces][2]))
     D_loads = Dict(f[:loads][2][i] => Vector{Any}() for i in 1:length(f[:loads][2]))
