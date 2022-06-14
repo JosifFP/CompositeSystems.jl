@@ -1,5 +1,5 @@
-broadcastable(x::ResultSpec) = Ref(x)
-broadcastable(x::Result) = Ref(x)
+Base.Broadcast.broadcastable(x::ResultSpec) = Ref(x)
+Base.Broadcast.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 include("availability.jl")

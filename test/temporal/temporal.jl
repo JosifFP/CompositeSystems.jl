@@ -1,18 +1,19 @@
 using PRATS
 using Test
-using TimeZones
 import BenchmarkTools: @btime
-include("test/testsystems.jl")
+include("testsystems/testsystems.jl")
 using PRATS.CompositeAdequacy
+#using PRAS.ResourceAdequacy
 
 timestamps_a = TestSystems.singlenode_a.timestamps
 timestamprow_a = permutedims(timestamps_a)
 nstderr_tol = 3
-simspec = SequentialMonteCarlo(samples=100_000, seed=1)
+simspec = PRATS.SequentialMonteCarlo(samples=100_000, seed=1)
 
 resultspecs = (Shortfall(),GeneratorAvailability())
 
 shortfalls, flows = assess(TestSystems.singlenode_a, simspec, Shortfall(), GeneratorAvailability())
+#shortfalls, flows = PRAS.assess(TestSystems.singlenode_a, simspec, Shortfall(), GeneratorAvailability())
 lole, eue = LOLE(shortfalls), EUE(shortfalls)
 # LOLE = 0.353±0.002 event-h/4h
 # EUE = 1.57±0.01 MWh/4h

@@ -25,9 +25,10 @@ function assess(
     resultspecs::ResultSpec...
 )
     
-    #threads = nthreads()
-    sampleseeds = Channel{Int}(2)
-    results = resultchannel(method, resultspecs, 1)
+    #threads = Base.Threads.nthreads()
+    threads = 1
+    sampleseeds = Channel{Int}(2*threads)
+    results = resultchannel(method, resultspecs, threads)
     @async makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     assess(system, method, sampleseeds, results, resultspecs...)

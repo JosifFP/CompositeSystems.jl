@@ -5,8 +5,9 @@ const PRATS_VERSION = "v0.1.0"
 
 @reexport module PRATSBase
 import Base.Broadcast: broadcastable
+import XLSX
 import Dates: @dateformat_str, AbstractDateTime, DateTime,
-    Period, Minute, Hour, Day, Year
+    Period, Minute, Hour, Day, Year, Date, hour
 import HDF5: attributes, File, Group, Dataset, Datatype, dataspace,
     h5open, create_group, create_dataset,
     h5t_create, h5t_copy, h5t_insert, h5t_set_size, H5T_COMPOUND,

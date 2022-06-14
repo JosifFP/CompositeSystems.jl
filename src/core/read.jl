@@ -38,7 +38,7 @@ function SystemModel(inputfile::String)
     start_timestamp = DateTime(D_loads[:time][1])
     N = length(D_loads[:time])
     L = hour(D_loads[:time][2])-hour(D_loads[:time][1])
-    T = typeof(Dates.Hour(D_loads[:time][2]-D_loads[:time][1]))
+    T = typeof(Hour(D_loads[:time][2]-D_loads[:time][1]))
     P = powerunits["MW"]
     E = energyunits[string(P)*"h"]
     timestamps = range(start_timestamp, length=N, step=T(L))
