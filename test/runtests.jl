@@ -1,18 +1,17 @@
 using PRATS
-using PRAS
 using Test
 
-sys = PRAS.SystemModel("test/data/rts.pras")
-sys2 = PRATS.SystemModel("test/data/rts.pras")
+# sys = PRAS.SystemModel("test/data/rts.pras")
+# sys2 = PRATS.SystemModel("test/data/rts.pras")
 
-shortfalls, flows = PRAS.assess(sys, SequentialMonteCarlo(samples=100), Shortfall(), Flow())
-lole, eue = LOLE(shortfalls), EUE(shortfalls)
+# shortfalls, flows = PRAS.assess(sys, SequentialMonteCarlo(samples=100), Shortfall(), Flow())
+# lole, eue = LOLE(shortfalls), EUE(shortfalls)
 
-assess(sys, SequentialMonteCarlo(samples=100),
-GeneratorAvailability(), LineAvailability(),
-StorageAvailability(), GeneratorStorageAvailability(),
-StorageEnergy(), GeneratorStorageEnergy(),
-StorageEnergySamples(), GeneratorStorageEnergySamples())
+# assess(sys, SequentialMonteCarlo(samples=100),
+# GeneratorAvailability(), LineAvailability(),
+# StorageAvailability(), GeneratorStorageAvailability(),
+# StorageEnergy(), GeneratorStorageEnergy(),
+# StorageEnergySamples(), GeneratorStorageEnergySamples())
 
 
 utc = TimeZone("UTC")

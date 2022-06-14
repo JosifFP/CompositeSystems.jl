@@ -7,15 +7,14 @@ struct SequentialMonteCarlo <: SimulationSpec
     nsamples::Int
     seed::UInt64
     verbose::Bool
-    threaded::Bool
 
     function SequentialMonteCarlo(;
         samples::Int=10_000, seed::Integer=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=true
+        verbose::Bool=false
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
-        new(samples, UInt64(seed), verbose, threaded)
+        new(samples, UInt64(seed), verbose)
     end
 
 end
@@ -25,25 +24,18 @@ function assess(
     method::SequentialMonteCarlo,
     resultspecs::ResultSpec...
 )
+    
+    #threads = nthreads()
+    sampleseeds = Channel{Int}(2)
+    results = resultchannel(method, resultspecs, 1)
+    @async makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
-    threads = nthreads()
-    sampleseeds = Channel{Int}(2*threads)
-    results = resultchannel(method, resultspecs, threads)
-
-    @spawn makeseeds(sampleseeds, method.nsamples)
-
-    if method.threaded
-        for _ in 1:threads
-            @spawn assess(system, method, sampleseeds, results, resultspecs...)
-        end
-    else
-        assess(system, method, sampleseeds, results, resultspecs...)
-    end
-
-    return finalize(results, system, method.threaded ? threads : 1)
-
+    assess(system, method, sampleseeds, results, resultspecs...)
+    return finalize(results, system)
+    
 end
 
+"It generates a sequence of seeds from a given number of samples"
 function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
 
     for s in 1:nsamples
@@ -65,14 +57,11 @@ function assess(
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
 
-    # TODO: Test performance of Philox vs Threefry, choice of rounds
-    # Also consider implementing an efficient Bernoulli trial with direct
-    # mantissa comparison
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
 
-        seed!(rng, (method.seed, s))
+        seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system)
 
         for t in 1:N
@@ -158,8 +147,4 @@ function solve!(
 end
 
 include("result_shortfall.jl")
-include("result_surplus.jl")
-include("result_flow.jl")
-include("result_utilization.jl")
-include("result_energy.jl")
 include("result_availability.jl")

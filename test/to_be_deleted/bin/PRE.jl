@@ -1,4 +1,4 @@
-@reexport module PRE
+@reexport module CompositeAdequacy
 
 using MinCostFlows
 using ..Root
