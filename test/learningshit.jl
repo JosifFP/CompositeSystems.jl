@@ -1,40 +1,40 @@
+using MinCostFlows
+using PRATS
+import Random: AbstractRNG, rand, seed!
 
-using  HDF5, Dates, TimeZones, Test, CSV, DataFrames, XLSX, PRATS
-import HDF5: File
+loadfile = "test/data/rts_Load.xlsx";
 
+#how?
+#resultspecs = (Shortfall(), Surplus(), Flow(), Utilization(), ShortfallSamples(), SurplusSamples(),
+#            FlowSamples(), UtilizationSamples(), GeneratorAvailability());
 
-inputfile = "test/data/rts.pras"
-system = HDF5.h5open(inputfile, "r")
+include("C:/Users/jfiguero/.julia/dev/PRATS/src/PRE/simulations/sequentialmontecarlo/SystemState.jl")
+include("C:/Users/jfiguero/.julia/dev/PRATS/src/PRE/simulations/sequentialmontecarlo/DispatchProblem.jl")
+include("C:/Users/jfiguero/.julia/dev/PRATS/src/PRE/simulations/sequentialmontecarlo/utils.jl")
 
-#inputfile = "test/data/rts.hdf5"
-#xlsxfile = "test/data/rts/rts.xlsx"
-#sys = PRAS.SystemModel("test/data/rts.pras")
-#shortfalls, flows = PRAS.assess(sys, SequentialMonteCarlo(samples=1000), Shortfall(), Flow())
-#lole =  PRAS.EUE(shortfalls, "1")
+system = PRATS.SystemModel(loadfile);
+method = SequentialMonteCarlo();
+resultspecs = (Shortfall(), Surplus());
 
+#function assess(
+#    system::SystemModel,
+#    method::SequentialMonteCarlo,
+#    resultspecs::ResultSpec...
+#)
 
-#########################################################################################
-@testset "Units and Conversions" begin
+    threads = Base.Threads.nthreads() #this read #threads specified by VS
+    sampleseeds = Channel{Int}(2*threads)
+    results = PRATS.resultchannel(method, resultspecs, threads)
+    Base.Threads.@spawn makeseeds(sampleseeds, method.nsamples)
 
-    @test powertoenergy(10, MW, 2, Hour, MWh) == 20
-    @test powertoenergy(10, MW, 30, Minute, MWh) == 5
+    if method.threaded
+        for _ in 1:threads
+            #Base.Threads.@spawn assess(system, method, sampleseeds, results, resultspecs...)
+        end
+    else
+        #assess(system, method, sampleseeds, results, resultspecs...)
+    end
 
-    @test energytopower(100, MWh, 10, Hour, MW) == 10
-    @test energytopower(100, MWh, 30, Minute, MW) == 200
+    return finalize(results, system, method.threaded ? threads : 1)
 
-    @test unitsymbol(MW) == "MW"
-    @test unitsymbol(GW) == "GW"
-
-    @test unitsymbol(MWh) == "MWh"
-    @test unitsymbol(GWh) == "GWh"
-    @test unitsymbol(TWh) == "TWh"
-
-    @test unitsymbol(Minute) == "min"
-    @test unitsymbol(Hour) == "h"
-    @test unitsymbol(Day) == "d"
-    @test unitsymbol(Year) == "y"
-
-end
-
-
-
+#end

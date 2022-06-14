@@ -17,8 +17,7 @@ import TimeZones: TimeZone, ZonedDateTime
 export
 
     # System assets
-    Regions, Interfaces,
-    AbstractAssets, Generators, Storages, GeneratorStorages, Lines,
+    Regions, Interfaces, AbstractAssets, Generators, Storages, GeneratorStorages, Lines,
 
     # Units
     Period, Minute, Hour, Day, Year,
