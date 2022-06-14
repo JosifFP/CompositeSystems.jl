@@ -1,6 +1,0 @@
-AB1,	Interregion_AC,	1,	2
-AB2,	Interregion_AC,	1,	2
-AB3,	Interregion_AC,	1,	2
-CA-1,	Interregion_AC,	3,	1
-CB-1,	Interregion_AC,	3,	2
-113_316_1,	Interregion_DC,	1,	3
