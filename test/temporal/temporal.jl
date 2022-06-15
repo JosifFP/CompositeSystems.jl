@@ -2,19 +2,35 @@ using PRATS
 using Test
 import BenchmarkTools: @btime
 include("testsystems/testsystems.jl")
+include("testsystems/testsystems_pras.jl")
 using PRATS.CompositeAdequacy
-#using PRAS.ResourceAdequacy
+
+
 
 timestamps_a = TestSystems.singlenode_a.timestamps
 timestamprow_a = permutedims(timestamps_a)
 nstderr_tol = 3
-simspec = PRATS.SequentialMonteCarlo(samples=100_000, seed=1)
-
+simspec = PRATS.SequentialMonteCarlo(samples=10_000, seed=1)
 resultspecs = (Shortfall(),GeneratorAvailability())
-
 shortfalls, flows = assess(TestSystems.singlenode_a, simspec, Shortfall(), GeneratorAvailability())
-#shortfalls, flows = PRAS.assess(TestSystems.singlenode_a, simspec, Shortfall(), GeneratorAvailability())
 lole, eue = LOLE(shortfalls), EUE(shortfalls)
+#PRATS: (LOLE = 0.243±0.005 event-h/4h, EUE = 0.83±0.02 MWh/4h)
+#PRATS: (LOLE = 0.340±0.005 event-h/4h, EUE = 1.42±0.04 MWh/4h)
+
+
+
+
+using PRAS
+timestamps_a2 = TestSystems_pras.singlenode_a2.timestamps
+timestamprow_a2 = permutedims(timestamps_a2)
+nstderr_tol = 3
+simspec = PRAS.SequentialMonteCarlo(samples=10_000, seed=1)
+resultspecs = (PRAS.Shortfall(),PRAS.GeneratorAvailability())
+shortfalls2, flows2 = PRAS.assess(TestSystems_pras.singlenode_a2, simspec, PRAS.Shortfall(), PRAS.GeneratorAvailability())
+lole2, eue2 = PRAS.LOLE(shortfalls2), PRAS.EUE(shortfalls2)
+#(LOLE = 0.343±0.005 event-h/4h, EUE = 1.50±0.03 MWh/4h)
+
+
 # LOLE = 0.353±0.002 event-h/4h
 # EUE = 1.57±0.01 MWh/4h
 
@@ -25,77 +41,24 @@ lole, eue = LOLE(shortfalls), EUE(shortfalls)
 
 #-------------------------------------------------------------------------------------------
 
-using Plots,Random,Distributions,StatsBase
-lambda = 1/2940
-n = 1_000
-X = rand(Exponential(1/lambda),n)
-X1 = trunc.(X)
-histogram(X, label = false)
 
+# using Plots,Random,Distributions,StatsBase
+# using BenchmarkTools
+# λ = Float64(1/2940);
+# μ = Float64(1/60);
+# N= Int32(8760);
+# ndevices = length(devices)
+# @inbounds availability = ones(Bool, ndevices, N)::Matrix{Bool}
+# Random.seed!(1)
+# for k in 1:ndevices
+#     λ = Float64(1/2940);
+#     μ = Float64(1/60);
+#     if λ != 0.0
+#         availability[k,:] = cycles!(λ, μ, availability[k,:])
+#     end
+# end
 
-using Plots, BenchmarkTools
-λ = Float64(1/2940);
-μ = Float64(1/60);
-N= Int32(8760);
-@inbounds vector = ones(Bool, N)::Vector{Bool}
-Array{Bool,N}(true, N)
-
-T(λ::Float64, μ::Float64) = ((x->trunc(Int32, x)).(rand(Distributions.Exponential(1/λ))),
-                                (y->trunc(Int32, y)).(rand(Distributions.Exponential(1/μ)))
-)::Tuple{Int32,Int32}
-
-function cycles!(λ::Float64, μ::Float64, N::Int32)
-    @inbounds vector = ones(Bool, N)::Vector{Bool}
-    (ttf,ttr) = T(λ,μ)
-    i=Int(1);
-    @inbounds while i + ttf + ttr  < N
-        @inbounds vector[i+ttf : i+ttf+ttr] = [false for _ in i+ttf : i+ttf+ttr]
-        #@inbounds vector[i+ttf : i+ttf+ttr] = zeros(Bool, ttr)
-        i = i + ttf + ttr
-        (ttf,ttr) = T(λ,μ)
-    end
-    return vector
-end
-
-function cycles!(λ::Float64, μ::Float64, vector::Vector{Bool})
-    (ttf,ttr) = T(λ,μ)
-    N = length(vector)
-    i=Int(1);
-    @inbounds while i + ttf + ttr  < N
-        @inbounds vector[i+ttf : i+ttf+ttr] = [false for _ in i+ttf : i+ttf+ttr]
-        #@inbounds vector[i+ttf : i+ttf+ttr] = zeros(Bool, ttr)
-        i = i + ttf + ttr
-        (ttf,ttr) = T(λ,μ)
-    end
-    return vector
-end
-
-@inbounds vector = ones(Bool, N)::Vector{Bool}
-@time cycles!(λ, μ, N)
-@time cycles!(λ, μ, vector)
-plot(cycles!(λ, μ, vector))
-
-
-@btime cycles!(λ, μ, vector)
-#582.781 ns (3 allocations: 8.83 KiB)
-#557.778 ns (3 allocations: 8.84 KiB)
-#611.921 ns (3 allocations: 8.95 KiB)
-
-dist = LogNormal(1.5,2)
-rand(dist,5)
-
-
-import Random123: Philox4x
-simspec = SequentialMonteCarlo(samples=100_000, seed=1)
-#rng = Philox4x((0, 0), 10)
-rng = Random.GLOBAL_RNG
-#Random.seed!(rng, (simspec.seed, 1))
-
-Random.seed!(simspec.seed)
-@inbounds vector = ones(Bool, N)::Vector{Bool}
-plot(cycles!(λ, μ, vector))
-@inbounds vector = ones(Bool, N)::Vector{Bool}
-plot!(cycles!(λ, μ, vector))
-Random.seed!(simspec.seed)
-@inbounds vector = ones(Bool, N)::Vector{Bool}
-plot!(cycles!(λ, μ, vector))
+# plot(1:8760,availability[1,:])
+# plot!(1:8760,availability[2,:])
+# plot!(1:8760,availability[3,:])
+# plot!(1:8760,availability[4,:])

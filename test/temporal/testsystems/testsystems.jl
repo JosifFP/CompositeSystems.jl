@@ -33,6 +33,31 @@ empty_float(x) = Matrix{Float64}(undef, 0, x)
         [25, 28, 27, 24]
     )
 ##
+
+## Single-Region System B
+gens2 = Generators{2,1,Hour,MW}(
+    ["Gen1", "Gen2"], ["Gens", "Gens"],
+    [fill(10, 2, 2);],[fill(0.1, 2, 2);],[fill(0.9, 2, 2);]
+)
+
+emptystors2 = Storages{2,1,Hour,MW,MWh}((empty_str for _ in 1:2)...,
+                (empty_int(2) for _ in 1:3)...,
+                (empty_float(2) for _ in 1:5)...
+)
+
+emptygenstors2 = GeneratorStorages{2,1,Hour,MW,MWh}(
+    (empty_str for _ in 1:2)...,
+    (empty_int(2) for _ in 1:3)..., (empty_float(2) for _ in 1:3)...,
+    (empty_int(2) for _ in 1:3)..., (empty_float(2) for _ in 1:2)...
+)
+
+singlenode_b = SystemModel(
+    gens2, emptystors2, emptygenstors2,
+    DateTime(2010,1,1,0):Hour(1):DateTime(2010,1,1,1),
+    [25, 28]
+)
+##
+
 end
 import .TestSystems
 

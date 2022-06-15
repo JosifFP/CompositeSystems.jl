@@ -1,65 +1,66 @@
 function initialize_availability!(
     rng::AbstractRNG,
+    sequence::Matrix{Bool},
     availability::Vector{Bool}, nexttransition::Vector{Int},
-    devices::AbstractAssets, t_last::Int)
-
+    devices::AbstractAssets)
+    
     for i in 1:length(devices)
-
         λ = devices.λ[i, 1]
         μ = devices.μ[i, 1]
-        online = rand(rng) < μ / (λ + μ)
-
-        availability[i] = online
-
-        transitionprobs = online ? devices.λ : devices.μ
-        nexttransition[i] = randtransitiontime(
-            rng, transitionprobs, i, 1, t_last)
-
+        if λ != 0.0
+            sequence[i,:] = cycles!(rng, λ, μ, sequence[i,:])
+        end
+        availability[i] = sequence[i,1]
+        nexttransition[i] = sequence[i,2]
     end
-
-    return availability
-
+    return sequence
 end
 
 function update_availability!(
-    rng::AbstractRNG,
+    sequence_t::Matrix{Bool},
     availability::Vector{Bool}, nexttransition::Vector{Int},
-    devices::AbstractAssets, t_now::Int, t_last::Int)
+    ndevices::Int, t_now::Int, N::Int)
 
-    for i in 1:length(devices)
-
-        if nexttransition[i] == t_now # Unit switches states
-            transitionprobs = (availability[i] ⊻= true) ? devices.λ : devices.μ
-            nexttransition[i] = randtransitiontime(
-                rng, transitionprobs, i, t_now, t_last)
+    if t_now < N
+        for i in 1:ndevices
+            availability[i] = sequence_t[i,1]
+            nexttransition[i] = sequence_t[i,2]
         end
-
     end
-
 end
 
-function randtransitiontime(
-    rng::AbstractRNG, p::Matrix{Float64},
-    i::Int, t_now::Int, t_last::Int
-)
-
-    cdf = 0.
-    p_noprevtransition = 1.
-
-    x = rand(rng)
-    t = t_now + 1
-
-    while t <= t_last
-        p_it = p[i,t]
-        cdf += p_noprevtransition * p_it
-        x < cdf && return t
-        p_noprevtransition *= (1. - p_it)
-        t += 1
+function update_availability!(
+    sequence_t::Vector{Bool},
+    availability::Vector{Bool}, nexttransition::Vector{Int},
+    ndevices::Int, t_now::Int, N::Int)
+    for i in 1:ndevices
+        availability[i] = sequence_t[1]
+        nexttransition[i] = 0
     end
-
-    return t_last + 1
-
 end
+
+function cycles!(
+    rng::AbstractRNG, λ::Float64, μ::Float64, sequence::Vector{Bool})
+
+    (ttf,ttr) = T(rng,λ,μ)
+    N = length(sequence)
+    i=Int(1);
+    @inbounds while i + ttf + ttr  < N
+        @inbounds sequence[i+ttf : i+ttf+ttr] = [false for _ in i+ttf : i+ttf+ttr]
+        #@inbounds vector[i+ttf : i+ttf+ttr] = zeros(Bool, ttr)
+        i = i + ttf + ttr
+        (ttf,ttr) = T(rng,λ,μ)
+    end
+    return sequence
+end
+
+# T(λ::Float64, μ::Float64) = ((x->trunc(Int32, x)).(rand(Distributions.Exponential(1/λ))),
+#                                 (y->trunc(Int32, y)).(rand(Distributions.Exponential(1/μ)))
+# )::Tuple{Int32,Int32}
+
+T(rng::AbstractRNG, λ::Float64, μ::Float64) = ((x->trunc(Int32, x)).((-1/λ)log(rand(rng))),
+                                (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))
+)::Tuple{Int32,Int32}
 
 function available_capacity(
     availability::Vector{Bool},

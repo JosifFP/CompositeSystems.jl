@@ -71,8 +71,10 @@ function SystemModel(inputfile::String)
         gen_regions = getindex.(Ref(regionlookup), string.(D_generators[:region]))
         region_order = sortperm(gen_regions)
         gen_capacity = repeat(round.(Int, D_generators[:Pmax]), 1, N)
-        failureprobability = repeat(float.(D_generators[:failureprobability])/N, 1, N)
-        repairprobability = repeat(float.(D_generators[:repairprobability])/N, 1, N)
+        #failureprobability = repeat(float.(D_generators[:failureprobability])/N, 1, N)
+        #repairprobability = repeat(float.(D_generators[:repairprobability])/N, 1, N)
+        failureprobability = repeat(float.(D_generators[:failureprobability]), 1, N)
+        repairprobability = repeat(float.(D_generators[:repairprobability]), 1, N)
 
         generators = Generators{N,L,T,P}(
             gen_names[region_order], gen_categories[region_order],
