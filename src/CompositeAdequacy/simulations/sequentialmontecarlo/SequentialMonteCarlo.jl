@@ -55,6 +55,7 @@ function assess(
 ) where {R<:ResultSpec, N}
 
     dispatchproblem = DispatchProblem(system)
+    sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
 
@@ -63,15 +64,11 @@ function assess(
     for s in sampleseeds
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        sequences = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
+        initialize!(rng, systemstate, system, sequences) #creates the up/down sequence for each device.
 
         for t in 1:N
-
-            if t < N
-                advance!(sequences[:,t:t+1,:], systemstate, dispatchproblem, system, t)
-            else
-                advance!(sequences[:,t,:], systemstate, dispatchproblem, system, t)
-            end
+            
+            advance!(sequences, systemstate, dispatchproblem, system, t)
             solve!(dispatchproblem, systemstate, system, t)
             foreach(recorder -> record!(
                         recorder, system, systemstate, dispatchproblem, s, t
@@ -88,15 +85,13 @@ function assess(
 end
 
 function initialize!(
-    rng::AbstractRNG, state::SystemState, system::SystemModel{N}
+    rng::AbstractRNG, state::SystemState, system::SystemModel{N}, sequences::UpDownSequence
 ) where N
-    
-    sequences = UpDownSequence(system)
 
-    sequences[:,:,1] = initialize_availability!(rng, sequences[:,:,1], state.gens_available, state.gens_nexttransition, system.generators)
-    sequences[:,:,2] = initialize_availability!(rng, sequences[:,:,2], state.stors_available, state.stors_nexttransition, system.storages)
-    sequences[:,:,3] = initialize_availability!(rng, sequences[:,:,3], state.genstors_available, state.genstors_nexttransition, system.generatorstorages)
-    sequences[:,:,4] = initialize_availability!(rng, sequences[:,:,4], state.lines_available, state.lines_nexttransition, system.lines)
+    initialize_availability!(rng, sequences.Up_gens, system.generators, N)
+    initialize_availability!(rng, sequences.Up_stors, system.storages, N)
+    initialize_availability!(rng, sequences.Up_genstors, system.generatorstorages, N)
+    initialize_availability!(rng, sequences.Up_lines, system.lines, N)
 
     fill!(state.stors_energy, 0)
     fill!(state.genstors_energy, 0)
@@ -106,59 +101,23 @@ function initialize!(
 end
 
 function advance!(
-    sequence_t::Array{Bool,3},
+    sequences::UpDownSequence,
     state::SystemState,
     dispatchproblem::DispatchProblem,
     system::SystemModel{N}, t::Int) where N
 
-    update_availability!(
-        sequence_t[:,:,1], state.gens_available, 
-        state.gens_nexttransition, length(system.generators), t, N)
+    # state.gens_available[:] = sequences.Up_gens[:,t]
+    # state.stors_available[:] = sequences.Up_stors[:,t]
+    # state.genstors_available[:] = sequences.Up_genstors[:,t]
+    # state.lines_available[:] = sequences.Up_lines[:,t]
 
-    update_availability!(
-        sequence_t[:,:,2], state.stors_available, 
-        state.stors_nexttransition, length(system.storages), t, N)
-
-    update_availability!(
-        sequence_t[:,:,3], state.genstors_available, 
-        state.genstors_nexttransition, length(system.generatorstorages), t, N)
-
-    update_availability!(
-        sequence_t[:,:,4], state.lines_available, 
-        state.lines_nexttransition, length(system.lines), t, N)
+    update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
+    update_availability!(state.stors_available,sequences.Up_stors[:,t], length(system.storages))
+    update_availability!(state.genstors_available,sequences.Up_genstors[:,t], length(system.generatorstorages))
+    update_availability!(state.lines_available,sequences.Up_lines[:,t], length(system.lines))
 
     update_energy!(state.stors_energy, system.storages, t)
     update_energy!(state.genstors_energy, system.generatorstorages, t)
-
-    update_problem!(dispatchproblem, state, system, t)
-
-end
-
-function advance!(
-    sequence_t::Matrix{Bool},
-    state::SystemState,
-    dispatchproblem::DispatchProblem,
-    system::SystemModel{N}, t::Int) where N
-
-    update_availability!(
-        sequence_t[:,1], state.gens_available, 
-        state.gens_nexttransition, length(system.generators), t, N)
-
-    update_availability!(
-        sequence_t[:,2], state.stors_available, 
-        state.stors_nexttransition, length(system.storages), t, N)
-
-    update_availability!(
-        sequence_t[:,3], state.genstors_available, 
-        state.genstors_nexttransition, length(system.generatorstorages), t, N)
-
-    update_availability!(
-        sequence_t[:,4], state.lines_available, 
-        state.lines_nexttransition, length(system.lines), t, N)
-
-    update_energy!(state.stors_energy, system.storages, t)
-    update_energy!(state.genstors_energy, system.generatorstorages, t)
-
     update_problem!(dispatchproblem, state, system, t)
 
 end

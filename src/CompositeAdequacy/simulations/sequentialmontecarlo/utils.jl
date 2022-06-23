@@ -1,66 +1,63 @@
 function initialize_availability!(
     rng::AbstractRNG,
     sequence::Matrix{Bool},
-    availability::Vector{Bool}, nexttransition::Vector{Int},
-    devices::AbstractAssets)
+    devices::AbstractAssets, N::Int)
     
-    for i in 1:length(devices)
+    ndevices = Base.length(devices)
+
+    for i in 1:ndevices
         λ = devices.λ[i, 1]
         μ = devices.μ[i, 1]
         if λ != 0.0
-            sequence[i,:] = cycles!(rng, λ, μ, sequence[i,:])
+            sequence[i,:] = cycles!(rng, λ, μ, N)
         end
-        availability[i] = sequence[i,1]
-        nexttransition[i] = sequence[i,2]
     end
+
     return sequence
+    
 end
 
 function update_availability!(
-    sequence_t::Matrix{Bool},
-    availability::Vector{Bool}, nexttransition::Vector{Int},
-    ndevices::Int, t_now::Int, N::Int)
+    availability::Vector{Bool}, sequences_device::Vector{Bool}, ndevices::Int)
 
-    if t_now < N
-        for i in 1:ndevices
-            availability[i] = sequence_t[i,1]
-            nexttransition[i] = sequence_t[i,2]
-        end
-    end
-end
-
-function update_availability!(
-    sequence_t::Vector{Bool},
-    availability::Vector{Bool}, nexttransition::Vector{Int},
-    ndevices::Int, t_now::Int, N::Int)
     for i in 1:ndevices
-        availability[i] = sequence_t[1]
-        nexttransition[i] = 0
+        availability[i] = sequences_device[i]
     end
+
+    return availability
 end
 
 function cycles!(
-    rng::AbstractRNG, λ::Float64, μ::Float64, sequence::Vector{Bool})
+    rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
+    sequence = Base.ones(true, N)
+    i=Int(0)
     (ttf,ttr) = T(rng,λ,μ)
-    N = length(sequence)
-    i=Int(1);
-    @inbounds while i + ttf + ttr  < N
-        @inbounds sequence[i+ttf : i+ttf+ttr] = [false for _ in i+ttf : i+ttf+ttr]
-        #@inbounds vector[i+ttf : i+ttf+ttr] = zeros(Bool, ttr)
+    if i + ttf > N - ttr && i + ttf < N ttr = N - ttf - i end
+
+    @inbounds while i + ttf + ttr  <= N
+        @inbounds sequence[i+ttf+1 : i+ttf+ttr] = [false for _ in i+ttf+1 : i+ttf+ttr]
         i = i + ttf + ttr
         (ttf,ttr) = T(rng,λ,μ)
+        if i + ttf + ttr  >= N && i + ttf < N ttr = N - ttf - i end
     end
     return sequence
+
 end
 
-# T(λ::Float64, μ::Float64) = ((x->trunc(Int32, x)).(rand(Distributions.Exponential(1/λ))),
-#                                 (y->trunc(Int32, y)).(rand(Distributions.Exponential(1/μ)))
-# )::Tuple{Int32,Int32}
+function T(rng, λ::Float64, μ::Float64)::Tuple{Int32,Int32}
+    
+    ttf = (x->trunc(Int32, x)).((-1/λ)log(rand(rng)))
+    ttr = (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))
 
-T(rng::AbstractRNG, λ::Float64, μ::Float64) = ((x->trunc(Int32, x)).((-1/λ)log(rand(rng))),
-                                (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))
-)::Tuple{Int32,Int32}
+    while ttf == 0.0 || ttr == 0.0
+        ttf = (x->trunc(Int32, x)).((-1/λ)log(rand(rng)))
+        ttr = (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))
+    end
+
+    return ttf,ttr
+end
+
 
 function available_capacity(
     availability::Vector{Bool},

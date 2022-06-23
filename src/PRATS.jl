@@ -42,6 +42,7 @@ include("core/assets.jl")
 include("core/SystemModel.jl")
 include("core/utils.jl")
 include("core/read.jl")
+include("core/read_h5.jl")
 end
 
 include("CompositeAdequacy/CompositeAdequacy.jl")

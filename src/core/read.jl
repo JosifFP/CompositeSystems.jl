@@ -1,4 +1,28 @@
+include("read_h5.jl")
+
+"""
+    SystemModel(filename::String)
+
+Load a `SystemModel` from an appropriately-formatted XLSX or HDF5 file on disk.
+"""
 function SystemModel(inputfile::String)
+
+    if contains(inputfile, "pras") || contains(inputfile, "hdf5")
+        system = h5open(inputfile, "r") do f::File
+            version, versionstring = readversion(f)
+            # Determine the appropriate version of the importer to use
+            return if (0,5,0) <= version < (0,7,0)
+                systemmodel_0_5(f)
+            else
+                error("PRAS file format $versionstring not supported by this version of PRASBase.")
+            end
+        end
+    else
+        SystemModel_XLSX(inputfile)
+    end
+end
+
+function SystemModel_XLSX(inputfile::String)
 
     f = Dict{Symbol,Any}()
     XLSX.openxlsx(inputfile, enable_cache=false) do io
@@ -71,10 +95,10 @@ function SystemModel(inputfile::String)
         gen_regions = getindex.(Ref(regionlookup), string.(D_generators[:region]))
         region_order = sortperm(gen_regions)
         gen_capacity = repeat(round.(Int, D_generators[:Pmax]), 1, N)
-        #failureprobability = repeat(float.(D_generators[:failureprobability])/N, 1, N)
-        #repairprobability = repeat(float.(D_generators[:repairprobability])/N, 1, N)
-        failureprobability = repeat(float.(D_generators[:failureprobability]), 1, N)
-        repairprobability = repeat(float.(D_generators[:repairprobability]), 1, N)
+        failureprobability = repeat(float.(D_generators[:failureprobability])/N, 1, N)
+        repairprobability = repeat(float.(D_generators[:repairprobability])/N, 1, N)
+        #failureprobability = repeat(float.(D_generators[:failureprobability]), 1, N)
+        #repairprobability = repeat(float.(D_generators[:repairprobability]), 1, N)
 
         generators = Generators{N,L,T,P}(
             gen_names[region_order], gen_categories[region_order],
