@@ -13,8 +13,18 @@ import HDF5: attributes, File, Group, Dataset, Datatype, dataspace,
     h5t_create, h5t_copy, h5t_insert, h5t_set_size, H5T_COMPOUND,
     hdf5_type_id, h5d_write, H5S_ALL, H5P_DEFAULT
 import TimeZones: TimeZone, ZonedDateTime
-
 import StatsBase: mean, std, stderror
+
+import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
+__init__() = Memento.register(_LOGGER)
+
+"Suppresses information and warning messages output"
+function silence()
+    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
+    Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
+    Memento.setlevel!(Memento.getlogger(PowerModels), "error")
+    Memento.setlevel!(Memento.getlogger(PRATS), "error")
+end
 
 abstract type ReliabilityMetric end
 abstract type SimulationSpec end
@@ -46,5 +56,6 @@ include("core/read_h5.jl")
 end
 
 include("CompositeAdequacy/CompositeAdequacy.jl")
+include("SystemRepresentation/Network.jl")
 
 end
