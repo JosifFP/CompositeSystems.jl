@@ -38,7 +38,7 @@ abstract type Result{
 
 export
     # System assets
-    Regions, Interfaces, AbstractAssets, Generators, Storages, GeneratorStorages, Lines,
+    Buses, Interfaces, AbstractAssets, Generators, Storages, GeneratorStorages, Lines,
     # Units
     Period, Minute, Hour, Day, Year,
     PowerUnit, kW, MW, GW, TW,
@@ -52,7 +52,6 @@ include("core/assets.jl")
 include("core/SystemModel.jl")
 include("core/utils.jl")
 include("core/read.jl")
-include("core/read_h5.jl")
 end
 
 include("CompositeAdequacy/CompositeAdequacy.jl")

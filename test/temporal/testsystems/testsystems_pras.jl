@@ -7,7 +7,7 @@ empty_str = String[]
 empty_int(x) = Matrix{Int}(undef, 0, x)
 empty_float(x) = Matrix{Float64}(undef, 0, x)
 
-## Single-Region System A2
+## Single-Bus System A2
 gens11 = PRAS.Generators{4,1,Hour,MW}(
     ["Gen1", "Gen2", "Gen3", "VG"], ["Gens", "Gens", "Gens", "VG"],
     [fill(10, 3, 4); [5 6 7 8]],
@@ -38,7 +38,7 @@ singlenode_a11_eue = 1.59
 singlenode_a11_eues = [0.29, 0.832, 0.29, 0.178]
 ##
 
-## Single-Region System B
+## Single-Bus System B
 
 gens22 = PRAS.Generators{6,1,Hour,MW}(
     ["Gen1", "Gen2", "VG"], ["Gens", "Gens", "VG"],
@@ -73,7 +73,7 @@ singlenode_b_eue = 7.11
 singlenode_b_eues = [1.29, 1.29, 1.29, 0.85, 1.05, 1.34]
 
 
-# Single-Region System B, with storage
+# Single-Bus System B, with storage
 #TODO: Storage tests
 
 stors22 = PRAS.Storages{6,1,Hour,MW,MWh}(

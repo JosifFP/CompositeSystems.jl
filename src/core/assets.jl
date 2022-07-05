@@ -9,12 +9,12 @@ struct Generators{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
 
     capacity::Matrix{Int} # power
 
-    λ::Matrix{Float64}
-    μ::Matrix{Float64}
+    λ::Vector{Float64}
+    μ::Vector{Float64}
 
     function Generators{N,L,T,P}(
         names::Vector{<:AbstractString}, categories::Vector{<:AbstractString},
-        capacity::Matrix{Int}, λ::Matrix{Float64}, μ::Matrix{Float64}
+        capacity::Matrix{Int}, λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P}
 
         n_gens = length(names)
@@ -24,8 +24,8 @@ struct Generators{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
         @assert size(capacity) == (n_gens, N)
         @assert all(capacity .>= 0)
 
-        @assert size(λ) == (n_gens, N)
-        @assert size(μ) == (n_gens, N)
+        @assert length(λ) == (n_gens)
+        @assert length(μ) == (n_gens)
         @assert all(0 .<= λ .<= 1)
         @assert all(0 .<= μ .<= 1)
 
@@ -55,8 +55,8 @@ function Base.vcat(gs::G...) where {N, L, T, P, G <: Generators{N,L,T,P}}
 
     capacity = Matrix{Int}(undef, n_gens, N)
 
-    λ = Matrix{Float64}(undef, n_gens, N)
-    μ = Matrix{Float64}(undef, n_gens, N)
+    λ = Vector{Float64}(undef, n_gens)
+    μ = Vector{Float64}(undef, n_gens)
 
     last_idx = 0
 
@@ -68,8 +68,8 @@ function Base.vcat(gs::G...) where {N, L, T, P, G <: Generators{N,L,T,P}}
         names[rows] = g.names
         categories[rows] = g.categories
         capacity[rows, :] = g.capacity
-        λ[rows, :] = g.λ
-        μ[rows, :] = g.μ
+        λ[rows] = g.λ
+        μ[rows] = g.μ
 
         last_idx += n
 
@@ -92,15 +92,15 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
     discharge_efficiency::Matrix{Float64}
     carryover_efficiency::Matrix{Float64}
 
-    λ::Matrix{Float64}
-    μ::Matrix{Float64}
+    λ::Vector{Float64}
+    μ::Vector{Float64}
 
     function Storages{N,L,T,P,E}(
         names::Vector{<:AbstractString}, categories::Vector{<:AbstractString},
         chargecapacity::Matrix{Int}, dischargecapacity::Matrix{Int},
         energycapacity::Matrix{Int}, chargeefficiency::Matrix{Float64},
         dischargeefficiency::Matrix{Float64}, carryoverefficiency::Matrix{Float64},
-        λ::Matrix{Float64}, μ::Matrix{Float64}
+        λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P,E}
 
         n_stors = length(names)
@@ -121,8 +121,8 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
         @assert all(0 .< dischargeefficiency .<= 1)
         @assert all(0 .< carryoverefficiency .<= 1)
 
-        @assert size(λ) == (n_stors, N)
-        @assert size(μ) == (n_stors, N)
+        @assert length(λ) == (n_stors)
+        @assert length(μ) == (n_stors)
         @assert all(0 .<= λ .<= 1)
         @assert all(0 .<= μ .<= 1)
 
@@ -164,8 +164,8 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
     gridwithdrawal_capacity::Matrix{Int} # power
     gridinjection_capacity::Matrix{Int} # power
 
-    λ::Matrix{Float64}
-    μ::Matrix{Float64}
+    λ::Vector{Float64}
+    μ::Vector{Float64}
 
     function GeneratorStorages{N,L,T,P,E}(
         names::Vector{<:AbstractString}, categories::Vector{<:AbstractString},
@@ -175,7 +175,7 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
         carryover_efficiency::Matrix{Float64},
         inflow::Matrix{Int},
         gridwithdrawal_capacity::Matrix{Int}, gridinjection_capacity::Matrix{Int},
-        λ::Matrix{Float64}, μ::Matrix{Float64}
+        λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P,E}
 
         n_stors = length(names)
@@ -206,8 +206,8 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
         @assert all(gridwithdrawal_capacity .>= 0)
         @assert all(gridinjection_capacity .>= 0)
 
-        @assert size(λ) == (n_stors, N)
-        @assert size(μ) == (n_stors, N)
+        @assert length(λ) == (n_stors)
+        @assert length(μ) == (n_stors)
         @assert all(0 .<= λ .<= 1)
         @assert all(0 .<= μ .<= 1)
 
@@ -245,13 +245,18 @@ struct Lines{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     forward_capacity::Matrix{Int} # power
     backward_capacity::Matrix{Int} # power
 
-    λ::Matrix{Float64}
-    μ::Matrix{Float64}
+    # buses_from::Vector{Int}
+    # buses_to::Vector{Int}
+    # limit_forward::Matrix{Int}
+    # limit_backward::Matrix{Int}
+
+    λ::Vector{Float64}
+    μ::Vector{Float64}
 
     function Lines{N,L,T,P}(
         names::Vector{<:AbstractString}, categories::Vector{<:AbstractString},
         forward_capacity::Matrix{Int}, backward_capacity::Matrix{Int},
-        λ::Matrix{Float64}, μ::Matrix{Float64}
+        λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P}
 
         n_lines = length(names)
@@ -263,8 +268,8 @@ struct Lines{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
         @assert all(forward_capacity .>= 0)
         @assert all(backward_capacity .>= 0)
 
-        @assert size(λ) == (n_lines, N)
-        @assert size(μ) == (n_lines, N)
+        @assert length(λ) == (n_lines)
+        @assert length(μ) == (n_lines)
         @assert all(0 .<= λ .<= 1)
         @assert all(0 .<= μ .<= 1)
 
@@ -284,18 +289,53 @@ Base.:(==)(x::T, y::T) where {T <: Lines} =
 
 #Collection Types
 
-struct Regions{N,P<:PowerUnit}
+struct Interfaces{N,P<:PowerUnit}
+
+    buses_from::Vector{Int}
+    buses_to::Vector{Int}
+    limit_forward::Matrix{Int}
+    limit_backward::Matrix{Int}
+
+    function Interfaces{N,P}(
+        buses_from::Vector{Int}, buses_to::Vector{Int},
+        forwardcapacity::Matrix{Int}, backwardcapacity::Matrix{Int}
+    ) where {N,P<:PowerUnit}
+
+        n_interfaces = length(buses_from)
+        @assert length(buses_to) == n_interfaces
+
+        @assert size(forwardcapacity) == (n_interfaces, N)
+        @assert size(backwardcapacity) == (n_interfaces, N)
+        @assert all(forwardcapacity .>= 0)
+        @assert all(backwardcapacity .>= 0)
+
+        new{N,P}(buses_from, buses_to, forwardcapacity, backwardcapacity)
+
+    end
+
+end
+
+Base.:(==)(x::T, y::T) where {T <: Interfaces} =
+    x.buses_from == y.buses_from &&
+    x.buses_to == y.buses_to &&
+    x.limit_forward == y.limit_forward &&
+    x.limit_backward == y.limit_backward
+
+Base.length(i::Interfaces) = length(i.buses_from)    
+
+
+struct Buses{N,P<:PowerUnit}
 
     names::Vector{String}
     load::Matrix{Int}
 
-    function Regions{N,P}(
+    function Buses{N,P}(
         names::Vector{<:AbstractString}, load::Matrix{Int}
     ) where {N,P<:PowerUnit}
 
-        n_regions = length(names)
+        n_buses = length(names)
 
-        @assert size(load) == (n_regions, N)
+        @assert size(load) == (n_buses, N)
         @assert all(load .>= 0)
 
         new{N,P}(string.(names), load)
@@ -304,42 +344,8 @@ struct Regions{N,P<:PowerUnit}
 
 end
 
-Base.:(==)(x::T, y::T) where {T <: Regions} =
+Base.:(==)(x::T, y::T) where {T <: Buses} =
     x.names == y.names &&
     x.load == y.load
 
-Base.length(r::Regions) = length(r.names)
-
-struct Interfaces{N,P<:PowerUnit}
-
-    regions_from::Vector{Int}
-    regions_to::Vector{Int}
-    limit_forward::Matrix{Int}
-    limit_backward::Matrix{Int}
-
-    function Interfaces{N,P}(
-        regions_from::Vector{Int}, regions_to::Vector{Int},
-        forwardcapacity::Matrix{Int}, backwardcapacity::Matrix{Int}
-    ) where {N,P<:PowerUnit}
-
-        n_interfaces = length(regions_from)
-        @assert length(regions_to) == n_interfaces
-
-        @assert size(forwardcapacity) == (n_interfaces, N)
-        @assert size(backwardcapacity) == (n_interfaces, N)
-        @assert all(forwardcapacity .>= 0)
-        @assert all(backwardcapacity .>= 0)
-
-        new{N,P}(regions_from, regions_to, forwardcapacity, backwardcapacity)
-
-    end
-
-end
-
-Base.:(==)(x::T, y::T) where {T <: Interfaces} =
-    x.regions_from == y.regions_from &&
-    x.regions_to == y.regions_to &&
-    x.limit_forward == y.limit_forward &&
-    x.limit_backward == y.limit_backward
-
-Base.length(i::Interfaces) = length(i.regions_from)    
+Base.length(r::Buses) = length(r.names)

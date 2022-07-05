@@ -6,25 +6,26 @@ const tz = tz"UTC"
 empty_str = String[]
 empty_int(x) = Matrix{Int}(undef, 0, x)
 empty_float(x) = Matrix{Float64}(undef, 0, x)
+empty_floatv = Vector{Float64}(undef, 0)
 
-
-## Single-Region System A
+## Single-Bus System A
     gens1 = Generators{4,1,Hour,MW}(
         ["Gen1", "Gen2", "Gen3", "VG"], ["Gens", "Gens", "Gens", "VG"],
         [fill(10, 3, 4); [5 6 7 8]],
-        [fill(0.1, 3, 4); fill(0.0, 1, 4)],
-        [fill(0.9, 3, 4); fill(1.0, 1, 4)]
+        [fill(0.1, 3); fill(0.0, 1)],
+        [fill(0.9, 3); fill(1.0, 1)]
     )
 
     emptystors1 = Storages{4,1,Hour,MW,MWh}((empty_str for _ in 1:2)...,
                     (empty_int(4) for _ in 1:3)...,
-                    (empty_float(4) for _ in 1:5)...
+                    (empty_float(4) for _ in 1:3)...,
+                    (empty_floatv for _ in 1:2)...
     )
 
     emptygenstors1 = GeneratorStorages{4,1,Hour,MW,MWh}(
         (empty_str for _ in 1:2)...,
         (empty_int(4) for _ in 1:3)..., (empty_float(4) for _ in 1:3)...,
-        (empty_int(4) for _ in 1:3)..., (empty_float(4) for _ in 1:2)...
+        (empty_int(4) for _ in 1:3)..., (empty_floatv for _ in 1:2)...
     )
 
     singlenode_a = SystemModel(
@@ -43,39 +44,39 @@ empty_float(x) = Matrix{Float64}(undef, 0, x)
         ["Stor1", "Stor2"], ["Storage", "Storage"],
         repeat([10,0], 1, 4), repeat([10,0], 1, 4), fill(4, 2, 4),
         fill(1.0, 2, 4), fill(1.0, 2, 4), fill(.99, 2, 4),
-        fill(0.0, 2, 4), fill(1.0, 2, 4))
+        fill(0.0, 2), fill(1.0, 2))
 
     singlenode_a_2 = SystemModel(
         gens1, stors_a, emptygenstors1,
         DateTime(2010,1,1,0):Hour(1):DateTime(2010,1,1,3),
         [25, 28, 27, 24]
     )
-
-
 ##
 
-## Single-Region System B
+## Single-Bus System B
 gens2 = Generators{6,1,Hour,MW}(
     ["Gen1", "Gen2", "VG"], ["Gens", "Gens", "VG"],
     [10 10 10 15 15 15; 20 20 20 25 25 25; 7 8 9 9 8 7],
-    [fill(0.1, 2, 6); fill(0.0, 1, 6)],
-    [fill(0.9, 2, 6); fill(1.0, 1, 6)])
+    [fill(0.1, 2); fill(0.0, 1)],
+    [fill(0.9, 2); fill(1.0, 1)])
 
 emptystors2 = Storages{6,1,Hour,MW,MWh}((empty_str for _ in 1:2)...,
                   (empty_int(6) for _ in 1:3)...,
-                  (empty_float(6) for _ in 1:5)...)
+                  (empty_float(6) for _ in 1:3)...,
+                  (empty_floatv for _ in 1:2)...
+                  )
 
 emptygenstors2 = GeneratorStorages{6,1,Hour,MW,MWh}(
     (empty_str for _ in 1:2)...,
     (empty_int(6) for _ in 1:3)..., (empty_float(6) for _ in 1:3)...,
-    (empty_int(6) for _ in 1:3)..., (empty_float(6) for _ in 1:2)...)
+    (empty_int(6) for _ in 1:3)..., (empty_floatv for _ in 1:2)...)
 
 genstors2 = GeneratorStorages{6,1,Hour,MW,MWh}(
     ["Genstor1", "Genstor2"], ["Genstorage", "Genstorage"],
     fill(0, 2, 6), fill(0, 2, 6), fill(4, 2, 6),
     fill(1.0, 2, 6), fill(1.0, 2, 6), fill(.99, 2, 6),
     fill(0, 2, 6), fill(0, 2, 6), fill(0, 2, 6),
-    fill(0.0, 2, 6), fill(1.0, 2, 6))
+    fill(0.0, 2), fill(1.0, 2))
 
 singlenode_b = SystemModel(
     gens2, emptystors2, emptygenstors2,
@@ -88,21 +89,21 @@ singlenode_b_eue = 7.11
 singlenode_b_eues = [1.29, 1.29, 1.29, 0.85, 1.05, 1.34]
 ##
 
-# Single-Region System B, with storage
+# Single-Bus System B, with storage
 #TODO: Storage tests
 
 stors2 = Storages{6,1,Hour,MW,MWh}(
     ["Stor1", "Stor2"], ["Storage", "Storage"],
     repeat([1,0], 1, 6), repeat([1,0], 1, 6), fill(4, 2, 6),
     fill(1.0, 2, 6), fill(1.0, 2, 6), fill(.99, 2, 6),
-    fill(0.0, 2, 6), fill(1.0, 2, 6))
+    fill(0.0, 2), fill(1.0, 2))
 
 genstors2 = GeneratorStorages{6,1,Hour,MW,MWh}(
     ["Genstor1", "Genstor2"], ["Genstorage", "Genstorage"],
     fill(0, 2, 6), fill(0, 2, 6), fill(4, 2, 6),
     fill(1.0, 2, 6), fill(1.0, 2, 6), fill(.99, 2, 6),
     fill(0, 2, 6), fill(0, 2, 6), fill(0, 2, 6),
-    fill(0.0, 2, 6), fill(1.0, 2, 6))
+    fill(0.0, 2), fill(1.0, 2))
 
 singlenode_stor = SystemModel(
     gens2, stors2, genstors2,
@@ -110,25 +111,24 @@ singlenode_stor = SystemModel(
     [28,29,30,31,32,33])
 
 
-
-
-## Single-Region System X
+## Single-Bus System X
 gensx = Generators{4,1,Hour,MW}(
     ["Gen1", "Gen2", "Gen3", "VG"], ["Gens", "Gens", "Gens", "VG"],
     [fill(10, 3, 4); [5 6 7 8]],
-    [fill(0.3, 3, 4); fill(0.0, 1, 4)],
-    [fill(0.7, 3, 4); fill(1.0, 1, 4)]
+    [fill(0.3, 3); fill(0.0, 1)],
+    [fill(0.7, 3); fill(1.0, 1)]
 )
 
 emptystorsx = Storages{4,1,Hour,MW,MWh}((empty_str for _ in 1:2)...,
                 (empty_int(4) for _ in 1:3)...,
-                (empty_float(4) for _ in 1:5)...
+                (empty_float(4) for _ in 1:3)...,
+                (empty_floatv for _ in 1:2)...
 )
 
 emptygenstorsx = GeneratorStorages{4,1,Hour,MW,MWh}(
     (empty_str for _ in 1:2)...,
     (empty_int(4) for _ in 1:3)..., (empty_float(4) for _ in 1:3)...,
-    (empty_int(4) for _ in 1:3)..., (empty_float(4) for _ in 1:2)...
+    (empty_int(4) for _ in 1:3)..., (empty_floatv for _ in 1:2)...
 )
 
 singlenode_x = SystemModel(
@@ -136,9 +136,6 @@ singlenode_x = SystemModel(
     DateTime(2010,1,1,0):Hour(1):DateTime(2010,1,1,3),
     [25, 28, 27, 24]
 )
-
-
-
 
 
 end

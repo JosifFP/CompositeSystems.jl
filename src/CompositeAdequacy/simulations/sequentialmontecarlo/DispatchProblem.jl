@@ -2,13 +2,13 @@
 
     DispatchProblem(sys::SystemModel)
 
-Create a min-cost flow problem for the multi-region max power delivery problem
+Create a min-cost flow problem for the multi-bus max power delivery problem
 with generation and storage discharging in decreasing order of priority, and
 storage charging with excess capacity. Storage and GeneratorStorage devices
-within a region are represented individually on the network.
+within a bus are represented individually on the network.
 
-This involves injections/withdrawals at one node (regional capacity
-surplus/shortfall) for each modelled region, as well as two/three nodes
+This involves injections/withdrawals at one node (busal capacity
+surplus/shortfall) for each modelled bus, as well as two/three nodes
 associated with each Storage/GeneratorStorage device, and a supplementary
 "slack" node in the network that can absorb undispatched power or pass
 unserved energy or unused charging capability through to satisfy
@@ -37,11 +37,11 @@ or discharging are free.
 Flows on transmission interfaces assume a hurdle rate of 1
 to keep unserved energy close to the source of the shortage and eliminate
 loop flows. This has the side-effect of disincentivising wheeling power across
-multiple regions for charging purposes, however.
+multiple buses for charging purposes, however.
 
 Nodes in the problem are ordered as:
 
- 1. Regions generation surplus/shortfall (Regions order)
+ 1. Buses generation surplus/shortfall (Buses order)
  2. Storage discharge capacity (Storage order)
  3. Storage charge capacity (Storage order)
  4. GenerationStorage inflow capacity (GeneratorStorage order)
@@ -52,8 +52,8 @@ Nodes in the problem are ordered as:
 
 Edges are ordered as:
 
- 1. Regions demand unserved (Regions order)
- 2. Regions generation unused (Regions order)
+ 1. Buses demand unserved (Buses order)
+ 2. Buses generation unused (Buses order)
  3. Interfaces forward flow (Interfaces order)
  4. Interfaces reverse flow (Interfaces order)
  5. Storage discharge to grid (Storage order)
@@ -75,7 +75,7 @@ struct DispatchProblem
     fp::FlowProblem
 
     # Node labels
-    region_nodes::UnitRange{Int}
+    bus_nodes::UnitRange{Int}
     storage_discharge_nodes::UnitRange{Int}
     storage_charge_nodes::UnitRange{Int}
     genstorage_inflow_nodes::UnitRange{Int}
@@ -85,8 +85,8 @@ struct DispatchProblem
     slack_node::Int
 
     # Edge labels
-    region_unserved_edges::UnitRange{Int}
-    region_unused_edges::UnitRange{Int}
+    bus_unserved_edges::UnitRange{Int}
+    bus_unused_edges::UnitRange{Int}
     interface_forward_edges::UnitRange{Int}
     interface_reverse_edges::UnitRange{Int}
     storage_discharge_edges::UnitRange{Int}
@@ -108,7 +108,7 @@ struct DispatchProblem
     function DispatchProblem(
         sys::SystemModel; unlimited::Int=999_999_999)
 
-        nregions = length(sys.regions)
+        nbuses = length(sys.buses)
         nifaces = length(sys.interfaces)
         nstors = length(sys.storages)
         ngenstors = length(sys.generatorstorages)
@@ -118,11 +118,11 @@ struct DispatchProblem
         max_dischargecost = - min_chargecost + maxdischargetime + 1
         shortagepenalty = 10 * (nifaces + max_dischargecost)
 
-        stor_regions = assetgrouplist(sys.region_stor_idxs)
-        genstor_regions = assetgrouplist(sys.region_genstor_idxs)
+        stor_buses = assetgrouplist(sys.bus_stor_idxs)
+        genstor_buses = assetgrouplist(sys.bus_genstor_idxs)
 
-        region_nodes = 1:nregions
-        stor_discharge_nodes = indices_after(region_nodes, nstors)
+        bus_nodes = 1:nbuses
+        stor_discharge_nodes = indices_after(bus_nodes, nstors)
         stor_charge_nodes = indices_after(stor_discharge_nodes, nstors)
         genstor_inflow_nodes = indices_after(stor_charge_nodes, ngenstors)
         genstor_discharge_nodes = indices_after(genstor_inflow_nodes, ngenstors)
@@ -130,9 +130,9 @@ struct DispatchProblem
         genstor_charge_nodes = indices_after(genstor_togrid_nodes, ngenstors)
         slack_node = nnodes = last(genstor_charge_nodes) + 1
 
-        region_unservedenergy = 1:nregions
-        region_unusedcapacity = indices_after(region_unservedenergy, nregions)
-        iface_forward = indices_after(region_unusedcapacity, nifaces)
+        bus_unservedenergy = 1:nbuses
+        bus_unusedcapacity = indices_after(bus_unservedenergy, nbuses)
+        iface_forward = indices_after(bus_unusedcapacity, nifaces)
         iface_reverse = indices_after(iface_forward, nifaces)
         stor_dischargeused = indices_after(iface_reverse, nstors)
         stor_dischargeunused = indices_after(stor_dischargeused, nstors)
@@ -170,32 +170,32 @@ struct DispatchProblem
         end
 
         # Unserved energy edges
-        initedges(region_unservedenergy, slack_node, region_nodes)
-        costs[region_unservedenergy] .= shortagepenalty
+        initedges(bus_unservedenergy, slack_node, bus_nodes)
+        costs[bus_unservedenergy] .= shortagepenalty
 
         # Unused generation edges
-        initedges(region_unusedcapacity, region_nodes, slack_node)
+        initedges(bus_unusedcapacity, bus_nodes, slack_node)
 
         # Transmission edges
-        initedges(iface_forward, sys.interfaces.regions_from, sys.interfaces.regions_to)
+        initedges(iface_forward, sys.interfaces.buses_from, sys.interfaces.buses_to)
         costs[iface_forward] .= 1
-        initedges(iface_reverse, sys.interfaces.regions_to, sys.interfaces.regions_from)
+        initedges(iface_reverse, sys.interfaces.buses_to, sys.interfaces.buses_from)
         costs[iface_reverse] .= 1
 
         # Storage discharging / charging
-        initedges(stor_dischargeused, stor_discharge_nodes, stor_regions)
+        initedges(stor_dischargeused, stor_discharge_nodes, stor_buses)
         initedges(stor_dischargeunused, stor_discharge_nodes, slack_node)
-        initedges(stor_chargeused, stor_regions, stor_charge_nodes)
+        initedges(stor_chargeused, stor_buses, stor_charge_nodes)
         initedges(stor_chargeunused, slack_node, stor_charge_nodes)
 
         # GeneratorStorage discharging / grid injections
         initedges(genstor_dischargegrid, genstor_discharge_nodes, genstor_togrid_nodes)
         initedges(genstor_dischargeunused, genstor_discharge_nodes, slack_node)
         initedges(genstor_inflowgrid, genstor_inflow_nodes, genstor_togrid_nodes)
-        initedges(genstor_totalgrid, genstor_togrid_nodes, genstor_regions)
+        initedges(genstor_totalgrid, genstor_togrid_nodes, genstor_buses)
 
         # GeneratorStorage charging
-        initedges(genstor_gridcharge, genstor_regions, genstor_charge_nodes)
+        initedges(genstor_gridcharge, genstor_buses, genstor_charge_nodes)
         initedges(genstor_inflowcharge, genstor_inflow_nodes, genstor_charge_nodes)
         initedges(genstor_chargeunused, slack_node, genstor_charge_nodes)
 
@@ -205,11 +205,11 @@ struct DispatchProblem
 
             FlowProblem(nodesfrom, nodesto, limits, costs, injections),
 
-            region_nodes, stor_discharge_nodes, stor_charge_nodes,
+            bus_nodes, stor_discharge_nodes, stor_charge_nodes,
             genstor_inflow_nodes, genstor_discharge_nodes,
             genstor_togrid_nodes, genstor_charge_nodes, slack_node,
 
-            region_unservedenergy, region_unusedcapacity,
+            bus_unservedenergy, bus_unusedcapacity,
             iface_forward, iface_reverse,
             stor_dischargeused, stor_dischargeunused,
             stor_chargeused, stor_chargeunused,
@@ -234,16 +234,16 @@ function update_problem!(
     fp = problem.fp
     slack_node = fp.nodes[problem.slack_node]
 
-    # Update regional net available injection / withdrawal (from generators)
-    for (r, gen_idxs) in zip(problem.region_nodes, system.region_gen_idxs)
+    # Update bus net available injection / withdrawal (from generators)
+    for (r, gen_idxs) in zip(problem.bus_nodes, system.bus_gen_idxs)
 
-        region_node = fp.nodes[r]
+        bus_node = fp.nodes[r]
 
-        region_netgenavailable = available_capacity(
+        bus_netgenavailable = available_capacity(
             state.gens_available, system.generators, gen_idxs, t
-            ) - system.regions.load[r, t]
+            ) - system.buses.load[r, t]
 
-        updateinjection!(region_node, slack_node, region_netgenavailable)
+        updateinjection!(bus_node, slack_node, bus_netgenavailable)
 
     end
 

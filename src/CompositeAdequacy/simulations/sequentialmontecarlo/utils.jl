@@ -6,8 +6,8 @@ function initialize_availability!(
     ndevices = Base.length(devices)
 
     for i in 1:ndevices
-        λ = devices.λ[i, 1]
-        μ = devices.μ[i, 1]
+        λ = devices.λ[i]
+        μ = devices.μ[i]
         if λ != 0.0
             sequence[i,:] = cycles!(rng, λ, μ, N)
         end
