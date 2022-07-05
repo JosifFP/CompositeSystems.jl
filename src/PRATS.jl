@@ -15,17 +15,6 @@ import HDF5: attributes, File, Group, Dataset, Datatype, dataspace,
 import TimeZones: TimeZone, ZonedDateTime
 import StatsBase: mean, std, stderror
 
-import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
-__init__() = Memento.register(_LOGGER)
-
-"Suppresses information and warning messages output"
-function silence()
-    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-    Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
-    Memento.setlevel!(Memento.getlogger(PowerModels), "error")
-    Memento.setlevel!(Memento.getlogger(PRATS), "error")
-end
-
 abstract type ReliabilityMetric end
 abstract type SimulationSpec end
 abstract type ResultSpec end
@@ -38,14 +27,28 @@ abstract type Result{
 
 export
     # System assets
-    Buses, Interfaces, AbstractAssets, Generators, Storages, GeneratorStorages, Lines,
+    Buses, Interfaces, AbstractAssets, Generators, Storages, GeneratorStorages, Branches,
     # Units
     Period, Minute, Hour, Day, Year,
     PowerUnit, kW, MW, GW, TW,
     EnergyUnit, kWh, MWh, GWh, TWh,
+    VoltageUnit,kV,
+    PerUnit, pu,
     unitsymbol, conversionfactor, powertoenergy, energytopower,
     # Main data structure
     SystemModel# savemodel
+
+
+import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
+__init__() = Memento.register(_LOGGER)
+
+"Suppresses information and warning messages output"
+function silence()
+    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
+    Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
+    Memento.setlevel!(Memento.getlogger(PowerModels), "error")
+    Memento.setlevel!(Memento.getlogger(PRATS), "error")
+end
 
 include("core/units.jl")
 include("core/assets.jl")

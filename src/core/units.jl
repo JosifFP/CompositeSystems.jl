@@ -1,6 +1,7 @@
 # Augment time units
 
-export timeunits, powerunits, energyunits #added by JosifFP
+export timeunits, powerunits, energyunits, voltageunits, perunit
+
 unitsymbol(T::Type{<:Period}) = string(T)
 unitsymbol(::Type{Minute}) = "min"
 unitsymbol(::Type{Hour}) = "h"
@@ -115,3 +116,21 @@ energytopower(
     L::Real, T::Type{<:Period},
     P::Type{<:PowerUnit}) = e*conversionfactor(L, T, E, P)
 
+
+
+abstract type VoltageUnit end
+struct kV <: VoltageUnit end
+unitsymbol(T::Type{<:VoltageUnit}) = string(T)
+unitsymbol(::Type{kV}) = "kV"
+voltageunits = Dict(
+    unitsymbol(T) => T
+    for T in [kV])
+
+
+abstract type PerUnit end
+struct pu <: PerUnit end
+unitsymbol(T::Type{<:VoltageUnit}) = string(T)
+unitsymbol(::Type{kV}) = "pu"
+perunit = Dict(
+    unitsymbol(T) => T
+    for T in [pu])

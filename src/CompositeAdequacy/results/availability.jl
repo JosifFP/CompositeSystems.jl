@@ -74,23 +74,23 @@ function getindex(x::GeneratorStorageAvailabilityResult, gs::AbstractString, t::
     return vec(x.available[i_gs, i_t, :])
 end
 
-# Full Line availability data
+# Full Branch availability data
 
-struct LineAvailability <: ResultSpec end
+struct BranchAvailability <: ResultSpec end
 
-struct LineAvailabilityResult{N,L,T<:Period} <: AbstractAvailabilityResult{N,L,T}
+struct BranchAvailabilityResult{N,L,T<:Period} <: AbstractAvailabilityResult{N,L,T}
 
-    lines::Vector{String}
+    branches::Vector{String}
     timestamps::StepRange{ZonedDateTime,T}
 
     available::Array{Bool,3}
 
 end
 
-names(x::LineAvailabilityResult) = x.lines
+names(x::BranchAvailabilityResult) = x.branches
 
-function getindex(x::LineAvailabilityResult, l::AbstractString, t::ZonedDateTime)
-    i_l = findfirstunique(x.lines, l)
+function getindex(x::BranchAvailabilityResult, l::AbstractString, t::ZonedDateTime)
+    i_l = findfirstunique(x.branches, l)
     i_t = findfirstunique(x.timestamps, t)
     return vec(x.available[i_l, i_t, :])
 end

@@ -8,7 +8,7 @@ using Test
 # lole, eue = LOLE(shortfalls), EUE(shortfalls)
 
 # assess(sys, SequentialMonteCarlo(samples=100),
-# GeneratorAvailability(), LineAvailability(),
+# GeneratorAvailability(), BranchAvailability(),
 # StorageAvailability(), GeneratorStorageAvailability(),
 # StorageEnergy(), GeneratorStorageEnergy(),
 # StorageEnergySamples(), GeneratorStorageEnergySamples())

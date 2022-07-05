@@ -49,10 +49,8 @@ Base.getindex(g::G, idxs::AbstractVector{Int}) where {G <: Generators} =
 function Base.vcat(gs::G...) where {N, L, T, P, G <: Generators{N,L,T,P}}
 
     n_gens = sum(length(g) for g in gs)
-
     names = Vector{String}(undef, n_gens)
     categories = Vector{String}(undef, n_gens)
-
     capacity = Matrix{Int}(undef, n_gens, N)
 
     λ = Vector{Float64}(undef, n_gens)
@@ -237,92 +235,60 @@ Base.:(==)(x::T, y::T) where {T <: GeneratorStorages} =
     x.λ == y.λ &&
     x.μ == y.μ
 
-struct Lines{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
+
+struct Branches{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
 
     names::Vector{String}
     categories::Vector{String}
 
+    buses_from::Vector{Int}
+    buses_to::Vector{Int}
+
     forward_capacity::Matrix{Int} # power
     backward_capacity::Matrix{Int} # power
-
-    # buses_from::Vector{Int}
-    # buses_to::Vector{Int}
-    # limit_forward::Matrix{Int}
-    # limit_backward::Matrix{Int}
 
     λ::Vector{Float64}
     μ::Vector{Float64}
 
-    function Lines{N,L,T,P}(
+    function Branches{N,L,T,P}(
         names::Vector{<:AbstractString}, categories::Vector{<:AbstractString},
+        buses_from::Vector{Int}, buses_to::Vector{Int},
         forward_capacity::Matrix{Int}, backward_capacity::Matrix{Int},
         λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P}
 
-        n_lines = length(names)
-        @assert length(categories) == n_lines
+        n_branches = length(names)
+        @assert length(categories) == n_branches
         @assert allunique(names)
 
-        @assert size(forward_capacity) == (n_lines, N)
-        @assert size(backward_capacity) == (n_lines, N)
+        @assert size(forward_capacity) == (n_branches, N)
+        @assert size(backward_capacity) == (n_branches, N)
         @assert all(forward_capacity .>= 0)
         @assert all(backward_capacity .>= 0)
 
-        @assert length(λ) == (n_lines)
-        @assert length(μ) == (n_lines)
+        @assert length(λ) == (n_branches)
+        @assert length(μ) == (n_branches)
         @assert all(0 .<= λ .<= 1)
         @assert all(0 .<= μ .<= 1)
 
-        new{N,L,T,P}(string.(names), string.(categories), forward_capacity, backward_capacity, λ, μ)
+        new{N,L,T,P}(string.(names), string.(categories), buses_from, buses_to, forward_capacity, backward_capacity, λ, μ)
 
     end
 
 end
 
-Base.:(==)(x::T, y::T) where {T <: Lines} =
+Base.:(==)(x::T, y::T) where {T <: Branches} =
     x.names == y.names &&
     x.categories == y.categories &&
+    x.buses_from == y.buses_from &&
+    x.buses_to == y.buses_to &&
     x.forward_capacity == y.forward_capacity &&
     x.backward_capacity == y.backward_capacity &&
     x.λ == y.λ &&
     x.μ == y.μ
 
+
 #Collection Types
-
-struct Interfaces{N,P<:PowerUnit}
-
-    buses_from::Vector{Int}
-    buses_to::Vector{Int}
-    limit_forward::Matrix{Int}
-    limit_backward::Matrix{Int}
-
-    function Interfaces{N,P}(
-        buses_from::Vector{Int}, buses_to::Vector{Int},
-        forwardcapacity::Matrix{Int}, backwardcapacity::Matrix{Int}
-    ) where {N,P<:PowerUnit}
-
-        n_interfaces = length(buses_from)
-        @assert length(buses_to) == n_interfaces
-
-        @assert size(forwardcapacity) == (n_interfaces, N)
-        @assert size(backwardcapacity) == (n_interfaces, N)
-        @assert all(forwardcapacity .>= 0)
-        @assert all(backwardcapacity .>= 0)
-
-        new{N,P}(buses_from, buses_to, forwardcapacity, backwardcapacity)
-
-    end
-
-end
-
-Base.:(==)(x::T, y::T) where {T <: Interfaces} =
-    x.buses_from == y.buses_from &&
-    x.buses_to == y.buses_to &&
-    x.limit_forward == y.limit_forward &&
-    x.limit_backward == y.limit_backward
-
-Base.length(i::Interfaces) = length(i.buses_from)    
-
 
 struct Buses{N,P<:PowerUnit}
 

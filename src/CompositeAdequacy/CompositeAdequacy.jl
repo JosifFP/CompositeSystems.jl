@@ -28,7 +28,7 @@ export
 
     # Result specifications
     Shortfall, ShortfallSamples,
-    GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, LineAvailability,
+    GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, BranchAvailability,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str

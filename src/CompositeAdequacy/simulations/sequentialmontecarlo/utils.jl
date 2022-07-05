@@ -61,7 +61,7 @@ end
 
 function available_capacity(
     availability::Vector{Bool},
-    lines::Lines,
+    branches::Branches,
     idxs::UnitRange{Int}, t::Int
 )
 
@@ -70,8 +70,8 @@ function available_capacity(
 
     for i in idxs
         if availability[i]
-            avcap_forward += lines.forward_capacity[i, t]
-            avcap_backward += lines.backward_capacity[i, t]
+            avcap_forward += branches.forward_capacity[i, t]
+            avcap_backward += branches.backward_capacity[i, t]
         end
     end
 

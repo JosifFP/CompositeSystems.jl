@@ -28,9 +28,9 @@ sys.bus_genstor_idxs
 sys.timestamps
 
 #sys.load
-sys.lines
+sys.branches
 sys.interfaces
-sys.interface_line_idxs
+sys.interface_branch_idxs
 
 
 
@@ -51,6 +51,6 @@ sys.bus_genstor_idxs
 sys.timestamps
 
 #sys.load
-sys.lines
+sys.branches
 sys.interfaces
-sys.interface_line_idxs
+sys.interface_branch_idxs

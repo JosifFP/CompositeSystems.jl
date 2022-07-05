@@ -1,26 +1,9 @@
 """
     SystemModel(filename::String)
 
-Load a `SystemModel` from an appropriately-formatted XLSX or HDF5 file on disk.
+Load a `SystemModel` from an appropriately-formatted XLSX file on disk.
 """
 function SystemModel(inputfile::String)
-
-    if contains(inputfile, "pras") || contains(inputfile, "hdf5")
-        system = h5open(inputfile, "r") do f::File
-            version, versionstring = readversion(f)
-            # Determine the appropriate version of the importer to use
-            return if (0,5,0) <= version < (0,7,0)
-                systemmodel_0_5(f)
-            else
-                error("PRAS file format $versionstring not supported by this version of PRASBase.")
-            end
-        end
-    else
-        SystemModel_XLSX(inputfile)
-    end
-end
-
-function SystemModel_XLSX(inputfile::String)
 
     f = Dict{Symbol,Any}()
     XLSX.openxlsx(inputfile, enable_cache=false) do io
@@ -34,7 +17,7 @@ function SystemModel_XLSX(inputfile::String)
     D_generators = Dict(f[:generators][2][i] => f[:generators][1][i] for i in 1:length(f[:generators][2]))
     D_storages = Dict(f[:storages][2][i] => f[:storages][1][i] for i in 1:length(f[:storages][2]))
     D_generatorstorages = Dict(f[:generatorstorages][2][i] => filter(!ismissing, f[:generatorstorages][1][i]) for i in 1:length(f[:generatorstorages][2]))
-    D_lines = Dict(f[:lines][2][i] => f[:lines][1][i] for i in 1:length(f[:lines][2]))
+    D_branches = Dict(f[:branches][2][i] => f[:branches][1][i] for i in 1:length(f[:branches][2]))
     D_interfaces = Dict(f[:interfaces][2][i] => f[:interfaces][1][i] for i in 1:length(f[:interfaces][2]))
     D_loads = Dict(f[:loads][2][i] => Vector{Any}() for i in 1:length(f[:loads][2]))
 
@@ -70,13 +53,11 @@ function SystemModel_XLSX(inputfile::String)
     empty_storages = isempty(f[:storages][1][1])
     empty_generatorstorages = isempty(f[:generatorstorages][1][1])
     empty_interfaces = isempty(f[:interfaces][1][1])
-    empty_lines = isempty(f[:lines][1][1])
+    empty_branches = isempty(f[:branches][1][1])
 
     if empty_buses error("Bus data must be provided") end
     if empty_generators && empty_generatorstorages error("Generator or generator storage data (or both) must be provided") end
-    #if xor(has_interfaces, has_lines)==false error("Both (or neither) interface and line data must be provided") end
 
-    #busnames = string.(f[:buses])
     buslookup = Dict(n=>i for (i, n) in enumerate(string.(f[:buses])))
     if size(string.(f[:buses])) == (1,)
         buses = Buses{N,P}(string.(f[:buses]), reshape(f[:total_load], 1, :))
@@ -192,15 +173,13 @@ function SystemModel_XLSX(inputfile::String)
         bus_genstor_idxs = makeidxlist(genstor_buses[bus_order], length(buses))
     end
 
-    if empty_interfaces
-        interfaces = Interfaces{N,P}(
-            Int[], Int[], zeros(Int, 0, N), zeros(Int, 0, N))
+    if empty_branches
 
-        lines = Lines{N,L,T,P}(
+        branches = Branches{N,L,T,P}(
             String[], String[], zeros(Int, 0, N), zeros(Int, 0, N),
             zeros(Float64, 0), zeros(Float64, 0))
 
-        interface_line_idxs = UnitRange{Int}[]
+        bus_branch_idxs = UnitRange{Int}[]
     
     else
         forwardcapacity = repeat(round.(Int, D_interfaces[:forwardcapacity]), 1, N)
@@ -227,53 +206,48 @@ function SystemModel_XLSX(inputfile::String)
         interfaces = Interfaces{N,P}(from_buses, to_buses, forwardcapacity, backwardcapacity)
         interface_lookup = Dict((r1, r2) => i for (i, (r1, r2)) in enumerate(tuple.(from_buses, to_buses)))
 
-        #lines
+        #branches
 
-        line_names = string.(D_lines[:name])
-        line_categories = string.(D_lines[:category])
-        line_forwardcapacity = repeat(round.(Int, D_lines[:forwardcapacity]), 1, N)
-        line_backwardcapacity = repeat(round.(Int, D_lines[:backwardcapacity]), 1, N)
-        line_frombuses = getindex.(Ref(buslookup), string.(D_lines[:bus_from]))
-        line_tobuses  = getindex.(Ref(buslookup), string.(D_lines[:bus_to]))
+        branch_names = string.(D_branches[:name])
+        branch_categories = string.(D_branches[:category])
+        branch_forwardcapacity = repeat(round.(Int, D_branches[:forwardcapacity]), 1, N)
+        branch_backwardcapacity = repeat(round.(Int, D_branches[:backwardcapacity]), 1, N)
+        branch_frombuses = getindex.(Ref(buslookup), string.(D_branches[:bus_from]))
+        branch_tobuses  = getindex.(Ref(buslookup), string.(D_branches[:bus_to]))
 
-        failureprobability = float.(D_lines[:failureprobability])
-        repairprobability = float.(D_lines[:repairprobability])
+        failureprobability = float.(D_branches[:failureprobability])
+        repairprobability = float.(D_branches[:repairprobability])
 
-        # Force line definitions as smaller => larger bus numbers
-        for i in 1:length(line_names)
-            from_bus = line_frombuses[i]
-            to_bus = line_tobuses[i]
+        # Force branch definitions as smaller => larger bus numbers
+        for i in 1:length(branch_names)
+            from_bus = branch_frombuses[i]
+            to_bus = branch_tobuses[i]
             if from_bus > to_bus
-                line_frombuses[i] = to_bus
-                line_tobuses[i] = from_bus
-                new_forwardcapacity = line_backwardcapacity[i, :]
-                line_backwardcapacity[i, :] .= line_forwardcapacity[i, :]
-                line_forwardcapacity[i, :] = new_forwardcapacity
+                branch_frombuses[i] = to_bus
+                branch_tobuses[i] = from_bus
+                new_forwardcapacity = branch_backwardcapacity[i, :]
+                branch_backwardcapacity[i, :] .= branch_forwardcapacity[i, :]
+                branch_forwardcapacity[i, :] = new_forwardcapacity
             elseif from_bus == to_bus
-                error("Cannot have a line ($(line_names[i])) to and from " *
+                error("Cannot have a branch ($(branch_names[i])) to and from " *
                       "the same bus ($(from_bus))")
             end
         end
 
-        line_interfaces = getindex.(Ref(interface_lookup), tuple.(line_frombuses, line_tobuses))
-        interface_order = sortperm(line_interfaces)
+        branch_interfaces = getindex.(Ref(interface_lookup), tuple.(branch_frombuses, branch_tobuses))
+        interface_order = sortperm(branch_interfaces)
 
-        lines = Lines{N,L,T,P}(
-            line_names[interface_order], line_categories[interface_order],
-            line_forwardcapacity[interface_order, :],
-            line_backwardcapacity[interface_order, :],
+        branches = Branches{N,L,T,P}(
+            branch_names[interface_order], branch_categories[interface_order],
+            branch_forwardcapacity[interface_order, :],
+            branch_backwardcapacity[interface_order, :],
             failureprobability[interface_order],
             repairprobability[interface_order])
 
-        interface_line_idxs = makeidxlist(line_interfaces[interface_order], n_interfaces)
+        interface_branch_idxs = makeidxlist(branch_interfaces[interface_order], n_interfaces)
 
     end
 
-    return SystemModel(buses, interfaces,
-        generators, bus_gen_idxs,
-        storages, bus_stor_idxs,
-        generatorstorages, bus_genstor_idxs,
-        lines, interface_line_idxs,
-        timestamps
-    )
+    return SystemModel(buses, generators, bus_gen_idxs, storages, bus_stor_idxs,
+        generatorstorages, bus_genstor_idxs, branches, bus_branch_idxs, timestamps)
 end

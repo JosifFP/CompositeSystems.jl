@@ -163,17 +163,17 @@ function finalize(
 
 end
 
-# LineAvailability
+# BranchAvailability
 
-struct SMCLineAvailabilityAccumulator <:
-    ResultAccumulator{SequentialMonteCarlo,LineAvailability}
+struct SMCBranchAvailabilityAccumulator <:
+    ResultAccumulator{SequentialMonteCarlo,BranchAvailability}
 
     available::Array{Bool,3}
 
 end
 
 function merge!(
-    x::SMCLineAvailabilityAccumulator, y::SMCLineAvailabilityAccumulator
+    x::SMCBranchAvailabilityAccumulator, y::SMCBranchAvailabilityAccumulator
 )
 
     x.available .|= y.available
@@ -181,39 +181,39 @@ function merge!(
 
 end
 
-accumulatortype(::SequentialMonteCarlo, ::LineAvailability) = SMCLineAvailabilityAccumulator
+accumulatortype(::SequentialMonteCarlo, ::BranchAvailability) = SMCBranchAvailabilityAccumulator
 
 function accumulator(
-    sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::LineAvailability
+    sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::BranchAvailability
 ) where {N}
 
-    nlines = length(sys.lines)
-    available = zeros(Bool, nlines, N, simspec.nsamples)
+    nbranches = length(sys.branches)
+    available = zeros(Bool, nbranches, N, simspec.nsamples)
 
-    return SMCLineAvailabilityAccumulator(available)
+    return SMCBranchAvailabilityAccumulator(available)
 
 end
 
 function record!(
-    acc::SMCLineAvailabilityAccumulator,
+    acc::SMCBranchAvailabilityAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
 ) where {N,L,T,P,E}
 
-    acc.available[:, t, sampleid] .= state.lines_available
+    acc.available[:, t, sampleid] .= state.branches_available
     return
 
 end
 
-reset!(acc::SMCLineAvailabilityAccumulator, sampleid::Int) = nothing
+reset!(acc::SMCBranchAvailabilityAccumulator, sampleid::Int) = nothing
 
 function finalize(
-    acc::SMCLineAvailabilityAccumulator,
+    acc::SMCBranchAvailabilityAccumulator,
     system::SystemModel{N,L,T,P,E},
 ) where {N,L,T,P,E}
 
-    return LineAvailabilityResult{N,L,T}(
-        system.lines.names, system.timestamps, acc.available)
+    return BranchAvailabilityResult{N,L,T}(
+        system.branches.names, system.timestamps, acc.available)
 
 end

@@ -91,7 +91,7 @@ function initialize!(
     initialize_availability!(rng, sequences.Up_gens, system.generators, N)
     initialize_availability!(rng, sequences.Up_stors, system.storages, N)
     initialize_availability!(rng, sequences.Up_genstors, system.generatorstorages, N)
-    initialize_availability!(rng, sequences.Up_lines, system.lines, N)
+    initialize_availability!(rng, sequences.Up_branches, system.branches, N)
 
     fill!(state.stors_energy, 0)
     fill!(state.genstors_energy, 0)
@@ -106,15 +106,10 @@ function advance!(
     dispatchproblem::DispatchProblem,
     system::SystemModel{N}, t::Int) where N
 
-    # state.gens_available[:] = sequences.Up_gens[:,t]
-    # state.stors_available[:] = sequences.Up_stors[:,t]
-    # state.genstors_available[:] = sequences.Up_genstors[:,t]
-    # state.lines_available[:] = sequences.Up_lines[:,t]
-
     update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
     update_availability!(state.stors_available,sequences.Up_stors[:,t], length(system.storages))
     update_availability!(state.genstors_available,sequences.Up_genstors[:,t], length(system.generatorstorages))
-    update_availability!(state.lines_available,sequences.Up_lines[:,t], length(system.lines))
+    update_availability!(state.branches_available,sequences.Up_branches[:,t], length(system.branches))
 
     update_energy!(state.stors_energy, system.storages, t)
     update_energy!(state.genstors_energy, system.generatorstorages, t)

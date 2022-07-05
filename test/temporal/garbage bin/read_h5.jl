@@ -18,7 +18,7 @@ function systemmodel_0_5(f::File)
     has_storages = haskey(f, "storages")
     has_generatorstorages = haskey(f, "generatorstorages")
     has_interfaces = haskey(f, "interfaces")
-    has_lines = haskey(f, "lines")
+    has_branches = haskey(f, "branches")
 
     has_buses ||
         error("Bus data must be provided")
@@ -26,7 +26,7 @@ function systemmodel_0_5(f::File)
     has_generators || has_generatorstorages ||
         error("Generator or generator storage data (or both) must be provided")
 
-    xor(has_interfaces, has_lines) &&
+    xor(has_interfaces, has_branches) &&
         error("Both (or neither) interface and line data must be provided")
 
     regionnames = readvector(f["buses/_core"], :name)
@@ -173,18 +173,18 @@ function systemmodel_0_5(f::File)
         interface_lookup = Dict((r1, r2) => i for (i, (r1, r2))
                                 in enumerate(tuple.(from_buses, to_buses)))
 
-        lines_core = read(f["lines/_core"])
+        branches_core = read(f["branches/_core"])
         line_names, line_categories, line_fromregionnames, line_toregionnames =
-            readvector.(Ref(lines_core), [:name, :category, :region_from, :region_to])
-        line_forwardcapacity = Int.(read(f["lines/forwardcapacity"]))
-        line_backwardcapacity = Int.(read(f["lines/backwardcapacity"]))
+            readvector.(Ref(branches_core), [:name, :category, :region_from, :region_to])
+        line_forwardcapacity = Int.(read(f["branches/forwardcapacity"]))
+        line_backwardcapacity = Int.(read(f["branches/backwardcapacity"]))
 
-        n_lines = length(line_names)
+        n_branches = length(line_names)
         line_frombuses = getindex.(Ref(regionlookup), line_fromregionnames)
         line_tobuses  = getindex.(Ref(regionlookup), line_toregionnames)
 
         # Force line definitions as smaller => larger bus numbers
-        for i in 1:n_lines
+        for i in 1:n_branches
             from_region = line_frombuses[i]
             to_region = line_tobuses[i]
             if from_region > to_region
@@ -203,12 +203,12 @@ function systemmodel_0_5(f::File)
                                     tuple.(line_frombuses, line_tobuses))
         interface_order = sortperm(line_interfaces)
 
-        lines = Lines{N,L,T,P}(
+        branches = Branches{N,L,T,P}(
             line_names[interface_order], line_categories[interface_order],
             line_forwardcapacity[interface_order, :],
             line_backwardcapacity[interface_order, :],
-            read(f["lines/failureprobability"])[interface_order, :],
-            read(f["lines/repairprobability"])[interface_order, :])
+            read(f["branches/failureprobability"])[interface_order, :],
+            read(f["branches/repairprobability"])[interface_order, :])
 
         interface_line_idxs = makeidxlist(line_interfaces[interface_order], n_interfaces)
 
@@ -217,7 +217,7 @@ function systemmodel_0_5(f::File)
         interfaces = Interfaces{N,P}(
             Int[], Int[], zeros(Int, 0, N), zeros(Int, 0, N))
 
-        lines = Lines{N,L,T,P}(
+        branches = Branches{N,L,T,P}(
             String[], String[], zeros(Int, 0, N), zeros(Int, 0, N),
             zeros(Float64, 0, N), zeros(Float64, 0, N))
 
@@ -230,7 +230,7 @@ function systemmodel_0_5(f::File)
         generators, region_gen_idxs,
         storages, region_stor_idxs,
         generatorstorages, region_genstor_idxs,
-        lines, interface_line_idxs,
+        branches, interface_line_idxs,
         timestamps)
 
 end

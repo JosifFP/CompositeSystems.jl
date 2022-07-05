@@ -5,7 +5,7 @@ struct SystemState
     stors_energy::Vector{Int}
     genstors_available::Vector{Bool}
     genstors_energy::Vector{Int}
-    lines_available::Vector{Bool}
+    branches_available::Vector{Bool}
 
     function SystemState(system::SystemModel)
 
@@ -20,10 +20,10 @@ struct SystemState
         genstors_available = Vector{Bool}(undef, ngenstors)
         genstors_energy = Vector{Int}(undef, ngenstors)
 
-        nlines = Base.length(system.lines)
-        lines_available = Vector{Bool}(undef, nlines)
+        nbranches = Base.length(system.branches)
+        branches_available = Vector{Bool}(undef, nbranches)
 
-        return new(gens_available, stors_available, stors_energy, genstors_available, genstors_energy, lines_available)
+        return new(gens_available, stors_available, stors_energy, genstors_available, genstors_energy, branches_available)
 
     end
 
@@ -34,16 +34,16 @@ struct UpDownSequence
     Up_gens::Matrix{Bool}
     Up_stors::Matrix{Bool}
     Up_genstors::Matrix{Bool}
-    Up_lines::Matrix{Bool}
+    Up_branches::Matrix{Bool}
 
     function UpDownSequence(system::SystemModel{N}) where N
 
         @inbounds Up_gens = ones(Bool, Base.length(system.generators), N)
         @inbounds Up_stors = ones(Bool, Base.length(system.storages), N)
         @inbounds Up_genstors = ones(Bool, Base.length(system.generatorstorages), N)
-        @inbounds Up_lines = ones(Bool, Base.length(system.lines), N)
+        @inbounds Up_branches = ones(Bool, Base.length(system.branches), N)
 
-        return new(Up_gens, Up_stors, Up_genstors, Up_lines)
+        return new(Up_gens, Up_stors, Up_genstors, Up_branches)
 
     end
 
@@ -58,9 +58,9 @@ end
 #         @inbounds gens_sequence = ones(Bool, length(system.generators), N)::Matrix{Bool}
 #         @inbounds stors_sequence = ones(Bool, length(system.storages), N)::Matrix{Bool}
 #         @inbounds genstors_sequence = ones(Bool, length(system.generatorstorages), N)::Matrix{Bool}
-#         @inbounds lines_sequence = ones(Bool, length(system.lines), N)::Matrix{Bool}
+#         @inbounds branches_sequence = ones(Bool, length(system.branches), N)::Matrix{Bool}
 
-#         UpDownseq = cat(gens_sequence, stors_sequence, genstors_sequence, lines_sequence, dims=(1,3))
+#         UpDownseq = cat(gens_sequence, stors_sequence, genstors_sequence, branches_sequence, dims=(1,3))
 
 #         return UpDownseq
 #     end
