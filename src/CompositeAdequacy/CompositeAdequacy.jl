@@ -24,7 +24,7 @@ export
     # Simulation specifications
     SequentialMonteCarlo,
 
-    DispatchProblem, SystemState, accumulator,
+    DispatchProblem, SystemState, accumulator, UpDownSequence,
 
     # Result specifications
     Shortfall, ShortfallSamples,

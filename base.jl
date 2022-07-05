@@ -1,15 +1,51 @@
 using PRATS
 using PRATS.CompositeAdequacy
-using PRATS.Network
+using PRATS.TransmissionSystem
 import BenchmarkTools: @btime
+using PowerModels
+using Test
 
 file = "test/data/RTS.raw"
-data = PRATS.Network.build_data(file)
-ref = PRATS.Network.get_ref(data, PRATS.Network.dc_opf_lc)
+PRATS.silence()
 
+network = PRATS.TransmissionSystem.BuildNetwork(file)
+data = PowerModels.parse_file(file)
 data["bus"]["1"]
-data["gen"]["1"]
-data["branch"]["1"]
+network.bus["1"]
+
+
+
+
+
+#  4.410 ms (48266 allocations: 2.22 MiB)
+
+# ref = PRATS.TransmissionSystem.get_ref(data, PRATS.Network.dc_opf_lc)
+# ref[:bus]
+
+using PowerModels, InfrastructureModels
+dc_flows = PowerModels.calc_branch_flow_dc(data)
+dc_flows["branch"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 loadfile = "test/data/rts_Load.xlsx"
 sys = PRATS.SystemModel(loadfile)

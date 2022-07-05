@@ -1,8 +1,14 @@
-###############################################################################
-# This file defines functions to modify PowerModels data
+include("base.jl")
 
-###############################################################################
-
+"Types of optimization"
+abstract type Method end
+abstract type dc_opf <: Method end
+abstract type ac_opf <: Method end
+abstract type ac_bf_opf <: Method end
+abstract type dc_pf <: Method end
+abstract type ac_pf <: Method end
+abstract type dc_opf_lc <: Method end
+abstract type ac_opf_lc <: Method end
 
 "maps component types to status parameters"
 const pm_component_status = Dict(
@@ -28,133 +34,75 @@ const pm_component_status_inactive = Dict(
     "dcline" => 0,
 )
 
-
-"set remaining unsupported components as inactive"
-function unsupported_components!(data::Dict{String,Any})
-
-    dcline_status_key = pm_component_status["dcline"]
-    dcline_inactive_status = pm_component_status_inactive["dcline"]
-    for (i,dcline) in data["dcline"]
-        dcline[dcline_status_key] = dcline_inactive_status
-    end    
-end
-
-
-"renumber bus ids"
-function renumber_buses!(data::Dict{String,Any})
-
-        bus_ordered = sort([bus for (i,bus) in data["bus"]], by=(x) -> x["index"])
-        bus_id_map = Dict{Int,Int}()
-
-        for (i,bus) in enumerate(bus_ordered)
-            bus_id_map[bus["index"]] = i
-        end
-        update_bus_ids!(data, bus_id_map)
-end
-
-
-"""
-given a network data dict and a mapping of current-bus-ids to new-bus-ids
-modifies the data dict to reflect the proposed new bus ids.
-"""
-function update_bus_ids!(data::Dict{String,<:Any}, bus_id_map::Dict{Int,Int}; injective=true)
+""
+function BuildNetwork(file::String)
     
-    # verify bus id map is injective
-    if injective
-        new_bus_ids = Set{Int}()
-        for (i,bus) in data["bus"]
-            new_id = get(bus_id_map, bus["index"], bus["index"])
-            if !(new_id in new_bus_ids)
-                push!(new_bus_ids, new_id)
-            else
-                Memento.error(_LOGGER, "bus id mapping given to update_bus_ids has an id clash on new bus id $(new_id)")
-            end
-        end
+    pm_data = parse_model(file)
+    network = _BuildNetwork!(pm_data)
+
+    return network
+
+end
+
+"Parses a Matpower .m `file` or PTI (PSS(R)E-v33) .raw `file` into a
+PowerModels data structure. All fields from PTI files will be imported if
+`import_all` is true (Default: false)."
+
+function parse_model(file::String)
+    
+    filetype = split(lowercase(file), '.')[end]
+    if filetype == "m"
+        pm_data = PowerModels.parse_matpower(file, validate=true)
+    elseif filetype == "raw"
+        pm_data = PowerModels.parse_psse(file; import_all=false, validate=true)
+    else
+        Memento.error(_LOGGER, "Unrecognized filetype: \".$file\", Supported extensions are \".raw\" and \".m\"")
     end
 
-
-    # start renumbering process
-    renumbered_bus_dict = Dict{String,Any}()
-
-    for (i,bus) in data["bus"]
-        new_id = get(bus_id_map, bus["index"], bus["index"])
-        bus["index"] = new_id
-        bus["bus_i"] = new_id
-        renumbered_bus_dict["$new_id"] = bus
-    end
-
-    data["bus"] = renumbered_bus_dict
-
-
-    # update bus numbering in dependent components
-    for (i, load) in data["load"]
-        load["load_bus"] = get(bus_id_map, load["load_bus"], load["load_bus"])
-    end
-
-    for (i, shunt) in data["shunt"]
-        shunt["shunt_bus"] = get(bus_id_map, shunt["shunt_bus"], shunt["shunt_bus"])
-    end
-
-    for (i, gen) in data["gen"]
-        gen["gen_bus"] = get(bus_id_map, gen["gen_bus"], gen["gen_bus"])
-    end
-
-    for (i, strg) in data["storage"]
-        strg["storage_bus"] = get(bus_id_map, strg["storage_bus"], strg["storage_bus"])
-    end
-
-
-    for (i, switch) in data["switch"]
-        switch["f_bus"] = get(bus_id_map, switch["f_bus"], switch["f_bus"])
-        switch["t_bus"] = get(bus_id_map, switch["t_bus"], switch["t_bus"])
-    end
-
-    branches = []
-    if haskey(data, "branch")
-        append!(branches, values(data["branch"]))
-    end
-
-    if haskey(data, "ne_branch")
-        append!(branches, values(data["ne_branch"]))
-    end
-
-    for branch in branches
-        branch["f_bus"] = get(bus_id_map, branch["f_bus"], branch["f_bus"])
-        branch["t_bus"] = get(bus_id_map, branch["t_bus"], branch["t_bus"])
-    end
-
-    for (i, dcline) in data["dcline"]
-        dcline["f_bus"] = get(bus_id_map, dcline["f_bus"], dcline["f_bus"])
-        dcline["t_bus"] = get(bus_id_map, dcline["t_bus"], dcline["t_bus"])
-    end
+    return pm_data
 end
 
 ""
-function apply_contingencies!(data::Dict{String,Any}, t_contingency_info::Vector{Tuple{Int64, Int64}})
+function _BuildNetwork!(pm_data::Dict{String,Any})
     
-    revised = false
-    #t_contingency_info = Dict(t_contingency_info[n][1] => tuple(load_curt_info[n][2], load_curt_info[n][3]) for n in 1:size(load_curt_info)[1])
+    #renumber_buses!(pm_data)
+    delete!(pm_data, "source_type")
+    delete!(pm_data, "source_version")
+    delete!(pm_data,"name")
+    network = TransmissionSystem.Network(pm_data)
+    calc_thermal_limits!(network)
+    s_cost_terms!(network, order=2)
+    SimplifyNetwork!(network)
 
-    for l in keys(data["branch"])
-        i=data["branch"][l]["f_bus"]
-        j=data["branch"][l]["t_bus"]
-        if all(in(t_contingency_info).([tuple(i,j)]))==true || all(in(t_contingency_info).([tuple(j,i)]))==true
-            data["branch"][l]["br_status"] = 0
-            revised = true
-        end
+    return network
+end
+
+"""
+attempts to deactive components that are not needed in the network by repeated
+calls to `propagate_topology_status!` and `deactivate_isolated_components!`
+"""
+function SimplifyNetwork!(network::Network)
+
+    revised = true
+    iteration = 0
+
+    while revised
+        iteration += 1
+        revised = false
+        revised |= propagate_topo_status!(network)
+        revised |= deactivate_isol_components!(network)
     end
-    #repr(indices)
-    #PowerModels.deactivate_isolated_components!(data)
+
+    #Memento.info(_LOGGER, "network simplification fixpoint reached in $(iteration) rounds")
     return revised
 end
 
-
 "ensures all polynomial costs functions have the same number of terms"
-function s_cost_terms!(network::Dict{String,<:Any}; order=-1)
+function s_cost_terms!(network::Network; order=-1)
 
     comp_max_order = 1
-    if haskey(network, "gen")
-        for (i, gen) in network["gen"]
+    if isempty(network.gen) == false
+        for (i, gen) in network.gen
             if haskey(gen, "model") && gen["model"] == 2
                 max_nonzero_index = 1
                 for i in 1:length(gen["cost"])
@@ -169,8 +117,8 @@ function s_cost_terms!(network::Dict{String,<:Any}; order=-1)
         end
     end
 
-    if haskey(network, "dcline")
-        for (i, dcline) in network["dcline"]
+    if isempty(network.dcline) == false
+        for (i, dcline) in network.dcline
             if haskey(dcline, "model") && dcline["model"] == 2
                 max_nonzero_index = 1
                 for i in 1:length(dcline["cost"])
@@ -194,12 +142,14 @@ function s_cost_terms!(network::Dict{String,<:Any}; order=-1)
         end
     end
 
-    if haskey(network, "gen")
-        _s_cost_terms!(network["gen"], comp_max_order, "generator")
+    if isempty(network.gen) == false
+        _s_cost_terms!(network.gen, comp_max_order, "generator")
     end
-    if haskey(network, "dcline")
-        _s_cost_terms!(network["dcline"], comp_max_order, "dcline")
+
+    if isempty(network.dcline) == false
+        _s_cost_terms!(network.dcline, comp_max_order, "dcline")
     end
+
 end
 
 "ensures all polynomial costs functions have at exactly comp_order terms"
@@ -232,58 +182,57 @@ the system status values are consistent.
 
 returns true if any component was modified.
 """
-function propagate_topo_status!(data::Dict{String,<:Any})
+function propagate_topo_status!(network::Network)
     
     revised = false
-    #data = get_pm_data(data)
-    buses = Dict(bus["bus_i"] => bus for (i,bus) in data["bus"])
+    buses = Dict(bus["bus_i"] => bus for (i,bus) in network.bus)
 
     # compute what active components are incident to each bus
-    incident_load = bus_load_lookup(data["load"], data["bus"])
+    incident_load = bus_load_lookup(network.load, network.bus)
     incident_active_load = Dict()
     for (i, load_list) in incident_load
         incident_active_load[i] = [load for load in load_list if load["status"] != 0]
     end
 
-    incident_shunt = bus_shunt_lookup(data["shunt"], data["bus"])
+    incident_shunt = bus_shunt_lookup(network.shunt, network.bus)
     incident_active_shunt = Dict()
     for (i, shunt_list) in incident_shunt
         incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] != 0]
     end
 
-    incident_gen = bus_gen_lookup(data["gen"], data["bus"])
+    incident_gen = bus_gen_lookup(network.gen, network.bus)
     incident_active_gen = Dict()
     for (i, gen_list) in incident_gen
         incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] != 0]
     end
 
-    incident_strg = bus_storage_lookup(data["storage"], data["bus"])
+    incident_strg = bus_storage_lookup(network.storage, network.bus)
     incident_active_strg = Dict()
     for (i, strg_list) in incident_strg
         incident_active_strg[i] = [strg for strg in strg_list if strg["status"] != 0]
     end
 
-    incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
-    for (i,branch) in data["branch"]
+    incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
+    for (i,branch) in network.branch
         push!(incident_branch[branch["f_bus"]], branch)
         push!(incident_branch[branch["t_bus"]], branch)
     end
 
-    incident_dcline = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
-    for (i,dcline) in data["dcline"]
+    incident_dcline = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
+    for (i,dcline) in network.dcline
         push!(incident_dcline[dcline["f_bus"]], dcline)
         push!(incident_dcline[dcline["t_bus"]], dcline)
     end
 
-    incident_switch = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
-    for (i,switch) in data["switch"]
+    incident_switch = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
+    for (i,switch) in network.switch
         push!(incident_switch[switch["f_bus"]], switch)
         push!(incident_switch[switch["t_bus"]], switch)
     end
 
     revised = false
 
-    for (i,branch) in data["branch"]
+    for (i,branch) in network.branch
         if branch["br_status"] != 0
             #f_bus = buses[branch["f_bus"]]
             #t_bus = buses[branch["t_bus"]]
@@ -296,7 +245,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
         end
     end
 
-    for (i,dcline) in data["dcline"]
+    for (i,dcline) in network.dcline
         if dcline["br_status"] != 0
             #f_bus = buses[dcline["f_bus"]]
             #t_bus = buses[dcline["t_bus"]]
@@ -309,7 +258,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
         end
     end
 
-    for (i,switch) in data["switch"]
+    for (i,switch) in network.switch
         if switch["status"] != 0
             #f_bus = buses[switch["f_bus"]]
             #t_bus = buses[switch["t_bus"]]
@@ -369,12 +318,12 @@ or loads.
 
 also deactivates 0 valued loads and shunts.
 """
-function deactivate_isol_components!(data::Dict{String,<:Any})
+function deactivate_isol_components!(network::Network)
 
-    buses = Dict(bus["bus_i"] => bus for (i,bus) in data["bus"])
+    buses = Dict(bus["bus_i"] => bus for (i,bus) in network.bus)
     revised = false
 
-    for (i,load) in data["load"]
+    for (i,load) in network.load
         if load["status"] != 0 && all(load["pd"] .== 0.0) && all(load["qd"] .== 0.0)
             Memento.info(_LOGGER, "deactivating load $(load["index"]) due to zero pd and qd")
             load["status"] = 0
@@ -382,7 +331,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
         end
     end
 
-    for (i,shunt) in data["shunt"]
+    for (i,shunt) in network.shunt
         if shunt["status"] != 0 && all(shunt["gs"] .== 0.0) && all(shunt["bs"] .== 0.0)
             Memento.info(_LOGGER, "deactivating shunt $(shunt["index"]) due to zero gs and bs")
             shunt["status"] = 0
@@ -391,44 +340,44 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
     end
 
     # compute what active components are incident to each bus
-    incident_load = bus_load_lookup(data["load"], data["bus"])
+    incident_load = bus_load_lookup(network.load, network.bus)
     incident_active_load = Dict()
     for (i, load_list) in incident_load
         incident_active_load[i] = [load for load in load_list if load["status"] != 0]
     end
 
-    incident_shunt = bus_shunt_lookup(data["shunt"], data["bus"])
+    incident_shunt = bus_shunt_lookup(network.shunt, network.bus)
     incident_active_shunt = Dict()
     for (i, shunt_list) in incident_shunt
         incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] != 0]
     end
 
-    incident_gen = bus_gen_lookup(data["gen"], data["bus"])
+    incident_gen = bus_gen_lookup(network.gen, network.bus)
     incident_active_gen = Dict()
     for (i, gen_list) in incident_gen
         incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] != 0]
     end
 
-    incident_strg = bus_storage_lookup(data["storage"], data["bus"])
+    incident_strg = bus_storage_lookup(network.storage, network.bus)
     incident_active_strg = Dict()
     for (i, strg_list) in incident_strg
         incident_active_strg[i] = [strg for strg in strg_list if strg["status"] != 0]
     end
 
-    incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
-    for (i,branch) in data["branch"]
+    incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
+    for (i,branch) in network.branch
         push!(incident_branch[branch["f_bus"]], branch)
         push!(incident_branch[branch["t_bus"]], branch)
     end
 
-    incident_dcline = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
-    for (i,dcline) in data["dcline"]
+    incident_dcline = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
+    for (i,dcline) in network.dcline
         push!(incident_dcline[dcline["f_bus"]], dcline)
         push!(incident_dcline[dcline["t_bus"]], dcline)
     end
 
-    incident_switch = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
-    for (i,switch) in data["switch"]
+    incident_switch = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
+    for (i,switch) in network.switch
         push!(incident_switch[switch["f_bus"]], switch)
         push!(incident_switch[switch["t_bus"]], switch)
     end
@@ -457,7 +406,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
         end
 
         if changed
-            for (i,branch) in data["branch"]
+            for (i,branch) in network.branch
                 if branch["br_status"] != 0
                     #f_bus = buses[branch["f_bus"]]
                     #t_bus = buses[branch["t_bus"]]
@@ -469,7 +418,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
                 end
             end
 
-            for (i,dcline) in data["dcline"]
+            for (i,dcline) in network.dcline
                 if dcline["br_status"] != 0
                     #f_bus = buses[dcline["f_bus"]]
                     #t_bus = buses[dcline["t_bus"]]
@@ -481,7 +430,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
                 end
             end
 
-            for (i,switch) in data["switch"]
+            for (i,switch) in network.switch
                 if switch["status"] != 0
                     #f_bus = buses[switch["f_bus"]]
                     #t_bus = buses[switch["t_bus"]]
@@ -496,7 +445,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
 
     end
 
-    ccs = calc_connected_components!(data)
+    ccs = calc_connected_components!(network)
 
     for cc in ccs
         cc_active_loads = [0]
@@ -570,16 +519,16 @@ end
 computes the connected components of the network graph
 returns a set of sets of bus ids, each set is a connected component
 """
-function calc_connected_components!(data::Dict{String,<:Any}; edges=["branch", "dcline", "switch"])
+function calc_connected_components!(network::Network; edges=["branch", "dcline", "switch"])
     
-    active_bus = Dict(x for x in data["bus"] if x.second["bus_type"] != 4)
+    active_bus = Dict(x for x in network.bus if x.second["bus_type"] != 4)
     active_bus_ids = Set{Int}([bus["bus_i"] for (i,bus) in active_bus])
 
     neighbors = Dict(i => Int[] for i in active_bus_ids)
     for comp_type in edges
         status_key = get(pm_component_status, comp_type, "status")
         status_inactive = get(pm_component_status_inactive, comp_type, 0)
-        for edge in values(get(data, comp_type, Dict()))
+        for edge in values(getfield(network, Symbol(comp_type)))
             if get(edge, status_key, 1) != status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
                 push!(neighbors[edge["f_bus"]], edge["t_bus"])
                 push!(neighbors[edge["t_bus"]], edge["f_bus"])
@@ -639,10 +588,10 @@ function calc_branchs_t(branch::Dict{String,<:Any})
 end
 
 ""
-function calc_thermal_limits!(data::Dict{String,<:Any})
+function calc_thermal_limits!(network::Network)
     
-    mva_base = data["baseMVA"]
-    branches = [branch for branch in values(data["branch"])]
+    mva_base = network.baseMVA
+    branches = [branch for branch in values(network.branch)]
 
     for branch in branches
         if !haskey(branch, "rate_a")
@@ -655,8 +604,8 @@ function calc_thermal_limits!(data::Dict{String,<:Any})
             z = branch["br_r"] + im * branch["br_x"]
             y = pinv(z)
 
-            fr_vmax = data["bus"][string(branch["f_bus"])]["vmax"]
-            to_vmax = data["bus"][string(branch["t_bus"])]["vmax"]
+            fr_vmax = network.bus[string(branch["f_bus"])]["vmax"]
+            to_vmax = network.bus[string(branch["t_bus"])]["vmax"]
             #m_vmax = max(fr_vmax, to_vmax)
 
             c_max = sqrt(fr_vmax^2 + to_vmax^2 - 2*fr_vmax*to_vmax*cos(theta_max))
@@ -678,3 +627,121 @@ function pinv(x::Number)
     xi = inv(x)
     return ifelse(isfinite(xi), xi, zero(xi))
 end
+
+
+# "set remaining unsupported components as inactive"
+# function unsupported_components!(data::Dict{String,Any})
+
+#     dcline_status_key = pm_component_status.dcline
+#     dcline_inactive_status = pm_component_status_inactive.dcline
+#     for (i,dcline) in data.dcline
+#         dcline[dcline_status_key] = dcline_inactive_status
+#     end    
+# end
+
+
+# "renumber bus ids"
+# function renumber_buses!(data::Dict{String,Any})
+
+#         bus_ordered = sort([bus for (i,bus) in network.bus], by=(x) -> x["index"])
+#         bus_id_map = Dict{Int,Int}()
+
+#         for (i,bus) in enumerate(bus_ordered)
+#             bus_id_map[bus["index"]] = i
+#         end
+#         update_bus_ids!(data, bus_id_map)
+# end
+
+# """
+# given a network data dict and a mapping of current-bus-ids to new-bus-ids
+# modifies the data dict to reflect the proposed new bus ids.
+# """
+# function update_bus_ids!(data::Dict{String,<:Any}, bus_id_map::Dict{Int,Int}; injective=true)
+    
+#     # verify bus id map is injective
+#     if injective
+#         new_bus_ids = Set{Int}()
+#         for (i,bus) in data.bus
+#             new_id = get(bus_id_map, bus["index"], bus["index"])
+#             if !(new_id in new_bus_ids)
+#                 push!(new_bus_ids, new_id)
+#             else
+#                 Memento.error(_LOGGER, "bus id mapping given to update_bus_ids has an id clash on new bus id $(new_id)")
+#             end
+#         end
+#     end
+
+
+#     # start renumbering process
+#     renumbered_bus_dict = Dict{String,Any}()
+
+#     for (i,bus) in data.bus
+#         new_id = get(bus_id_map, bus["index"], bus["index"])
+#         bus["index"] = new_id
+#         bus["bus_i"] = new_id
+#         renumbered_bus_dict["$new_id"] = bus
+#     end
+
+#     data.bus = renumbered_bus_dict
+
+
+#     # update bus numbering in dependent components
+#     for (i, load) in data.load
+#         load["load_bus"] = get(bus_id_map, load["load_bus"], load["load_bus"])
+#     end
+
+#     for (i, shunt) in data.shunt
+#         shunt["shunt_bus"] = get(bus_id_map, shunt["shunt_bus"], shunt["shunt_bus"])
+#     end
+
+#     for (i, gen) in data.gen
+#         gen["gen_bus"] = get(bus_id_map, gen["gen_bus"], gen["gen_bus"])
+#     end
+
+#     for (i, strg) in data.storage
+#         strg["storage_bus"] = get(bus_id_map, strg["storage_bus"], strg["storage_bus"])
+#     end
+
+
+#     for (i, switch) in data.switch
+#         switch["f_bus"] = get(bus_id_map, switch["f_bus"], switch["f_bus"])
+#         switch["t_bus"] = get(bus_id_map, switch["t_bus"], switch["t_bus"])
+#     end
+
+#     branches = []
+#     if haskey(data, "branch")
+#         append!(branches, values(data.branch))
+#     end
+
+#     if haskey(data, "ne_branch")
+#         append!(branches, values(data["ne_branch"]))
+#     end
+
+#     for branch in branches
+#         branch["f_bus"] = get(bus_id_map, branch["f_bus"], branch["f_bus"])
+#         branch["t_bus"] = get(bus_id_map, branch["t_bus"], branch["t_bus"])
+#     end
+
+#     for (i, dcline) in data.dcline
+#         dcline["f_bus"] = get(bus_id_map, dcline["f_bus"], dcline["f_bus"])
+#         dcline["t_bus"] = get(bus_id_map, dcline["t_bus"], dcline["t_bus"])
+#     end
+# end
+
+# ""
+# function apply_contingencies!(data::Dict{String,Any}, t_contingency_info::Vector{Tuple{Int64, Int64}})
+    
+#     revised = false
+#     #t_contingency_info = Dict(t_contingency_info[n][1] => tuple(load_curt_info[n][2], load_curt_info[n][3]) for n in 1:size(load_curt_info)[1])
+
+#     for l in keys(data.branch)
+#         i=data.branch[l]["f_bus"]
+#         j=data.branch[l]["t_bus"]
+#         if all(in(t_contingency_info).([tuple(i,j)]))==true || all(in(t_contingency_info).([tuple(j,i)]))==true
+#             data.branch[l]["br_status"] = 0
+#             revised = true
+#         end
+#     end
+#     #repr(indices)
+#     return revised
+# end

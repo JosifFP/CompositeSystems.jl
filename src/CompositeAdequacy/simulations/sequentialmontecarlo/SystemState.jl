@@ -48,20 +48,3 @@ struct UpDownSequence
     end
 
 end
-
-# struct UpDownSequence
-
-#     UpDownseq::Array{Bool,3}
-
-#     function UpDownSequence(system::SystemModel{N}) where N
-
-#         @inbounds gens_sequence = ones(Bool, length(system.generators), N)::Matrix{Bool}
-#         @inbounds stors_sequence = ones(Bool, length(system.storages), N)::Matrix{Bool}
-#         @inbounds genstors_sequence = ones(Bool, length(system.generatorstorages), N)::Matrix{Bool}
-#         @inbounds branches_sequence = ones(Bool, length(system.branches), N)::Matrix{Bool}
-
-#         UpDownseq = cat(gens_sequence, stors_sequence, genstors_sequence, branches_sequence, dims=(1,3))
-
-#         return UpDownseq
-#     end
-# end

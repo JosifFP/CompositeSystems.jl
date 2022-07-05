@@ -1,4 +1,4 @@
-@reexport module Network
+@reexport module TransmissionSystem
     
     import LinearAlgebra, SparseArrays, JuMP
     import InfrastructureModels, PowerModels
@@ -12,11 +12,10 @@
         Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
         Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
         Memento.setlevel!(Memento.getlogger(PowerModels), "error")
-        Memento.setlevel!(Memento.getlogger(PRATS), "error")
     end
 
-    include("network/common.jl")
+    export Network
+    
     include("network/data.jl")
-    include("network/base.jl")
     include("network/ref.jl")
 end
