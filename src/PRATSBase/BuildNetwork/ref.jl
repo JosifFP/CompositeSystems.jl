@@ -1,16 +1,25 @@
 
+""
+function get_ref(data::Network)
+    network = conversion_to_pm_data(data)
+    ref = ref_initialize!(network)
+    ref_add!(ref)
+    return ref
+end
 
 "Builds a ref object with dictionaries from PowerModels data"
-function get_ref(data::Dict{String,<:Any}, method::Type{})
-    ref = ref_initialize!(data)
+function get_ref(data::Network, method::Type{})
+    network = conversion_to_pm_data(data)
+    ref = ref_initialize!(network)
     ref_add!(ref)
     get!(ref,:method, method)
     return ref
 end
 
 "Builds a ref object with dictionaries from PowerModels data"
-function get_ref(data::Dict{String,<:Any}, method::Type{}, load_curt_info::Union{Vector{Tuple{Int64, Float64, Float64}},Vector{}})
-    ref = ref_initialize!(data)
+function get_ref(data::Network, method::Type{}, load_curt_info::Union{Vector{Tuple{Int64, Float64, Float64}},Vector{}})
+    network = conversion_to_pm_data(data)
+    ref = ref_initialize!(network)
     ref_add!(ref)
     get_ref_n!(ref, load_curt_info)
     get!(ref,:method, method)

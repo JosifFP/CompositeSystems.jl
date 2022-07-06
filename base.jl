@@ -7,19 +7,26 @@ using Test
 
 file = "test/data/RTS.raw"
 
-@btime network = PRATSBase.BuildNetwork(file)
-data = PowerModels.parse_file(file)
-data["bus"]["1"]
-network.bus["1"]
+network = PRATSBase.BuildNetwork(file)
+ref = PRATSBase.get_ref(network)
+#data = PowerModels.parse_file(file)
 
+ref = PRATSBase.get_ref(network)
+ref[:bus_loads]
+ref[:branch][1]
 
+refs = Dict{Symbol, Any}()
+for (key,item) in data
+    if isa(item, Dict{String, Any})
+        refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
+    else
+        refs[Symbol(key)] = item
+    end        
+end
 
-
-#  4.410 ms (48266 allocations: 2.22 MiB)
 
 # ref = PRATS.PRATS.PRATSBase.get_ref(data, PRATS.Network.dc_opf_lc)
 # ref[:bus]
-
 using PowerModels, InfrastructureModels
 dc_flows = PowerModels.calc_branch_flow_dc(data)
 dc_flows["branch"]

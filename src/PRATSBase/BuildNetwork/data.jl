@@ -34,6 +34,20 @@ const pm_component_status_inactive = Dict(
     "dcline" => 0,
 )
 
+function conversion_to_pm_data(network::Network)::Dict{String,<:Any}
+    return Dict(
+    [("bus",network.bus)
+    ("dcline",network.dcline)
+    ("gen",network. gen)
+    ("branch",network. branch)
+    ("storage",network.storage)
+    ("switch",network.switch )
+    ("shunt",network.shunt)
+    ("load",network.load)
+    ("baseMVA",network.baseMVA)
+    ("per_unit", network.per_unit)])
+end
+
 ""
 function BuildNetwork(file::String)
     

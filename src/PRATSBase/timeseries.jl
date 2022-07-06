@@ -1,9 +1,11 @@
-"""
-    SystemModel(filename::String)
 
-Load a `SystemModel` from an appropriately-formatted XLSX file on disk.
-"""
-function SystemModel(inputfile::String)
+
+function timeseries(timeseries::String)
+end
+
+
+
+function SystemModel(timeseries::String, network::Network)
 
     f = Dict{Symbol,Any}()
     XLSX.openxlsx(inputfile, enable_cache=false) do io
