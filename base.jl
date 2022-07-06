@@ -1,14 +1,13 @@
 using PRATS
 using PRATS.CompositeAdequacy
-using PRATS.TransmissionSystem
+using PRATS.PRATSBase
 import BenchmarkTools: @btime
 using PowerModels
 using Test
 
 file = "test/data/RTS.raw"
-PRATS.silence()
 
-network = PRATS.TransmissionSystem.BuildNetwork(file)
+@btime network = PRATSBase.BuildNetwork(file)
 data = PowerModels.parse_file(file)
 data["bus"]["1"]
 network.bus["1"]
@@ -16,10 +15,9 @@ network.bus["1"]
 
 
 
-
 #  4.410 ms (48266 allocations: 2.22 MiB)
 
-# ref = PRATS.TransmissionSystem.get_ref(data, PRATS.Network.dc_opf_lc)
+# ref = PRATS.PRATS.PRATSBase.get_ref(data, PRATS.Network.dc_opf_lc)
 # ref[:bus]
 
 using PowerModels, InfrastructureModels
