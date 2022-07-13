@@ -2,7 +2,7 @@
     import Base.Broadcast: broadcastable
     import XLSX
     import Dates: @dateformat_str, AbstractDateTime, DateTime,
-        Period, Minute, Hour, Day, Year, Date, hour
+        Period, Minute, Hour, Day, Year, Date, hour, now
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
     import LinearAlgebra, SparseArrays, JuMP
@@ -23,7 +23,7 @@
 
     export
         # System assets
-        Buses, AbstractAssets, Generators, Storages, GeneratorStorages, Branches,
+        Buses, AbstractAssets, Generators, Storages, GeneratorStorages, Branches, Loads,
         # Units
         Period, Minute, Hour, Day, Year,
         PowerUnit, kW, MW, GW, TW,
@@ -42,7 +42,9 @@
     include("SystemModel/assets.jl")
     include("SystemModel//utils.jl")
 
+    include("DataGenerator/FileGenerator.jl")
+
     include("SystemModel.jl")
-    include("timeseries.jl")
+    #include("timeseries.jl")
 
 end
