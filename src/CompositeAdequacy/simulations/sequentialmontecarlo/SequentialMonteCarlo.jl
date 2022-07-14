@@ -37,7 +37,7 @@ function assess(
 end
 
 "It generates a sequence of seeds from a given number of samples"
-function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
+function makeseeds(sampleseeds::Channel{Integer}, nsamples::Integer)
 
     for s in 1:nsamples
         put!(sampleseeds, s)
@@ -49,7 +49,7 @@ end
 
 function assess(
     system::SystemModel{N}, method::SequentialMonteCarlo,
-    sampleseeds::Channel{Int},
+    sampleseeds::Channel{Integer},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
@@ -104,7 +104,7 @@ function advance!(
     sequences::UpDownSequence,
     state::SystemState,
     dispatchproblem::DispatchProblem,
-    system::SystemModel{N}, t::Int) where N
+    system::SystemModel{N}, t::Integer) where N
 
     update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
     update_availability!(state.stors_available,sequences.Up_stors[:,t], length(system.storages))
@@ -119,7 +119,7 @@ end
 
 function solve!(
     dispatchproblem::DispatchProblem, state::SystemState,
-    system::SystemModel, t::Int
+    system::SystemModel, t::Integer
 )
     solveflows!(dispatchproblem.fp)
     update_state!(state, dispatchproblem, system, t)

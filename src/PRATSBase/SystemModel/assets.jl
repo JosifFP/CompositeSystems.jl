@@ -14,7 +14,7 @@ struct Generators{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     μ::Vector{Float64}
 
     function Generators{N,L,T,P}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
+        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
         capacity::Matrix{Float16}, λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P}
 
@@ -52,9 +52,9 @@ function Base.vcat(gs::G...) where {N, L, T, P, G <: Generators{N,L,T,P}}
 
     n_gens = sum(length(g) for g in gs)
     keys = Vector{Int}(undef, n_gens)
-    buses = Vector{Int}(undef, n_gens)
+    buses = Vector{Integer}(undef, n_gens)
     categories = Vector{String}(undef, n_gens)
-    capacity = Matrix{Int}(undef, n_gens, N)
+    capacity = Matrix{Integer}(undef, n_gens, N)
 
     λ = Vector{Float64}(undef, n_gens)
     μ = Vector{Float64}(undef, n_gens)
@@ -89,7 +89,7 @@ struct Loads{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     capacity::Matrix{Float16} # power
 
     function Loads{N,L,T,P}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, capacity::Matrix{Float16}
+        keys::Vector{<:Integer}, buses::Vector{<:Integer}, capacity::Matrix{Float16}
     ) where {N,L,T,P}
 
         n_loads = length(keys)
@@ -129,7 +129,7 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
     μ::Vector{Float64}
 
     function Storages{N,L,T,P,E}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
+        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
         chargecapacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
         energycapacity::Matrix{Float16}, charge_efficiency::Vector{Float64},
         discharge_efficiency::Vector{Float64}, carryover_efficiency::Vector{Float64},
@@ -204,12 +204,12 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
     μ::Vector{Float64}
 
     function GeneratorStorages{N,L,T,P,E}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
+        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
         charge_capacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
         energy_capacity::Matrix{Float16},
         charge_efficiency::Vector{Float64}, discharge_efficiency::Vector{Float64},
         carryover_efficiency::Vector{Float64},
-        inflow::Matrix{Int},
+        inflow::Matrix{Integer},
         gridwithdrawal_capacity::Matrix{Float16}, gridinjection_capacity::Matrix{Float16},
         λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P,E}
@@ -291,8 +291,8 @@ struct Branches{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     μ::Vector{Float64}
 
     function Branches{N,L,T,P}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
-        buses_from::Vector{Int}, buses_to::Vector{Int},
+        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
+        buses_from::Vector{Integer}, buses_to::Vector{Integer},
         forward_capacity::Matrix{Float16}, backward_capacity::Matrix{Float16},
         λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,P}
@@ -338,7 +338,7 @@ struct Buses{N,P<:PowerUnit}
     load::Matrix{Int}
 
     function Buses{N,P}(
-        names::Vector{<:AbstractString}, load::Matrix{Int}
+        names::Vector{<:AbstractString}, load::Matrix{Integer}
     ) where {N,P<:PowerUnit}
 
         n_buses = length(names)

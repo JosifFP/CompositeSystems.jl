@@ -45,15 +45,28 @@ E = energyunits["MWh"]
 
 files = readdir(ReliabilityDataDir; join=false)
 cd(ReliabilityDataDir)
-const data  = Vector{Any}()
+const data  = Vector{Integer}()
 const column_labels = Vector{Symbol}()
 const timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
 
-D_loads = extract(files, "loads", data, column_labels)
-D_generators =  extract(files, "generators", data, column_labels)
-D_branches = extract(files, "branches", data, column_labels)
-D_storages = extract(files, "storages", data, column_labels)
-D_generatorstorages = extract(files, "generatorstorages", data, column_labels)
+function extract(files::Vector{String}, assettype::String, data::Vector{Integer}, column_labels::Vector{Symbol})
+
+    if in(files).(assettype*".xlsx") == true
+        XLSX.openxlsx(ReliabilityDataDir*"/"*assettype*".xlsx", enable_cache=false) do io
+            for i in 1:XLSX.sheetcount(io)
+                if XLSX.sheetnames(io)[i]=="time series capacity" 
+                    data, column_labels = XLSX.readtable(assettype*".xlsx", XLSX.sheetnames(io)[i])
+                end
+            end
+        end
+    else
+        if assettype == "loads" || assettype == "generators"
+            error("file $assettype.xlsx not found in $ReliabilityDataDir/ directory")
+        end
+    end
+
+    return Dict(parse(Int, String(column_labels[i])) => Float16.(data[i]) for i in 2:length(column_labels))
+end
 
 #empty_storages = isempty(D_storages)
 #empty_branches = isempty(D_branches)
@@ -62,12 +75,29 @@ if isempty(D_loads) error("Load data must be provided") end
 #if isempty(D_generators) || isempty(D_generatorstorages) error("Generator or generator storage data (or both) must be provided") end
 @assert length(D_loads) == length(ref[:load])
 
-container_key = [i for i in keys(D_loads)]
-p = sortperm(container_key)
-container_bus = [ref[:load][i]["load_bus"] for i in keys(D_loads)]
-container_data = [D_loads[i] for i in keys(D_loads)]
 
-PRATS.Loads{N,L,T,P}(container_key[p], container_bus[p], reduce(vcat,transpose.(container_data[p])))
+#function asset_data(files::Vector{String}, asset::String, data::Vector{Any}, column_labels:: Vector{Symbol})
+
+assets = ["generators", "storages", "generatorstorages", "loads", "branches"]
+for asset in assets
+    dictionary = extract(files, asset, data, column_labels)
+    container_key = [i for i in keys(dictionary)]
+    key_order = sortperm(container_key)
+
+    if asset == "loads"
+        container_bus = [ref[:load][i]["load_bus"] for i in keys(dictionary)]
+        container_data = [dictionary[i] for i in keys(dictionary)]
+        PRATS.Loads{N,L,T,P}(container_key[key_order], container_bus[key_order], reduce(vcat,transpose.(container_data[key_order])))
+
+    elseif asset == "generators"
+    end
+end
+
+
+
+
+
+
 
 PRATS.Loads
 
@@ -104,27 +134,6 @@ else
     bus_gen_idxs = makeidxlist(gen_buses[bus_order], length(buses))
 end
 
-
-
-
-function extract(files::Vector{String}, assettype::String, data::Vector{Any}, column_labels::Vector{Symbol})
-
-    if in(files).(assettype*".xlsx") == true
-        XLSX.openxlsx(ReliabilityDataDir*"/"*assettype*".xlsx", enable_cache=false) do io
-            for i in 1:XLSX.sheetcount(io)
-                if XLSX.sheetnames(io)[i]=="time series capacity" 
-                    data, column_labels = XLSX.readtable(assettype*".xlsx", XLSX.sheetnames(io)[i])
-                end
-            end
-        end
-    else
-        if assettype == "loads" || assettype == "generators"
-            error("file $assettype.xlsx not found in $ReliabilityDataDir/ directory")
-        end
-    end
-
-    return Dict(parse(Int, String(column_labels[i])) => Float16.(data[i]) for i in 2:length(column_labels))
-end
 
 
 

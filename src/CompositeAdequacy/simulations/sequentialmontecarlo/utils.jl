@@ -1,7 +1,7 @@
 function initialize_availability!(
     rng::AbstractRNG,
     sequence::Matrix{Bool},
-    devices::AbstractAssets, N::Int)
+    devices::AbstractAssets, N::Integer)
     
     ndevices = Base.length(devices)
 
@@ -18,7 +18,7 @@ function initialize_availability!(
 end
 
 function update_availability!(
-    availability::Vector{Bool}, sequences_device::Vector{Bool}, ndevices::Int)
+    availability::Vector{Bool}, sequences_device::Vector{Bool}, ndevices::Integer)
 
     for i in 1:ndevices
         availability[i] = sequences_device[i]
@@ -28,7 +28,7 @@ function update_availability!(
 end
 
 function cycles!(
-    rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
+    rng::AbstractRNG, λ::Float64, μ::Float64, N::Integer)
 
     sequence = Base.ones(true, N)
     i=Int(0)
@@ -62,7 +62,7 @@ end
 function available_capacity(
     availability::Vector{Bool},
     branches::Branches,
-    idxs::UnitRange{Int}, t::Int
+    idxs::UnitRange{Integer}, t::Integer
 )
 
     avcap_forward = 0
@@ -82,7 +82,7 @@ end
 function available_capacity(
     availability::Vector{Bool},
     gens::Generators,
-    idxs::UnitRange{Int}, t::Int
+    idxs::UnitRange{Integer}, t::Integer
 )
 
     caps = gens.capacity
@@ -97,9 +97,9 @@ function available_capacity(
 end
 
 function update_energy!(
-    stors_energy::Vector{Int},
+    stors_energy::Vector{Integer},
     stors::AbstractAssets,
-    t::Int
+    t::Integer
 )
 
     for i in 1:length(stors_energy)

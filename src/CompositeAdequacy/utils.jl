@@ -37,7 +37,7 @@ function findfirstunique(a::AbstractVector{T}, i::T) where T
     return i_idx
 end
 
-function assetgrouplist(idxss::Vector{UnitRange{Int}})
+function assetgrouplist(idxss::Vector{UnitRange{Integer}})
     results = Vector{Int}(undef, last(idxss[end]))
     for (g, idxs) in enumerate(idxss)
         results[idxs] .= g
@@ -45,7 +45,7 @@ function assetgrouplist(idxss::Vector{UnitRange{Int}})
     return results
 end
 
-function colsum(x::Matrix{T}, col::Int) where {T}
+function colsum(x::Matrix{T}, col::Integer) where {T}
     result = zero(T)
     for i in 1:size(x, 1)
         result += x[i, col]

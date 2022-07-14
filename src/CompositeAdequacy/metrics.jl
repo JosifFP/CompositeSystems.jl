@@ -16,7 +16,7 @@ end
 
 MeanEstimate(x::Real) = MeanEstimate(x, 0)
 MeanEstimate(x::Real, ::Real, ::Nothing) = MeanEstimate(x, 0)
-MeanEstimate(mu::Real, sigma::Real, n::Int) = MeanEstimate(mu, sigma / sqrt(n))
+MeanEstimate(mu::Real, sigma::Real, n::Integer) = MeanEstimate(mu, sigma / sqrt(n))
 
 function MeanEstimate(xs::AbstractArray{<:Real})
     est = mean(xs)

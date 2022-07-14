@@ -168,9 +168,9 @@ function s_cost_terms!(network::Network; order=-1)
 end
 
 "ensures all polynomial costs functions have at exactly comp_order terms"
-function _s_cost_terms!(components::Dict{String,<:Any}, comp_order::Int, cost_comp_name::String)
+function _s_cost_terms!(components::Dict{String,<:Any}, comp_order::Integer, cost_comp_name::String)
     
-    modified = Set{Int}()
+    modified = Set{Integer}()
     for (i, comp) in components
         if haskey(comp, "model") && comp["model"] == 2 && length(comp["cost"]) != comp_order
             std_cost = [0.0 for i in 1:comp_order]
@@ -537,9 +537,9 @@ returns a set of sets of bus ids, each set is a connected component
 function calc_connected_components!(network::Network; edges=["branch", "dcline", "switch"])
     
     active_bus = Dict(x for x in network.bus if x.second["bus_type"] != 4)
-    active_bus_ids = Set{Int}([bus["bus_i"] for (i,bus) in active_bus])
+    active_bus_ids = Set{Integer}([bus["bus_i"] for (i,bus) in active_bus])
 
-    neighbors = Dict(i => Int[] for i in active_bus_ids)
+    neighbors = Dict(i => Integer[] for i in active_bus_ids)
     for comp_type in edges
         status_key = get(pm_component_status, comp_type, "status")
         status_inactive = get(pm_component_status_inactive, comp_type, 0)
@@ -551,8 +551,8 @@ function calc_connected_components!(network::Network; edges=["branch", "dcline",
         end
     end
 
-    component_lookup = Dict(i => Set{Int}([i]) for i in active_bus_ids)
-    touched = Set{Int}()
+    component_lookup = Dict(i => Set{Integer}([i]) for i in active_bus_ids)
+    touched = Set{Integer}()
 
     for i in active_bus_ids
         if !(i in touched)
@@ -659,7 +659,7 @@ end
 # function renumber_buses!(data::Dict{String,Any})
 
 #         bus_ordered = sort([bus for (i,bus) in network.bus], by=(x) -> x["index"])
-#         bus_id_map = Dict{Int,Int}()
+#         bus_id_map = Dict{Integer,Integer}()
 
 #         for (i,bus) in enumerate(bus_ordered)
 #             bus_id_map[bus["index"]] = i
@@ -671,11 +671,11 @@ end
 # given a network data dict and a mapping of current-bus-ids to new-bus-ids
 # modifies the data dict to reflect the proposed new bus ids.
 # """
-# function update_bus_ids!(data::Dict{String,<:Any}, bus_id_map::Dict{Int,Int}; injective=true)
+# function update_bus_ids!(data::Dict{String,<:Any}, bus_id_map::Dict{Integer,Integer}; injective=true)
     
 #     # verify bus id map is injective
 #     if injective
-#         new_bus_ids = Set{Int}()
+#         new_bus_ids = Set{Integer}()
 #         for (i,bus) in data.bus
 #             new_id = get(bus_id_map, bus["index"], bus["index"])
 #             if !(new_id in new_bus_ids)

@@ -33,7 +33,7 @@ function record!(
     acc::SMCGenAvailabilityAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
-    sampleid::Int, t::Int
+    sampleid::Integer, t::Integer
 ) where {N,L,T,P,E}
 
     acc.available[:, t, sampleid] .= state.gens_available
@@ -41,7 +41,7 @@ function record!(
 
 end
 
-reset!(acc::SMCGenAvailabilityAccumulator, sampleid::Int) = nothing
+reset!(acc::SMCGenAvailabilityAccumulator, sampleid::Integer) = nothing
 
 function finalize(
     acc::SMCGenAvailabilityAccumulator,
@@ -88,7 +88,7 @@ function record!(
     acc::SMCStorAvailabilityAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
-    sampleid::Int, t::Int
+    sampleid::Integer, t::Integer
 ) where {N,L,T,P,E}
 
     acc.available[:, t, sampleid] .= state.stors_available
@@ -96,7 +96,7 @@ function record!(
 
 end
 
-reset!(acc::SMCStorAvailabilityAccumulator, sampleid::Int) = nothing
+reset!(acc::SMCStorAvailabilityAccumulator, sampleid::Integer) = nothing
 
 function finalize(
     acc::SMCStorAvailabilityAccumulator,
@@ -143,7 +143,7 @@ function record!(
     acc::SMCGenStorAvailabilityAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
-    sampleid::Int, t::Int
+    sampleid::Integer, t::Integer
 ) where {N,L,T,P,E}
 
     acc.available[:, t, sampleid] .= state.genstors_available
@@ -151,7 +151,7 @@ function record!(
 
 end
 
-reset!(acc::SMCGenStorAvailabilityAccumulator, sampleid::Int) = nothing
+reset!(acc::SMCGenStorAvailabilityAccumulator, sampleid::Integer) = nothing
 
 function finalize(
     acc::SMCGenStorAvailabilityAccumulator,
@@ -198,7 +198,7 @@ function record!(
     acc::SMCBranchAvailabilityAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
-    sampleid::Int, t::Int
+    sampleid::Integer, t::Integer
 ) where {N,L,T,P,E}
 
     acc.available[:, t, sampleid] .= state.branches_available
@@ -206,7 +206,7 @@ function record!(
 
 end
 
-reset!(acc::SMCBranchAvailabilityAccumulator, sampleid::Int) = nothing
+reset!(acc::SMCBranchAvailabilityAccumulator, sampleid::Integer) = nothing
 
 function finalize(
     acc::SMCBranchAvailabilityAccumulator,

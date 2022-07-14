@@ -61,7 +61,7 @@ struct ShortfallResult{N,L,T<:Period,E<:EnergyUnit} <: AbstractShortfallResult{N
     shortfall_busperiod_std::Matrix{Float64}
 
     function ShortfallResult{N,L,T,E}(
-        nsamples::Union{Int,Nothing},
+        nsamples::Union{Integer,Nothing},
         buses::Vector{String},
         timestamps::StepRange{ZonedDateTime,T},
         eventperiod_mean::Float64,

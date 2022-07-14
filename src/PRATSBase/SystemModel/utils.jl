@@ -1,6 +1,6 @@
 export makeidxlist
 
-function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
+function makeidxlist(collectionidxs::Vector{Integer}, n_collections::Integer)
 
     n_assets = length(collectionidxs)
 

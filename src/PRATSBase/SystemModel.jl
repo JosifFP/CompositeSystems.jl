@@ -14,10 +14,10 @@ struct SystemModel{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit}
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
-        buses::Buses{N,P}, generators::Generators{N,L,T,P}, bus_gen_idxs::Vector{UnitRange{Int}},
-        storages::Storages{N,L,T,P,E}, bus_stor_idxs::Vector{UnitRange{Int}},
-        generatorstorages::GeneratorStorages{N,L,T,P,E}, bus_genstor_idxs::Vector{UnitRange{Int}},
-        branches::Branches{N,L,T,P}, bus_branch_idxs::Vector{UnitRange{Int}},
+        buses::Buses{N,P}, generators::Generators{N,L,T,P}, bus_gen_idxs::Vector{UnitRange{Integer}},
+        storages::Storages{N,L,T,P,E}, bus_stor_idxs::Vector{UnitRange{Integer}},
+        generatorstorages::GeneratorStorages{N,L,T,P,E}, bus_genstor_idxs::Vector{UnitRange{Integer}},
+        branches::Branches{N,L,T,P}, bus_branch_idxs::Vector{UnitRange{Integer}},
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit}
 
@@ -87,7 +87,7 @@ broadcastable(x::SystemModel) = Ref(x)
 
 unitsymbol(::SystemModel{N,L,T,P,E}) where {N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} = unitsymbol(T), unitsymbol(P), unitsymbol(E)
 
-function consistent_idxs(idxss::Vector{UnitRange{Int}}, nitems::Int, ngroups::Int)
+function consistent_idxs(idxss::Vector{UnitRange{Integer}}, nitems::Integer, ngroups::Integer)
 
     length(idxss) == ngroups || return false
 
