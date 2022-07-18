@@ -35,6 +35,8 @@ ref[:branch] = Dict(i => network.branch[string(i)] for i in 1:length(keys(networ
 #parameters
 start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
 N = 8760                                                    #timestep_count
+
+#THIS IS SPECIFIED INSIDE
 L = 1                                                       #timestep_length
 T = timeunits["h"]                                          #timestep_unit
 P = powerunits["MW"]
@@ -45,17 +47,17 @@ E = energyunits["MWh"]
 
 files = readdir(ReliabilityDataDir; join=false)
 cd(ReliabilityDataDir)
-const data  = Vector{Integer}()
-const column_labels = Vector{Symbol}()
 const timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
 
-function extract(files::Vector{String}, assettype::String, data::Vector{Integer}, column_labels::Vector{Symbol})
+function extract(files::Vector{String}, assettype::String, container_1::Vector{Vector}, container_2::Vector{Vector{Any}})
 
     if in(files).(assettype*".xlsx") == true
         XLSX.openxlsx(ReliabilityDataDir*"/"*assettype*".xlsx", enable_cache=false) do io
             for i in 1:XLSX.sheetcount(io)
-                if XLSX.sheetnames(io)[i]=="time series capacity" 
-                    data, column_labels = XLSX.readtable(assettype*".xlsx", XLSX.sheetnames(io)[i])
+                if XLSX.sheetnames(io)[i] == "time series capacity" 
+                    container_1[2], container_1[1] = XLSX.readtable(assettype*".xlsx", XLSX.sheetnames(io)[i])
+                elseif XLSX.sheetnames(io)[i] == "core"
+                    container_2[2], container_2[1] = XLSX.readtable(assettype*".xlsx",XLSX.sheetnames(io)[i])
                 end
             end
         end
@@ -65,74 +67,85 @@ function extract(files::Vector{String}, assettype::String, data::Vector{Integer}
         end
     end
 
-    return Dict(parse(Int, String(column_labels[i])) => Float16.(data[i]) for i in 2:length(column_labels))
+    return Dict(parse(Int, String(container_1[1][i])) => Float16.( container_1[2][i]) for i in 2:length(container_1[1])), 
+    Dict(container_2[1][i] => container_2[2][i] for i in 1:length(container_2[1]))
+
 end
 
 #empty_storages = isempty(D_storages)
 #empty_branches = isempty(D_branches)
 
-if isempty(D_loads) error("Load data must be provided") end
 #if isempty(D_generators) || isempty(D_generatorstorages) error("Generator or generator storage data (or both) must be provided") end
-@assert length(D_loads) == length(ref[:load])
-
-
 #function asset_data(files::Vector{String}, asset::String, data::Vector{Any}, column_labels:: Vector{Symbol})
 
 assets = ["generators", "storages", "generatorstorages", "loads", "branches"]
+
 for asset in assets
-    dictionary = extract(files, asset, data, column_labels)
-    container_key = [i for i in keys(dictionary)]
+
+    dictionary_timeseries, dictionary_core = extract(files, asset, [Vector{Symbol}(), Vector{Integer}()], [Vector{Symbol}(), Vector{Any}()])
+    container_key = [i for i in keys(dictionary_timeseries)]
     key_order = sortperm(container_key)
-
+    container_key_core = Int.(dictionary_core[:key])
+    key_order_core = sortperm(container_key_core)
+    container_bus = []
+    container_data = []
+    
     if asset == "loads"
-        container_bus = [ref[:load][i]["load_bus"] for i in keys(dictionary)]
-        container_data = [dictionary[i] for i in keys(dictionary)]
+        
+        if isempty(dictionary_timeseries) error("Load data must be provided") end
+        @assert length(dictionary_timeseries) == length(ref[:load])
+    
+        container_bus = [ref[:gen][i]["gen_bus"] for i in keys(dictionary_timeseries)]
+        container_data = [dictionary_timeseries[i] for i in keys(dictionary_timeseries)]
+    
         PRATS.Loads{N,L,T,P}(container_key[key_order], container_bus[key_order], reduce(vcat,transpose.(container_data[key_order])))
-
+    
     elseif asset == "generators"
+    
+    
+    
     end
+
 end
 
 
+dictionary_timeseries, dictionary_core = extract(files, "generators", [Vector{Symbol}(), Vector{Integer}()], [Vector{Symbol}(), Vector{Any}()])
+container_key = [i for i in keys(dictionary_timeseries)]
+key_order = sortperm(container_key)
+container_key_core = Int.(dictionary_core[:key])
+key_order_core = sortperm(container_key_core)
+#***************************************************************************************************
 
-
-
-
-
-PRATS.Loads
-
-buses = Buses{N,P}(string.(f[:buses]), copy(transpose(repeat(f[:total_load],1,2))))
-
-
-buslookup = Dict(n=>i for (i, n) in enumerate(string.(keys(D_loads))))
-
-
-if size(string.(f[:buses])) == (1,)
-    buses = Buses{N,P}(string.(f[:buses]), reshape(f[:total_load], 1, :))
-else
-    buses = Buses{N,P}(string.(f[:buses]), copy(transpose(repeat(f[:total_load],1,2))))
+if length(container_key) != length(container_key_core)
+    for i in container_key_core
+        if in(container_key).(i) == false
+            println("hello")
+            setindex!(dictionary_timeseries, [ref[:gen][i]["pmax"]*network.baseMVA for k in 1:N], i)
+        end
+    end
+    container_key = [i for i in keys(dictionary_timeseries)]
+    key_order = sortperm(container_key)
+    @assert length(container_key) == length(container_key_core)
 end
 
-if isempty(D_generators)
-    generators = Generators{N,L,T,P}(String[], String[], zeros(Int, 0, N), zeros(Float64, 0), zeros(Float64, 0))
-    bus_gen_idxs = fill(1:0, length(buses))       
-else
-    gen_names =  string.(D_generators[:name])
-    gen_categories = string.(D_generators[:category])
-    gen_buses = getindex.(Ref(buslookup), string.(D_generators[:bus]))
-    bus_order = sortperm(gen_buses)
-    gen_capacity = repeat(round.(Int, D_generators[:Pmax]), 1, N)
-    failureprobability = float.(D_generators[:failureprobability])/N
-    repairprobability = float.(D_generators[:repairprobability])/N
-    generators = Generators{N,L,T,P}(
-        gen_names[bus_order], gen_categories[bus_order],
-        gen_capacity[bus_order, :],
-        failureprobability[bus_order],
-        repairprobability[bus_order]
-    )
+container_bus = Int.(tmp[:,2])
+container_data = [dictionary_timeseries[i] for i in keys(dictionary_timeseries)]
+container_bus[key_order_core]
+container_data[key_order_core]
 
-    bus_gen_idxs = makeidxlist(gen_buses[bus_order], length(buses))
-end
+container_category = String.(values(dictionary_core[:category]))
+container_category[container_key_core]
+
+container_λ = Float16.(values(dictionary_core[Symbol("failurerate [f/year]")]))
+container_μ = Float16.(values(dictionary_core[Symbol("repairrate [r/year]")])) 
+
+
+reduce(vcat,transpose.(container_data[key_order_1]))
+
+PRATS.Generators{N,L,T,P}(container_key[key_order], container_bus[key_order], , reduce(vcat,transpose.(container_data[key_order])))
+new{N,L,T,P}(Int.(keys), Int.(buses), string.(categories), capacity, λ, μ)
+
+
 
 
 
@@ -142,8 +155,3 @@ end
 
 #function DataGenerator(RawFile::String, InputData::Vector{String},
 #    start_timestamp::DateTime, N::Integer, L::Integer, T::Type{<:Period})
-
-
-#P = powerunits["MW"]
-#E = energyunits["MWh"]
-#timestamps = range(start_timestamp, length=N, step=T(L))

@@ -30,7 +30,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = [ "key" "bus" "MW" "MVAR" "power factor"]
+            sheet["A1"] = [ "key" "bus" "MW" "MVAR" "pf"]
             tmp = sort([[i, load["load_bus"], 
                         load["pd"]*network.baseMVA,
                         load["qd"]*network.baseMVA,
@@ -81,7 +81,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "bus" "pmax [MW]" "qmax [MVAR]" "failurerate [f/year]" "repairrate [r/year]" "category [optional]" "timeseries [true/false?]"]
+            sheet["A1"] = ["key" "bus" "pmax [MW]" "qmax [MVAR]" "failurerate [f/year]" "repairrate [r/year]" "category"]
             tmp = sort([[i, gen["gen_bus"], 
                         gen["pmax"]*network.baseMVA,
                         gen["qmax"]*network.baseMVA] for (i,gen) in ref[:gen]], by = x->x[1])
@@ -100,7 +100,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
                 sheet = xf[1]
                 XLSX.rename!(sheet, "core")
-                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "category [optional]" "failurerate [f/year]" "repairrate [r/year]" "timeseries [true/false?]"]
+                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "failurerate [f/year]" "repairrate [r/year]"  "category"]
                 tmp = sort([[i, stor["storage_bus"],
                             stor["charge_rating"]*network.baseMVA, 
                             stor["discharge_rating"]*network.baseMVA,
@@ -122,7 +122,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "fbus" "tbus" "rate_a [MW]" "rate_b [MW]" "category [optional]" "failurerate [f/year]" "repairrate [r/year]" "timeseries [true/false?]"]
+            sheet["A1"] = ["key" "fbus" "tbus" "rate_a [MW]" "rate_b [MW]" "failurerate [f/year]" "repairrate [r/year]" "category [optional]"]
             tmp = sort([[i,
                         branch["f_bus"], 
                         branch["t_bus"],
