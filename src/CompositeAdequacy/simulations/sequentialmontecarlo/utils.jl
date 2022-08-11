@@ -28,7 +28,7 @@ function update_availability!(
 end
 
 function cycles!(
-    rng::AbstractRNG, λ::Float64, μ::Float64, N::Integer)
+    rng::AbstractRNG, λ::Float32, μ::Float32, N::Integer)
 
     sequence = Base.ones(true, N)
     i=Int(0)
@@ -45,7 +45,7 @@ function cycles!(
 
 end
 
-function T(rng, λ::Float64, μ::Float64)::Tuple{Int32,Int32}
+function T(rng, λ::Float32, μ::Float32)::Tuple{Int32,Int32}
     
     ttf = (x->trunc(Int32, x)).((-1/λ)log(rand(rng)))
     ttr = (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))

@@ -25,21 +25,21 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
     #create files to be imported
     cd(ReliabilityDataDir)
 
-    if in(InputData).("loads") == true
-        XLSX.openxlsx("loads.xlsx", mode="w") do xf
+    if in(InputData).("Loads") == true
+        XLSX.openxlsx("Loads.xlsx", mode="w") do xf
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
             sheet["A1"] = [ "key" "bus" "MW" "MVAR" "pf"]
             tmp = sort([[i, load["load_bus"], 
-                        load["pd"]*network.baseMVA,
-                        load["qd"]*network.baseMVA,
-                        load["qd"]./load["pd"]] for (i,load) in ref[:load]], by = x->x[1])
+                        Float16.(load["pd"]*network.baseMVA),
+                        Float16.(load["qd"]*network.baseMVA),
+                        Float16.(load["qd"]./load["pd"])] for (i,load) in ref[:load]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
             XLSX.addsheet!(xf,"load curtailment data")
             sheet = xf[2]
-            sheet["A1"] = [ "key" "bus" "contribution [%]" "cost [US/MWh]"]
+            sheet["A1"] = [ "key" "bus" "contribution[%]" "cost[US/MWh]"]
             tmp = sort([[i, load["load_bus"]] for (i,load) in ref[:load]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
@@ -76,15 +76,15 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
         end
     end
 
-    if in(InputData).("generators") == true 
-        XLSX.openxlsx("generators.xlsx", mode="w") do xf
+    if in(InputData).("Generators") == true 
+        XLSX.openxlsx("Generators.xlsx", mode="w") do xf
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "bus" "pmax [MW]" "qmax [MVAR]" "failurerate [f/year]" "repairrate [r/year]" "category"]
+            sheet["A1"] = ["key" "bus" "pmax[MW]" "qmax[MVAR]" "failurerate[f/year]" "repairrate[r/year]" "category"]
             tmp = sort([[i, gen["gen_bus"], 
-                        gen["pmax"]*network.baseMVA,
-                        gen["qmax"]*network.baseMVA] for (i,gen) in ref[:gen]], by = x->x[1])
+                        Float16.(gen["pmax"]*network.baseMVA),
+                        Float16.(gen["qmax"]*network.baseMVA)] for (i,gen) in ref[:gen]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
             XLSX.addsheet!(xf,"time series capacity")
@@ -93,20 +93,20 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
         end
     end
 
-    if in(InputData).("storages") == true     
+    if in(InputData).("Storages") == true     
         if isempty(ref[:storage]) == false
 
-            XLSX.openxlsx("storages.xlsx", mode="w") do xf
+            XLSX.openxlsx("Storages.xlsx", mode="w") do xf
 
                 sheet = xf[1]
                 XLSX.rename!(sheet, "core")
-                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "failurerate [f/year]" "repairrate [r/year]"  "category"]
+                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "failurerate[f/year]" "repairrate[h/year]"  "category"]
                 tmp = sort([[i, stor["storage_bus"],
-                            stor["charge_rating"]*network.baseMVA, 
-                            stor["discharge_rating"]*network.baseMVA,
-                            stor["energy_rating"]*network.baseMVA, 
-                            stor["charge_efficiency"],
-                            stor["discharge_efficiency"]] for (i,stor) in ref[:storage]], by = x->x[1])
+                        Float16.(stor["charge_rating"]*network.baseMVA), 
+                        Float16.(stor["discharge_rating"]*network.baseMVA),
+                        Float16.(stor["energy_rating"]*network.baseMVA), 
+                        stor["charge_efficiency"],
+                        stor["discharge_efficiency"]] for (i,stor) in ref[:storage]], by = x->x[1])
                 sheet["A2"] = reduce(vcat, tmp')
 
                 XLSX.addsheet!(xf,"time series capacity")
@@ -117,17 +117,17 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
         end
     end
 
-    if in(InputData).("branches") == true    
-        XLSX.openxlsx("branches.xlsx", mode="w") do xf
+    if in(InputData).("Branches") == true    
+        XLSX.openxlsx("Branches.xlsx", mode="w") do xf
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "fbus" "tbus" "rate_a [MW]" "rate_b [MW]" "failurerate [f/year]" "repairrate [r/year]" "category [optional]"]
+            sheet["A1"] = ["key" "fbus" "tbus" "rate_a[MW]" "rate_b[MW]" "failurerate[f/year]" "repairrate[r/year]" "category[optional]"]
             tmp = sort([[i,
-                        branch["f_bus"], 
-                        branch["t_bus"],
-                        branch["rate_a"]*network.baseMVA,
-                        branch["rate_b"]*network.baseMVA] for (i,branch) in ref[:branch]], by = x->x[1])
+                    branch["f_bus"], 
+                    branch["t_bus"],
+                    Float16.(branch["rate_a"]*network.baseMVA),
+                    Float16.(branch["rate_b"]*network.baseMVA)] for (i,branch) in ref[:branch]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
             XLSX.addsheet!(xf,"time series capacity")

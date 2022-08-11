@@ -10,12 +10,12 @@ struct Generators{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
 
     capacity::Matrix{Float16} # power
 
-    λ::Vector{Float64}
-    μ::Vector{Float64}
+    λ::Vector{Float32} #Failure rate in failures per year
+    μ::Vector{Float32} #Repair rate in hours per year
 
     function Generators{N,L,T,P}(
         keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
-        capacity::Matrix{Float16}, λ::Vector{Float64}, μ::Vector{Float64}
+        capacity::Matrix{Float16}, λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P}
 
         n_gens = length(keys)
@@ -27,8 +27,8 @@ struct Generators{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
 
         @assert length(λ) == (n_gens)
         @assert length(μ) == (n_gens)
-        @assert all(0 .<= λ .<= 1)
-        @assert all(0 .<= μ .<= 1)
+        #@assert all(0 .<= λ .<= 1)
+        #@assert all(0 .<= μ .<= 1)
 
         new{N,L,T,P}(Int.(keys), Int.(buses), string.(categories), capacity, λ, μ)
 
@@ -56,8 +56,8 @@ function Base.vcat(gs::G...) where {N, L, T, P, G <: Generators{N,L,T,P}}
     categories = Vector{String}(undef, n_gens)
     capacity = Matrix{Integer}(undef, n_gens, N)
 
-    λ = Vector{Float64}(undef, n_gens)
-    μ = Vector{Float64}(undef, n_gens)
+    λ = Vector{Float32}(undef, n_gens)
+    μ = Vector{Float32}(undef, n_gens)
 
     last_idx = 0
 
@@ -121,19 +121,19 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
     discharge_capacity::Matrix{Float16} # power
     energy_capacity::Matrix{Float16} # energy
 
-    charge_efficiency::Vector{Float64}
-    discharge_efficiency::Vector{Float64}
-    carryover_efficiency::Vector{Float64}
+    charge_efficiency::Vector{Float32}
+    discharge_efficiency::Vector{Float32}
+    carryover_efficiency::Vector{Float32}
 
-    λ::Vector{Float64}
-    μ::Vector{Float64}
+    λ::Vector{Float32} #Failure rate in failures per year
+    μ::Vector{Float32} #Repair rate in hours per year
 
     function Storages{N,L,T,P,E}(
         keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
         chargecapacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
-        energycapacity::Matrix{Float16}, charge_efficiency::Vector{Float64},
-        discharge_efficiency::Vector{Float64}, carryover_efficiency::Vector{Float64},
-        λ::Vector{Float64}, μ::Vector{Float64}
+        energycapacity::Matrix{Float16}, charge_efficiency::Vector{Float32},
+        discharge_efficiency::Vector{Float32}, carryover_efficiency::Vector{Float32},
+        λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P,E}
 
         n_stors = length(keys)
@@ -156,8 +156,8 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
 
         @assert length(λ) == (n_stors)
         @assert length(μ) == (n_stors)
-        @assert all(0 .<= λ .<= 1)
-        @assert all(0 .<= μ .<= 1)
+        #@assert all(0 .<= λ .<= 1)
+        #@assert all(0 .<= μ .<= 1)
 
         new{N,L,T,P,E}(Int.(keys), Int.(buses), string.(categories),
                        charge_capacity, discharge_capacity, energy_capacity,
@@ -192,26 +192,26 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
     discharge_capacity::Matrix{Float16} # power
     energy_capacity::Matrix{Float16} # energy
 
-    charge_efficiency::Vector{Float64}
-    discharge_efficiency::Vector{Float64}
-    carryover_efficiency::Vector{Float64}
+    charge_efficiency::Vector{Float32}
+    discharge_efficiency::Vector{Float32}
+    carryover_efficiency::Vector{Float32}
 
     inflow::Matrix{Int} # power
     gridwithdrawal_capacity::Matrix{Float16} # power
     gridinjection_capacity::Matrix{Float16} # power
 
-    λ::Vector{Float64}
-    μ::Vector{Float64}
+    λ::Vector{Float32} #Failure rate in failures per year
+    μ::Vector{Float32} #Repair rate in hours per year
 
     function GeneratorStorages{N,L,T,P,E}(
         keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
         charge_capacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
         energy_capacity::Matrix{Float16},
-        charge_efficiency::Vector{Float64}, discharge_efficiency::Vector{Float64},
-        carryover_efficiency::Vector{Float64},
+        charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32},
+        carryover_efficiency::Vector{Float32},
         inflow::Matrix{Integer},
         gridwithdrawal_capacity::Matrix{Float16}, gridinjection_capacity::Matrix{Float16},
-        λ::Vector{Float64}, μ::Vector{Float64}
+        λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P,E}
 
         n_stors = length(keys)
@@ -244,8 +244,8 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
 
         @assert length(λ) == (n_stors)
         @assert length(μ) == (n_stors)
-        @assert all(0 .<= λ .<= 1)
-        @assert all(0 .<= μ .<= 1)
+        #@assert all(0 .<= λ .<= 1)
+        #@assert all(0 .<= μ .<= 1)
 
         new{N,L,T,P,E}(
             Int.(keys), Int.(buses), string.(categories),
@@ -278,53 +278,52 @@ Base.:(==)(x::T, y::T) where {T <: GeneratorStorages} =
 struct Branches{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
 
     keys::Vector{Int}
-    buses::Vector{Int}
-    categories::Vector{String}
 
     buses_from::Vector{Int}
     buses_to::Vector{Int}
 
-    forward_capacity::Matrix{Float16} # power
-    backward_capacity::Matrix{Float16} # power
+    categories::Vector{String}
 
-    λ::Vector{Float64}
-    μ::Vector{Float64}
+    longterm_capacity::Matrix{Float16} #Long term rating or Rate_A
+    shortterm_capacity::Matrix{Float16} #Short term rating or Rate_B
+
+    λ::Vector{Float32} #Failure rate in failures per year
+    μ::Vector{Float32} #Repair rate in hours per year
 
     function Branches{N,L,T,P}(
-        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
-        buses_from::Vector{Integer}, buses_to::Vector{Integer},
-        forward_capacity::Matrix{Float16}, backward_capacity::Matrix{Float16},
-        λ::Vector{Float64}, μ::Vector{Float64}
+        keys::Vector{<:Integer},
+        buses_from::Vector{<:Integer}, buses_to::Vector{<:Integer},
+        categories::Vector{<:AbstractString},
+        longterm_capacity::Matrix{Float16}, shortterm_capacity::Matrix{Float16},
+        λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P}
 
         n_branches = length(keys)
         @assert length(categories) == n_branches
         @assert allunique(keys)
 
-        @assert size(forward_capacity) == (n_branches, N)
-        @assert size(backward_capacity) == (n_branches, N)
-        @assert all(forward_capacity .>= 0)
-        @assert all(backward_capacity .>= 0)
+        @assert size(longterm_capacity) == (n_branches, N)
+        @assert size(shortterm_capacity) == (n_branches, N)
+        @assert all(longterm_capacity .>= 0)
+        @assert all(shortterm_capacity .>= 0)
 
         @assert length(λ) == (n_branches)
         @assert length(μ) == (n_branches)
-        @assert all(0 .<= λ .<= 1)
-        @assert all(0 .<= μ .<= 1)
+        #@assert all(0 .<= λ .<= 1)
+        #@assert all(0 .<= μ .<= 1)
 
-        new{N,L,T,P}(Int.(keys), Int.(buses), string.(categories), buses_from, buses_to, forward_capacity, backward_capacity, λ, μ)
-
+        new{N,L,T,P}(Int.(keys), Int.(buses_from), Int.(buses_to), string.(categories), longterm_capacity, shortterm_capacity, λ, μ)
     end
 
 end
 
 Base.:(==)(x::T, y::T) where {T <: Branches} =
     x.keys == y.keys &&
-    x.buses == y.buses &&
-    x.categories == y.categories &&
     x.buses_from == y.buses_from &&
     x.buses_to == y.buses_to &&
-    x.forward_capacity == y.forward_capacity &&
-    x.backward_capacity == y.backward_capacity &&
+    x.categories == y.categories &&
+    x.longterm_capacity == y.longterm_capacity &&
+    x.shortterm_capacity == y.shortterm_capacity &&
     x.λ == y.λ &&
     x.μ == y.μ
 
@@ -358,3 +357,55 @@ Base.:(==)(x::T, y::T) where {T <: Buses} =
     x.load == y.load
 
 Base.length(r::Buses) = length(r.names)
+
+
+struct Network{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
+
+    bus::Dict{String,<:Any}
+    dcline::Dict{String,<:Any}
+    gen::Dict{String,<:Any}
+    branch::Dict{String,<:Any}
+    storage::Dict{String,<:Any}
+    switch::Dict{String,<:Any}
+    shunt::Dict{String,<:Any}
+    load::Dict{String,<:Any}
+    baseMVA::Integer
+    per_unit::Bool
+
+    function Network{N,L,T,P,E,V}(data::Dict{String,<:Any}) where {N,L,T,P,E,V}
+
+        bus = data["bus"]
+        dcline = data["dcline"]
+        gen = data["gen"]
+        branch = data["branch"]
+        storage = data["storage"]
+        switch = data["switch"]
+        shunt = data["shunt"]
+        load = data["load"]
+        baseMVA = data["baseMVA"]
+        per_unit = data["per_unit"]
+
+        @assert isempty(bus) == false
+        @assert isempty(gen) == false
+        @assert isempty(branch) == false
+        @assert isempty(load) == false
+        @assert isempty(baseMVA) == false
+        @assert isempty(per_unit) == false
+
+        return new(bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
+
+    end
+
+end
+
+Base.:(==)(x::T, y::T) where {T <: Network} =
+    x.bus == y.bus &&
+    x.dcline == y.dcline &&
+    x.gen == y.gen &&
+    x.branch == y.branch &&
+    x.storage == y.storage &&
+    x.switch == y.switch &&
+    x.shunt == y.shunt &&
+    x.load == y.load &&
+    x.baseMVA == y.baseMVA &&
+    x.per_unit == y.per_unit

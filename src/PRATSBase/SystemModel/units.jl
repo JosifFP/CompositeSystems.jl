@@ -127,10 +127,10 @@ voltageunits = Dict(
     for T in [kV])
 
 
-abstract type PerUnit end
-struct pu <: PerUnit end
-unitsymbol(T::Type{<:PerUnit}) = string(T)
-unitsymbol(::Type{pu}) = "pu"
-perunit = Dict(
-    unitsymbol(T) => T
-    for T in [pu])
+# abstract type PerUnit end
+# struct pu <: PerUnit end
+# unitsymbol(T::Type{<:PerUnit}) = string(T)
+# unitsymbol(::Type{pu}) = "pu"
+# perunit = Dict(
+#     unitsymbol(T) => T
+#     for T in [pu])
