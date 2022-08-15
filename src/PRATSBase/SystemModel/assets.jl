@@ -14,7 +14,7 @@ struct Generators{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     μ::Vector{Float32} #Repair rate in hours per year
 
     function Generators{N,L,T,P}(
-        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
+        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
         capacity::Matrix{Float16}, λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P}
 
@@ -44,17 +44,13 @@ Base.:(==)(x::T, y::T) where {T <: Generators} =
     x.λ == y.λ &&
     x.μ == y.μ
 
-Base.getindex(g::G, idxs::AbstractVector{Int}) where {G <: Generators} =
-    G(g.keys[idxs], g.buses[idxs], g.categories[idxs],
-      g.capacity[idxs, :], g.λ[idxs, :], g.μ[idxs, :])
-
 function Base.vcat(gs::G...) where {N, L, T, P, G <: Generators{N,L,T,P}}
 
     n_gens = sum(length(g) for g in gs)
     keys = Vector{Int}(undef, n_gens)
-    buses = Vector{Integer}(undef, n_gens)
+    buses = Vector{Int}(undef, n_gens)
     categories = Vector{String}(undef, n_gens)
-    capacity = Matrix{Integer}(undef, n_gens, N)
+    capacity = Matrix{Int}(undef, n_gens, N)
 
     λ = Vector{Float32}(undef, n_gens)
     μ = Vector{Float32}(undef, n_gens)
@@ -89,7 +85,7 @@ struct Loads{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     capacity::Matrix{Float16} # power
 
     function Loads{N,L,T,P}(
-        keys::Vector{<:Integer}, buses::Vector{<:Integer}, capacity::Matrix{Float16}
+        keys::Vector{<:Int}, buses::Vector{<:Int}, capacity::Matrix{Float16}
     ) where {N,L,T,P}
 
         n_loads = length(keys)
@@ -129,9 +125,9 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
     μ::Vector{Float32} #Repair rate in hours per year
 
     function Storages{N,L,T,P,E}(
-        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
-        chargecapacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
-        energycapacity::Matrix{Float16}, charge_efficiency::Vector{Float32},
+        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
+        charge_capacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
+        energy_capacity::Matrix{Float16}, charge_efficiency::Vector{Float32},
         discharge_efficiency::Vector{Float32}, carryover_efficiency::Vector{Float32},
         λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P,E}
@@ -147,9 +143,10 @@ struct Storages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAssets{N,L,
         @assert all(discharge_capacity .>= 0)
         @assert all(energy_capacity .>= 0)
 
-        @assert size(charge_efficiency) == (n_stors)
-        @assert size(discharge_efficiency) == (n_stors)
-        @assert size(carryover_efficiency) == (n_stors)
+        @assert length(charge_efficiency) == n_stors
+        @assert length(discharge_efficiency) == n_stors
+        @assert length(carryover_efficiency) == n_stors
+
         @assert all(0 .< charge_efficiency .<= 1)
         @assert all(0 .< discharge_efficiency .<= 1)
         @assert all(0 .< carryover_efficiency .<= 1)
@@ -204,12 +201,12 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
     μ::Vector{Float32} #Repair rate in hours per year
 
     function GeneratorStorages{N,L,T,P,E}(
-        keys::Vector{<:Integer}, buses::Vector{<:Integer}, categories::Vector{<:AbstractString},
+        keys::Vector{<:Int}, buses::Vector{<:Int}, categories::Vector{<:AbstractString},
         charge_capacity::Matrix{Float16}, discharge_capacity::Matrix{Float16},
         energy_capacity::Matrix{Float16},
         charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32},
         carryover_efficiency::Vector{Float32},
-        inflow::Matrix{Integer},
+        inflow::Matrix{Int},
         gridwithdrawal_capacity::Matrix{Float16}, gridinjection_capacity::Matrix{Float16},
         λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,P,E}
@@ -226,9 +223,9 @@ struct GeneratorStorages{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractAs
         @assert all(discharge_capacity .>= 0)
         @assert all(energy_capacity .>= 0)
 
-        @assert size(charge_efficiency) == (n_stors, N)
-        @assert size(discharge_efficiency) == (n_stors, N)
-        @assert size(carryover_efficiency) == (n_stors, N)
+        @assert length(charge_efficiency) == n_stors
+        @assert length(discharge_efficiency) == n_stors
+        @assert length(carryover_efficiency) == n_stors
 
         @assert all(0 .< charge_efficiency .<= 1)
         @assert all(0 .< discharge_efficiency .<= 1)
@@ -291,8 +288,8 @@ struct Branches{N,L,T<:Period,P<:PowerUnit} <: AbstractAssets{N,L,T,P}
     μ::Vector{Float32} #Repair rate in hours per year
 
     function Branches{N,L,T,P}(
-        keys::Vector{<:Integer},
-        buses_from::Vector{<:Integer}, buses_to::Vector{<:Integer},
+        keys::Vector{<:Int},
+        buses_from::Vector{<:Int}, buses_to::Vector{<:Int},
         categories::Vector{<:AbstractString},
         longterm_capacity::Matrix{Float16}, shortterm_capacity::Matrix{Float16},
         λ::Vector{Float32}, μ::Vector{Float32}
@@ -330,35 +327,6 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
 
 #Collection Types
 
-struct Buses{N,P<:PowerUnit}
-
-    names::Vector{String}
-    buses_i::Vector{Int}
-    load::Matrix{Int}
-
-    function Buses{N,P}(
-        names::Vector{<:AbstractString}, load::Matrix{Integer}
-    ) where {N,P<:PowerUnit}
-
-        n_buses = length(names)
-
-        @assert size(load) == (n_buses, N)
-        @assert all(load .>= 0)
-
-        new{N,P}(string.(names), Int.(buses_i), load)
-
-    end
-
-end
-
-Base.:(==)(x::T, y::T) where {T <: Buses} =
-    x.names == y.names &&
-    x.buses_i == y.buses_i &&
-    x.load == y.load
-
-Base.length(r::Buses) = length(r.names)
-
-
 struct Network{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
 
     bus::Dict{String,<:Any}
@@ -369,7 +337,7 @@ struct Network{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
     switch::Dict{String,<:Any}
     shunt::Dict{String,<:Any}
     load::Dict{String,<:Any}
-    baseMVA::Integer
+    baseMVA::Int
     per_unit::Bool
 
     function Network{N,L,T,P,E,V}(data::Dict{String,<:Any}) where {N,L,T,P,E,V}
@@ -409,3 +377,33 @@ Base.:(==)(x::T, y::T) where {T <: Network} =
     x.load == y.load &&
     x.baseMVA == y.baseMVA &&
     x.per_unit == y.per_unit
+
+
+
+# struct Buses{N,P<:PowerUnit}
+
+#     names::Vector{String}
+#     buses_i::Vector{Int}
+#     load::Matrix{Int}
+
+#     function Buses{N,P}(
+#         names::Vector{<:AbstractString}, load::Matrix{Integer}
+#     ) where {N,P<:PowerUnit}
+
+#         n_buses = length(names)
+
+#         @assert size(load) == (n_buses, N)
+#         @assert all(load .>= 0)
+
+#         new{N,P}(string.(names), Int.(buses_i), load)
+
+#     end
+
+# end
+
+# Base.:(==)(x::T, y::T) where {T <: Buses} =
+#     x.names == y.names &&
+#     x.buses_i == y.buses_i &&
+#     x.load == y.load
+
+# Base.length(r::Buses) = length(r.names)

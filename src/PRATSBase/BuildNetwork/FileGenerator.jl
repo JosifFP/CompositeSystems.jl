@@ -7,9 +7,10 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
         error("$RawFile must be path")
     end
 
-    CurrentDir = dirname(RawFile)
+    CurrentDir = pwd()
+    PRATSInputData = dirname(RawFile)
 
-    cd(CurrentDir)
+    cd(PRATSInputData)
     mkdir("Reliability Data")
     cd("Reliability Data")
     ReliabilityDataDir = pwd()
