@@ -17,15 +17,45 @@ network, ref, ReliabilityDataDir = PRATSBase.FileGenerator(RawFile, InputData)
 #********************************************************************************************************************************
 using PRATS
 using PRATS.PRATSBase
-using XLSX
-import Dates
-import Dates: DateTime, Date, Time
 import BenchmarkTools: @btime
 
 RawFile =  "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.raw"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 
-PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+sys = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+# sys.generators
+# sys.storages
+# sys.branches
+# sys.timestamps
+
+
+#********************************************************************************************************************************
+#MCS
+#********************************************************************************************************************************
+using PRATS
+using PRATS.PRATSBase
+import BenchmarkTools: @btime
+
+RawFile =  "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.raw"
+ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
+sys = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+
+simspec = PRATS.SequentialMonteCarlo(samples=1_000,seed=1)
+resultspecs = (Shortfall(),GeneratorAvailability())
+shortfalls, availability = PRATS.assess(sys, simspec, resultspecs...)
+lole, eue = PRATS.LOLE(shortfalls), PRATS.EUE(shortfalls)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
