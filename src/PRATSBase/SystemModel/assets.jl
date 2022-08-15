@@ -387,7 +387,7 @@ Base.:(==)(x::T, y::T) where {T <: Network} =
 #     load::Matrix{Int}
 
 #     function Buses{N,P}(
-#         names::Vector{<:AbstractString}, load::Matrix{Integer}
+#         names::Vector{<:AbstractString}, load::Matrix{Int}
 #     ) where {N,P<:PowerUnit}
 
 #         n_buses = length(names)

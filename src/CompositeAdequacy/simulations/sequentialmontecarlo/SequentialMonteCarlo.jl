@@ -1,5 +1,5 @@
 include("SystemState.jl")
-include("DispatchProblem.jl")
+#include("DispatchProblem.jl")
 include("utils.jl")
 
 struct SequentialMonteCarlo <: SimulationSpec
@@ -9,7 +9,7 @@ struct SequentialMonteCarlo <: SimulationSpec
     verbose::Bool
 
     function SequentialMonteCarlo(;
-        samples::Int=10_000, seed::Integer=rand(UInt64),
+        samples::Int=10_000, seed::Int=rand(UInt64),
         verbose::Bool=false
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
@@ -37,7 +37,7 @@ function assess(
 end
 
 "It generates a sequence of seeds from a given number of samples"
-function makeseeds(sampleseeds::Channel{Integer}, nsamples::Integer)
+function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
 
     for s in 1:nsamples
         put!(sampleseeds, s)
@@ -49,12 +49,12 @@ end
 
 function assess(
     system::SystemModel{N}, method::SequentialMonteCarlo,
-    sampleseeds::Channel{Integer},
+    sampleseeds::Channel{Int},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    dispatchproblem = DispatchProblem(system)
+    #dispatchproblem = DispatchProblem(system)
     sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
@@ -104,7 +104,7 @@ function advance!(
     sequences::UpDownSequence,
     state::SystemState,
     dispatchproblem::DispatchProblem,
-    system::SystemModel{N}, t::Integer) where N
+    system::SystemModel{N}, t::Int) where N
 
     update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
     update_availability!(state.stors_available,sequences.Up_stors[:,t], length(system.storages))
@@ -119,7 +119,7 @@ end
 
 function solve!(
     dispatchproblem::DispatchProblem, state::SystemState,
-    system::SystemModel, t::Integer
+    system::SystemModel, t::Int
 )
     solveflows!(dispatchproblem.fp)
     update_state!(state, dispatchproblem, system, t)

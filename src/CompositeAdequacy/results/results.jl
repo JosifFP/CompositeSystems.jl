@@ -5,7 +5,7 @@ include("shortfall.jl")
 include("availability.jl")
 
 function resultchannel(
-    method::SimulationSpec, results::T, threads::Integer
+    method::SimulationSpec, results::T, threads::Int
 ) where T <: Tuple{Vararg{ResultSpec}}
 
     types = accumulatortype.(method, results)

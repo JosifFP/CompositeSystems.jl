@@ -37,7 +37,7 @@ function findfirstunique(a::AbstractVector{T}, i::T) where T
     return i_idx
 end
 
-function assetgrouplist(idxss::Vector{UnitRange{Integer}})
+function assetgrouplist(idxss::Vector{UnitRange{Int}})
     results = Vector{Int}(undef, last(idxss[end]))
     for (g, idxs) in enumerate(idxss)
         results[idxs] .= g

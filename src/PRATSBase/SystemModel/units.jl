@@ -91,7 +91,7 @@ function conversionfactor(F::Type{<:EnergyUnit}, T::Type{<:EnergyUnit})
 end
 
 function conversionfactor(
-    L::Integer, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit})
+    L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit})
     to_power, to_time = subunits(E)
     powerconversion = conversionfactor(P, to_power)
     timeconversion = conversionfactor(T, to_time)
@@ -99,7 +99,7 @@ function conversionfactor(
 end
 
 function conversionfactor(
-    L::Integer, T::Type{<:Period}, E::Type{<:EnergyUnit}, P::Type{<:PowerUnit})
+    L::Int, T::Type{<:Period}, E::Type{<:EnergyUnit}, P::Type{<:PowerUnit})
     from_power, from_time = subunits(E)
     powerconversion = conversionfactor(from_power, P)
     timeconversion = conversionfactor(from_time, T)

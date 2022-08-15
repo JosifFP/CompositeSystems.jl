@@ -80,7 +80,7 @@ function record!(
     acc::SMCShortfallAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
-    sampleid::Integer, t::Integer
+    sampleid::Int, t::Int
 ) where {N,L,T,P,E}
 
     totalshortfall = 0
@@ -120,7 +120,7 @@ function record!(
 
 end
 
-function reset!(acc::SMCShortfallAccumulator, sampleid::Integer)
+function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
 
     # Store busal / total sums for current simulation
     fit!(acc.periodsdropped_total, acc.periodsdropped_total_currentsim)
@@ -206,7 +206,7 @@ function record!(
     acc::SMCShortfallSamplesAccumulator,
     system::SystemModel{N,L,T,P,E},
     state::SystemState, problem::DispatchProblem,
-    sampleid::Integer, t::Integer
+    sampleid::Int, t::Int
 ) where {N,L,T,P,E}
 
     for (r, e) in enumerate(problem.bus_unserved_edges)
@@ -217,7 +217,7 @@ function record!(
 
 end
 
-reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Integer) = nothing
+reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCShortfallSamplesAccumulator,
