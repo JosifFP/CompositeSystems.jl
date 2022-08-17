@@ -1,5 +1,5 @@
 include("SystemState.jl")
-#include("DispatchProblem.jl")
+include("DispatchProblem.jl")
 include("utils.jl")
 
 struct SequentialMonteCarlo <: SimulationSpec
@@ -54,7 +54,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    #dispatchproblem = DispatchProblem(system)
+    dispatchproblem = DispatchProblem(system)
     sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)

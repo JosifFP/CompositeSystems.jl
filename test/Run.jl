@@ -32,22 +32,12 @@ sys = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 #********************************************************************************************************************************
 #MCS
 #********************************************************************************************************************************
+using Distributions
 using PRATS
 using PRATS.PRATSBase
 using PRATS.CompositeAdequacy
-import BenchmarkTools: @btime
-import Base: -, broadcastable, getindex, merge!
-#import Base.Threads: nthreads, @spawn
-import Dates: DateTime, Period
-import Decimals: Decimal, decimal
-import Distributions: DiscreteNonParametric, probs, support, Exponential
-import OnlineStatsBase: EqualWeight, fit!, Mean, value, Variance
-import OnlineStats: Series
-import Printf: @sprintf
-import Random: AbstractRNG, rand, seed!
-import Random123: Philox4x
-import StatsBase: mean, std, stderror
-import TimeZones: ZonedDateTime, @tz_str
+using Base.Threads
+
 
 RawFile =  "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.raw"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
@@ -56,17 +46,15 @@ system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 method = PRATS.SequentialMonteCarlo(samples=1_000,seed=1)
 resultspecs = (Shortfall(),GeneratorAvailability())
 
-include("sequentialmontecarlo/SystemState.jl")
-include("sequentialmontecarlo/utils.jl")
+#threads = Base.Threads.nthreads()
+threads = 1
+sampleseeds = Channel{Int}(2*threads)
 
-    #threads = Base.Threads.nthreads()
-    threads = 1
-    sampleseeds = Channel{Int}(2*threads)
-    results = resultchannel(method, resultspecs, threads)
-    @async makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+results = PRATS.CompositeAdequacy.resultchannel(method, resultspecs, threads)
+@async makeseeds(sampleseeds, method.nsamples)
 
-    assess(system, method, sampleseeds, results, resultspecs...)
-    finalize(results, system)
+assess(system, method, sampleseeds, results, resultspecs...)
+finalize(results, system)
 
 
 
