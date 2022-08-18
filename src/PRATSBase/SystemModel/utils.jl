@@ -61,7 +61,14 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
     container_bus = Int64.(reduce(vcat, tmp')[:,2])
     container_category = String.(values(dictionary_core[:category]))
     container_λ = Float32.(values(dictionary_core[Symbol("failurerate[f/year]")]))
-    container_μ = Float32.(values(dictionary_core[Symbol("repairrate[h/year]")])) 
+    container_μ = Vector{Float32}(undef, length(values(dictionary_core[Symbol("repairtime[hrs]")])))
+    for i in 1:length(values(dictionary_core[Symbol("repairtime[hrs]")]))
+        if values(dictionary_core[Symbol("repairtime[hrs]")])[i]!=0.0
+            container_μ[i] = Float32.(8760/values(dictionary_core[Symbol("repairtime[hrs]")])[i])
+        else
+            container_μ[i] = 0.0
+        end
+    end
 
     return Generators{N,L,T,P}(container_key_core[key_order_core], container_bus[key_order_core], container_category[key_order_core], 
         reduce(vcat,transpose.(container_data[key_order])), container_λ[key_order_core], container_μ[key_order_core])
@@ -103,7 +110,14 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
     container_t_bus = Int64.(reduce(vcat, tmp')[:,3])
     container_category = String.(values(dictionary_core[:category]))
     container_λ = Float32.(values(dictionary_core[Symbol("failurerate[f/year]")]))
-    container_μ = Float32.(values(dictionary_core[Symbol("repairrate[h/year]")]))
+    container_μ = Vector{Float32}(undef, length(values(dictionary_core[Symbol("repairtime[hrs]")])))
+    for i in 1:length(values(dictionary_core[Symbol("repairtime[hrs]")]))
+        if values(dictionary_core[Symbol("repairtime[hrs]")])[i]!=0.0
+            container_μ[i] = Float32.(8760/values(dictionary_core[Symbol("repairtime[hrs]")])[i])
+        else
+            container_μ[i] = 0.0
+        end
+    end
     
     container_data_longterm = [Float16.(container_longterm_capacity[i]) for i in keys(container_longterm_capacity)]
     container_data_shortterm = [Float16.(container_shortterm_capacity[i]) for i in keys(container_shortterm_capacity)]

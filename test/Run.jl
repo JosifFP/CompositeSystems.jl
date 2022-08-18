@@ -18,6 +18,7 @@ network, ref, ReliabilityDataDir = PRATSBase.FileGenerator(RawFile, InputData)
 using PRATS
 using PRATS.PRATSBase
 import BenchmarkTools: @btime
+using Dates
 
 RawFile =  "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.raw"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
@@ -55,27 +56,36 @@ results = PRATS.CompositeAdequacy.resultchannel(method, resultspecs, threads)
 
 #dispatchproblem = DispatchProblem(system)
 sequences = UpDownSequence(system)
+
 systemstate = SystemState(system)
 
 # sequences.Up_gens
 # sequences.Up_stors
 # sequences.Up_genstors
-# sequences.Up_branches
 #system.network.bus
 
+sequences.Up_branches
+x = 1:8760
+using Plots
+plot(x,sequences.Up_branches[6,:])
+
 recorders = accumulator.(system, method, resultspecs)
+rng = PRATS.CompositeAdequacy.Philox4x((0, 0), 10)
 
-rng = Philox4x((0, 0), 10)
+PRATS.CompositeAdequacy.seed!(rng, (method.seed, 1))  #using the same seed for entire period.
+#PRATS.CompositeAdequacy.initialize!(rng, systemstate, system, sequences) #creates the up/down sequence for each device.
 
+N =8760
+xx = PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_branches, system.branches, N)
+x = 1:8760
+using Plots
+plot(x,xx[6,:])
 
-
-
-
-
-
-
-
-
+PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_stors, system.storages, N)
+PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_genstors, system.generatorstorages, N)
+PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_branches, system.branches, N)
+PRATS.CompositeAdequacy.fill!(systemstate.stors_energy, 0)
+PRATS.CompositeAdequacy.fill!(systemstate.genstors_energy, 0)
 
 
 

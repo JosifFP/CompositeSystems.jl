@@ -82,7 +82,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "bus" "pmax[MW]" "qmax[MVAR]" "failurerate[f/year]" "repairrate[r/year]" "category"]
+            sheet["A1"] = ["key" "bus" "pmax[MW]" "qmax[MVAR]" "failurerate[f/year]" "repairtime[hrs]" "category"]
             tmp = sort([[i, gen["gen_bus"], 
                         Float16.(gen["pmax"]*network.baseMVA),
                         Float16.(gen["qmax"]*network.baseMVA)] for (i,gen) in ref[:gen]], by = x->x[1])
@@ -101,7 +101,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
                 sheet = xf[1]
                 XLSX.rename!(sheet, "core")
-                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "failurerate[f/year]" "repairrate[h/year]"  "category"]
+                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "failurerate[f/year]" "repairtime[hrs]"  "category"]
                 tmp = sort([[i, stor["storage_bus"],
                         Float16.(stor["charge_rating"]*network.baseMVA), 
                         Float16.(stor["discharge_rating"]*network.baseMVA),
@@ -123,7 +123,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "fbus" "tbus" "rate_a[MW]" "rate_b[MW]" "failurerate[f/year]" "repairrate[r/year]" "category[optional]"]
+            sheet["A1"] = ["key" "fbus" "tbus" "rate_a[MW]" "rate_b[MW]" "failurerate[f/year]" "repairtime[hrs]" "category[optional]"]
             tmp = sort([[i,
                     branch["f_bus"], 
                     branch["t_bus"],
