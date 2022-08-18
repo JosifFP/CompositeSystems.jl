@@ -76,10 +76,7 @@ PRATS.CompositeAdequacy.seed!(rng, (method.seed, 1))  #using the same seed for e
 #PRATS.CompositeAdequacy.initialize!(rng, systemstate, system, sequences) #creates the up/down sequence for each device.
 
 N =8760
-xx = PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_branches, system.branches, N)
-x = 1:8760
-using Plots
-plot(x,xx[6,:])
+
 
 PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_stors, system.storages, N)
 PRATS.CompositeAdequacy.initialize_availability!(rng, sequences.Up_genstors, system.generatorstorages, N)
