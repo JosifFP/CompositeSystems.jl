@@ -51,11 +51,21 @@ threads = 1
 sampleseeds = Channel{Int}(2*threads)
 
 results = PRATS.CompositeAdequacy.resultchannel(method, resultspecs, threads)
-@async makeseeds(sampleseeds, method.nsamples)
+@async PRATS.CompositeAdequacy.makeseeds(sampleseeds, method.nsamples)
 
-assess(system, method, sampleseeds, results, resultspecs...)
-finalize(results, system)
+#dispatchproblem = DispatchProblem(system)
+sequences = UpDownSequence(system)
+systemstate = SystemState(system)
 
+# sequences.Up_gens
+# sequences.Up_stors
+# sequences.Up_genstors
+# sequences.Up_branches
+#system.network.bus
+
+recorders = accumulator.(system, method, resultspecs)
+
+rng = Philox4x((0, 0), 10)
 
 
 
