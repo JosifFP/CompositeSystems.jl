@@ -1,7 +1,7 @@
 """
     SystemModel(filename::String)
 
-Load a `SystemModel` from an appropriately-formatted XLSX file on disk.
+Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
 function SystemModel(RawFile::String, ReliabilityDataDir::String)
 

@@ -31,7 +31,7 @@
         VoltageUnit, kV,
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
-        SystemModel# savemodel
+        SystemModel
 
     include("SystemModel/units.jl")
     include("SystemModel/assets.jl")

@@ -1,76 +1,10 @@
 """
 
-    DispatchProblem(sys::SystemModel)
+    ContingencyAnalysis(sys::SystemModel)
 
-Create a min-cost flow problem for the multi-bus max power delivery problem
-with generation and storage discharging in decreasing order of priority, and
-storage charging with excess capacity. Storage and GeneratorStorage devices
-within a bus are represented individually on the network.
-
-This involves injections/withdrawals at one node (busal capacity
-surplus/shortfall) for each modelled bus, as well as two/three nodes
-associated with each Storage/GeneratorStorage device, and a supplementary
-"slack" node in the network that can absorb undispatched power or pass
-unserved energy or unused charging capability through to satisfy
-power balance constraints.
-
-Flows from the generation nodes are free, while flows to charging and
-from discharging nodes are costed or rewarded according to the
-time-to-discharge of the storage device, ensuring efficient coordination
-across units, while enforcing that storage is only discharged once generation
-capacity is exhausted (implying an operational strategy that prioritizes
-resource adequacy over economic arbitrage). This is based on the storage
-dispatch strategy of Evans, Tindemans, and Angeli, as outlined in "Minimizing
-Unserved Energy Using Heterogenous Storage Units" (IEEE Transactions on Power
-Systems, 2019).
-
-Flows to the charging node have an attenuated negative cost (reward),
-incentivizing immediate storage charging if generation and transmission
-allows it, while avoiding charging by discharging other storage (since that
-would incur an overall positive cost).
-
-Flows to the slack node (representing unused generation or storage discharge
-capacity) are free, but flows from the slack node to serve load incur the lost
-load penalty of 9999. Flows from the slack node in lieu of storage charging
-or discharging are free.
-
-Flows on transmission interfaces assume a hurdle rate of 1
-to keep unserved energy close to the source of the shortage and eliminate
-loop flows. This has the side-effect of disincentivising wheeling power across
-multiple buses for charging purposes, however.
-
-Nodes in the problem are ordered as:
-
- 1. Buses generation surplus/shortfall (Buses order)
- 2. Storage discharge capacity (Storage order)
- 3. Storage charge capacity (Storage order)
- 4. GenerationStorage inflow capacity (GeneratorStorage order)
- 5. GenerationStorage discharge capacity (GeneratorStorage order)
- 6. GenerationStorage grid injection (GeneratorStorage order)
- 7. GenerationStorage charge capacity (GeneratorStorage order)
- 8. Slack node
-
-Edges are ordered as:
-
- 1. Buses demand unserved (Buses order)
- 2. Buses generation unused (Buses order)
- 3. Interfaces forward flow (Interfaces order)
- 4. Interfaces reverse flow (Interfaces order)
- 5. Storage discharge to grid (Storage order)
- 6. Storage discharge unused (Storage order)
- 7. Storage charge from grid (Storage order)
- 8. Storage charge unused (Storage order)
- 9. GenerationStorage discharge to grid (GeneratorStorage order)
- 10. GenerationStorage discharge unused (GeneratorStorage order)
- 11. GenerationStorage inflow to grid (GenerationStorage order)
- 12. GenerationStorage total to grid (GeneratorStorage order)
- 13. GenerationStorage charge from grid (GeneratorStorage order)
- 14. GenerationStorage charge from inflow (GeneratorStorage order)
- 15. GenerationStorage charge unused (GeneratorStorage order)
- 16. GenerationStorage inflow unused (GeneratorStorage order)
 
 """
-struct DispatchProblem
+struct ContingencyAnalysis
 
     fp::FlowProblem
 
@@ -105,7 +39,7 @@ struct DispatchProblem
     min_chargecost::Int
     max_dischargecost::Int
 
-    function DispatchProblem(
+    function ContingencyAnalysis(
         sys::SystemModel; unlimited::Int=999_999_999)
 
         nbuses = length(sys.buses)
@@ -227,7 +161,7 @@ indices_after(lastset::UnitRange{Int}, setsize::Int) =
     last(lastset) .+ (1:setsize)
 
 function update_problem!(
-    problem::DispatchProblem, state::SystemState,
+    problem::ContingencyAnalysis, state::SystemState,
     system::SystemModel{N,L,T,P,E}, t::Int
 ) where {N,L,T,P,E}
 
@@ -385,7 +319,7 @@ function update_problem!(
 end
 
 function update_state!(
-    state::SystemState, problem::DispatchProblem,
+    state::SystemState, problem::ContingencyAnalysis,
     system::SystemModel{N,L,T,P,E}, t::Int
 ) where {N,L,T,P,E}
 

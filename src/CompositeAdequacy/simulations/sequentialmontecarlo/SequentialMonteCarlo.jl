@@ -1,5 +1,5 @@
 include("SystemState.jl")
-include("DispatchProblem.jl")
+#include("ContingencyAnalysis.jl")
 include("utils.jl")
 
 struct SequentialMonteCarlo <: SimulationSpec
@@ -54,7 +54,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    dispatchproblem = DispatchProblem(system)
+    dispatchproblem = ContingencyAnalysis(system)
     sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
@@ -103,7 +103,7 @@ end
 function advance!(
     sequences::UpDownSequence,
     state::SystemState,
-    dispatchproblem::DispatchProblem,
+    dispatchproblem::ContingencyAnalysis,
     system::SystemModel{N}, t::Int) where N
 
     update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
@@ -118,7 +118,7 @@ function advance!(
 end
 
 function solve!(
-    dispatchproblem::DispatchProblem, state::SystemState,
+    dispatchproblem::ContingencyAnalysis, state::SystemState,
     system::SystemModel, t::Int
 )
     solveflows!(dispatchproblem.fp)
