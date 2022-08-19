@@ -3,6 +3,8 @@ Base.Broadcast.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 include("availability.jl")
+include("flow.jl")
+
 
 function resultchannel(
     method::SimulationSpec, results::T, threads::Int

@@ -1,16 +1,16 @@
 
 "Types of optimization"
-abstract type Method end
-abstract type dc_opf <: Method end
-abstract type ac_opf <: Method end
-abstract type ac_bf_opf <: Method end
-abstract type dc_pf <: Method end
-abstract type ac_pf <: Method end
-abstract type dc_opf_lc <: Method end
-abstract type ac_opf_lc <: Method end
+# abstract type Method end
+# abstract type dc_opf <: Method end
+# abstract type ac_opf <: Method end
+# abstract type ac_bf_opf <: Method end
+# abstract type dc_pf <: Method end
+# abstract type ac_pf <: Method end
+# abstract type dc_opf_lc <: Method end
+# abstract type ac_opf_lc <: Method end
 
 "maps component types to status parameters"
-const pm_component_status = Dict(
+const component_status = Dict(
     "bus" => "bus_type",
     "load" => "status",
     "shunt" => "status",
@@ -22,7 +22,7 @@ const pm_component_status = Dict(
 )
 
 "maps component types to inactive status values"
-const pm_component_status_inactive = Dict(
+const component_status_inactive = Dict(
     "bus" => 4,
     "load" => 0,
     "shunt" => 0,
@@ -567,8 +567,8 @@ function calc_connected_components!(network::Network{N,L,T,P,E,V}; edges=["branc
 
     neighbors = Dict(i => Int[] for i in active_bus_ids)
     for comp_type in edges
-        status_key = get(pm_component_status, comp_type, "status")
-        status_inactive = get(pm_component_status_inactive, comp_type, 0)
+        status_key = get(component_status, comp_type, "status")
+        status_inactive = get(component_status_inactive, comp_type, 0)
         for edge in values(getfield(network, Symbol(comp_type)))
             if get(edge, status_key, 1) != status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
                 push!(neighbors[edge["f_bus"]], edge["t_bus"])
@@ -673,8 +673,8 @@ end
 # "set remaining unsupported components as inactive"
 # function unsupported_components!(data::Dict{String,Any})
 
-#     dcline_status_key = pm_component_status.dcline
-#     dcline_inactive_status = pm_component_status_inactive.dcline
+#     dcline_status_key = component_status.dcline
+#     dcline_inactive_status = component_status_inactive.dcline
 #     for (i,dcline) in data.dcline
 #         dcline[dcline_status_key] = dcline_inactive_status
 #     end    
@@ -786,3 +786,14 @@ end
 #     #repr(indices)
 #     return revised
 # end
+
+"get the reference bus in a network dataset"
+function reference_bus(data::Dict{String,<:Any})
+    time_start = time()
+    ref_bus = [bus for (i,bus) in data["bus"] if bus["bus_type"] == 3]
+    if length(ref_bus) != 1
+        Memento.error(_LOGGER, "exactly one refrence bus in data is required when calling reference_bus, given $(length(ref_bus))")
+    end
+    ref_bus = ref_bus[1]
+    return ref_bus
+end

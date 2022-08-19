@@ -24,10 +24,11 @@ export
     # Simulation specifications
     SequentialMonteCarlo,
 
-    ContingencyAnalysis, PreoutagePowerFlows, SystemState, accumulator, UpDownSequence,
+    #ContingencyAnalysis, 
+    DispatchProblem, PreoutagePowerFlows, SystemState, accumulator, UpDownSequence,
 
     # Result specifications
-    Shortfall, ShortfallSamples,
+    Shortfall, ShortfallSamples, Flow, FlowSamples,
     GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, BranchAvailability,
 
     # Convenience re-exports
