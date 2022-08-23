@@ -112,3 +112,72 @@ foreach(recorder -> record!(
 
 
 #***************************************************************************************************
+#********************************************************************************************************************************
+#Import PRATS data
+#********************************************************************************************************************************
+using PRATS
+using PRATS.PRATSBase
+import BenchmarkTools: @btime
+using Dates
+
+RawFile =  "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.raw"
+ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
+
+CurrentDir = pwd()
+N = 8760                                                    #timestep_count
+L = 1                                                       #timestep_length
+T = timeunits["h"]                                          #timestep_unit
+P = powerunits["MW"]
+E = energyunits["MWh"]
+V = voltageunits["kV"]
+start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
+timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
+assets = Vector{Any}()
+files = readdir(ReliabilityDataDir; join=false)
+cd(ReliabilityDataDir)
+network = PRATSBase.BuildNetwork(RawFile, N, L, T, P, E, V)  #Previously BuildData
+
+asset = Generators
+    
+dictionary_timeseries, dictionary_core = extract(ReliabilityDataDir, files, asset, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
+container_key = [i for i in keys(dictionary_timeseries)]
+key_order = sortperm(container_key)
+
+#push!(assets, container(container_key, key_order, dictionary_core, dictionary_timeseries, network, asset))
+
+ref = Dict(i => network.gen[string(i)] for i in 1:length(keys(network.gen)))
+tmp = sort([[i, gen["gen_bus"]] for (i,gen) in ref], by = x->x[1])
+container_key_core = Int64.(reduce(vcat, tmp')[:,1])
+key_order_core = sortperm(container_key_core)
+
+if length(container_key) != length(container_key_core)
+    for i in container_key_core
+        if in(container_key).(i) == false
+            setindex!(dictionary_timeseries, Float16.([ref[i]["pmax"]*network.baseMVA for k in 1:N]), i)
+        end
+    end
+    container_key = [i for i in keys(dictionary_timeseries)]
+    key_order = sortperm(container_key)
+    @assert length(container_key) == length(container_key_core)
+end
+
+container_data = [Float16.(dictionary_timeseries[i]) for i in keys(dictionary_timeseries)]
+container_bus = Int64.(reduce(vcat, tmp')[:,2])
+container_category = String.(values(dictionary_core[:category]))
+container_λ = Float32.(values(dictionary_core[Symbol("failurerate[f/year]")]))
+container_μ = Vector{Float32}(undef, length(values(dictionary_core[Symbol("repairtime[hrs]")])))
+for i in 1:length(values(dictionary_core[Symbol("repairtime[hrs]")]))
+    if values(dictionary_core[Symbol("repairtime[hrs]")])[i]!=0.0
+        container_μ[i] = Float32.(8760/values(dictionary_core[Symbol("repairtime[hrs]")])[i])
+    else
+        container_μ[i] = 0.0
+    end
+end
+
+Generators{N,L,T,P}(container_key_core[key_order_core], container_bus[key_order_core], container_category[key_order_core], 
+    reduce(vcat,transpose.(container_data[key_order])), container_λ[key_order_core], container_μ[key_order_core])
+
+    key_order_core
+length(container_data)
+@show bus_gen_idxs = makeidxlist(container_key_core[key_order_core], length(container_bus))
+container_bus[key_order_core]

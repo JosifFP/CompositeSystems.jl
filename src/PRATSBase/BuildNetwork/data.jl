@@ -107,6 +107,7 @@ end
 function _BuildNetwork!(pm_data::Dict{String,Any}, N::Int, L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit}, V::Type{<:VoltageUnit})
     
     #renumber_buses!(pm_data)
+    PowerModels.correct_network_data!(pm_data)
     delete!(pm_data, "source_type")
     delete!(pm_data, "source_version")
     delete!(pm_data,"name")

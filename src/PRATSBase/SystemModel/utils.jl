@@ -82,10 +82,8 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
 
     container_longterm_capacity = Dict{Int64, Any}()
     container_shortterm_capacity = Dict{Int64, Any}()
-    #container_data_longterm = Vector{Vector{Float16}}()
-    #container_data_shortterm = Vector{Vector{Float16}}()
-    #container_f_bus = Vector{Int64}()
-    #container_t_bus = Vector{Int64}()
+    #container_data_longterm = Vector{Vector{Float16}}() #container_data_shortterm = Vector{Vector{Float16}}()
+    #container_f_bus = Vector{Int64}() #container_t_bus = Vector{Int64}()
 
     tmp = sort([[i, Int64.(branch["f_bus"]), Int64.(branch["t_bus"]), Float16.(branch["rate_a"]*network.baseMVA),
                 Float16.(branch["rate_b"]*network.baseMVA)] for (i,branch) in ref], by = x->x[1])
