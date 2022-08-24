@@ -15,6 +15,8 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
+import PowerModels
+import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 export
     # CompositeAdequacy submoduleexport
@@ -22,10 +24,9 @@ export
     # Metrics
     ReliabilityMetric, LOLE, EUE, val, stderror,
     # Simulation specifications
-    SequentialMonteCarlo,
+    SequentialMonteCarlo, NoContingencies,
 
-    #ContingencyAnalysis, 
-    DispatchProblem, PreoutagePowerFlows, SystemState, accumulator, UpDownSequence,
+    DispatchProblem, SystemState, accumulator, UpDownSequence,
 
     # Result specifications
     Shortfall, ShortfallSamples, Flow, FlowSamples,

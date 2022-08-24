@@ -1,5 +1,4 @@
 broadcastable(x::SimulationSpec) = Ref(x)
 
-#include("convolution/Convolution.jl")
-include("contingencyanalysis/PreoutagePowerFlows.jl")
+include("NoContingencies/NoContingencies.jl")
 include("sequentialmontecarlo/SequentialMonteCarlo.jl")
