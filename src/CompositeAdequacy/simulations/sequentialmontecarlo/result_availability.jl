@@ -31,10 +31,10 @@ end
 
 function record!(
     acc::SMCGenAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     acc.available[:, t, sampleid] .= state.gens_available
     return
@@ -45,8 +45,8 @@ reset!(acc::SMCGenAvailabilityAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCGenAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
 
     return GeneratorAvailabilityResult{N,L,T}(
         system.generators.names, system.timestamps, acc.available)
@@ -86,10 +86,10 @@ end
 
 function record!(
     acc::SMCStorAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     acc.available[:, t, sampleid] .= state.stors_available
     return
@@ -100,8 +100,8 @@ reset!(acc::SMCStorAvailabilityAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCStorAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
 
     return StorageAvailabilityResult{N,L,T}(
         system.storages.names, system.timestamps, acc.available)
@@ -141,10 +141,10 @@ end
 
 function record!(
     acc::SMCGenStorAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     acc.available[:, t, sampleid] .= state.genstors_available
     return
@@ -155,8 +155,8 @@ reset!(acc::SMCGenStorAvailabilityAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCGenStorAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
 
     return GeneratorStorageAvailabilityResult{N,L,T}(
         system.generatorstorages.names, system.timestamps, acc.available)
@@ -196,10 +196,10 @@ end
 
 function record!(
     acc::SMCBranchAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     acc.available[:, t, sampleid] .= state.branches_available
     return
@@ -210,8 +210,8 @@ reset!(acc::SMCBranchAvailabilityAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCBranchAvailabilityAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
 
     return BranchAvailabilityResult{N,L,T}(
         system.branches.names, system.timestamps, acc.available)

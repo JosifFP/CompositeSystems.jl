@@ -20,8 +20,8 @@ merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}} =
 
 function finalize(
     results::Channel{<:Tuple{Vararg{ResultAccumulator}}},
-    system::SystemModel{N,L,T,P,E}
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U}
+) where {N,L,T,U}
 
     total_result = take!(results)
     close(results)

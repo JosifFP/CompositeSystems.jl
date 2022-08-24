@@ -9,15 +9,16 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String)
     N = 8760                                                    #timestep_count
     L = 1                                                       #timestep_length
     T = timeunits["h"]                                          #timestep_unit
-    P = powerunits["MW"]
-    E = energyunits["MWh"]
-    V = voltageunits["kV"]
+    U = perunit["pu"]
+    #P = powerunits["MW"]
+    #E = energyunits["MWh"]
+    #V = voltageunits["kV"]
     start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
     timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
     assets = Vector{Any}()
     files = readdir(ReliabilityDataDir; join=false)
     cd(ReliabilityDataDir)
-    network = PRATSBase.BuildNetwork(RawFile, N, L, T, P, E, V)  #Previously BuildData
+    network = PRATSBase.BuildNetwork(RawFile, N, L, T, U)  #Previously BuildData
     
     for asset in [Generators, Loads, Branches]
     
@@ -29,16 +30,16 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String)
         push!(assets, container(container_key, key_order, dictionary_core, dictionary_timeseries, network, asset))
     end
     
-    storages = Storages{N,L,T,P,E}(
+    storages = Storages{N,L,T,U}(
         Int[], Int[], String[],
         zeros(Float16, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
-        Float32[], Float32[], Float32[],
+        Float32[], Float32[],
         Float32[], Float32[])
     
-    generatorstorages = GeneratorStorages{N,L,T,P,E}(
+    generatorstorages = GeneratorStorages{N,L,T,U}(
         Int[], Int[], String[],
         zeros(Float16, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
-        Float32[], Float32[], Float32[],
+        Float32[], Float32[],
         zeros(Int, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
         Float32[], Float32[])
     

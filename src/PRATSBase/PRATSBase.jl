@@ -29,6 +29,7 @@
         PowerUnit, kW, MW, GW, TW,
         EnergyUnit, kWh, MWh, GWh, TWh,
         VoltageUnit, kV,
+        PerUnit, pu,
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
         SystemModel

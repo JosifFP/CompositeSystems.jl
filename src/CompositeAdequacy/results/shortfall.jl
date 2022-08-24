@@ -187,31 +187,39 @@ struct ShortfallSamplesResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: Abstr
 end
 
 function getindex(
-    x::ShortfallSamplesResult{N,L,T,P,E}
-) where {N,L,T,P,E}
+    x::ShortfallSamplesResult{N,L,T,U}
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     p2e = conversionfactor(L, T, P, E)
     return vec(p2e * sum(x.shortfall, dims=1:2))
 end
 
 function getindex(
-    x::ShortfallSamplesResult{N,L,T,P,E}, r::AbstractString
-) where {N,L,T,P,E}
+    x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     i_r = findfirstunique(x.buses, r)
     p2e = conversionfactor(L, T, P, E)
     return vec(p2e * sum(view(x.shortfall, i_r, :, :), dims=1))
 end
 
 function getindex(
-    x::ShortfallSamplesResult{N,L,T,P,E}, t::ZonedDateTime
-) where {N,L,T,P,E}
+    x::ShortfallSamplesResult{N,L,T,U}, t::ZonedDateTime
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     i_t = findfirstunique(x.timestamps, t)
     p2e = conversionfactor(L, T, P, E)
     return vec(p2e * sum(view(x.shortfall, :, i_t, :), dims=1))
 end
 
 function getindex(
-    x::ShortfallSamplesResult{N,L,T,P,E}, r::AbstractString, t::ZonedDateTime
-) where {N,L,T,P,E}
+    x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString, t::ZonedDateTime
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     i_r = findfirstunique(x.buses, r)
     i_t = findfirstunique(x.timestamps, t)
     p2e = conversionfactor(L, T, P, E)
@@ -244,14 +252,14 @@ function LOLE(x::ShortfallSamplesResult{N,L,T}, r::AbstractString, t::ZonedDateT
 end
 
 
-EUE(x::ShortfallSamplesResult{N,L,T,P,E}) where {N,L,T,P,E} =
-    EUE{N,L,T,E}(MeanEstimate(x[]))
+EUE(x::ShortfallSamplesResult{N,L,T,U}) where {N,L,T,U} =
+    EUE{N,L,T,U}(MeanEstimate(x[]))
 
-EUE(x::ShortfallSamplesResult{N,L,T,P,E}, r::AbstractString) where {N,L,T,P,E} =
-    EUE{N,L,T,E}(MeanEstimate(x[r]))
+EUE(x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString) where {N,L,T,U} =
+    EUE{N,L,T,U}(MeanEstimate(x[r]))
 
-EUE(x::ShortfallSamplesResult{N,L,T,P,E}, t::ZonedDateTime) where {N,L,T,P,E} =
-    EUE{1,L,T,E}(MeanEstimate(x[t]))
+EUE(x::ShortfallSamplesResult{N,L,T,U}, t::ZonedDateTime) where {N,L,T,U} =
+    EUE{1,L,T,U}(MeanEstimate(x[t]))
 
-EUE(x::ShortfallSamplesResult{N,L,T,P,E}, r::AbstractString, t::ZonedDateTime) where {N,L,T,P,E} =
-    EUE{1,L,T,E}(MeanEstimate(x[r, t]))
+EUE(x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString, t::ZonedDateTime) where {N,L,T,U} =
+    EUE{1,L,T,U}(MeanEstimate(x[r, t]))

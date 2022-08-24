@@ -1,20 +1,20 @@
 
-struct SystemModel{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
+struct SystemModel{N,L,T<:Period,U<:PerUnit}
 
     #buses::Buses{N,P}
-    generators::Generators{N,L,T,P}
-    loads::Loads{N,L,T,P}
-    storages::Storages{N,L,T,P,E}
-    generatorstorages::GeneratorStorages{N,L,T,P,E}
-    branches::Branches{N,L,T,P}
-    network::Network{N,L,T,P,E,V}
+    generators::Generators{N,L,T,U}
+    loads::Loads{N,L,T,U}
+    storages::Storages{N,L,T,U}
+    generatorstorages::GeneratorStorages{N,L,T,U}
+    branches::Branches{N,L,T,U}
+    network::Network{N,L,T,U}
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
-        generators::Generators{N,L,T,P}, loads::Loads{N,L,T,P}, storages::Storages{N,L,T,P,E},
-        generatorstorages::GeneratorStorages{N,L,T,P,E}, branches::Branches{N,L,T,P},
-        network::Network{N,L,T,P,E,V}, timestamps::StepRange{ZonedDateTime,T}
-    ) where {N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
+        generators::Generators{N,L,T,U}, loads::Loads{N,L,T,U}, storages::Storages{N,L,T,U},
+        generatorstorages::GeneratorStorages{N,L,T,U}, branches::Branches{N,L,T,U},
+        network::Network{N,L,T,U}, timestamps::StepRange{ZonedDateTime,T}
+    ) where {N,L,T<:Period,U<:PerUnit}
 
     # n_gens = length(generators)
     # n_stors = length(storages)
@@ -24,7 +24,7 @@ struct SystemModel{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
     @assert step(timestamps) == T(L)
     @assert length(timestamps) == N
 
-    new{N,L,T,P,E,V}(
+    new{N,L,T,U}(
         generators, loads, storages, generatorstorages, branches, network, timestamps)
     end
 
@@ -33,7 +33,7 @@ end
 # No time zone constructor
 function SystemModel(
     generators, loads, storages, generatorstorages, branches, network, timestamps::StepRange{DateTime,T}
-) where {N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit}
+) where {N,L,T<:Period,U<:PerUnit}
 
     #@warn "No time zone data provided - defaulting to UTC. To specify a " *
     #      "time zone for the system timestamps, provide a range of " *
@@ -60,4 +60,4 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
 
 broadcastable(x::SystemModel) = Ref(x)
 
-unitsymbol(::SystemModel{N,L,T,P,E,V}) where {N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit,V<:VoltageUnit} = unitsymbol(T), unitsymbol(P), unitsymbol(E), unitsymbol(V)
+unitsymbol(::SystemModel{N,L,T,U}) where {N,L,T<:Period,U<:PerUnit} = unitsymbol(T), unitsymbol(U)

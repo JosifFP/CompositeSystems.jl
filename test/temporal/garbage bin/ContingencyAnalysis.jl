@@ -162,8 +162,8 @@ indices_after(lastset::UnitRange{Int}, setsize::Int) =
 
 function update_problem!(
     problem::ContingencyAnalysis, state::SystemState,
-    system::SystemModel{N,L,T,P,E}, t::Int
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U}, t::Int
+) where {N,L,T,U}
 
     fp = problem.fp
     slack_node = fp.nodes[problem.slack_node]
@@ -320,8 +320,8 @@ end
 
 function update_state!(
     state::SystemState, problem::ContingencyAnalysis,
-    system::SystemModel{N,L,T,P,E}, t::Int
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U}, t::Int
+) where {N,L,T,U}
 
     edges = problem.fp.edges
     p2e = conversionfactor(L, T, P, E)

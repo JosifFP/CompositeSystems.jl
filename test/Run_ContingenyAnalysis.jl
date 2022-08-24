@@ -31,96 +31,173 @@ PRATS.CompositeAdequacy.seed!(rng, (method.seed, 1))  #using the same seed for e
 N = 8760
 t = 1
 
-# system.loads.keys
-# system.loads.buses[system.loads.keys]
-# system.loads.capacity[system.loads.keys]
-# system.loads.capacity
-# system.loads.capacity[1,:]
-# system.loads.capacity[system.loads.keys,2]
-# system.loads
+network_data = PRATSBase.conversion_to_pm_data(system.network)
+pf = Float32.([network_data["load"][string(i)]["qd"] / network_data["load"][string(i)]["pd"] for i in eachindex(system.loads.keys)])
 
-network_data =  PowerModels.parse_file(RawFile)
-pf_result = PowerModels.compute_dc_pf(network_data)
+for j in eachindex(1:N)
+
+     for i in eachindex(system.generators.keys)
+         network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
+         @test network_data["gen"][string(1)]["pg"] <= network_data["gen"][string(1)]["pmax"]
+     end
+
+    for i in eachindex(system.loads.keys)
+        network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
+        network_data["load"][string(i)]["qd"] = system.loads.pd[i,j]*pf[i]
+    end
+
+    pf_result = PowerModels.compute_dc_pf(network_data)
+    PowerModels.update_data!(network_data, pf_result["solution"])
+    flow = PowerModels.calc_branch_flow_dc(network_data)
+
+    for i in eachindex(system.branches.keys)
+        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
+        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
+
+        #if abs.(system.branches.pf[i,j]) > system.branches.longterm_rating[i,j]
+    end
+end
+
+overloadings = [j for j in eachindex(1:N) if any(system.branches.pf[:,j].>system.branches.longterm_rating[:,j])]
+optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
+
+for j in eachindex(overloadings)
+    
+    for i in eachindex(system.generators.keys)
+        network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
+        @test network_data["gen"][string(1)]["pg"] <= network_data["gen"][string(1)]["pmax"]
+    end
+
+   for i in eachindex(system.loads.keys)
+       network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
+       network_data["load"][string(i)]["qd"] = system.loads.pd[i,j]*pf[i]
+   end
+
+    pf_result = PowerModels.solve_dc_opf(network_data, optimizer)
+    PowerModels.update_data!(network_data, pf_result["solution"])
+    flow = PowerModels.calc_branch_flow_dc(network_data)
+            
+    for i in eachindex(system.branches.keys)
+        if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
+            Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
+                Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
+                Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
+                i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
+        end
+        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
+        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
+    end
+
+    PowerModels.update_data!(network_data, flow)
+end
+
+system.branches.pf
+
+    # Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
+    #     Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
+    #     Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
+    #     i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
+
+# opf = PowerModels.solve_opf(network_data, DCPPowerModel, optimizer)
+# PowerModels.update_data!(network_data, opf["solution"])
+# flow = PowerModels.calc_branch_flow_dc(network_data)
+# for i in eachindex(system.loads.keys)
+#     @test abs(flow["branch"][string(i)]["pf"]) <= network_data["branch"][string(i)]["rate_a"]
+# end
+
+for j in eachindex(map(x -> x[1], overloadings))
+
+    for i in eachindex(system.generators.keys)
+        network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
+        @test network_data["gen"][string(1)]["pg"] <= network_data["gen"][string(1)]["pmax"]
+    end
+
+   for i in eachindex(system.loads.keys)
+       network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
+       network_data["load"][string(i)]["qd"] = system.loads.pd[i,j]*pf[i]
+   end
+
+   pf_result = PowerModels.solve_dc_opf(network_data, optimizer)
+   PowerModels.update_data!(network_data, pf_result["solution"])
+   flow = PowerModels.calc_branch_flow_dc(network_data)
+
+   for i in eachindex(system.branches.keys)
+       if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
+
+           push!(overloadings, [j,i])
+           Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
+               Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
+               Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
+               i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
+       end
+
+       system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
+       system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
+   end
+end
+
+
+#network_data = PowerModels.parse_file(RawFile)
 PowerModels.update_data!(network_data, pf_result["solution"])
 flow = PowerModels.calc_branch_flow_dc(network_data)
 
-for i in eachindex(network_data["branch"])
-    @test abs(flow["branch"][i]["pf"]) <= network_data["branch"][i]["rate_a"]
+for i in eachindex(system.branches.keys)
+    @test abs(flow["branch"][string(i)]["pf"]) <= network_data["branch"][string(i)]["rate_a"]
 end
-
-network_data_mn = PowerModels.replicate(network_data, N)
-
-for j in eachindex(1:N)
-    for i in eachindex(system.loads.keys)
-        pf = network_data_mn["nw"][string(j)]["load"][string(i)]["qd"]/network_data_mn["nw"][string(j)]["load"][string(i)]["pd"]
-        network_data_mn["nw"][string(j)]["load"][string(i)]["pd"] = system.loads.capacity[i,j]/system.network.baseMVA
-        network_data_mn["nw"][string(j)]["load"][string(i)]["qd"] = network_data_mn["nw"][string(j)]["load"][string(i)]["pd"]*pf
-    end
-end
-
 optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
-pf_result = PowerModels.solve_mn_opf(network_data_mn, DCPPowerModel, optimizer)                 #DCPPowerModel, #ACPPowerModel
-@test pf_result["termination_status"] == LOCALLY_SOLVED
+opf = PowerModels.solve_opf(network_data, DCPPowerModel, optimizer)
+PowerModels.update_data!(network_data, opf["solution"])
+flow = PowerModels.calc_branch_flow_dc(network_data)
+for i in eachindex(system.loads.keys)
+    @test abs(flow["branch"][string(i)]["pf"]) <= network_data["branch"][string(i)]["rate_a"]
+end
 
-# for j in eachindex(1:N)
-#     for (i, branch) in pf_result["solution"]["nw"][string(j)]["branch"]
-#         @test abs(branch["pf"]) <= network_data["branch"][i]["rate_a"]
-#     end
+
+#PowerModels.calc_admittance_matrix(network_data)
+#display(network_data) # raw dictionary
+#PowerModels.print_summary(network_data) # quick table-like summary
+# system.loads.keys # system.loads.buses[system.loads.keys] # system.loads.capacity[system.loads.keys]
+# system.loads.capacity # system.loads.capacity[1,:] # system.loads.capacity[system.loads.keys,2] # system.loads
+
+# "Makes a string bold in the terminal"
+# function _bold(s::String)
+#     return "\033[1m$(s)\033[0m"
 # end
 
-PowerModels.update_data!(network_data_mn, pf_result["solution"])
-container = Dict{Int64, Any}()
+# "converts any value to a string"
+# function value2string(v::Any, float_precision::Int)
+#     return "$(v)"
+# end
 
-for j in eachindex(1:N)
+# "Attempts to determine if the given data is a component dictionary"
+# function _iscomponentdict(data::Dict)
+#     return all( typeof(comp) <: Dict for (i, comp) in data )
+# end
 
-    setindex!(network_data_mn["nw"][string(j)], true, "per_unit")
+# float_precision = 3
+# component_types_order = Dict()
+# component_parameter_order = Dict()
+# max_parameter_value = 999.0
+# component_status_parameters = Set(["status"])
+# component_types = []
+# other_types = []
 
-    for (i, branch) in pf_result["solution"]["nw"][string(j)]["branch"]
+# println(_bold("Metadata"))
+# for (k,v) in sort(collect(network_data); by=x->x[1])
+#     if typeof(v) <: Dict && _iscomponentdict(v)
+#         push!(component_types, k)
+#         continue
+#     end
 
-        if branch["pf"] > network_data["branch"][string(i)]["rate_a"]
-            
-            Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
-                Float16(branch["pf"]*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
-                Float16(branch["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
-                i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
-            opf = PowerModels.solve_opf(network_data_mn["nw"][string(j)], DCPPowerModel, optimizer)
-            @test opf["termination_status"] == LOCALLY_SOLVED
+#     println("  $(k): $(value2string(v, float_precision))")
+# end
 
-            pf_result["solution"]["nw"][string(j)]["branch"] = opf["solution"]["branch"]
-            @test branch["pf"]["pf"] <= network_data["branch"][string(i)]["rate_a"]
+# println("")
+# println(_bold("Table Counts"))
+# for k in sort(component_types, by=x->get(component_types_order, x, max_parameter_value))
+#     println("  $(k): $(length(network_data[k]))")
+# end
 
-            pf_result["solution"]["nw"][string(j)]["gen"] = opf["solution"]["gen"]
-            pf_result["solution"]["nw"][string(j)]["bus"] = opf["solution"]["bus"]
-        
-        end
-
-        flow = PowerModels.calc_branch_flow_dc(network_data_mn["nw"][string(j)])
-        setindex!(container, [abs.(Float16.(flow["branch"][string(k)]["pf"])) for k in eachindex(system.branches.keys)], j)
-    end
-end
-
-
-#PowerModels.run_mn_pf()
-#PowerModels.run_mn_opf_strg()
-#PowerModels.run_mn_opf()
-#TESTLOG = Memento.getlogger(PowerModels)
-#@test_throws(TESTLOG, ErrorException, PowerModels.correct_voltage_angle_differences!(network_data))
-#@test_throws(TESTLOG, ErrorException, PowerModels.calc_connected_components(network_data))
-
-
-container_data = [container[i] for i in keys(container)]
-@show container_data[1]
-@show container_data[2]
-
-
-#system.network
-#data = PRATSBase.conversion_to_pm_data(system.network)
-#pf_result = PowerModels.compute_dc_pf(data)
-#PowerModels.update_data!(data, pf_result["solution"])
-#flow = PowerModels.calc_branch_flow_dc(data)
-#update_problem!(dispatchproblem, state, system, t)
-#PowerModels.update_data!(data, flow)
-#network = Network{1,1,Hour,MW,MWh,kV}(data)
-#
-
-
+# optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
+# pf_result = PowerModels.solve_mn_opf(network_data_mn, DCPPowerModel, optimizer)                 #DCPPowerModel, #ACPPowerModel
+# @test pf_result["termination_status"] == LOCALLY_SOLVED

@@ -159,9 +159,10 @@ indices_after(lastset::UnitRange{Int}, setsize::Int) =
 
 function update_problem!(
     problem::DispatchProblem, state::SystemState,
-    system::SystemModel{N,L,T,P,E}, t::Int
-) where {N,L,T,P,E}
-
+    system::SystemModel{N,L,T,U}, t::Int
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     fp = problem.fp
     slack_node = fp.nodes[problem.slack_node]
 
@@ -317,9 +318,10 @@ end
 
 function update_state!(
     state::SystemState, problem::DispatchProblem,
-    system::SystemModel{N,L,T,P,E}, t::Int
-) where {N,L,T,P,E}
-
+    system::SystemModel{N,L,T,U}, t::Int
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     edges = problem.fp.edges
     p2e = conversionfactor(L, T, P, E)
 

@@ -37,10 +37,10 @@ end
 
 function record!(
     acc::SMCFlowAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     edges = problem.fp.edges
 
@@ -66,9 +66,10 @@ end
 
 function finalize(
     acc::SMCFlowAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
-
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     nsamples = length(system.interfaces) > 0 ?
         first(acc.flow_interface[1].stats).n : nothing
 
@@ -117,10 +118,10 @@ end
 
 function record!(
     acc::SMCFlowSamplesAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     for (i, (e_f, e_r)) in enumerate(zip(problem.interface_forward_edges,
                                 problem.interface_reverse_edges))
@@ -136,9 +137,10 @@ reset!(acc::SMCFlowSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCFlowSamplesAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
-
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
+    P = powerunits["MW"]
+    E = energyunits["MWh"]
     fromregions = getindex.(Ref(system.regions.names), system.interfaces.regions_from)
     toregions = getindex.(Ref(system.regions.names), system.interfaces.regions_to)
 

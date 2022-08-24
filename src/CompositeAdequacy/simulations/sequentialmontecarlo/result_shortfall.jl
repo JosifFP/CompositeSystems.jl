@@ -78,10 +78,10 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     totalshortfall = 0
     isshortfall = false
@@ -143,8 +143,8 @@ end
 
 function finalize(
     acc::SMCShortfallAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
 
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
@@ -204,10 +204,10 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,P,E},
+    system::SystemModel{N,L,T,U},
     state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
-) where {N,L,T,P,E}
+) where {N,L,T,U}
 
     for (r, e) in enumerate(problem.bus_unserved_edges)
         acc.shortfall[r, t, sampleid] = problem.fp.edges[e].flow
@@ -221,10 +221,10 @@ reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E}
+    system::SystemModel{N,L,T,U},
+) where {N,L,T,U}
 
-    return ShortfallSamplesResult{N,L,T,P,E}(
+    return ShortfallSamplesResult{N,L,T,U}(
         system.buses.names, system.timestamps, acc.shortfall)
 
 end

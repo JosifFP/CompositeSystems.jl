@@ -33,9 +33,12 @@ const component_status_inactive = Dict(
     "dcline" => 0,
 )
 
-function conversion_to_pm_data(network::Network{N,L,T,P,E,V})::Dict{String,<:Any} where {N,L,T,P,E,V}
+function conversion_to_pm_data(network::Network{N,L,T,U})::Dict{String,<:Any} where {N,L,T,U}
     return Dict(
     [("bus",network.bus)
+    ("source_type",network.source_type)
+    ("name",network.name)
+    ("source_version",network.source_version)
     ("dcline",network.dcline)
     ("gen",network. gen)
     ("branch",network. branch)
@@ -60,11 +63,11 @@ function BuildNetwork(file::String)
 end
 
 ""
-function BuildNetwork(file::String, N::Int, L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit}, V::Type{<:VoltageUnit})
+function BuildNetwork(file::String, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
     silence()
     
     pm_data = parse_model(file)
-    network = _BuildNetwork!(pm_data,N,L,T,P,E,V)
+    network = _BuildNetwork!(pm_data,N,L,T,U)
 
     return network
 
@@ -92,10 +95,10 @@ end
 function _BuildNetwork!(pm_data::Dict{String,Any})
     
     #renumber_buses!(pm_data)
-    delete!(pm_data, "source_type")
-    delete!(pm_data, "source_version")
-    delete!(pm_data,"name")
-    network = Network{1,1,Hour,MW,MWh,kV}(pm_data)
+    #delete!(pm_data, "source_type")
+    #delete!(pm_data, "source_version")
+    #delete!(pm_data,"name")
+    network = Network{1,1,Hour,pu}(pm_data)
     calc_thermal_limits!(network)
     s_cost_terms!(network, order=2)
     SimplifyNetwork!(network)
@@ -104,14 +107,14 @@ function _BuildNetwork!(pm_data::Dict{String,Any})
 end
 
 ""
-function _BuildNetwork!(pm_data::Dict{String,Any}, N::Int, L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit}, V::Type{<:VoltageUnit})
+function _BuildNetwork!(pm_data::Dict{String,Any}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
     
     #renumber_buses!(pm_data)
     PowerModels.correct_network_data!(pm_data)
-    delete!(pm_data, "source_type")
-    delete!(pm_data, "source_version")
-    delete!(pm_data,"name")
-    network = Network{N,L,T,P,E,V}(pm_data)
+    #delete!(pm_data, "source_type")
+    #delete!(pm_data, "source_version")
+    #delete!(pm_data,"name")
+    network = Network{N,L,T,U}(pm_data)
     calc_thermal_limits!(network)
     s_cost_terms!(network, order=2)
     SimplifyNetwork!(network)
@@ -123,7 +126,7 @@ end
 attempts to deactive components that are not needed in the network by repeated
 calls to `propagate_topology_status!` and `deactivate_isolated_components!`
 """
-function SimplifyNetwork!(network::Network{N,L,T,P,E,V}) where {N,L,T,P,E,V}
+function SimplifyNetwork!(network::Network{N,L,T,U}) where {N,L,T,U}
 
     revised = true
     iteration = 0
@@ -140,7 +143,7 @@ function SimplifyNetwork!(network::Network{N,L,T,P,E,V}) where {N,L,T,P,E,V}
 end
 
 "ensures all polynomial costs functions have the same number of terms"
-function s_cost_terms!(network::Network{N,L,T,P,E,V}; order=-1) where {N,L,T,P,E,V}
+function s_cost_terms!(network::Network{N,L,T,U}; order=-1) where {N,L,T,U}
 
     comp_max_order = 1
     if isempty(network.gen) == false
@@ -224,7 +227,7 @@ the system status values are consistent.
 
 returns true if any component was modified.
 """
-function propagate_topo_status!(network::Network{N,L,T,P,E,V}) where {N,L,T,P,E,V}
+function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
     
     revised = false
     buses = Dict(bus["bus_i"] => bus for (i,bus) in network.bus)
@@ -360,7 +363,7 @@ or loads.
 
 also deactivates 0 valued loads and shunts.
 """
-function deactivate_isol_components!(network::Network{N,L,T,P,E,V}) where {N,L,T,P,E,V}
+function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
 
     buses = Dict(bus["bus_i"] => bus for (i,bus) in network.bus)
     revised = false
@@ -561,7 +564,7 @@ end
 computes the connected components of the network graph
 returns a set of sets of bus ids, each set is a connected component
 """
-function calc_connected_components!(network::Network{N,L,T,P,E,V}; edges=["branch", "dcline", "switch"]) where {N,L,T,P,E,V}
+function calc_connected_components!(network::Network{N,L,T,U}; edges=["branch", "dcline", "switch"]) where {N,L,T,U}
     
     active_bus = Dict(x for x in network.bus if x.second["bus_type"] != 4)
     active_bus_ids = Set{Int}([bus["bus_i"] for (i,bus) in active_bus])
@@ -630,7 +633,7 @@ function calc_branchs_t(branch::Dict{String,<:Any})
 end
 
 ""
-function calc_thermal_limits!(network::Network{N,L,T,P,E,V}) where {N,L,T,P,E,V}
+function calc_thermal_limits!(network::Network{N,L,T,U}) where {N,L,T,U}
     
     mva_base = network.baseMVA
     branches = [branch for branch in values(network.branch)]

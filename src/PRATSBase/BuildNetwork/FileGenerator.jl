@@ -31,12 +31,13 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = [ "key" "bus" "MW" "MVAR" "pf"]
+            sheet["A1"] = [ "key" "bus" "pd[MW]" "qd[MVAR]" "powerfactor"] #pf=powerfactor
             tmp = sort([[i, load["load_bus"], 
-                        Float16.(load["pd"]*network.baseMVA),
-                        Float16.(load["qd"]*network.baseMVA),
-                        Float16.(load["qd"]./load["pd"])] for (i,load) in ref[:load]], by = x->x[1])
-            sheet["A2"] = reduce(vcat, tmp')
+                        Float64.(load["pd"]*network.baseMVA),
+                        Float64.(load["qd"]*network.baseMVA),
+                        Float64.(load["qd"]./load["pd"])] for (i,load) in ref[:load]], by = x->x[1])
+            tmp = reduce(vcat, tmp')
+            sheet["A2"] = tmp
 
             XLSX.addsheet!(xf,"load curtailment data")
             sheet = xf[2]
@@ -71,7 +72,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
             sheet["B2"] = "peak load [%]"
             sheet["A3"] = [(i) for i in 1:52][:,:]
 
-            XLSX.addsheet!(xf,"time series capacity")
+            XLSX.addsheet!(xf,"time series MW")
             sheet = xf[6]
             sheet["A1"] = "Keep worksheet blank if no time series data is available"
         end
@@ -82,13 +83,13 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "bus" "pmax[MW]" "qmax[MVAR]" "failurerate[f/year]" "repairtime[hrs]" "category"]
+            sheet["A1"] = ["key" "bus" "pg[MW]" "qg[MVAR]" "failurerate[f/year]" "repairtime[hrs]" "category"]
             tmp = sort([[i, gen["gen_bus"], 
-                        Float16.(gen["pmax"]*network.baseMVA),
-                        Float16.(gen["qmax"]*network.baseMVA)] for (i,gen) in ref[:gen]], by = x->x[1])
+                        Float64.(gen["pg"]*network.baseMVA),
+                        Float64.(gen["qg"]*network.baseMVA)] for (i,gen) in ref[:gen]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
-            XLSX.addsheet!(xf,"time series capacity")
+            XLSX.addsheet!(xf,"time series MW")
             sheet = xf[2]
             sheet["A1"] = "Keep worksheet blank if no timeseries data is available"
         end
@@ -101,16 +102,16 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
                 sheet = xf[1]
                 XLSX.rename!(sheet, "core")
-                sheet["A1"] = ["key" "bus" "chargecapacity" "dischargecapacity" "energycapacity" "chargeefficiency" "dischargeefficiency" "carryoverefficiency" "failurerate[f/year]" "repairtime[hrs]"  "category"]
+                sheet["A1"] = ["key" "bus" "charge_rating" "discharge_rating" "energy_rating" "charge_efficiency" "discharge_efficiency" "failurerate[f/year]" "repairtime[hrs]"  "category"]
                 tmp = sort([[i, stor["storage_bus"],
-                        Float16.(stor["charge_rating"]*network.baseMVA), 
-                        Float16.(stor["discharge_rating"]*network.baseMVA),
-                        Float16.(stor["energy_rating"]*network.baseMVA), 
+                        Float64.(stor["charge_rating"]*network.baseMVA), 
+                        Float64.(stor["discharge_rating"]*network.baseMVA),
+                        Float64.(stor["energy_rating"]*network.baseMVA), 
                         stor["charge_efficiency"],
                         stor["discharge_efficiency"]] for (i,stor) in ref[:storage]], by = x->x[1])
                 sheet["A2"] = reduce(vcat, tmp')
 
-                XLSX.addsheet!(xf,"time series capacity")
+                XLSX.addsheet!(xf,"time series MW")
                 sheet = xf[2]
                 sheet["A1"] = "Keep worksheet blank if no time series data is available"
             end
@@ -127,11 +128,11 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
             tmp = sort([[i,
                     branch["f_bus"], 
                     branch["t_bus"],
-                    Float16.(branch["rate_a"]*network.baseMVA),
-                    Float16.(branch["rate_b"]*network.baseMVA)] for (i,branch) in ref[:branch]], by = x->x[1])
+                    Float64.(branch["rate_a"]*network.baseMVA),
+                    Float64.(branch["rate_b"]*network.baseMVA)] for (i,branch) in ref[:branch]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
-            XLSX.addsheet!(xf,"time series capacity")
+            XLSX.addsheet!(xf,"time series MW")
             sheet = xf[2]
             sheet["A1"] = "Keep worksheet blank if no time series data is available"
 
