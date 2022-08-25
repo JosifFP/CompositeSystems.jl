@@ -1,58 +1,108 @@
 export TimeSeriesPowerFlow!
 import LinearAlgebra: pinv
 
-function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}) where {N}
+# function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, overloadings::Vector{Int64}) where {N}
 
-    for j in eachindex(1:N)
+#     for j in eachindex(1:N)
+#         update_data_from_system!(network_data, system, j)
+#         update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
+#         flow = calc_branch_flow_dc(network_data)
+#         update_systemmodel_branches!(network_data, system, flow, overloadings, j)
+#         update_data!(network_data, flow)
+#         update_systemmodel_generators!(network_data, system, j)
+#     end
+    
+#     return overloadings
 
-        for i in eachindex(system.generators.keys)
-            network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
-            @assert network_data["gen"][string(i)]["pg"] <= network_data["gen"][string(i)]["pmax"]
+# end
+
+
+# function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, overloadings::Vector{Int64}, optimizer, info::String) where {N}
+
+#     resize!(overloadings,0)
+
+#     for j in eachindex(1:N)
+#         update_data_from_system!(network_data, system, j)
+#         PowerModels.update_data!(network_data, PowerModels.solve_dc_opf(network_data, optimizer)["solution"])
+#         flow = calc_branch_flow_dc(network_data)
+#         update_systemmodel_branches!(network_data, system, flow, overloadings, j, info)
+#         update_data!(network_data, flow)
+#         update_systemmodel_generators!(network_data, system, j)
+#     end
+    
+#     return overloadings
+
+# end
+
+function update_data_from_system!(network_data::Dict{String,Any}, system::SystemModel, j::Int)
+
+    for i in eachindex(system.generators.keys)
+        network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
+        @assert network_data["gen"][string(i)]["pg"] <= network_data["gen"][string(i)]["pmax"] "Generator Pmax violated"
+    end
+
+    for i in eachindex(system.loads.keys)
+        network_data["load"][string(i)]["qd"] = Float16.(system.loads.pd[i,j]*
+            Float32.(network_data["load"][string(i)]["qd"] / network_data["load"][string(i)]["pd"]))
+        network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
+    end
+    
+end
+
+function update_systemmodel_branches!(network_data::Dict{String,Any}, system::SystemModel, flow::Dict{String, Any}, overloadings::Vector{Int64}, j::Int)
+    for i in eachindex(system.branches.keys)
+        if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
+            push!(overloadings, j)
         end
+        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
+        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
+    end
 
-        for i in eachindex(system.loads.keys)
-            pf = Float32.(network_data["load"][string(i)]["qd"] / network_data["load"][string(i)]["pd"])
-            network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
-            network_data["load"][string(i)]["qd"] = Float16.(system.loads.pd[i,j]*pf)
+    for i in eachindex(system.generators.keys)
+        system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
+    end
+
+end
+
+function update_systemmodel_branches!(system::SystemModel, flow::Dict{String, Any}, j::Int)
+    for i in eachindex(system.branches.keys)
+        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
+        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
+    end
+end
+
+function update_systemmodel_branches!(network_data::Dict{String,Any}, system::SystemModel, flow::Dict{String, Any}, overloadings::Vector{Int64}, j::Int, ::String)
+    for i in eachindex(system.branches.keys)
+        if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
+            push!(overloadings, j)
+            Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
+            Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
+            Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
+            i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
         end
+        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
+        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
+    end
 
-        pf_result = PowerModels.compute_dc_pf(network_data)
-        update_data!(network_data, pf_result["solution"])
-        flow = calc_branch_flow_dc(network_data)
+    for i in eachindex(system.generators.keys)
+        system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
+    end
 
-        for i in eachindex(system.branches.keys)
-            system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
-            system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
-        end
+end
 
-        update_data!(network_data, flow)
-
-        for i in eachindex(system.generators.keys)
-            system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
-        end
+function update_systemmodel_generators!(network_data::Dict{String,Any}, system::SystemModel, j::Int)
+    for i in eachindex(system.generators.keys)
+        system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
     end
 end
 
 "recursively applies new_data to data, overwriting information"
 function update_data!(data::Dict{String,<:Any}, new_data::Dict{String,<:Any})
-    if haskey(data, "per_unit") && haskey(new_data, "per_unit")
-        if data["per_unit"] != new_data["per_unit"]
-            Memento.error(_LOGGER, "update_data requires datasets in the same units, try make_per_unit and make_mixed_units")
-        end
-    else
-        Memento.warn(_LOGGER, "running update_data with data that does not include per_unit field, units may be incorrect")
-    end
-
-    _update_data!(data, new_data)
-end
-
-"recursive call of _update_data"
-function _update_data!(data::Dict{String,<:Any}, new_data::Dict{String,<:Any})
     for (key, new_v) in new_data
         if haskey(data, key)
             v = data[key]
             if isa(v, Dict) && isa(new_v, Dict)
-                _update_data!(v, new_v)
+                update_data!(v, new_v)
             else
                 data[key] = new_v
             end
@@ -61,6 +111,7 @@ function _update_data!(data::Dict{String,<:Any}, new_data::Dict{String,<:Any})
         end
     end
 end
+
 
 "assumes a vaild dc solution is included in the data and computes the branch flow values"
 function calc_branch_flow_dc(data::Dict{String,<:Any})
@@ -108,16 +159,4 @@ function calc_branch_y(branch::Dict{String,<:Any})
     y = pinv(branch["br_r"] + im * branch["br_x"])
     g, b = real(y), imag(y)
     return g, b
-end
-
-""
-function check_violations(network_data, flow)
-
-    container_rate_a = [network_data["branch"][i]["rate_a"] for i in eachindex(network_data["branch"])]
-    key_order_rate_a = sortperm([network_data["branch"][i]["index"] for i in eachindex(network_data["branch"])])
-    container_pf = [abs(flow["branch"][i]["pf"]) for i in eachindex(flow["branch"])]
-    key_order = sortperm([parse(Int,i) for i in eachindex(flow["branch"])])
-    
-    [@assert container_pf[key_order][i] <= container_rate_a[key_order_rate_a][i] "Tests didn't pass" for i in eachindex(container_rate_a)]
-
 end

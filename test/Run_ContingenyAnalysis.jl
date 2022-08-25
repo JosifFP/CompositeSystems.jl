@@ -6,154 +6,79 @@ using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 using Test
 import BenchmarkTools: @btime
 
-RawFile =  "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.raw"
+RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 
-method = PRATS.SequentialMonteCarlo(samples=1_000,seed=1)
-resultspecs = (Shortfall(),Flow())
-#shortfalls, availability = PRATS.assess(system, method, resultspecs...)
+resultspecs = (Flow(),Flow())
+method = PRATS.NoContingencies(opf=false, verbose=false, threaded=false)
+flow,flow = PRATS.assess(system, method, resultspecs...)
+
+flow.nsamples
+flow.pf
+
+method = PRATS.NoContingencies(opf=false, verbose=false, threaded=false)
+@time flow,flow = PRATS.assess(system, method, resultspecs...)
+#2.953728 seconds (36.38 M allocations: 1.880 GiB, 6.07% gc time)
+[j for j in eachindex(1:8760) if any(abs.(flow.pf[:,j]).>system.branches.longterm_rating[:,j])]
+
+system.branches.pf
+[j for j in eachindex(1:8760) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
+
+
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+method = PRATS.NoContingencies(opf=true, verbose=false, threaded=false)
+@time flow,flow = PRATS.assess(system, method, resultspecs...)
+# 5.157434 seconds (41.29 M allocations: 2.083 GiB, 3.47% gc time)
+[j for j in eachindex(1:8760) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
+
+
+method = PRATS.NoContingencies(opf=false, verbose=false, threaded=true)
+@time flow,flow = PRATS.assess(system, method, resultspecs...)
+#3.230585 seconds (36.38 M allocations: 1.881 GiB, 7.27% gc time, 0.11% compilation time)
+
+method = PRATS.NoContingencies(opf=true, verbose=false, threaded=true)
+@time flow,flow = PRATS.assess(system, method, resultspecs...)
+#3.156026 seconds (36.41 M allocations: 1.883 GiB, 6.87% gc time)
+
+
+
+
+[j for j in eachindex(1:8760) if any(abs.(flow.pf[:,j]).>system.branches.longterm_rating[:,j])]
 
 #threads = Base.Threads.nthreads()
-threads = 1
-sampleseeds = Channel{Int}(2*threads)
+periods = Channel{Int}(2*threads)
+#results = CompositeAdequacy.resultchannel(method, resultspecs, threads)
+system.branches.pf
+[j for j in eachindex(1:8760) if any(abs.(system.branches.pf[:,j]).>=system.branches.longterm_rating[:,j])]
 
-results = PRATS.CompositeAdequacy.resultchannel(method, resultspecs, threads)
-@async PRATS.CompositeAdequacy.makeseeds(sampleseeds, method.nsamples)
-
+# nloads = length(system.loads)
+# ngens = length(system.generators)
+# nstors = length(system.storages)
+# ngenstors = length(system.generatorstorages)
+# nbranches = length(system.branches)
 #assess(system, method, sampleseeds, results, resultspecs...)
-
-sequences = UpDownSequence(system)
-systemstate = SystemState(system)
-
+#systemstate = SystemState(system)
 #recorders = accumulator.(system, method, resultspecs)
-rng = PRATS.CompositeAdequacy.Philox4x((0, 0), 10)
-PRATS.CompositeAdequacy.seed!(rng, (method.seed, 1))  #using the same seed for entire period.
-N = 8760
-t = 1
 # L = 1
 # T = timeunits["h"]
 # U = perunit["pu"]
 #@btime PowerModels.compute_basic_dc_pf(network_data)
 #network_data = parse_file(RawFile)
 #check_violations(network_data, flow)
-
-network_data = PRATSBase.conversion_to_pm_data(system.network)
-TimeSeriesPowerFlow!(network_data, system)
-overloadings = [j for j in eachindex(1:N) if any(system.branches.pf[:,j].>=system.branches.longterm_rating[:,j])]
-optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
-pf_result = PowerModels.compute_dc_pf(network_data)
-
-for j in eachindex(overloadings)
-    
-    for i in eachindex(system.generators.keys)
-        network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
-        @assert network_data["gen"][string(i)]["pg"] <= network_data["gen"][string(i)]["pmax"]
-    end
-
-    for i in eachindex(system.loads.keys)
-        pf = Float32.(network_data["load"][string(i)]["qd"] / network_data["load"][string(i)]["pd"])
-        network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
-        network_data["load"][string(i)]["qd"] = Float16.(system.loads.pd[i,j]*pf)
-    end
-
-    pf_result = PowerModels.solve_dc_opf(network_data, optimizer)
-    PowerModels.update_data!(network_data, pf_result["solution"])
-    flow = PowerModels.calc_branch_flow_dc(network_data)
-            
-    for i in eachindex(system.branches.keys)
-        if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
-            Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
-                Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
-                Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
-                i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
-        end
-        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
-        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
-    end
-
-    update_data!(network_data, flow)
-    for i in eachindex(system.generators.keys)
-        system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
-    end
-end
-
-[j for j in eachindex(1:N) if any(system.branches.pf[:,j].>=system.branches.longterm_rating[:,j])]
-
-system.branches.pf
-system.generators.pg
-
-    # Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
-    #     Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
-    #     Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
-    #     i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
-
-# opf = PowerModels.solve_opf(network_data, DCPPowerModel, optimizer)
-# PowerModels.update_data!(network_data, opf["solution"])
-# flow = PowerModels.calc_branch_flow_dc(network_data)
-# for i in eachindex(system.loads.keys)
-#     @test abs(flow["branch"][string(i)]["pf"]) <= network_data["branch"][string(i)]["rate_a"]
-# end
-
-for j in eachindex(map(x -> x[1], overloadings))
-
-    for i in eachindex(system.generators.keys)
-        network_data["gen"][string(i)]["pg"] = system.generators.pg[i,j]
-        @test network_data["gen"][string(1)]["pg"] <= network_data["gen"][string(1)]["pmax"]
-    end
-
-   for i in eachindex(system.loads.keys)
-       network_data["load"][string(i)]["pd"] = system.loads.pd[i,j]
-       network_data["load"][string(i)]["qd"] = system.loads.pd[i,j]*pf[i]
-   end
-
-   pf_result = PowerModels.solve_dc_opf(network_data, optimizer)
-   PowerModels.update_data!(network_data, pf_result["solution"])
-   flow = PowerModels.calc_branch_flow_dc(network_data)
-
-   for i in eachindex(system.branches.keys)
-       if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
-
-           push!(overloadings, [j,i])
-           Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
-               Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
-               Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
-               i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
-       end
-
-       system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
-       system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
-   end
-end
-
-
-#network_data = PowerModels.parse_file(RawFile)
-PowerModels.update_data!(network_data, pf_result["solution"])
-flow = PowerModels.calc_branch_flow_dc(network_data)
-
-for i in eachindex(system.branches.keys)
-    @test abs(flow["branch"][string(i)]["pf"]) <= network_data["branch"][string(i)]["rate_a"]
-end
-optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
-opf = PowerModels.solve_opf(network_data, DCPPowerModel, optimizer)
-PowerModels.update_data!(network_data, opf["solution"])
-flow = PowerModels.calc_branch_flow_dc(network_data)
-for i in eachindex(system.loads.keys)
-    @test abs(flow["branch"][string(i)]["pf"]) <= network_data["branch"][string(i)]["rate_a"]
-end
-
-
+#a = map(x -> collect(x) ,values(network_data["gen"]))
+#overloadings = [j for j in eachindex(1:8760) if any(system.branches.pf[:,j].>=system.branches.longterm_rating[:,j])]
+#[@assert container_pf[key_order][i] <= container_rate_a[key_order_rate_a][i] "Tests didn't pass" for i in eachindex(container_rate_a)]
+#[j for j in eachindex(1:N) if any(system.branches.pf[:,j].>=system.branches.longterm_rating[:,j])]
 #PowerModels.calc_admittance_matrix(network_data)
 #display(network_data) # raw dictionary
 #PowerModels.print_summary(network_data) # quick table-like summary
 # system.loads.keys # system.loads.buses[system.loads.keys] # system.loads.capacity[system.loads.keys]
 # system.loads.capacity # system.loads.capacity[1,:] # system.loads.capacity[system.loads.keys,2] # system.loads
-
 # "Makes a string bold in the terminal"
 # function _bold(s::String)
 #     return "\033[1m$(s)\033[0m"
 # end
-
 # "converts any value to a string"
 # function value2string(v::Any, float_precision::Int)
 #     return "$(v)"

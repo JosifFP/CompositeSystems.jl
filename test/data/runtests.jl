@@ -44,7 +44,7 @@
     threenode2 = deepcopy(TestSystems.threenode)
     threenode2.generators.capacity[1, :] .+= 5
 
-    conv = Convolution(threaded=false)
+    conv = NoContingencies(threaded=false)
     smc = SequentialMonteCarlo(samples=100_000, threaded=false)
 
     @testset "EFC" begin

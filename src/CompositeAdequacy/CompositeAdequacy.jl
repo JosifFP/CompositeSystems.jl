@@ -4,7 +4,7 @@ using MinCostFlows
 using ..PRATSBase
 
 import Base: -, broadcastable, getindex, merge!
-#import Base.Threads: nthreads, @spawn
+import Base.Threads: nthreads, @spawn
 import Dates: DateTime, Period
 import Decimals: Decimal, decimal
 import Distributions: DiscreteNonParametric, probs, support, Exponential
@@ -15,7 +15,7 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
-import PowerModels
+import PowerModels, JuMP, Ipopt
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 export
@@ -29,8 +29,7 @@ export
     DispatchProblem, SystemState, accumulator, UpDownSequence,
 
     # Result specifications
-    Shortfall, ShortfallSamples, Flow, FlowSamples,
-    GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, BranchAvailability,
+    Shortfall, ShortfallSamples, Flow,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str
