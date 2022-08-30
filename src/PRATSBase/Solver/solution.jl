@@ -83,7 +83,7 @@ function get_loads_sol!(tmp, data::Dict{String, <:Any}, ref::Dict{Symbol,Any}, m
 
     for (i, load) in ref[:load_initial]
         #initial load
-        get!(tmp, i, Dict("ql" => 0.0, "pl" => ref[:baseMVA]*load["pd"]))
+        get!(tmp, i, Dict("ql" => 0.0, "pl" => load["pd"]))
     end
 
     for (i, load) in data["load"]
@@ -91,16 +91,16 @@ function get_loads_sol!(tmp, data::Dict{String, <:Any}, ref::Dict{Symbol,Any}, m
         if load["status"]!= 0
             if JuMP.value(opf_model[:plc][load["index"]])>1e-4          
                 #actual load    
-                get!(loads, index, Dict("ql"=>0.0, "pl"=> ref[:baseMVA]*load["pd"]-ref[:baseMVA]*JuMP.value(opf_model[:plc][load["index"]])))
+                get!(loads, index, Dict("ql"=>0.0, "pl"=> load["pd"]-JuMP.value(opf_model[:plc][load["index"]])))
                 #curtailed load         
-                get!(curt_loads, index, Dict("ql"=>0.0, "pl"=> ref[:baseMVA]*JuMP.value(opf_model[:plc][load["index"]])))
+                get!(curt_loads, index, Dict("ql"=>0.0, "pl"=> JuMP.value(opf_model[:plc][load["index"]])))
             else
-                get!(loads, index, Dict("ql"=>0.0, "pl"=> ref[:baseMVA]*load["pd"]))
+                get!(loads, index, Dict("ql"=>0.0, "pl"=> load["pd"]))
                 get!(curt_loads, index, Dict("ql"=>0.0, "pl"=> 0.0))
             end
         else
             get!(loads, index, Dict("ql"=>0.0, "pl"=> 0.0))           
-            get!(curt_loads, index, Dict("ql"=>0.0, "pl"=> ref[:baseMVA]*load["pd"]))
+            get!(curt_loads, index, Dict("ql"=>0.0, "pl"=> load["pd"]))
         end
     end
     return tmp, loads, curt_loads
@@ -111,7 +111,7 @@ function get_buses_sol!(tmp, ref::Dict{Symbol,Any}, method::Union{Type{dc_opf}, 
 
     for (i, bus) in ref[:bus]
         if bus["bus_type"] != 4
-            get!(tmp, i, Dict("va"=>(180/pi)*JuMP.value(opf_model[:va][bus["index"]]), "vm"=>1.0))
+            get!(tmp, i, Dict("va"=>JuMP.value(opf_model[:va][bus["index"]])))
         end
     end
     return tmp
@@ -122,7 +122,7 @@ function get_gens_sol!(tmp, ref::Dict{Symbol,Any}, method::Union{Type{dc_opf}, T
 
     for (i, gen) in ref[:gen]
         if gen["gen_status"] != 0
-            get!(tmp, i, Dict("qg"=>0.0, "pg"=>ref[:baseMVA]*JuMP.value(opf_model[:pg][gen["index"]])))
+            get!(tmp, i, Dict("qg"=>0.0, "pg"=>JuMP.value(opf_model[:pg][gen["index"]])))
         end
     end
     return tmp
@@ -134,8 +134,8 @@ function get_branches_sol!(tmp, ref::Dict{Symbol,Any}, method::Union{Type{dc_opf
     for (i, branch) in ref[:branch]
         if branch["br_status"]!= 0  
             get!(tmp, i, Dict("qf"=>0.0, "qt"=>0.0,        
-            "pt" => float(-ref[:baseMVA]*JuMP.value(opf_model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
-            "pf" => float(ref[:baseMVA]*JuMP.value(opf_model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
+            "pt" => float(-JuMP.value(opf_model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
+            "pf" => float(JuMP.value(opf_model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
             )
         end
     end

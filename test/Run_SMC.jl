@@ -57,22 +57,22 @@ end
 
 add_load_curtailment_info!(system.network)
 network_data = PRATSBase.conversion_to_pm_data(system.network)
-network_data["branch"][string(2)]["br_status"] = 0
-network_data["branch"][string(6)]["br_status"] = 0
-network_data["branch"][string(7)]["br_status"] = 0
+#network_data["branch"][string(2)]["br_status"] = 0
+#network_data["branch"][string(6)]["br_status"] = 0
+#network_data["branch"][string(7)]["br_status"] = 0
 
 PRATSBase.SimplifyNetwork!(network_data)
 CompositeAdequacy.update_data_from_system!(network_data, system, t)
-poweflow = PowerModels.compute_dc_pf(network_data)
-poweflow["solution"]["bus"]
+update_data!(network_data, PowerModels.solve_dc_opf(network_data, optimizer)["solution"])
+flow = calc_branch_flow_dc(network_data)
+flow["branch"]
 
 result = PRATSBase.min_load(network_data, optimizer)
+result["solution"]["branch"]
+
+result["solution"]["load curtailment"]
 
 
-
-
-
-update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
 
 
 systemstate.condition #if it is true, it is a success state
