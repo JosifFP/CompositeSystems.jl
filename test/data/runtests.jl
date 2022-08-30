@@ -44,21 +44,21 @@
     threenode2 = deepcopy(TestSystems.threenode)
     threenode2.generators.capacity[1, :] .+= 5
 
-    conv = Convolution(threaded=false)
+    conv = NoContingencies(threaded=false)
     smc = SequentialMonteCarlo(samples=100_000, threaded=false)
 
     @testset "EFC" begin
 
-        cc = assess(sys_before, sys_before, EFC{EUE}(10, "Region"), conv)
+        cc = assess(sys_before, sys_before, EFC{EUE}(10, "Bus"), conv)
         @test extrema(cc) == (0, 1)
 
-        cc = assess(sys_before, sys_after, EFC{EUE}(10, ["Region" => 1.0]), conv)
+        cc = assess(sys_before, sys_after, EFC{EUE}(10, ["Bus" => 1.0]), conv)
         @test extrema(cc) == (8, 9)
 
-        cc = assess(sys_before, sys_after, EFC{EUE}(10, "Region"), smc)
+        cc = assess(sys_before, sys_after, EFC{EUE}(10, "Bus"), smc)
         @test extrema(cc) == (8, 9)
 
-        cc = assess(TestSystems.threenode, threenode2, EFC{EUE}(10, "Region A"), smc)
+        cc = assess(TestSystems.threenode, threenode2, EFC{EUE}(10, "Bus A"), smc)
         @test extrema(cc) == (3, 4)
 
     end
@@ -66,16 +66,16 @@
     @testset "ELCC" begin
 
 
-        cc = assess(sys_before, sys_before, ELCC{EUE}(10, "Region"), conv)
+        cc = assess(sys_before, sys_before, ELCC{EUE}(10, "Bus"), conv)
         @test extrema(cc) == (0, 1)
 
-        cc = assess(sys_before, sys_after, ELCC{EUE}(10, ["Region" => 1.0]), conv)
+        cc = assess(sys_before, sys_after, ELCC{EUE}(10, ["Bus" => 1.0]), conv)
         @test extrema(cc) == (7, 8)
 
-        cc = assess(sys_before, sys_after, ELCC{EUE}(10, "Region"), smc)
+        cc = assess(sys_before, sys_after, ELCC{EUE}(10, "Bus"), smc)
         @test extrema(cc) == (7, 8)
 
-        cc = assess(TestSystems.threenode, threenode2, ELCC{EUE}(10, "Region A"), smc)
+        cc = assess(TestSystems.threenode, threenode2, ELCC{EUE}(10, "Bus A"), smc)
         @test extrema(cc) == (3, 4)
 
     end
