@@ -41,7 +41,7 @@ Random123 = "1"
 Reexport = "1"
 StatsBase = "0.33"
 TimeZones = "1"
-XLSX = "0.7"
+XLSX = "0.7, 0.8"
 julia = "1"
 
 [extras]
