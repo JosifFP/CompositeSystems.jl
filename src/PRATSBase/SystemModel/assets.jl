@@ -342,9 +342,9 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
 struct Network{N,L,T<:Period,U<:PerUnit}
 
     bus::Dict{String,<:Any}
-    source_type::String
-    name::String
-    source_version::String
+    #source_type::String
+    #name::String
+    #source_version::String
     dcline::Dict{String,<:Any}
     gen::Dict{String,<:Any}
     branch::Dict{String,<:Any}
@@ -358,9 +358,9 @@ struct Network{N,L,T<:Period,U<:PerUnit}
     function Network{N,L,T,U}(data::Dict{String,<:Any}) where {N,L,T,U}
 
         bus = data["bus"]
-        source_type = data["source_type"]
-        name = data["name"]
-        source_version = data["source_version"]
+        #source_type = data["source_type"]
+        #name = data["name"]
+        #source_version = data["source_version"]
         dcline = data["dcline"]
         gen = data["gen"]
         branch = data["branch"]
@@ -378,7 +378,8 @@ struct Network{N,L,T<:Period,U<:PerUnit}
         @assert isempty(baseMVA) == false
         @assert isempty(per_unit) == false
 
-        return new(bus, source_type, name, source_version, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
+        #return new(bus, source_type, name, source_version, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
+        return new(bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
 
     end
 

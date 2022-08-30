@@ -41,21 +41,7 @@ function assess(
         assess(system, method, periods, results, resultspecs...)
     end
 
-    for j in eachindex(1:N)
-        if any(abs.(system.branches.pf[:,j]).> system.branches.longterm_rating[:,j])
-            for i in eachindex(system.branches.keys)
-                if abs(system.branches.pf[i,j]) > system.branches.longterm_rating[i,j]
-                    #push!(overloadings, j)
-                    push!(info, ["Branch $(system.branches.keys[i]) overloaded by %$(Float16(abs(system.branches.pf[i,j])*100/system.branches.longterm_rating[i,j])),MW = $(abs(system.branches.pf[i,j])), Hour=$(j)"])
-                end
-            end
-        end
-    end
-
     return finalize(results, system, method.threaded ? threads : 1)
-
-    #overloadings = [j for j in eachindex(1:N) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
-    #return overloadings, info
 end
 
 function makeperiods(periods::Channel{Int}, N::Int)
@@ -126,3 +112,16 @@ function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemMode
 end
 
 include("result_flow.jl")
+
+    # for j in eachindex(1:N)
+    #     if any(abs.(system.branches.pf[:,j]).> system.branches.longterm_rating[:,j])
+    #         for i in eachindex(system.branches.keys)
+    #             if abs(system.branches.pf[i,j]) > system.branches.longterm_rating[i,j]
+    #                 #push!(overloadings, j)
+    #                 push!(info, ["Branch $(system.branches.keys[i]) overloaded by %$(Float16(abs(system.branches.pf[i,j])*100/system.branches.longterm_rating[i,j])),MW = $(abs(system.branches.pf[i,j])), Hour=$(j)"])
+    #             end
+    #         end
+    #     end
+    # end
+    #overloadings = [j for j in eachindex(1:N) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
+    #return overloadings, info

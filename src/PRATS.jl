@@ -9,7 +9,7 @@ __init__() = Memento.register(_LOGGER)
 "Suppresses information and warning messages output"
 function silence()
     Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-    Memento.setlevel!(Memento.getlogger(PRATS), "info")
+    Memento.setlevel!(Memento.getlogger(PRATS), "info", recursive=false)
 end
 
 

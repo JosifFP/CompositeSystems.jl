@@ -1,6 +1,6 @@
 # Flow
 
-struct NCFlowAccumulator <: ResultAccumulator{NoContingencies,Flow}
+struct SMCFlowAccumulator <: ResultAccumulator{SequentialMonteCarlo,Flow}
 
     flow_branch::Vector{MeanVariance}
     flow_branchperiod::Matrix{MeanVariance}
@@ -9,7 +9,7 @@ struct NCFlowAccumulator <: ResultAccumulator{NoContingencies,Flow}
 end
 
 function merge!(
-    x::NCFlowAccumulator, y::NCFlowAccumulator
+    x::SMCFlowAccumulator, y::SMCFlowAccumulator
 )
 
     foreach(merge!, x.flow_branch, y.flow_branch)
@@ -17,10 +17,10 @@ function merge!(
 
 end
 
-accumulatortype(::NoContingencies, ::Flow) = NCFlowAccumulator
+accumulatortype(::SequentialMonteCarlo, ::Flow) = SMCFlowAccumulator
 
 function accumulator(
-    system::SystemModel{N}, ::NoContingencies, ::Flow
+    system::SystemModel{N}, ::SequentialMonteCarlo, ::Flow
 ) where {N}
 
     n_branches = length(system.branches)
@@ -29,13 +29,13 @@ function accumulator(
 
     flow_branch_currentsim = zeros(Int, n_branches)
 
-    return NCFlowAccumulator(
+    return SMCFlowAccumulator(
         flow_branch, flow_branchperiod,  flow_branch_currentsim)
 
 end
 
 function record!(
-    acc::NCFlowAccumulator,
+    acc::SMCFlowAccumulator,
     system::SystemModel{N,L,T,U},
     #state::SystemState,
     sampleid::Int, t::Int
@@ -48,7 +48,7 @@ end
 
 end
 
-function reset!(acc::NCFlowAccumulator, sampleid::Int)
+function reset!(acc::SMCFlowAccumulator, sampleid::Int)
 
     for i in eachindex(acc.flow_branch_currentsim)
         fit!(acc.flow_branch[i], acc.flow_branch_currentsim[i])
@@ -58,7 +58,7 @@ function reset!(acc::NCFlowAccumulator, sampleid::Int)
 end
 
 function finalize(
-    acc::NCFlowAccumulator,
+    acc::SMCFlowAccumulator,
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
@@ -78,32 +78,32 @@ end
 # --------------------------------------------------------------------------------------------------------------------
 # FlowTotal
 
- struct NCFlowTotalAccumulator <: ResultAccumulator{NoContingencies,FlowTotal}
+ struct SMCFlowTotalAccumulator <: ResultAccumulator{SequentialMonteCarlo,FlowTotal}
 
     total::Array{Float16,3}
 
  end
 
- function merge!(x::NCFlowTotalAccumulator, y::NCFlowTotalAccumulator)
+ function merge!(x::SMCFlowTotalAccumulator, y::SMCFlowTotalAccumulator)
 
      x.total .+= y.total
      return
 
  end
 
- accumulatortype(::NoContingencies, ::FlowTotal) = NCFlowTotalAccumulator
+ accumulatortype(::SequentialMonteCarlo, ::FlowTotal) = SMCFlowTotalAccumulator
 
- function accumulator(system::SystemModel{N}, simspec::NoContingencies, ::FlowTotal) where {N}
+ function accumulator(system::SystemModel{N}, simspec::SequentialMonteCarlo, ::FlowTotal) where {N}
 
      nbranches = length(system.branches)
      #flow = zeros(Float16, nbranches, N)
      flow = zeros(Float16, nbranches, N, 1)#simspec.nsamples)
 
-     return NCFlowTotalAccumulator(flow)
+     return SMCFlowTotalAccumulator(flow)
  end
 
  function record!(
-     acc::NCFlowTotalAccumulator,
+     acc::SMCFlowTotalAccumulator,
      system::SystemModel{N,L,T,U}, sampleid::Int, t::Int
  ) where {N,L,T,U}
 
@@ -112,10 +112,10 @@ end
 
  end
 
- reset!(acc::NCFlowTotalAccumulator, sampleid::Int) = nothing
+ reset!(acc::SMCFlowTotalAccumulator, sampleid::Int) = nothing
 
  function finalize(
-     acc::NCFlowTotalAccumulator,
+     acc::SMCFlowTotalAccumulator,
      system::SystemModel{N,L,T,U},
  ) where {N,L,T,U}
 

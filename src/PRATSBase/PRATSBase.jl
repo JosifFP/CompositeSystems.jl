@@ -16,9 +16,9 @@
     "Suppresses information and warning messages output"
     function silence()
         Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-        Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
-        Memento.setlevel!(Memento.getlogger(PowerModels), "error")
-        Memento.setlevel!(Memento.getlogger(PRATSBase), "error")
+        Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error", recursive=false)
+        Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
+        Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
     end
 
     export
@@ -34,13 +34,28 @@
         # Main data structure
         SystemModel
 
+    "Types of optimization"
+    abstract type Method end
+    abstract type dc_opf <: Method end
+    abstract type ac_opf <: Method end
+    abstract type ac_bf_opf <: Method end
+    abstract type dc_pf <: Method end
+    abstract type ac_pf <: Method end
+    abstract type dc_opf_lc <: Method end
+    abstract type ac_opf_lc <: Method end
+
     include("SystemModel/units.jl")
     include("SystemModel/assets.jl")
     include("SystemModel//utils.jl")
 
-    include("BuildNetwork/data.jl")
-    include("BuildNetwork/ref.jl")
+    include("BuildNetwork/utils.jl")
     include("BuildNetwork/FileGenerator.jl")
+
+    include("Solver/ref.jl")
+    include("Solver/variables.jl")
+    include("Solver/constraints.jl")
+    include("Solver/Solver.jl")
+    include("Solver/solution.jl")
 
     include("SystemModel.jl")
     include("read.jl")

@@ -6,6 +6,7 @@ struct SystemState
     genstors_available::Vector{Bool}
     genstors_energy::Vector{Int}
     branches_available::Vector{Bool}
+    condition::Bool
 
     function SystemState(system::SystemModel)
 
@@ -23,7 +24,13 @@ struct SystemState
         nbranches = Base.length(system.branches)
         branches_available = Vector{Bool}(undef, nbranches)
 
-        return new(gens_available, stors_available, stors_energy, genstors_available, genstors_energy, branches_available)
+        if 0 in [gens_available; stors_available; genstors_available; branches_available] == true
+            condition = 0
+        else
+            condition =  1
+        end
+
+        return new(gens_available, stors_available, stors_energy, genstors_available, genstors_energy, branches_available, condition)
 
     end
 

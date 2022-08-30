@@ -1,49 +1,34 @@
-
-""
-function get_ref(data::Network)
-    network = conversion_to_pm_data(data)
-    ref = ref_initialize!(network)
-    ref_add!(ref)
-    return ref
-end
-
-"Builds a ref object with dictionaries from PowerModels data"
-function get_ref(data::Network, method::Type{})
-    network = conversion_to_pm_data(data)
-    ref = ref_initialize!(network)
-    ref_add!(ref)
-    get!(ref,:method, method)
-    return ref
-end
-
-"Builds a ref object with dictionaries from PowerModels data"
-function get_ref(data::Network, method::Type{}, load_curt_info::Union{Vector{Tuple{Int64, Float64, Float64}},Vector{}})
-    network = conversion_to_pm_data(data)
-    ref = ref_initialize!(network)
-    ref_add!(ref)
-    get_ref_n!(ref, load_curt_info)
-    get!(ref,:method, method)
-    return ref
-end
-
-"Add load curtailment information to ref()"
-function get_ref_n!(ref::Dict{Symbol,Any}, load_curt_info::Vector{Tuple{Int64, Float64, Float64}})
-    get!(ref,:load_curtailment, 
-        Dict(l => Dict(
-            "load_bus" => float(ref[:load][l]["load_bus"]), 
-            "pmax" => float(load["pd"])*getfield(load_curt_info[l], 2), 
-            "qmax" => float(load["qd"])*getfield(load_curt_info[l], 2), 
-            "cost" => float(getfield(load_curt_info[l], 3)*100)) for (l, load) in ref[:load])
-    )
-end
-
-function get_ref_n!(ref::Dict{Symbol,Any}, load_curt_info::Vector{})
-    get!(ref,:load_curtailment, Dict(l => Dict(
-        "load_bus" => float(ref[:load][l]["load_bus"]), 
-        "pmax" => float(load["pd"]), 
-        "qmax" => float(load["qd"]), 
-        "cost" => float(1000)) for (l, load) in ref[:load])
+"maps component types to inactive status values"
+const component_status_inactive = Dict(
+    "bus" => 4,
+    "load" => 0,
+    "shunt" => 0,
+    "gen" => 0,
+    "storage" => 0,
+    "switch" => 0,
+    "branch" => 0,
+    "dcline" => 0,
 )
+
+"Builds a ref object with dictionaries from PowerModels data"
+function get_ref(data::Dict{String,<:Any})
+    ref = ref_initialize!(data)
+    ref_add!(ref)
+    return ref
+end
+
+function ref_initialize!(data::Dict{String, <:Any})
+    # Initialize the refs dictionary.
+    refs = Dict{Symbol, Any}()
+    for (key,item) in data
+        if isa(item, Dict{String, Any})
+            refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
+        else
+            refs[Symbol(key)] = item
+        end        
+    end
+    # Return the final refs object.
+    return refs
 end
 
 function ref_add!(ref::Dict{Symbol,Any})
@@ -136,21 +121,6 @@ function ref_add!(ref::Dict{Symbol,Any})
     ref[:buspairs] = calc_buspair_parameters(ref[:bus], ref[:branch])
 
 end
-
-function ref_initialize!(data::Dict{String, <:Any})
-    # Initialize the refs dictionary.
-    refs = Dict{Symbol, Any}()
-    for (key,item) in data
-        if isa(item, Dict{String, Any})
-            refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
-        else
-            refs[Symbol(key)] = item
-        end        
-    end
-    # Return the final refs object.
-    return refs
-end
-
 
 "compute bus pair level data, can be run on data or ref data structures"
 function calc_buspair_parameters(buses, branches)

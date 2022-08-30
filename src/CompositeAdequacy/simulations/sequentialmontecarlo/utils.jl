@@ -105,7 +105,8 @@ function update_energy!(
     for i in 1:length(stors_energy)
 
         soc = stors_energy[i]
-        efficiency = stors.carryover_efficiency[i,t]
+        #efficiency = stors.carryover_efficiency[i,t]
+        efficiency = 1.0
         maxenergy = stors.energy_capacity[i,t]
 
         # Decay SoC

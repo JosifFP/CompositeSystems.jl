@@ -10,7 +10,7 @@ struct SequentialMonteCarlo <: SimulationSpec
 
     function SequentialMonteCarlo(;
         samples::Int=1_000, seed::Int=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=true
+        verbose::Bool=false, threaded::Bool=false
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
@@ -117,18 +117,24 @@ function advance!(
     update_availability!(state.genstors_available,sequences.Up_genstors[:,t], length(system.generatorstorages))
     update_availability!(state.branches_available,sequences.Up_branches[:,t], length(system.branches))
 
+    if 0 in [state.gens_available; state.stors_available; state.genstors_available; state.branches_available] == true
+        condition = 0
+    else
+        condition =  1
+    end
+
     update_energy!(state.stors_energy, system.storages, t)
     update_energy!(state.genstors_energy, system.generatorstorages, t)
 
 end
 
-function solve!(
-    dispatchproblem::DispatchProblem, state::SystemState,
-    system::SystemModel, t::Int
-)
-    solveflows!(dispatchproblem.fp)
-    update_state!(state, dispatchproblem, system, t)
-end
+# function solve!(
+#     dispatchproblem::DispatchProblem, state::SystemState,
+#     system::SystemModel, t::Int
+# )
+#     solveflows!(dispatchproblem.fp)
+#     update_state!(state, dispatchproblem, system, t)
+# end
 
-include("result_shortfall.jl")
-#include("result_flow.jl")
+#include("result_shortfall.jl")
+include("result_flow.jl")

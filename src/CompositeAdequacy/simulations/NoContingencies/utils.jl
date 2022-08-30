@@ -1,39 +1,6 @@
 export TimeSeriesPowerFlow!
 import LinearAlgebra: pinv
 
-# function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, overloadings::Vector{Int64}) where {N}
-
-#     for j in eachindex(1:N)
-#         update_data_from_system!(network_data, system, j)
-#         update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
-#         flow = calc_branch_flow_dc(network_data)
-#         update_systemmodel_branches!(network_data, system, flow, overloadings, j)
-#         update_data!(network_data, flow)
-#         update_systemmodel_generators!(network_data, system, j)
-#     end
-    
-#     return overloadings
-
-# end
-
-
-# function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, overloadings::Vector{Int64}, optimizer, info::String) where {N}
-
-#     resize!(overloadings,0)
-
-#     for j in eachindex(1:N)
-#         update_data_from_system!(network_data, system, j)
-#         PowerModels.update_data!(network_data, PowerModels.solve_dc_opf(network_data, optimizer)["solution"])
-#         flow = calc_branch_flow_dc(network_data)
-#         update_systemmodel_branches!(network_data, system, flow, overloadings, j, info)
-#         update_data!(network_data, flow)
-#         update_systemmodel_generators!(network_data, system, j)
-#     end
-    
-#     return overloadings
-
-# end
-
 function update_data_from_system!(network_data::Dict{String,Any}, system::SystemModel, j::Int)
 
     for i in eachindex(system.generators.keys)
