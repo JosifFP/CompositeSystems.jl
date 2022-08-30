@@ -10,36 +10,34 @@ RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 
-resultspecs = (Flow(),Flow())
+resultspecs = (Flow(), FlowTotal())
 method = PRATS.NoContingencies(opf=false, verbose=false, threaded=false)
-flow,flow = PRATS.assess(system, method, resultspecs...)
-
-flow.nsamples
-flow.pf
+flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+[j for j in eachindex(1:8760) if any(abs.(flowtotal.total[:,j,1]).>system.branches.longterm_rating[:,j])]
+#
 
 method = PRATS.NoContingencies(opf=false, verbose=false, threaded=false)
-@time flow,flow = PRATS.assess(system, method, resultspecs...)
-#2.953728 seconds (36.38 M allocations: 1.880 GiB, 6.07% gc time)
-[j for j in eachindex(1:8760) if any(abs.(flow.pf[:,j]).>system.branches.longterm_rating[:,j])]
-
-system.branches.pf
-[j for j in eachindex(1:8760) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
+@time flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+#2.936242 seconds (37.07 M allocations: 1.912 GiB, 5.20% gc time)
 
 
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 method = PRATS.NoContingencies(opf=true, verbose=false, threaded=false)
-@time flow,flow = PRATS.assess(system, method, resultspecs...)
-# 5.157434 seconds (41.29 M allocations: 2.083 GiB, 3.47% gc time)
-[j for j in eachindex(1:8760) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
+@time flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+# 3.352092 seconds (37.11 M allocations: 1.915 GiB, 6.66% gc time)
+flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+[j for j in eachindex(1:8760) if any(abs.(flowtotal.total[:,j,1]).>system.branches.longterm_rating[:,j])]
 
-
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 method = PRATS.NoContingencies(opf=false, verbose=false, threaded=true)
-@time flow,flow = PRATS.assess(system, method, resultspecs...)
-#3.230585 seconds (36.38 M allocations: 1.881 GiB, 7.27% gc time, 0.11% compilation time)
+@time flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+#3.115535 seconds (37.07 M allocations: 1.912 GiB, 4.99% gc time)
 
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 method = PRATS.NoContingencies(opf=true, verbose=false, threaded=true)
-@time flow,flow = PRATS.assess(system, method, resultspecs...)
-#3.156026 seconds (36.41 M allocations: 1.883 GiB, 6.87% gc time)
+@time flow,flowtotal = PRATS.assess(system, method, resultspecs...)
+#5.239695 seconds (41.99 M allocations: 2.115 GiB, 3.38% gc time)
 
 
 

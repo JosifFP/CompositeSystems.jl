@@ -71,20 +71,20 @@ function assess(
     resultspecs::ResultSpec...
     ) where {N,L,T<:Period,U<:PerUnit}
     
-    recorders = accumulator.(system, method, length(system.branches), resultspecs)
+    recorders = accumulator.(system, method, resultspecs)
     network_data = PRATSBase.conversion_to_pm_data(system.network)
     optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
     
     if method.opf == false
         for t in periods
             system = TimeSeriesPowerFlow!(network_data, system, t)
-            foreach(recorder -> record!(recorder, system, t), recorders)
+            foreach(recorder -> record!(recorder, system, 1, t), recorders)
         end
 
     else
         for t in periods
             system = TimeSeriesPowerFlow!(network_data, system, optimizer, t)
-            foreach(recorder -> record!(recorder, system, t), recorders)
+            foreach(recorder -> record!(recorder, system, 1, t), recorders)
         end
     end
 

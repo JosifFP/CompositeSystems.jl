@@ -29,7 +29,7 @@ export
     DispatchProblem, SystemState, accumulator, UpDownSequence,
 
     # Result specifications
-    Shortfall, ShortfallSamples, Flow,
+    Shortfall, ShortfallSamples, Flow, FlowTotal,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str

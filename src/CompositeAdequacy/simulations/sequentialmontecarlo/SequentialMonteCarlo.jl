@@ -1,5 +1,4 @@
 include("SystemState.jl")
-include("DispatchProblem.jl")
 include("utils.jl")
 
 struct SequentialMonteCarlo <: SimulationSpec
@@ -7,14 +6,15 @@ struct SequentialMonteCarlo <: SimulationSpec
     nsamples::Int
     seed::UInt64
     verbose::Bool
+    threaded::Bool
 
     function SequentialMonteCarlo(;
-        samples::Int=10_000, seed::Int=rand(UInt64),
-        verbose::Bool=false
+        samples::Int=1_000, seed::Int=rand(UInt64),
+        verbose::Bool=false, threaded::Bool=true
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
-        new(samples, UInt64(seed), verbose)
+        new(samples, UInt64(seed), verbose, threaded)
     end
 
 end
@@ -25,14 +25,23 @@ function assess(
     resultspecs::ResultSpec...
 )
     
-    #threads = Base.Threads.nthreads()
-    threads = 1
+    threads = Base.Threads.nthreads()
+    #threads = 1
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
-    @async makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+    @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
-    assess(system, method, sampleseeds, results, resultspecs...)
-    return finalize(results, system)
+    if method.threaded
+        for _ in 1:threads
+            @spawn assess(system, method, sampleseeds, results, resultspecs...)
+        end
+    else
+        assess(system, method, sampleseeds, results, resultspecs...)
+    end
+
+    return finalize(results, system, method.threaded ? threads : 1)
+    #assess(system, method, sampleseeds, results, resultspecs...)
+    #return finalize(results, system)
     
 end
 
@@ -54,7 +63,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    dispatchproblem = DispatchProblem(system)
+    #dispatchproblem = DispatchProblem(system)
     sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
@@ -68,11 +77,9 @@ function assess(
 
         for t in 1:N
             
-            advance!(sequences, systemstate, dispatchproblem, system, t)
-            solve!(dispatchproblem, systemstate, system, t)
-            foreach(recorder -> record!(
-                        recorder, system, systemstate, dispatchproblem, s, t
-                    ), recorders)
+            advance!(sequences, systemstate, system, t)
+            #solve!(dispatchproblem, systemstate, system, t)
+            #foreach(recorder -> record!(recorder, system, systemstate, dispatchproblem, s, t), recorders)
 
         end
 
@@ -103,7 +110,6 @@ end
 function advance!(
     sequences::UpDownSequence,
     state::SystemState,
-    dispatchproblem::DispatchProblem,
     system::SystemModel{N}, t::Int) where N
 
     update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
@@ -113,7 +119,6 @@ function advance!(
 
     update_energy!(state.stors_energy, system.storages, t)
     update_energy!(state.genstors_energy, system.generatorstorages, t)
-    update_problem!(dispatchproblem, state, system, t)
 
 end
 
