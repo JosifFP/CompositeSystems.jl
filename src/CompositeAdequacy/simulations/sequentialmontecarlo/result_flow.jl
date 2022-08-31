@@ -37,7 +37,7 @@ end
 function record!(
     acc::SMCFlowAccumulator,
     system::SystemModel{N,L,T,U},
-    state::SystemState,
+    #state::SystemState,
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 

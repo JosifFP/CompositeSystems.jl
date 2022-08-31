@@ -47,6 +47,8 @@ method = PRATS.NoContingencies(opf=true, verbose=false, threaded=true)
 periods = Channel{Int}(2*threads)
 #results = CompositeAdequacy.resultchannel(method, resultspecs, threads)
 system.branches.pf
+
+
 [j for j in eachindex(1:8760) if any(abs.(system.branches.pf[:,j]).>=system.branches.longterm_rating[:,j])]
 
 # nloads = length(system.loads)

@@ -148,5 +148,5 @@ function solve!(network_data::Dict{String,Any}, state::SystemState, system::Syst
 
 end
 
-include("result_shortfall.jl")
+#include("result_shortfall.jl")
 include("result_flow.jl")
