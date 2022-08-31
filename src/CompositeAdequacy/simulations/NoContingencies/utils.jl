@@ -16,45 +16,17 @@ function update_data_from_system!(network_data::Dict{String,Any}, system::System
     
 end
 
-function update_systemmodel_branches!(network_data::Dict{String,Any}, system::SystemModel, flow::Dict{String, Any}, overloadings::Vector{Int64}, j::Int)
-    for i in eachindex(system.branches.keys)
-        if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
-            push!(overloadings, j)
-        end
-        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
-        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
-    end
-
-    for i in eachindex(system.generators.keys)
-        system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
-    end
-
-end
-
 function update_systemmodel_branches!(system::SystemModel, flow::Dict{String, Any}, j::Int)
     for i in eachindex(system.branches.keys)
+        # if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
+        #     Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
+        #     Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
+        #     Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
+        #     i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
+        # end
         system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
         system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
     end
-end
-
-function update_systemmodel_branches!(network_data::Dict{String,Any}, system::SystemModel, flow::Dict{String, Any}, overloadings::Vector{Int64}, j::Int, ::String)
-    for i in eachindex(system.branches.keys)
-        if abs(flow["branch"][string(i)]["pf"]) > network_data["branch"][string(i)]["rate_a"]
-            push!(overloadings, j)
-            Memento.info(_LOGGER, "Branch (f_bus,t_bus)=($(network_data["branch"][string(i)]["f_bus"]),$(network_data["branch"][string(i)]["t_bus"])) is overloaded by %$(
-            Float16(abs(flow["branch"][string(i)]["pf"])*100/network_data["branch"][string(i)]["rate_a"])), MW=$(
-            Float16(flow["branch"][string(i)]["pf"])), rate_a = $(network_data["branch"][string(i)]["rate_a"]), key=$(
-            i), index=$(network_data["branch"][string(i)]["index"]), Hour=$(j).")
-        end
-        system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
-        system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
-    end
-
-    for i in eachindex(system.generators.keys)
-        system.generators.pg[i,j] = network_data["gen"][string(i)]["pg"]
-    end
-
 end
 
 function update_systemmodel_generators!(network_data::Dict{String,Any}, system::SystemModel, j::Int)

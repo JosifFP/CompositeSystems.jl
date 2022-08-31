@@ -15,7 +15,7 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
-import PowerModels, JuMP, Ipopt
+import PowerModels, JuMP, Ipopt, Juniper
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 export

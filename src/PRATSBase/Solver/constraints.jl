@@ -216,7 +216,8 @@ function constraint_voltage_magnitude_diff(ref::Dict{Symbol,Any}, model::Model)
         #g_fr = branch["g_fr"]
         #b_fr = branch["b_fr"]
         p_fr = model[:p][(i, branch["f_bus"], branch["t_bus"])]
-        q_fr = model[:q][(i, branch["f_bus"], branch["t_bus"])]
+        #q_fr = model[:q][(i, branch["f_bus"], branch["t_bus"])]
+        q_fr = 0
         r = branch["br_r"]
         x = branch["br_x"]
         w_fr = model[:w][branch["f_bus"]]

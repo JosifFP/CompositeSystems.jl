@@ -24,7 +24,8 @@ function assess(
     method::SequentialMonteCarlo,
     resultspecs::ResultSpec...
 )
-    
+    add_load_curtailment_info!(system.network)
+
     threads = Base.Threads.nthreads()
     #threads = 1
     sampleseeds = Channel{Int}(2*threads)
@@ -40,8 +41,6 @@ function assess(
     end
 
     return finalize(results, system, method.threaded ? threads : 1)
-    #assess(system, method, sampleseeds, results, resultspecs...)
-    #return finalize(results, system)
     
 end
 
@@ -63,10 +62,12 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    #dispatchproblem = DispatchProblem(system)
     sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
+    network_data = PRATSBase.conversion_to_pm_data(system.network)
+    optimizer = [JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), JuMP.optimizer_with_attributes(Juniper.Optimizer, 
+    "nl_solver"=>JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), "log_levels"=>[])]
 
     rng = Philox4x((0, 0), 10)
 
@@ -78,8 +79,9 @@ function assess(
         for t in 1:N
             
             advance!(sequences, systemstate, system, t)
-            #solve!(dispatchproblem, systemstate, system, t)
-            #foreach(recorder -> record!(recorder, system, systemstate, dispatchproblem, s, t), recorders)
+            update_data_from_system!(network_data, system, t)
+            solve!(network_data, systemstate, system, optimizer, t)
+            foreach(recorder -> record!(recorder, system, s, t), recorders)
 
         end
 
@@ -107,34 +109,44 @@ function initialize!(
 
 end
 
-function advance!(
-    sequences::UpDownSequence,
-    state::SystemState,
-    system::SystemModel{N}, t::Int) where N
+function advance!(sequences::UpDownSequence, state::SystemState, system::SystemModel{N}, t::Int) where N
 
     update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
     update_availability!(state.stors_available,sequences.Up_stors[:,t], length(system.storages))
     update_availability!(state.genstors_available,sequences.Up_genstors[:,t], length(system.generatorstorages))
     update_availability!(state.branches_available,sequences.Up_branches[:,t], length(system.branches))
-
-    if 0 in [state.gens_available; state.stors_available; state.genstors_available; state.branches_available] == true
-        condition = 0
-    else
-        condition =  1
-    end
-
+    update_condition!(state, state.condition)
     update_energy!(state.stors_energy, system.storages, t)
     update_energy!(state.genstors_energy, system.generatorstorages, t)
 
 end
 
-# function solve!(
-#     dispatchproblem::DispatchProblem, state::SystemState,
-#     system::SystemModel, t::Int
-# )
-#     solveflows!(dispatchproblem.fp)
-#     update_state!(state, dispatchproblem, system, t)
-# end
+function solve!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, optimizer, t::Int)
 
-#include("result_shortfall.jl")
+    #if 0 in [state.gens_available; state.stors_available; state.genstors_available; state.branches_available] == true
+    if state.condition == false
+        apply_contingencies!(system, state, system)
+        PRATSBase.SimplifyNetwork!(network_data)
+        results = PRATSBase.OptimizationProblem(network_data, PRATSBase.dc_opf_lc, optimizer[2])
+
+    else
+        results = PRATSBase.OptimizationProblem(network_data, PRATSBase.dc_opf, optimizer[1])
+    end
+
+    update_data!(network_data, results["solution"])
+
+    for i in eachindex(system.branches.keys)
+        system.branches.pf[i,t] = Float16.(network_data["branch"][string(i)]["pf"])
+        system.branches.pt[i,t] = Float16.(network_data["branch"][string(i)]["pt"])
+    end
+
+    for i in eachindex(system.generators.keys)
+        system.generators.pg[i,t] = network_data["gen"][string(i)]["pg"]
+    end
+
+    return system
+
+end
+
+include("result_shortfall.jl")
 include("result_flow.jl")

@@ -79,7 +79,7 @@ end
 function record!(
     acc::SMCShortfallAccumulator,
     system::SystemModel{N,L,T,U},
-    state::SystemState, problem::DispatchProblem,
+    state::SystemState,
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 

@@ -5,7 +5,7 @@
         Period, Minute, Hour, Day, Year, Date, hour, now
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
-    import LinearAlgebra, SparseArrays, JuMP
+    import LinearAlgebra, SparseArrays, JuMP, Ipopt, Juniper
     import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
                 optimize!, Model
 
@@ -34,16 +34,6 @@
         # Main data structure
         SystemModel
 
-    "Types of optimization"
-    abstract type Method end
-    abstract type dc_opf <: Method end
-    abstract type ac_opf <: Method end
-    abstract type ac_bf_opf <: Method end
-    abstract type dc_pf <: Method end
-    abstract type ac_pf <: Method end
-    abstract type dc_opf_lc <: Method end
-    abstract type ac_opf_lc <: Method end
-
     include("SystemModel/units.jl")
     include("SystemModel/assets.jl")
     include("SystemModel//utils.jl")
@@ -51,6 +41,7 @@
     include("BuildNetwork/utils.jl")
     include("BuildNetwork/FileGenerator.jl")
 
+    include("Solver/utils.jl")
     include("Solver/ref.jl")
     include("Solver/variables.jl")
     include("Solver/constraints.jl")

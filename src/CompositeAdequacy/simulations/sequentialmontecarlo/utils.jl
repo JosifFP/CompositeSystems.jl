@@ -58,7 +58,49 @@ function T(rng, λ::Float32, μ::Float32)::Tuple{Int32,Int32}
     return ttf,ttr
 end
 
+"Add load curtailment information to data"
+function add_load_curtailment_info!(network::Network)
+    for i in eachindex(network.load)
+        push!(network.load[string(i)], "cost" => float(1000))
+    end
+end
 
+""
+function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}) where {N}
+
+    for i in eachindex(system.branches.keys)
+        if state.branches_available[i] == false
+            #system.network.branch[string(i)]["br_status"] = state.branches_available[i]
+            network_data["branch"][string(i)]["br_status"] = state.branches_available[i]
+        end
+    end
+
+    for i in eachindex(system.generators.keys)
+        if state.gens_available[i] == false
+            #system.network.gen[string(i)]["gen_status"] = state.gens_available[i]
+            network_data["gen"][string(i)]["gen_status"] = state.gens_available[i]
+        end
+    end
+
+    for i in eachindex(system.storages.keys)
+        if state.stors_available[i] == false
+            #system.network.storage[string(i)]["status"] = state.stors_available[i]
+            network_data["storage"][string(i)]["status"] = state.stors_available[i]
+        end
+    end
+
+end
+
+function update_condition!(state::SystemState, condition::Bool)
+    if 0 in [state.gens_available; state.stors_available; state.genstors_available; state.branches_available] == true
+        condition = 0
+
+    else
+        condition =  1
+    end
+end
+
+# ----------------------------------------------------------------------------------------------------------
 function available_capacity(
     availability::Vector{Bool},
     branches::Branches,
@@ -116,62 +158,5 @@ function update_energy!(
         stors_energy[i] = min(soc, maxenergy)
 
     end
-
-end
-
-function maxtimetocharge_discharge(system::SystemModel)
-
-    if length(system.storages) > 0
-
-        if any(iszero, system.storages.charge_capacity)
-            stor_charge_max = length(system.timestamps) + 1
-        else
-            stor_charge_durations =
-                system.storages.energy_capacity ./ system.storages.charge_capacity
-            stor_charge_max = ceil(Int, maximum(stor_charge_durations))
-        end
-
-        if any(iszero, system.storages.discharge_capacity)
-            stor_discharge_max = length(system.timestamps) + 1
-        else
-            stor_discharge_durations =
-                system.storages.energy_capacity ./ system.storages.discharge_capacity
-            stor_discharge_max = ceil(Int, maximum(stor_discharge_durations))
-        end
-
-    else
-
-        stor_charge_max = 0
-        stor_discharge_max = 0
-
-    end
-
-    if length(system.generatorstorages) > 0
-
-        if any(iszero, system.generatorstorages.charge_capacity)
-            genstor_charge_max = length(system.timestamps) + 1
-        else
-            genstor_charge_durations =
-                system.generatorstorages.energy_capacity ./ system.generatorstorages.charge_capacity
-            genstor_charge_max = ceil(Int, maximum(genstor_charge_durations))
-        end
-
-        if any(iszero, system.generatorstorages.discharge_capacity)
-            genstor_discharge_max = length(system.timestamps) + 1
-        else
-            genstor_discharge_durations =
-                system.generatorstorages.energy_capacity ./ system.generatorstorages.discharge_capacity
-            genstor_discharge_max = ceil(Int, maximum(genstor_discharge_durations))
-        end
-
-    else
-
-        genstor_charge_max = 0
-        genstor_discharge_max = 0
-
-    end
-
-    return (max(stor_charge_max, genstor_charge_max),
-            max(stor_discharge_max, genstor_discharge_max))
 
 end

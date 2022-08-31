@@ -13,10 +13,9 @@ system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 resultspecs = (Flow(), FlowTotal())
 method = PRATS.NoContingencies(opf=false, verbose=false, threaded=false)
 flow,flowtotal = PRATS.assess(system, method, resultspecs...)
-flow,flowtotal = PRATS.assess(system, method, resultspecs...)
 [j for j in eachindex(1:8760) if any(abs.(flowtotal.total[:,j,1]).>system.branches.longterm_rating[:,j])]
-#
 
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
 method = PRATS.NoContingencies(opf=false, verbose=false, threaded=false)
 @time flow,flowtotal = PRATS.assess(system, method, resultspecs...)
 #2.936242 seconds (37.07 M allocations: 1.912 GiB, 5.20% gc time)

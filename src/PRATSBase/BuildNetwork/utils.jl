@@ -30,7 +30,6 @@ end
 ""
 function BuildNetwork(file::String)
     
-    silence()    
     pm_data = parse_model(file)
     network = _BuildNetwork!(pm_data)
 
@@ -41,7 +40,6 @@ end
 ""
 function BuildNetwork(file::String, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
     
-    silence()
     pm_data = parse_model(file)
     network = _BuildNetwork!(pm_data,N,L,T,U)
 
@@ -75,8 +73,8 @@ function _BuildNetwork!(pm_data::Dict{String,Any})
     delete!(pm_data, "source_version")
     delete!(pm_data,"name")
     calc_thermal_limits!(pm_data)
-    s_cost_terms!(pm_data, order=2)
     SimplifyNetwork!(pm_data)
+    s_cost_terms!(pm_data, order=2)
     __init__() = Memento.register(_LOGGER)
 
     return Network{1,1,Hour,pu}(pm_data)
@@ -91,8 +89,8 @@ function _BuildNetwork!(pm_data::Dict{String,Any}, N::Int, L::Int, T::Type{<:Per
     delete!(pm_data, "source_version")
     delete!(pm_data,"name")
     calc_thermal_limits!(pm_data)
-    s_cost_terms!(pm_data, order=2)
     SimplifyNetwork!(pm_data)
+    s_cost_terms!(pm_data, order=2)
     __init__() = Memento.register(_LOGGER)
 
     return Network{N,L,T,U}(pm_data)
@@ -139,61 +137,6 @@ function SimplifyNetwork!(network::Network{N,L,T,U}) where {N,L,T,U}
 end
 
 "ensures all polynomial costs functions have the same number of terms"
-function s_cost_terms!(network::Network{N,L,T,U}; order=-1) where {N,L,T,U}
-
-    comp_max_order = 1
-    if isempty(network.gen) == false
-        for (i, gen) in network.gen
-            if haskey(gen, "model") && gen["model"] == 2
-                max_nonzero_index = 1
-                for i in 1:length(gen["cost"])
-                    max_nonzero_index = i
-                    if gen["cost"][i] != 0.0
-                        break
-                    end
-                end
-                max_oder = length(gen["cost"]) - max_nonzero_index + 1
-                comp_max_order = max(comp_max_order, max_oder)
-            end
-        end
-    end
-
-    if isempty(network.dcline) == false
-        for (i, dcline) in network.dcline
-            if haskey(dcline, "model") && dcline["model"] == 2
-                max_nonzero_index = 1
-                for i in 1:length(dcline["cost"])
-                    max_nonzero_index = i
-                    if dcline["cost"][i] != 0.0
-                        break
-                    end
-                end
-                max_oder = length(dcline["cost"]) - max_nonzero_index + 1
-                comp_max_order = max(comp_max_order, max_oder)
-            end
-        end
-    end
-
-    if comp_max_order <= order+1
-        comp_max_order = order+1
-    else
-        if order != -1 # if not the default
-            Memento.warn(_LOGGER, "a standard cost order of $(order) was requested 
-            but the given data requires an order of at least $(comp_max_order-1)")
-        end
-    end
-
-    if isempty(network.gen) == false
-        _s_cost_terms!(network.gen, comp_max_order, "generator")
-    end
-
-    if isempty(network.dcline) == false
-        _s_cost_terms!(network.dcline, comp_max_order, "dcline")
-    end
-
-end
-
-"ensures all polynomial costs functions have the same number of terms"
 function s_cost_terms!(pm_data::Dict{String,<:Any}; order=-1)
 
     comp_max_order = 1
@@ -233,8 +176,7 @@ function s_cost_terms!(pm_data::Dict{String,<:Any}; order=-1)
         comp_max_order = order+1
     else
         if order != -1 # if not the default
-            Memento.warn(_LOGGER, "a standard cost order of $(order) was requested 
-            but the given data requires an order of at least $(comp_max_order-1)")
+            Memento.warn(_LOGGER, "a standard cost order of $(order) was requested but the given data requires an order of at least $(comp_max_order-1)")
         end
     end
 
@@ -248,22 +190,19 @@ end
 
 "ensures all polynomial costs functions have at exactly comp_order terms"
 function _s_cost_terms!(components::Dict{String,<:Any}, comp_order::Int, cost_comp_name::String)
-    
     modified = Set{Int}()
     for (i, comp) in components
         if haskey(comp, "model") && comp["model"] == 2 && length(comp["cost"]) != comp_order
             std_cost = [0.0 for i in 1:comp_order]
             current_cost = reverse(comp["cost"])
-            #println("gen cost: $(comp["cost"])")
+
             for i in 1:min(comp_order, length(current_cost))
                 std_cost[i] = current_cost[i]
             end
             comp["cost"] = reverse(std_cost)
             comp["ncost"] = comp_order
-            #println("std gen cost: $(comp["cost"])")
 
-            Memento.info(_LOGGER, "updated $(cost_comp_name) $(comp["index"]) cost function with 
-            order $(length(current_cost)) to a function of order $(comp_order): $(comp["cost"])")
+            Memento.info(_LOGGER, "updated $(cost_comp_name) $(comp["index"]) cost function with order $(length(current_cost)) to a function of order $(comp_order): $(comp["cost"])")
             push!(modified, comp["index"])
         end
     end
