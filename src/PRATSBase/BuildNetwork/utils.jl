@@ -10,6 +10,18 @@ const component_status = Dict(
     "dcline" => "br_status",
 )
 
+"maps component types to inactive status values"
+const component_status_inactive = Dict(
+    "bus" => 4,
+    "load" => 0,
+    "shunt" => 0,
+    "gen" => 0,
+    "storage" => 0,
+    "switch" => 0,
+    "branch" => 0,
+    "dcline" => 0,
+)
+
 function conversion_to_pm_data(network::Network{N,L,T,U}) where {N,L,T,U}
     return Dict(
     [("bus",network.bus)
@@ -915,27 +927,6 @@ function cc_dfs!(i, neighbors, component_lookup, touched)
 end
 
 ""
-function calc_branchs_y(branch::Dict{String,<:Any})
-
-    g=(branch["br_r"] + im * branch["br_x"])
-    #y = pinv(branch["br_r"] + im * branch["br_x"])
-    g, b = real(pinv(branch["br_r"] + im * branch["br_x"])), imag(pinv(branch["br_r"] + im * branch["br_x"]))
-    return g, b
-end
-
-
-""
-function calc_branchs_t(branch::Dict{String,<:Any})
-    #tap_ratio = branch["tap"]
-    #angle_shift = branch["shift"]
-
-    tr = branch["tap"] .* cos.(branch["shift"])
-    ti = branch["tap"] .* sin.(branch["shift"])
-
-    return tr, ti
-end
-
-""
 function calc_thermal_limits!(network::Network{N,L,T,U}) where {N,L,T,U}
     
     mva_base = network.baseMVA
@@ -1003,13 +994,6 @@ function calc_thermal_limits!(data::Dict{String,<:Any})
             branch["rate_a"] = new_rate
         end
     end
-end
-
-
-""
-function pinv(x::Number)
-    xi = inv(x)
-    return ifelse(isfinite(xi), xi, zero(xi))
 end
 
 
@@ -1121,4 +1105,10 @@ function reference_bus(data::Dict{String,<:Any})
     end
     ref_bus = ref_bus[1]
     return ref_bus
+end
+
+""
+function pinv(x::Number)
+    xi = inv(x)
+    return ifelse(isfinite(xi), xi, zero(xi))
 end

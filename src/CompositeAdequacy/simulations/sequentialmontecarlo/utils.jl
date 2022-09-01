@@ -1,6 +1,6 @@
 function initialize_availability!(
     rng::AbstractRNG,
-    sequence::Matrix{Bool},
+    availability::Matrix{Bool},
     devices::AbstractAssets, N::Int)
     
     ndevices = Base.length(devices)
@@ -9,22 +9,12 @@ function initialize_availability!(
         λ = devices.λ[i]/N
         μ = devices.μ[i]/N
         if λ != 0.0 || μ != 0.0
-            sequence[i,:] = cycles!(rng, λ, μ, N)
+            availability[i,:] = cycles!(rng, λ, μ, N)
         end
     end
 
-    return sequence
-    
-end
-
-function update_availability!(
-    availability::Vector{Bool}, sequences_device::Vector{Bool}, ndevices::Int)
-
-    for i in 1:ndevices
-        availability[i] = sequences_device[i]
-    end
-
     return availability
+    
 end
 
 function cycles!(
@@ -66,37 +56,36 @@ function add_load_curtailment_info!(network::Network)
 end
 
 ""
-function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}) where {N}
+function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}, t::Int) where {N}
 
     for i in eachindex(system.branches.keys)
         if state.branches_available[i] == false
             #system.network.branch[string(i)]["br_status"] = state.branches_available[i]
-            network_data["branch"][string(i)]["br_status"] = state.branches_available[i]
+            network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t]
         end
     end
 
     for i in eachindex(system.generators.keys)
         if state.gens_available[i] == false
             #system.network.gen[string(i)]["gen_status"] = state.gens_available[i]
-            network_data["gen"][string(i)]["gen_status"] = state.gens_available[i]
+            network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t]
         end
     end
 
     for i in eachindex(system.storages.keys)
         if state.stors_available[i] == false
             #system.network.storage[string(i)]["status"] = state.stors_available[i]
-            network_data["storage"][string(i)]["status"] = state.stors_available[i]
+            network_data["storage"][string(i)]["status"] = state.stors_available[i,t]
         end
     end
 
 end
 
-function update_condition!(state::SystemState, condition::Bool)
-    if 0 in [state.gens_available; state.stors_available; state.genstors_available; state.branches_available] == true
-        condition = 0
-
-    else
-        condition =  1
+function update_condition!(state::SystemState, N::Int)
+    for t in 1:N
+        if any(i->(i==0), [state.gens_available[:,t];state.stors_available[:,t]; state.genstors_available[:,t]; state.branches_available[:,t]]) == true
+            state.condition[t] = false
+        end
     end
 end
 

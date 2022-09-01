@@ -1,57 +1,41 @@
 struct SystemState
 
-    gens_available::Vector{Bool}
-    stors_available::Vector{Bool}
-    stors_energy::Vector{Int}
-    genstors_available::Vector{Bool}
-    genstors_energy::Vector{Int}
-    branches_available::Vector{Bool}
-    condition::Bool
+    gens_available::Matrix{Bool}
+    stors_available::Matrix{Bool}
+    genstors_available::Matrix{Bool}
+    branches_available::Matrix{Bool}
 
-    function SystemState(system::SystemModel)
+    stors_energy::Matrix{Float16}
+    genstors_energy::Matrix{Float16}
 
-        ngens = Base.length(system.generators)
-        gens_available = Vector{Bool}(undef, ngens)
+    condition::Vector{Bool}
 
-        nstors = Base.length(system.storages)
-        stors_available = Vector{Bool}(undef, nstors)
-        stors_energy = Vector{Int}(undef, nstors)
+    function SystemState(system::SystemModel{N}) where N
 
-        ngenstors = Base.length(system.generatorstorages)
-        genstors_available = Vector{Bool}(undef, ngenstors)
-        genstors_energy = Vector{Int}(undef, ngenstors)
+        @inbounds gens_available = ones(Bool, Base.length(system.generators), N)
+        @inbounds stors_available = ones(Bool, Base.length(system.storages), N)
+        @inbounds genstors_available = ones(Bool, Base.length(system.generatorstorages), N)
+        @inbounds branches_available = ones(Bool, Base.length(system.branches), N)
 
-        nbranches = Base.length(system.branches)
-        branches_available = Vector{Bool}(undef, nbranches)
+        @inbounds stors_energy = zeros(Float16, Base.length(system.storages), N)
+        @inbounds genstors_energy = zeros(Float16, Base.length(system.generatorstorages), N)
 
-        if 0 in [gens_available; stors_available; genstors_available; branches_available] == true
-            condition = 0
-        else
-            condition =  1
-        end
+        condition = ones(Bool, N)
 
-        return new(gens_available, stors_available, stors_energy, genstors_available, genstors_energy, branches_available, condition)
+        return new(gens_available, stors_available, genstors_available, branches_available, stors_energy, genstors_energy, condition)
 
     end
 
 end
 
-struct UpDownSequence
 
-    Up_gens::Matrix{Bool}
-    Up_stors::Matrix{Bool}
-    Up_genstors::Matrix{Bool}
-    Up_branches::Matrix{Bool}
+Base.:(==)(x::T, y::T) where {T <: SystemState} =
+    x.gens_available == y.gens_available &&
+    x.stors_available == y.stors_available &&
+    x.genstors_available == y.genstors_available &&
+    x.branches_available == y.branches_available &&
+    x.stors_energy == y.stors_energy &&
+    x.genstors_energy == y.genstors_energy &&
+    x.condition == y.condition
 
-    function UpDownSequence(system::SystemModel{N}) where N
-
-        @inbounds Up_gens = ones(Bool, Base.length(system.generators), N)
-        @inbounds Up_stors = ones(Bool, Base.length(system.storages), N)
-        @inbounds Up_genstors = ones(Bool, Base.length(system.generatorstorages), N)
-        @inbounds Up_branches = ones(Bool, Base.length(system.branches), N)
-
-        return new(Up_gens, Up_stors, Up_genstors, Up_branches)
-
-    end
-
-end
+Base.length(state::SystemState) = length(length(state.gens_available))

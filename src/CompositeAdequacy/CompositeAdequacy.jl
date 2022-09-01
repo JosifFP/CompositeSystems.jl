@@ -16,6 +16,8 @@ import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
 import PowerModels, JuMP, Ipopt, Juniper
+import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
+optimize!, Model
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 export
@@ -26,7 +28,7 @@ export
     # Simulation specifications
     SequentialMonteCarlo, NoContingencies,
 
-    SystemState, accumulator, UpDownSequence,
+    SystemState, accumulator,
 
     # Result specifications
     Shortfall, ShortfallSamples, Flow, FlowTotal,
@@ -46,6 +48,14 @@ abstract type Result{
 } end
 
 MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
+
+
+include("Optimizer/base.jl")
+include("Optimizer/utils.jl")
+include("Optimizer/variables.jl")
+include("Optimizer/constraints.jl")
+include("Optimizer/Optimizer.jl")
+include("Optimizer/solution.jl")
 
 include("metrics.jl")
 include("results/results.jl")

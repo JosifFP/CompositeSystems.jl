@@ -203,3 +203,30 @@ function calc_voltage_product_bounds(buspairs)
 
     return wr_min, wr_max, wi_min, wi_max
 end
+
+""
+function calc_branchs_y(branch::Dict{String,<:Any})
+
+    g=(branch["br_r"] + im * branch["br_x"])
+    #y = pinv(branch["br_r"] + im * branch["br_x"])
+    g, b = real(pinv(branch["br_r"] + im * branch["br_x"])), imag(pinv(branch["br_r"] + im * branch["br_x"]))
+    return g, b
+end
+
+
+""
+function calc_branchs_t(branch::Dict{String,<:Any})
+    #tap_ratio = branch["tap"]
+    #angle_shift = branch["shift"]
+
+    tr = branch["tap"] .* cos.(branch["shift"])
+    ti = branch["tap"] .* sin.(branch["shift"])
+
+    return tr, ti
+end
+
+""
+function pinv(x::Number)
+    xi = inv(x)
+    return ifelse(isfinite(xi), xi, zero(xi))
+end
