@@ -38,11 +38,11 @@ network_data = PRATSBase.conversion_to_pm_data(system.network)
 #pm.solution["solution"]["branch"]
 
 #RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
-network_data = PowerModels.parse_file(RawFile)
-#network_data = PRATSBase.conversion_to_pm_data(system.network)
-network_data["branch"][string(7)]["br_status"] = 0
-network_data["branch"][string(23)]["br_status"] = 0
-network_data["branch"][string(29)]["br_status"] = 0
+#network_data = PowerModels.parse_file(RawFile)
+network_data = PRATSBase.conversion_to_pm_data(system.network)
+# network_data["branch"][string(7)]["br_status"] = 0
+# network_data["branch"][string(23)]["br_status"] = 0
+# network_data["branch"][string(29)]["br_status"] = 0
 PRATSBase.SimplifyNetwork!(network_data)
 pm = CompositeAdequacy.solve_model(network_data, CompositeAdequacy.DCMLPowerModel, optimizer; condition = systemstate.condition[1])
 pm.solution["solution"]["total"]["P_load_curtailed"]*100

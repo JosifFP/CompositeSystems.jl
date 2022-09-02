@@ -75,13 +75,11 @@ function assess(
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
-        network_data = PRATSBase.conversion_to_pm_data(system.network)
-        model = [JuMP.direct_model(optimizer[i]) for i in eachindex(optimizer)]
 
         for t in 1:N
             
-            #advance!(network_data, systemstate, system, optimizer, t)
-            solve!(network_data, systemstate, system, model, t)
+            pm = advance!(PRATSBase.conversion_to_pm_data(system.network), systemstate, system, optimizer, t; systemstate.condition[t])
+            solve!(pm, systemstate, system, t)
             foreach(recorder -> record!(recorder, system, s, t), recorders)
 
         end
@@ -106,27 +104,31 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
 
 end
 
-function advance!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}, t::Int) where N
-
+function advance!(network_data::Dict{String,Any}, 
+    state::SystemState, system::SystemModel{N}, 
+    optimizer, t::Int, condition::Bool=true) where {N}
 
     update_data_from_system!(network_data, system, t)
+    pm = solve_model(network_data, DCPPowerModel, optimizer; condition)
 
+    return pm
 
-    #     update_energy!(state.stors_energy, system.storages, t)
-    #     update_energy!(state.genstors_energy, system.generatorstorages, t)
+end
+
+function advance!(network_data::Dict{String,Any}, 
+    state::SystemState, system::SystemModel{N}, 
+    optimizer, t::Int, condition::Bool=false) where {N}
+
+    update_data_from_system!(network_data, system, t)
+    apply_contingencies!(network_data, state, system, t)
+    PRATSBase.SimplifyNetwork!(network_data)
+    pm = solve_model(network_data, DCMLPowerModel, optimizer; condition)
+
+    return pm
     
-    end
+end
 
-function solve!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, model::Model, t::Int)
-
-    if state.condition == false
-        #apply_contingencies!(network_data, state, system)
-        PRATSBase.SimplifyNetwork!(network_data)
-        results = PRATSBase.OptimizationProblem(network_data, PRATSBase.DCMLPowerModel, model[2])
-
-    else
-        results = PRATSBase.OptimizationProblem(network_data, PRATSBase.DCPPowerModel, model[1])
-    end
+function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
 
     update_data!(network_data, results["solution"])
 
@@ -153,6 +155,10 @@ function solve_model(data::Dict{String,<:Any}, model_type, optimizer; kwargs...)
     return pm
 end
 
+CompositeAdequacy.solve_model(network_data, CompositeAdequacy.DCMLPowerModel, optimizer; condition = systemstate.condition[1])
 
+
+#update_energy!(state.stors_energy, system.storages, t)
+#update_energy!(state.genstors_energy, system.generatorstorages, t)
 #include("result_shortfall.jl")
 include("result_flow.jl")
