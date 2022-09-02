@@ -70,7 +70,8 @@ function var_gen_power_real(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=t
     if bounded
         for (i, gen) in ref[:gen]
             JuMP.set_upper_bound(pg[i], gen["pmax"])
-            JuMP.set_lower_bound(pg[i], gen["pmin"])
+            #JuMP.set_lower_bound(pg[i], gen["pmin"])
+            JuMP.set_lower_bound(pg[i], 0.0)
         end
     end
 

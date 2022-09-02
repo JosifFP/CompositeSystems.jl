@@ -10,6 +10,31 @@ RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+resultspecs = (Flow(), Shortfall())
+method = PRATS.SequentialMonteCarlo(samples=1, seed=1, verbose=false, threaded=true)
+@time flow,shortfall = PRATS.assess(system, method, resultspecs...)
+
+sum(shortfall.shortfall_mean[8,:])
+
+"********************************************************************************************************************************"
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+method = PRATS.SequentialMonteCarlo(samples=1, seed=1, verbose=false, threaded=true)
+@time flow,shortfall = PRATS.assess(system, method, resultspecs...)
+
+
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
+method = PRATS.SequentialMonteCarlo(samples=2, seed=1, verbose=false, threaded=true)
+@time flow,shortfall = PRATS.assess(system, method, resultspecs...)
+
+
+
+
+
+
+
+
+
+"********************************************************************************************************************************"
 optimizer = [
     JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), 
     JuMP.optimizer_with_attributes(Juniper.Optimizer, 
@@ -28,37 +53,69 @@ s=1
 CompositeAdequacy.seed!(rng, (simspec.seed, s))
 CompositeAdequacy.initialize!(rng, systemstate, system)
 
-t=1
-#pm = advance!(systemstate, system, optimizer, t)
-#data = create_dict_from_system!(system, t)
+t=1493
+data =  CompositeAdequacy.create_dict_from_system!(system, t)
 
-network_data = PRATSBase.conversion_to_pm_data(system.network)
-# network_data["branch"][string(7)]["br_status"] = 0
-# network_data["branch"][string(23)]["br_status"] = 0
-# network_data["branch"][string(29)]["br_status"] = 0
+systemstate.condition[t]
+pm = CompositeAdequacy.solve_model(data, CompositeAdequacy.DCPPowerModel, optimizer)
+
+loads=0
+for (i, load) in data["load"]
+    loads += load["pd"]*100
+end
+loads
+
+
+results = PowerModels.solve_dc_opf(data, nlp_solver)
+
+results["solution"]
+results["solution"]["gen"]
+results["solution"]["bus"]
+
+gens=0
+for (i, gen) in results["solution"]["gen"]
+    gens += gen["pg"]*100
+    println(gen["pg"]*100)
+end
+gens
+
+
+
+
+
+#network_data = PowerModels.parse_file(RawFile)
+# network_data["branch"][string(25)]["br_status"] = 0
+# network_data["branch"][string(26)]["br_status"] = 0
+# network_data["branch"][string(28)]["br_status"] = 0
 # PRATSBase.SimplifyNetwork!(network_data)
-@time pm = CompositeAdequacy.solve_model(network_data,CompositeAdequacy.DCPPowerModel, optimizer)
-@time pm = CompositeAdequacy.solve_model(network_data,CompositeAdequacy.DCMLPowerModel, optimizer)
+#@time pm = CompositeAdequacy.solve_model(network_data,CompositeAdequacy.DCPPowerModel, optimizer)
+pm = CompositeAdequacy.solve_model(network_data,CompositeAdequacy.DCMLPowerModel, optimizer)
 pm.solution["solution"]["total"]["P_load_curtailed"]*100
 
+pm.solution["solution"]["branch"]
+pm.solution["solution"]["load_curtailment"]
+N = 8760                                                    #timestep_count
+L = 1                                                       #timestep_length
+T = timeunits["h"]                                          #timestep_unit
+P = powerunits["kW"]
+E = energyunits["MWh"]
+V = voltageunits["kV"]
+
+p2e = conversionfactor(L,T,P,E)
+indices = [parse(Int,i) for i in eachindex(system.network.load)]
+key_order = sortperm(indices)
+indices[key_order]
+
+indices2 = [parse(Int,i) for i in eachindex(pm.solution["solution"]["load_curtailment"])]
+key_order2 = sortperm(indices2)
+indices2[key_order2]
+
+dict = pm.solution["solution"]["load_curtailment"]
+dict[key_order2]
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+system.network.load
+pm.solution["solution"]["load_curtailment"]
 
 
 
@@ -87,7 +144,7 @@ pm.solution["solution"]["branch"][string(1)]["pf"
 
 # pm.solution["solution"]
 # pm.solution["solution"]["branch"]
-# pm.solution["solution"]["load curtailment"]
+# pm.solution["solution"]["load_curtailment"]
 # pm.solution["solution"]["total"]
 pm.solution["solution"]["total"]["P_load_curtailed"]*100
 JuMP.optimize!(opf_model)

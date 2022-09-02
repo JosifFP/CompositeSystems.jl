@@ -65,7 +65,6 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    #sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
 
@@ -80,7 +79,7 @@ function assess(
 
             pm = solve!(systemstate, system, optimizer, t)
             #advance!(pm, systemstate, system, t)
-            foreach(recorder -> record!(recorder, system, s, t), recorders)
+            foreach(recorder -> record!(recorder, pm, system, s, t), recorders)
 
         end
 
@@ -114,17 +113,29 @@ function solve!(state::SystemState, system::SystemModel, optimizer, t::Int)
         pm = solve_model(data, DCPPowerModel, optimizer)
     end
 
+    if pm.solution["termination_status"] != LOCALLY_SOLVED
+        println("Problem LOCALLY_INFEASIBLE                            , 
+        hour t=$(t)                                                    , 
+        condition=$(state.condition[t])                                ,
+        total_load=$(sum(system.loads.pd[:,t])*100)                     ,
+        load=$(sum(system.loads.pd[:,t])*100)                           , 
+        gens_available=$(state.gens_available[:,t])                    , 
+        branches_available=$(state.branches_available[:,t])            "
+        )
+        return
+    end
+    
     update_systemmodel!(pm, system, t)
 
     return pm
     
 end
 
-function advance!(pm, systemstate, system, t)
-    return
-end
+# function advance!(pm, systemstate, system, t)
+#     return
+# end
 
 #update_energy!(state.stors_energy, system.storages, t)
 #update_energy!(state.genstors_energy, system.generatorstorages, t)
-#include("result_shortfall.jl")
+include("result_shortfall.jl")
 include("result_flow.jl")

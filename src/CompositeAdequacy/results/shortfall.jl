@@ -34,10 +34,10 @@ EUE(x::AbstractShortfallResult, ::Colon, ::Colon) =
 
 # Sample-averaged shortfall data
 
-struct ShortfallResult{N,L,T<:Period,E<:EnergyUnit} <: AbstractShortfallResult{N,L,T}
+struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,T}
 
     nsamples::Union{Int,Nothing}
-    buses::Vector{String}
+    buses::Vector{Int}
     timestamps::StepRange{ZonedDateTime,T}
 
     eventperiod_mean::Float64
@@ -60,9 +60,9 @@ struct ShortfallResult{N,L,T<:Period,E<:EnergyUnit} <: AbstractShortfallResult{N
     shortfall_period_std::Vector{Float64}
     shortfall_busperiod_std::Matrix{Float64}
 
-    function ShortfallResult{N,L,T,E}(
+    function ShortfallResult{N,L,T,U}(
         nsamples::Union{Int,Nothing},
-        buses::Vector{String},
+        buses::Vector{Int},
         timestamps::StepRange{ZonedDateTime,T},
         eventperiod_mean::Float64,
         eventperiod_std::Float64,
@@ -77,7 +77,7 @@ struct ShortfallResult{N,L,T<:Period,E<:EnergyUnit} <: AbstractShortfallResult{N
         shortfall_bus_std::Vector{Float64},
         shortfall_period_std::Vector{Float64},
         shortfall_busperiod_std::Matrix{Float64}
-    ) where {N,L,T<:Period,E<:EnergyUnit}
+    ) where {N,L,T<:Period,U<:PerUnit}
 
         isnothing(nsamples) || nsamples > 0 ||
             throw(DomainError("Sample count must be positive or `nothing`."))
@@ -99,7 +99,7 @@ struct ShortfallResult{N,L,T<:Period,E<:EnergyUnit} <: AbstractShortfallResult{N
         size(shortfall_busperiod_std) == (nbuses, N) ||
             error("Inconsistent input data sizes")
 
-        new{N,L,T,E}(nsamples, buses, timestamps,
+        new{N,L,T,U}(nsamples, buses, timestamps,
             eventperiod_mean, eventperiod_std,
             eventperiod_bus_mean, eventperiod_bus_std,
             eventperiod_period_mean, eventperiod_period_std,
@@ -182,7 +182,7 @@ struct ShortfallSamplesResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: Abstr
     buses::Vector{String}
     timestamps::StepRange{ZonedDateTime,T}
 
-    shortfall::Array{Int,3} # r x t x s
+    shortfall::Array{Float16,3} # r x t x s
 
 end
 

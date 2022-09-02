@@ -17,7 +17,7 @@ import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
 import PowerModels, JuMP, Ipopt, Juniper
 import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
-optimize!, Model
+optimize!, Model, LOCALLY_SOLVED
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 export

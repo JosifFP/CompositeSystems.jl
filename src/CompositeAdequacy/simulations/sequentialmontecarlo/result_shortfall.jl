@@ -48,7 +48,7 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
 ) where {N}
 
-    nbuses = length(sys.network.bus)
+    nbuses = length(sys.network.load)
 
     periodsdropped_total = meanvariance()
     periodsdropped_bus = [meanvariance() for _ in 1:nbuses]
@@ -78,34 +78,30 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
+    pm::AbstractPowerModel,
     system::SystemModel{N,L,T,U},
-    state::SystemState,
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 
     totalshortfall = 0
     isshortfall = false
 
-    edges = problem.fp.edges
+    for r in eachindex(pm.solution["solution"]["load_curtailment"])
 
-    for r in problem.bus_unserved_edges
-
-        busshortfall = edges[r].flow
+        busshortfall = pm.solution["solution"]["load_curtailment"][r]["pl"]
         isbusshortfall = busshortfall > 0
-
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
-
+    
         if isbusshortfall
-
+    
             isshortfall = true
             totalshortfall += busshortfall
-
             acc.periodsdropped_bus_currentsim[r] += 1
             acc.unservedload_bus_currentsim[r] += busshortfall
-
+    
         end
-
+    
     end
 
     if isshortfall
@@ -159,15 +155,27 @@ function finalize(
         mean_std(acc.unservedload_busperiod)
 
     nsamples = first(acc.unservedload_total.stats).n
-    p2e = conversionfactor(L,T,P,E)
+    #p2e = conversionfactor(L,T,P,E)
 
-    return ShortfallResult{N,L,T,E}(
-        nsamples, system.buses.names, system.timestamps,
-        ep_total_mean, ep_total_std, ep_bus_mean, ep_bus_std,
-        ep_period_mean, ep_period_std,
-        ep_busperiod_mean, ep_busperiod_std,
-        p2e*ue_busperiod_mean, p2e*ue_total_std,
-        p2e*ue_bus_std, p2e*ue_period_std, p2e*ue_busperiod_std)
+    load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
+
+    return ShortfallResult{N,L,T,U}(
+        nsamples, 
+        load_indices, 
+        system.timestamps,
+        ep_total_mean, 
+        ep_total_std, 
+        ep_bus_mean, 
+        ep_bus_std,
+        ep_period_mean, 
+        ep_period_std,
+        ep_busperiod_mean, 
+        ep_busperiod_std,
+        ue_busperiod_mean, 
+        ue_total_std,
+        ue_bus_std, 
+        ue_period_std, 
+        ue_busperiod_std)
 
 end
 
@@ -176,7 +184,7 @@ end
 struct SMCShortfallSamplesAccumulator <:
     ResultAccumulator{SequentialMonteCarlo,ShortfallSamples}
 
-    shortfall::Array{Int,3}
+    shortfall::Array{Float16,3}
 
 end
 
@@ -195,7 +203,7 @@ function accumulator(
     sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::ShortfallSamples
 ) where {N}
 
-    nbuses = length(sys.buses)
+    nbuses = length(length(sys.network.load))
     shortfall = zeros(Int, nbuses, N, simspec.nsamples)
 
     return SMCShortfallSamplesAccumulator(shortfall)
@@ -204,13 +212,13 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
+    pm::AbstractPowerModel,
     system::SystemModel{N,L,T,U},
-    state::SystemState, problem::DispatchProblem,
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 
-    for (r, e) in enumerate(problem.bus_unserved_edges)
-        acc.shortfall[r, t, sampleid] = problem.fp.edges[e].flow
+    for r in eachindex(system.network.load)
+        acc.shortfall[r,t,sampleid] = pm.solution["solution"]["load_curtailment"][r]["pl"]
     end
 
     return
@@ -224,7 +232,9 @@ function finalize(
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
+    load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
+
     return ShortfallSamplesResult{N,L,T,U}(
-        system.buses.names, system.timestamps, acc.shortfall)
+        load_indices, system.timestamps, acc.shortfall)
 
 end

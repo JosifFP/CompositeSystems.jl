@@ -14,6 +14,18 @@ function build_result(pm)
         build_solution!(container, pm)
     else
         Memento.warn(_LOGGER, "model has no results, solution cannot be built")
+
+        pm.solution = Dict{String,Any}(
+            "optimizer" => JuMP.solver_name(pm.model),
+            "termination_status" => JuMP.termination_status(pm.model),
+            "primal_status" => JuMP.primal_status(pm.model),
+            "dual_status" => JuMP.dual_status(pm.model),
+            "objective" => guard_objective_value(pm.model),
+            "objective_lb" => guard_objective_bound(pm.model)
+        )
+        println(pm.solution)
+        return
+
     end
 
     pm.solution = Dict{String,Any}(
@@ -50,40 +62,21 @@ function guard_objective_bound(opf_model)
     return obj_lb
 end
 
-
-function build_solution!(solution::Dict{String,Any}, pm::DCPPowerModel)
-
-    solution["gen"] = get_gens_sol!(Dict{String,Dict{String,Float16}}(), pm)
-    solution["bus"] = get_buses_sol!(Dict{String,Dict{String,Float16}}(), pm)
-    solution["branch"] = get_branches_sol!(Dict{String,Dict{String,Float16}}(), pm)
-    solution["load"] = get_loads_sol!(Dict{String,Dict{String,Float16}}(),pm)
-    solution["total"] = Dict(
-        "total_Pg"              => sum([solution["gen"][i]["pg"] for i in keys(solution["gen"])]),
-        "total_Qg"              => 0.0,
-        "total_Pl"              => sum([solution["load"][i]["pl"] for i in keys(solution["load"])]),
-        "total_Ql"              => 0.0,
-        "power balance mismatch"=> Float16(sum([solution["gen"][i]["pg"] for i in keys(solution["gen"])])-
-                                    sum([solution["load"][i]["pl"] for i in keys(solution["load"])])))
-
-    return solution
-
-end
-
 ""
-function build_solution!(solution::Dict{String,Any}, pm::DCMLPowerModel)
+function build_solution!(solution::Dict{String,Any}, pm::AbstractDCPModel)
     
-    solution["gen"] = get_gens_sol!(Dict{String,Dict{String,Float16}}(), pm)
-    solution["bus"] = get_buses_sol!(Dict{String,Dict{String,Float16}}(), pm)
-    solution["branch"] = get_branches_sol!(Dict{String,Dict{String,Float16}}(), pm)
+    solution["gen"] = get_gens_sol!(Dict{Int64,Dict{String,Float64}}(), pm)
+    solution["bus"] = get_buses_sol!(Dict{Int64,Dict{String,Float64}}(), pm)
+    solution["branch"] = get_branches_sol!(Dict{Int64,Dict{String,Float64}}(), pm)
     solution["load_initial"], 
     solution["load"], 
-    solution["load curtailment"] = get_loads_sol!(Dict{String,Dict{String,Float16}}(), pm)
+    solution["load_curtailment"] = get_loads_sol!(Dict{Int64,Dict{String,Float64}}(), pm)
     solution["total"]          = Dict(
         "total_Pg"                => sum([solution["gen"][i]["pg"] for i in keys(solution["gen"])]),
         "total_P_load_before"     => sum([solution["load_initial"][i]["pl"] for i in keys(solution["load_initial"])]),
         "total_P_load_after"      => sum([solution["load"][i]["pl"] for i in keys(solution["load"])]),
-        "P_load_curtailed"        => sum([solution["load curtailment"][i]["pl"] for i in keys(solution["load curtailment"])]),
-        "P_balance mismatch"      => sum([solution["gen"][i]["pg"] for i in keys(solution["gen"])])-
+        "P_load_curtailed"        => sum([solution["load_curtailment"][i]["pl"] for i in keys(solution["load_curtailment"])]),
+        "P_balance_mismatch"      => sum([solution["gen"][i]["pg"] for i in keys(solution["gen"])])-
                                      sum([solution["load"][i]["pl"] for i in keys(solution["load"])]))
     return solution
     
@@ -91,25 +84,33 @@ end
 
 ""
 function get_loads_sol!(tmp, pm::DCPPowerModel)
+
+    loads = Dict{Int64,Dict{String,Float64}}()
+    curt_loads = Dict{Int64,Dict{String,Float64}}()
+
     for (i, load) in pm.ref[:load_initial]
-        get!(tmp, string(i), Dict("ql"=>0.0, "pl"=>Float16(load["pd"])))
-    end   
-    return tmp
+        #initial load
+        get!(tmp, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
+        get!(loads, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
+        get!(curt_loads, i, Dict("ql" => 0.0, "pl" => 0.0))
+    end
+
+    return tmp, loads, curt_loads
 end
 
 ""
 function get_loads_sol!(tmp, pm::DCMLPowerModel)
 
-    loads = Dict{String,Dict{String,Float16}}()
-    curt_loads = Dict{String,Dict{String,Float16}}()
+    loads = Dict{Int64,Dict{String,Float64}}()
+    curt_loads = Dict{Int64,Dict{String,Float64}}()
 
     for (i, load) in pm.ref[:load_initial]
         #initial load
-        get!(tmp, string(i), Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
+        get!(tmp, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
     end
 
-    for (i, load) in pm.data_load
-        #index = parse(Int, i)
+    for (index, load) in pm.data_load
+        i = parse(Int, index)
         if load["status"]!= 0
             if JuMP.value(pm.model[:plc][load["index"]])>1e-4          
                 #actual load    
@@ -133,7 +134,7 @@ function get_buses_sol!(tmp, pm::AbstractDCPModel)
 
     for (i, bus) in pm.ref[:bus]
         if bus["bus_type"] != 4
-            get!(tmp, string(i), Dict("va"=>Float16(JuMP.value(pm.model[:va][bus["index"]]))))
+            get!(tmp, i, Dict("va"=>Float16(JuMP.value(pm.model[:va][bus["index"]]))))
         end
     end
     return tmp
@@ -144,7 +145,7 @@ function get_gens_sol!(tmp, pm::AbstractDCPModel)
 
     for (i, gen) in pm.ref[:gen]
         if gen["gen_status"] != 0
-            get!(tmp, string(i), Dict("qg"=>0.0, "pg"=>Float16(JuMP.value(pm.model[:pg][gen["index"]]))))
+            get!(tmp, i, Dict("qg"=>0.0, "pg"=>Float16(JuMP.value(pm.model[:pg][gen["index"]]))))
         end
     end
     return tmp
@@ -155,7 +156,7 @@ function get_branches_sol!(tmp, pm::AbstractDCPModel)
 
     for (i, branch) in pm.ref[:branch]
         if branch["br_status"]!= 0  
-            get!(tmp, string(i), Dict("qf"=>0.0, "qt"=>0.0,        
+            get!(tmp, i, Dict("qf"=>0.0, "qt"=>0.0,        
             "pt" => float(-JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
             "pf" => float(JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
             )

@@ -34,17 +34,18 @@ function accumulator(
 
 end
 
+
 function record!(
     acc::SMCFlowAccumulator,
+    pm::AbstractPowerModel,
     system::SystemModel{N,L,T,U},
-    #state::SystemState,
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 
-for i in eachindex(system.branches.keys)
-    acc.flow_branch_currentsim[i] += abs.(system.branches.pf[i,t])
-    fit!(acc.flow_branchperiod[i,t],  abs.(system.branches.pf[i,t]))
-end
+    for i in eachindex(system.branches.keys)
+        acc.flow_branch_currentsim[i] += abs.(system.branches.pf[i,t])
+        fit!(acc.flow_branchperiod[i,t],  abs.(system.branches.pf[i,t]))
+    end
 
 end
 
@@ -78,47 +79,50 @@ end
 # --------------------------------------------------------------------------------------------------------------------
 # FlowTotal
 
- struct SMCFlowTotalAccumulator <: ResultAccumulator{SequentialMonteCarlo,FlowTotal}
+struct SMCFlowTotalAccumulator <: ResultAccumulator{SequentialMonteCarlo,FlowTotal}
 
     total::Array{Float16,3}
 
- end
+end
 
- function merge!(x::SMCFlowTotalAccumulator, y::SMCFlowTotalAccumulator)
+function merge!(x::SMCFlowTotalAccumulator, y::SMCFlowTotalAccumulator)
 
-     x.total .+= y.total
-     return
+    x.total .+= y.total
+    return
 
- end
+end
 
- accumulatortype(::SequentialMonteCarlo, ::FlowTotal) = SMCFlowTotalAccumulator
+accumulatortype(::SequentialMonteCarlo, ::FlowTotal) = SMCFlowTotalAccumulator
 
- function accumulator(system::SystemModel{N}, simspec::SequentialMonteCarlo, ::FlowTotal) where {N}
+function accumulator(system::SystemModel{N}, simspec::SequentialMonteCarlo, ::FlowTotal) where {N}
 
-     nbranches = length(system.branches)
-     #flow = zeros(Float16, nbranches, N)
-     flow = zeros(Float16, nbranches, N, 1)#simspec.nsamples)
+    nbranches = length(system.branches)
+    flow = zeros(Float16, nbranches, N)
+    return SMCFlowTotalAccumulator(flow)
 
-     return SMCFlowTotalAccumulator(flow)
- end
+end
 
- function record!(
-     acc::SMCFlowTotalAccumulator,
-     system::SystemModel{N,L,T,U}, sampleid::Int, t::Int
- ) where {N,L,T,U}
+function record!(
+    acc::SMCFlowTotalAccumulator,
+    pm::AbstractPowerModel,
+    system::SystemModel{N,L,T,U},
+    sampleid::Int, t::Int
+) where {N,L,T,U}
 
-     acc.total[:,t,sampleid] = abs.(system.branches.pf[:,t])
-     return
+    acc.total[:,t,sampleid] = abs.(system.branches.pf[:,t])
 
- end
+    return
 
- reset!(acc::SMCFlowTotalAccumulator, sampleid::Int) = nothing
+end
 
- function finalize(
+reset!(acc::SMCFlowTotalAccumulator, sampleid::Int) = nothing
+
+function finalize(
      acc::SMCFlowTotalAccumulator,
      system::SystemModel{N,L,T,U},
- ) where {N,L,T,U}
+) where {N,L,T,U}
 
-     #allzeros = zeros(size(acc.flow_branches))
-     return FlowTotalResult{N,L,T,U}(nothing, system.branches.keys, system.timestamps, acc.total)
- end
+    #allzeros = zeros(size(acc.flow_branches))
+    return FlowTotalResult{N,L,T,U}(nothing, system.branches.keys, system.timestamps, acc.total)
+
+end

@@ -58,7 +58,6 @@ end
 ""
 function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}, t::Int) where {N}
 
-    println("RED-FLAG")
     for i in eachindex(system.branches.keys)
         if state.branches_available[i] == false
             #system.network.branch[string(i)]["br_status"] = state.branches_available[i]
@@ -105,8 +104,8 @@ end
 function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
 
     for i in eachindex(pm.solution["solution"]["branch"])
-        system.branches.pf[i,t] = Float16.(pm.solution["solution"]["branch"][string(i)]["pf"])
-        system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][string(i)]["pt"])
+        system.branches.pf[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pf"])
+        system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pt"])
     end
     
     # for i in eachindex(pm.solution["solution"]["gen"])
