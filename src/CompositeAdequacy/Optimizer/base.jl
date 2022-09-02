@@ -24,7 +24,7 @@ mutable struct DCPPowerModel <: AbstractDCPModel @pm_fields end
 mutable struct ACMLPowerModel <: AbstractACPModel @pm_fields end
 mutable struct ACPPowerModel <: AbstractACPModel @pm_fields end
 
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::AbstractPowerModel, optimizer; condition::Bool=true)
+function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCPPowerModel}, optimizer; condition::Bool=true)
 
     #@assert PowerModel <: AbstractDCPModel || PowerModel <: AbstractACPModel
     ref = ref_initialize!(data)
@@ -39,13 +39,13 @@ function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Abs
     return pm
 end
 
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type, optimizer; condition::Bool=false)
+function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCMLPowerModel}, optimizer; condition::Bool=false)
 
     #@assert PowerModel <: AbstractDCPModel || PowerModel <: AbstractACPModel
     ref = ref_initialize!(data)
-
     pm = PowerModel(
-        JuMP.Model(optimizer[2]),
+        JuMP.direct_model(optimizer[2]),
+        #JuMP.Model(optimizer[2]),
         data,
         Dict{String,Any}(), # empty solution data
         ref

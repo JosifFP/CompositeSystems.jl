@@ -66,6 +66,7 @@ function build_solution!(solution::Dict{String,Any}, pm::DCPPowerModel)
                                     sum([solution["load"][i]["pl"] for i in keys(solution["load"])])))
 
     return solution
+
 end
 
 ""
@@ -99,8 +100,8 @@ end
 ""
 function get_loads_sol!(tmp, pm::DCMLPowerModel)
 
-    loads = tmp
-    curt_loads = tmp
+    loads = Dict{String,Dict{String,Float16}}()
+    curt_loads = Dict{String,Dict{String,Float16}}()
 
     for (i, load) in pm.ref[:load_initial]
         #initial load

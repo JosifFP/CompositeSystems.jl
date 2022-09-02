@@ -65,7 +65,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    sequences = UpDownSequence(system)
+    #sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
 
@@ -120,7 +120,7 @@ function advance!(network_data::Dict{String,Any}, state::SystemState, system::Sy
 function solve!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, model::Model, t::Int)
 
     if state.condition == false
-        apply_contingencies!(network_data, state, system)
+        #apply_contingencies!(network_data, state, system)
         PRATSBase.SimplifyNetwork!(network_data)
         results = PRATSBase.OptimizationProblem(network_data, PRATSBase.DCMLPowerModel, model[2])
 
@@ -142,6 +142,17 @@ function solve!(network_data::Dict{String,Any}, state::SystemState, system::Syst
     return system
 
 end
+
+
+function solve_model(data::Dict{String,<:Any}, model_type, optimizer; kwargs...)
+
+    pm =  InitializeAbstractPowerModel(data, model_type, optimizer; kwargs...)
+    ref_add!(pm.ref)
+    build_model(pm)
+    optimization(pm)
+    return pm
+end
+
 
 #include("result_shortfall.jl")
 include("result_flow.jl")

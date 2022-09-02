@@ -2,7 +2,7 @@
 "Standard DC OPF"
 function build_model(pm::DCPPowerModel)
     # Add Optimization and State Variables
-    var_bus_voltage(pm)
+    var_bus_voltage(pm; bounded=true)
     var_gen_power(pm)
     var_branch_power(pm)
     var_dcline_power(pm)
@@ -21,10 +21,9 @@ Builds an DC-OPF or AC-OPF (Min Load Curtailment) formulation of the given data 
 """
 
 function build_model(pm::DCMLPowerModel)
-    println("hello")
     # Add Optimization and State Variables
 
-    var_bus_voltage(pm)
+    var_bus_voltage(pm; bounded=true)
     var_gen_power(pm)
     var_branch_power(pm)
     var_dcline_power(pm)

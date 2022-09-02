@@ -34,33 +34,27 @@ network_data = PRATSBase.conversion_to_pm_data(system.network)
 #CompositeAdequacy.apply_contingencies!(network_data, systemstate, system, t)
 #PRATSBase.SimplifyNetwork!(network_data)
 
-function solve_model(data::Dict{String,<:Any}, model_type::Type, optimizer)
-
-    pm =  CompositeAdequacy.InitializeAbstractPowerModel(data, model_type, optimizer)
-    CompositeAdequacy.ref_add!(pm.ref)
-    CompositeAdequacy.build_model(pm)
-    CompositeAdequacy.optimization(pm)
-    return pm
-end
-
 #pm = solve_model(network_data,CompositeAdequacy.DCPPowerModel, optimizer)
 #pm.solution["solution"]["branch"]
 
-
-
-RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
+#RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 network_data = PowerModels.parse_file(RawFile)
 #network_data = PRATSBase.conversion_to_pm_data(system.network)
-network_data["branch"][string(1)]["br_status"] = 0
-network_data["branch"][string(4)]["br_status"] = 0
-network_data["branch"][string(10)]["br_status"] = 0
+network_data["branch"][string(7)]["br_status"] = 0
+network_data["branch"][string(23)]["br_status"] = 0
+network_data["branch"][string(29)]["br_status"] = 0
 PRATSBase.SimplifyNetwork!(network_data)
-pm = solve_model(network_data,CompositeAdequacy.DCMLPowerModel, optimizer)
-pm.solution["solution"]
+pm = CompositeAdequacy.solve_model(network_data, CompositeAdequacy.DCMLPowerModel, optimizer; condition = systemstate.condition[1])
+pm.solution["solution"]["total"]["P_load_curtailed"]*100
 
-pm.solution["solution"]["branch"]
-pm.solution["solution"]["load curtailment"]
-pm.solution["solution"]["total"]
+@time pm = CompositeAdequacy.solve_model(network_data, CompositeAdequacy.DCMLPowerModel, optimizer; condition = systemstate.condition[1])
+#direct mode, LC= 309/ T = 0.023169 seconds (26.02 k allocations: 1.284 MiB)
+#normal mode, LC= 309/ T = 0.016620 seconds (26.02 k allocations: 1.284 MiB)
+
+# pm.solution["solution"]
+# pm.solution["solution"]["branch"]
+# pm.solution["solution"]["load curtailment"]
+# pm.solution["solution"]["total"]
 pm.solution["solution"]["total"]["P_load_curtailed"]*100
 
 
