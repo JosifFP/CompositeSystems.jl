@@ -9,7 +9,7 @@ end
 "a macro for adding the standard InfrastructureModels fields to a type definition"
 CompositeAdequacy.@def pm_fields begin
     model::Model
-    data::Dict{String,<:Any}
+    data_load::Dict{String,<:Any}
     solution::Dict{String,<:Any}
     ref::Dict{Symbol,<:Any}
 end
@@ -24,14 +24,13 @@ mutable struct DCPPowerModel <: AbstractDCPModel @pm_fields end
 mutable struct ACMLPowerModel <: AbstractACPModel @pm_fields end
 mutable struct ACPPowerModel <: AbstractACPModel @pm_fields end
 
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCPPowerModel}, optimizer; condition::Bool=true)
+function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCPPowerModel}, optimizer)
 
     #@assert PowerModel <: AbstractDCPModel || PowerModel <: AbstractACPModel
     ref = ref_initialize!(data)
-
     pm = PowerModel(
         JuMP.direct_model(optimizer[1]),
-        data,
+        data["load"],
         Dict{String,Any}(), # empty solution data
         ref
     )
@@ -39,14 +38,14 @@ function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Typ
     return pm
 end
 
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCMLPowerModel}, optimizer; condition::Bool=false)
+function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCMLPowerModel}, optimizer)
 
     #@assert PowerModel <: AbstractDCPModel || PowerModel <: AbstractACPModel
     ref = ref_initialize!(data)
     pm = PowerModel(
         JuMP.direct_model(optimizer[2]),
         #JuMP.Model(optimizer[2]),
-        data,
+        data["load"],
         Dict{String,Any}(), # empty solution data
         ref
     )

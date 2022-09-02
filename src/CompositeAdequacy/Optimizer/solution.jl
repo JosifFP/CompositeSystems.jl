@@ -1,5 +1,5 @@
 ""
-function build_result(pm, solve_time)
+function build_result(pm)
     
     result_count = 1
     try
@@ -108,7 +108,7 @@ function get_loads_sol!(tmp, pm::DCMLPowerModel)
         get!(tmp, string(i), Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
     end
 
-    for (i, load) in pm.data["load"]
+    for (i, load) in pm.data_load
         #index = parse(Int, i)
         if load["status"]!= 0
             if JuMP.value(pm.model[:plc][load["index"]])>1e-4          

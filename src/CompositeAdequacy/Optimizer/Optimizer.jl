@@ -2,7 +2,7 @@
 "Standard DC OPF"
 function build_model(pm::DCPPowerModel)
     # Add Optimization and State Variables
-    var_bus_voltage(pm; bounded=true)
+    var_bus_voltage(pm; bounded=false)
     var_gen_power(pm)
     var_branch_power(pm)
     var_dcline_power(pm)
@@ -23,7 +23,7 @@ Builds an DC-OPF or AC-OPF (Min Load Curtailment) formulation of the given data 
 function build_model(pm::DCMLPowerModel)
     # Add Optimization and State Variables
 
-    var_bus_voltage(pm; bounded=true)
+    var_bus_voltage(pm; bounded=false)
     var_gen_power(pm)
     var_branch_power(pm)
     var_dcline_power(pm)
@@ -50,21 +50,21 @@ end
 ""
 function optimization(pm::AbstractPowerModel)
     
-    #opf_model = pm.model
-    start_time = time()
-    #uMP.set_time_limit_sec(pm.model, 6.0)
+    #start_time = time()
+    JuMP.set_time_limit_sec(pm.model, 3.0)
 
     if JuMP.mode(pm.model) != JuMP.DIRECT && JuMP.backend(pm.model).optimizer === nothing
         Memento.error(_LOGGER, "No optimizer specified in `optimize_model!` or the given JuMP model.")
     end
-
-    solve_time = @timed JuMP.optimize!(pm.model)
+    
+    JuMP.optimize!(pm.model)
+    #solve_time = @timed JuMP.optimize!(pm.model)
     try
         solve_time = JuMP.solve_time(pm.model)
     catch
         Memento.warn(_LOGGER, "The given optimizer does not provide the SolveTime() attribute, falling back on @timed.  This is not a rigorous timing value.");
     end
-    Memento.debug(_LOGGER, "JuMP model optimize time: $(time() - start_time)")
+    #Memento.debug(_LOGGER, "JuMP model optimize time: $(time() - start_time)")
 
     if JuMP.termination_status(pm.model) != JuMP.LOCALLY_SOLVED
 
@@ -72,15 +72,14 @@ function optimization(pm::AbstractPowerModel)
         var_bus_voltage_magnitude_sqr(pm)
         constraint_voltage_magnitude_diff(pm)
         JuMP.optimize!(pm.model)
-        solve_time = solve_time + JuMP.solve_time(pm.model)
-        start_time = time()
-        result = build_result(pm, solve_time)          
-    else
-        start_time = time()
-        result = build_result(pm, solve_time)   
+        #solve_time = solve_time + JuMP.solve_time(pm.model)
     end
 
-    Memento.debug(_LOGGER, "solution build time: $(time() - start_time)")
+    result = build_result(pm) 
+    #start_time = time()
+    #result = build_result(pm, solve_time)  
+    #Memento.debug(_LOGGER, "solution build time: $(time() - start_time)")
+
     return result
 
 end

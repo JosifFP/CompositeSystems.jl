@@ -77,9 +77,9 @@ function assess(
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
         for t in 1:N
-            
-            pm = advance!(PRATSBase.conversion_to_pm_data(system.network), systemstate, system, optimizer, t; systemstate.condition[t])
-            solve!(pm, systemstate, system, t)
+
+            pm = solve!(systemstate, system, optimizer, t)
+            #advance!(pm, systemstate, system, t)
             foreach(recorder -> record!(recorder, system, s, t), recorders)
 
         end
@@ -104,59 +104,25 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
 
 end
 
-function advance!(network_data::Dict{String,Any}, 
-    state::SystemState, system::SystemModel{N}, 
-    optimizer, t::Int, condition::Bool=true) where {N}
+function solve!(state::SystemState, system::SystemModel, optimizer, t::Int)
 
-    update_data_from_system!(network_data, system, t)
-    pm = solve_model(network_data, DCPPowerModel, optimizer; condition)
+    data = create_dict_from_system!(system, t)
+    if state.condition[t] == false 
+        apply_contingencies!(data, state, system, t)
+        pm = solve_model(data, DCMLPowerModel, optimizer)
+    else
+        pm = solve_model(data, DCPPowerModel, optimizer)
+    end
 
-    return pm
-
-end
-
-function advance!(network_data::Dict{String,Any}, 
-    state::SystemState, system::SystemModel{N}, 
-    optimizer, t::Int, condition::Bool=false) where {N}
-
-    update_data_from_system!(network_data, system, t)
-    apply_contingencies!(network_data, state, system, t)
-    PRATSBase.SimplifyNetwork!(network_data)
-    pm = solve_model(network_data, DCMLPowerModel, optimizer; condition)
+    update_systemmodel!(pm, system, t)
 
     return pm
     
 end
 
-function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
-
-    update_data!(network_data, results["solution"])
-
-    for i in eachindex(system.branches.keys)
-        system.branches.pf[i,t] = Float16.(network_data["branch"][string(i)]["pf"])
-        system.branches.pt[i,t] = Float16.(network_data["branch"][string(i)]["pt"])
-    end
-
-    for i in eachindex(system.generators.keys)
-        system.generators.pg[i,t] = network_data["gen"][string(i)]["pg"]
-    end
-
-    return system
-
+function advance!(pm, systemstate, system, t)
+    return
 end
-
-
-function solve_model(data::Dict{String,<:Any}, model_type, optimizer; kwargs...)
-
-    pm =  InitializeAbstractPowerModel(data, model_type, optimizer; kwargs...)
-    ref_add!(pm.ref)
-    build_model(pm)
-    optimization(pm)
-    return pm
-end
-
-CompositeAdequacy.solve_model(network_data, CompositeAdequacy.DCMLPowerModel, optimizer; condition = systemstate.condition[1])
-
 
 #update_energy!(state.stors_energy, system.storages, t)
 #update_energy!(state.genstors_energy, system.generatorstorages, t)

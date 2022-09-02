@@ -44,6 +44,13 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String)
         Float32[], Float32[])
     
     cd(CurrentDir)
+
+
+
     return SystemModel(assets[1], assets[2], storages, generatorstorages, assets[3], network, timestamps)    
 
 end
+
+# function check_limits()
+# @assert network_data["gen"][string(i)]["pg"] <= network_data["gen"][string(i)]["pmax"] "Generator Pmax violated"
+# end

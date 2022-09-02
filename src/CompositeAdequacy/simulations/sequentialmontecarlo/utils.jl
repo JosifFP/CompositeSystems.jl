@@ -58,6 +58,7 @@ end
 ""
 function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}, t::Int) where {N}
 
+    println("RED-FLAG")
     for i in eachindex(system.branches.keys)
         if state.branches_available[i] == false
             #system.network.branch[string(i)]["br_status"] = state.branches_available[i]
@@ -79,6 +80,8 @@ function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState
         end
     end
 
+    PRATSBase.SimplifyNetwork!(network_data)
+
 end
 
 function update_condition!(state::SystemState, N::Int)
@@ -87,6 +90,31 @@ function update_condition!(state::SystemState, N::Int)
             state.condition[t] = false
         end
     end
+end
+
+function solve_model(data::Dict{String,<:Any}, model_type, optimizer)
+
+    pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
+    ref_add!(pm.ref)
+    build_model(pm)
+    optimization(pm)
+    return pm
+    -
+end
+
+function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+
+    for i in eachindex(pm.solution["solution"]["branch"])
+        system.branches.pf[i,t] = Float16.(pm.solution["solution"]["branch"][string(i)]["pf"])
+        system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][string(i)]["pt"])
+    end
+    
+    # for i in eachindex(pm.solution["solution"]["gen"])
+    #     system.generators.pg[i,t] = Float16.(pm.solution["solution"]["gen"][string(i)]["pg"])
+    # end
+
+    return
+
 end
 
 # ----------------------------------------------------------------------------------------------------------

@@ -80,11 +80,11 @@ end
 
 function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, t::Int) where {N}
 
-    update_data_from_system!(network_data, system, t)
-    update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
-    flow = calc_branch_flow_dc(network_data)
-    update_data!(network_data, flow)
-    update_systemmodel_branches!(system, flow, t)
+    CompositeAdequacy.update_data_from_system!(network_data, system, t)
+    CompositeAdequacy.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
+    flow = CompositeAdequacy.calc_branch_flow_dc(network_data)
+    CompositeAdequacy.update_data!(network_data, flow)
+    CompositeAdequacy.update_systemmodel_branches!(system, flow, t)
 
     for i in eachindex(system.generators.keys)
         system.generators.pg[i,t] = network_data["gen"][string(i)]["pg"]
@@ -95,15 +95,15 @@ end
 
 function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, optimizer, t::Int) where {N}
 
-    update_data_from_system!(network_data, system, t)
-    update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
-    flow = calc_branch_flow_dc(network_data)
-    update_data!(network_data, flow)
-    update_systemmodel_branches!(system, flow, t)
+    CompositeAdequacy.update_data_from_system!(network_data, system, t)
+    CompositeAdequacy.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
+    flow = CompositeAdequacy.calc_branch_flow_dc(network_data)
+    CompositeAdequacy.update_data!(network_data, flow)
+    CompositeAdequacy.update_systemmodel_branches!(system, flow, t)
 
     if any(abs.(system.branches.pf[:,t]).> system.branches.longterm_rating[:,t])
         results = PowerModels.solve_dc_opf(network_data, optimizer)
-        update_systemmodel_branches!(system, results["solution"], t)
+        CompositeAdequacy.update_systemmodel_branches!(system, results["solution"], t)
 
         for i in eachindex(system.generators.keys)
             system.generators.pg[i,t] = results["solution"]["gen"][string(i)]["pg"]
