@@ -58,7 +58,8 @@ function compute_dc_pf(data::Dict{String,<:Any})
             "pf" =>  p_fr,
             "qf" =>  NaN,
             "pt" => -p_fr,
-            "qt" =>  NaN
+            "qt" =>  NaN,
+            "rate_a" => branch["rate_a"]
         )
     end
 
@@ -78,7 +79,7 @@ function compute_dc_pf(data::Dict{String,<:Any})
 
     #PRATSBase.update_data!(data, solution)
 
-    return data
+    return solution
 end
 
 
@@ -102,7 +103,7 @@ function solve_theta(am::PRATSBase.AdmittanceMatrix, ref_idx::Int, bus_injection
     end
     bi[ref_idx] = 0.0
 
-    theta = -m \ bi
+    theta = qr(-m) \ bi
 
     return theta
 end

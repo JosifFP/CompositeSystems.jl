@@ -30,8 +30,11 @@ function assess(
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
 
-    optimizer = [JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), JuMP.optimizer_with_attributes(Juniper.Optimizer, 
-    "nl_solver"=>JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), "log_levels"=>[])]
+    optimizer = [JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), 
+            JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>
+            JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "tol"=>1e-4, "print_level"=>0), 
+            "log_levels"=>[], "allow_almost_solved_integral"=>true, "time_limit"=>3)
+    ]
 
     @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
@@ -74,11 +77,12 @@ function assess(
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
+        JuMP.Model(optimizer[1])
+        #println("s=$(s)")
 
         for t in 1:N
-            pm = solve!(systemstate, system, optimizer, t)
+            pm = solve!(systemstate, system, create_dict_from_system(system, t), optimizer, t)
             foreach(recorder -> record!(recorder, pm, system, s, t), recorders)
-
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
@@ -101,26 +105,12 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
 
 end
 
-function solve!(state::SystemState, system::SystemModel, optimizer, t::Int)
+function solve!(state::SystemState, system::SystemModel, data::Dict{String,Any}, optimizer, t::Int)
 
-    data = create_dict_from_system(system, t)
     model_type = apply_contingencies!(data, state, system, t)
-    overloaded_lines = overloadings(data, try compute_dc_pf(data) catch ; "error" end)
-    pm = SolveModel(data, model_type, optimizer, overloaded_lines)
-
-
-    # if pm.solution["termination_status"] ≠ LOCALLY_SOLVED
-    #     println("Problem LOCALLY_INFEASIBLE                            , 
-    #     hour t=$(t)                                                    , 
-    #     condition=$(state.condition[t])                                ,
-    #     total_load=$(sum(system.loads.pd[:,t])*100)                     ,
-    #     load=$(sum(system.loads.pd[:,t])*100)                           , 
-    #     gens_available=$(state.gens_available[:,t])                    , 
-    #     branches_available=$(state.branches_available[:,t])            "
-    #     )
-    #     return
-    # end
-    
+    pm = SolveModel(data, model_type, optimizer)
+    println("t=$(t), success_state?=$(state.condition[t]), model_type=$(model_type), load_curt=$(sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]))")
+    pm.model = nothing
     return pm
     
 end

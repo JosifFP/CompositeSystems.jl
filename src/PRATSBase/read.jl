@@ -31,15 +31,12 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
     end
     
     storages = Storages{N,L,T,U}(
-        Int[], Int[], String[],
-        zeros(Float16, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
-        Float32[], Float32[],
-        Float32[], Float32[])
+        Int[], Int[], zeros(Float16, 0, N),
+        Float32[], Float32[], Float32[])
     
     generatorstorages = GeneratorStorages{N,L,T,U}(
-        Int[], Int[], String[],
-        zeros(Float16, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
-        Float32[], Float32[],
+        Int[], Int[],
+        zeros(Float16, 0, N), Float32[],
         zeros(Int, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
         Float32[], Float32[])
     

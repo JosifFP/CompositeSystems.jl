@@ -63,22 +63,27 @@ function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState
         for i in eachindex(system.branches.keys)
             if state.branches_available[i] == false network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t] end
         end
-
         for i in eachindex(system.generators.keys)
             if state.gens_available[i] == false network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t] end
         end
-
         for i in eachindex(system.storages.keys)
             if state.stors_available[i] == false network_data["storage"][string(i)]["status"] = state.stors_available[i,t] end
         end
 
+        network_data["branch"][string(7)]["br_status"] = 0
+        network_data["branch"][string(23)]["br_status"] = 0
+        network_data["branch"][string(29)]["br_status"] = 0
         PRATSBase.SimplifyNetwork!(network_data)
-
         return DCMLPowerModel
     
     else
 
-        return DCPPowerModel
+        overloaded_lines = overloadings(compute_dc_pf(network_data))
+        if overloaded_lines == false
+            return DCSPowerModel
+        else
+            return DCPPowerModel
+        end
 
     end
 
@@ -93,23 +98,54 @@ function update_condition!(state::SystemState, N::Int)
     end
 end
 
+function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCSPowerModel}, optimizer)
+
+    pm = model_type(nothing, data, Dict{String,Any}(), nothing)
+    push!(pm.solution, 
+    "termination_status"    => "No optimizer used",  
+    "optimizer"             => "No optimizer used",
+    "solution"              => Dict{String,Any}()
+    )
+
+    build_solution!(pm)
+    return pm
+
+end
+
 ""
-function SolveModel(data::Dict{String,<:Any}, model_type, optimizer, violations::Bool)
+function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCPPowerModel}, optimizer)
 
-    if violations == false
+    pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
+    build_model!(pm)
+    optimization!(pm)
+    build_result!(pm)
+    return pm
+    
+end
 
-        pm = InitializeAbstractPowerModel(data, model_type)
+""
+function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCMLPowerModel}, optimizer)
+
+    pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
+    build_model!(pm)
+    optimization!(pm)
+
+    if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
+        pm = nothing
+        pm = Type{DCSPowerModel}(nothing, data, Dict{String,Any}(), nothing)
+        push!(pm.solution, 
+        "termination_status"    => "No optimizer used",  
+        "optimizer"             => "No optimizer used",
+        "solution"              => Dict{String,Any}()
+        )
+    
         build_solution!(pm)
     else
-
-        pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
-        build_model!(pm)
-        optimization!(pm)
         build_result!(pm)
-
     end
 
     return pm
+    
 end
 
 function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
@@ -127,23 +163,17 @@ function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int
 
 end
 
-function overloadings(data::Dict{String,Any}, newdata::Dict{String,Any})
+function overloadings(newdata::Dict{String,Any})
 
     container = false
-    for j in eachindex(data["branch"])
-        if any(abs(newdata["branch"][string(j)]["pf"]) > data["branch"][j]["rate_a"])
+    for j in eachindex(newdata["branch"])
+        if any(abs(newdata["branch"][string(j)]["pf"]) > newdata["branch"][string(j)]["rate_a"])
             container = true
             break
         end
     end
 
     return container
-
-end
-
-function overloadings(data::Dict{String,Any}, newdata::String="error")
-
-    return true
 
 end
 

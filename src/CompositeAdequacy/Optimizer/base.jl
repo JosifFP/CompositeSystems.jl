@@ -1,3 +1,5 @@
+export AbstractPowerModel, DCPPowerModel, DCMLPowerModel
+
 macro def(name, definition)
     return quote
         macro $(esc(name))()
@@ -21,6 +23,7 @@ abstract type AbstractDCPModel <: AbstractPowerModel end
 
 mutable struct DCMLPowerModel <: AbstractDCPModel @pm_fields end
 mutable struct DCPPowerModel <: AbstractDCPModel @pm_fields end
+mutable struct DCSPowerModel <: AbstractDCPModel @pm_fields end
 mutable struct ACMLPowerModel <: AbstractACPModel @pm_fields end
 mutable struct ACPPowerModel <: AbstractACPModel @pm_fields end
 
@@ -58,22 +61,4 @@ function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Typ
     JuMP.set_silent(pm.model)
     return pm
     
-end
-
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCPPowerModel})
-
-    pm = PowerModel(
-        nothing, 
-        data,
-        Dict{String,Any}(), 
-        nothing
-    )
-
-    push!(pm.solution, 
-    "termination_status"    => "No optimizer used",  
-    "optimizer"             => "No optimizer used",
-    "solution"              => Dict{String,Any}()
-    )
-    return pm
-
 end

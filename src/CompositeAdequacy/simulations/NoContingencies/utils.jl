@@ -1,6 +1,8 @@
 ""
 function create_dict_from_system(system::SystemModel, t::Int)
 
+    network_data = Dict{String,Dict{String,<:Any}}()
+
     network_data = Dict(
         [("bus",system.network.bus)
         #("source_type",network.source_type)

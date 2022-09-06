@@ -34,7 +34,7 @@ function build_model!(pm::DCMLPowerModel)
     lc = JuMP.@expression(pm.model, #sum(gen["cost"][1]*model[:pg][i]^2 + gen["cost"][2]*model[:pg][i] + gen["cost"][3] for (i,gen) in ref[:gen]) +
     #sum(dcline["cost"][1]*model[:p_dc][from_idx[i]]^2 + dcline["cost"][2]*model[:p_dc][from_idx[i]] + dcline["cost"][3] for (i,dcline) in ref[:dcline]) +
     #sum(ref[:load][i]["cost"]*model[:plc][i] for i in keys(ref[:load]))
-    sum(1000*pm.model[:plc][i] for i in keys(pm.ref[:load])))
+    sum(pm.ref[:load][i]["cost"]*pm.model[:plc][i] for i in keys(pm.ref[:load])))
 
     # Objective Function: minimize load curtailment
     @objective(pm.model, Min, lc)
@@ -50,12 +50,12 @@ end
 function optimization!(pm::AbstractPowerModel)
     
     #start_time = time()
-    JuMP.set_time_limit_sec(pm.model, 3.0)
+    JuMP.set_time_limit_sec(pm.model, 2.0)
 
     if JuMP.mode(pm.model) ≠ JuMP.DIRECT && JuMP.backend(pm.model).optimizer === nothing
         Memento.error(_LOGGER, "No optimizer specified in `optimize_model!` or the given JuMP model.")
     end
-    
+
     JuMP.optimize!(pm.model)
     #solve_time = @timed JuMP.optimize!(pm.model)
     try
@@ -66,7 +66,8 @@ function optimization!(pm::AbstractPowerModel)
     #Memento.debug(_LOGGER, "JuMP model optimize time: $(time() - start_time)")
 
     if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
-
+        println("stucked within loop not locally solved")
+        JuMP.set_time_limit_sec(pm.model, 2.0)
         var_buspair_current_magnitude_sqr(pm)
         var_bus_voltage_magnitude_sqr(pm)
         constraint_voltage_magnitude_diff(pm)
@@ -77,6 +78,7 @@ function optimization!(pm::AbstractPowerModel)
     #start_time = time()
     #result = build_result(pm, solve_time)  
     #Memento.debug(_LOGGER, "solution build time: $(time() - start_time)")
+    #println("optimize! loop finished")
     return pm
 
 end

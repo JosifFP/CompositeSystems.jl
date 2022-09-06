@@ -9,14 +9,48 @@ import BenchmarkTools: @btime
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 PRATSBase.silence()
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
-
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=8, seed=1, verbose=false, threaded=true)
-@time flow,shortfall = PRATS.assess(system, method, resultspecs...)
+method = PRATS.SequentialMonteCarlo(samples=1, seed=1, verbose=false, threaded=true)
+shortfall,shortfall2 = PRATS.assess(system, method, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 
+
+
+using Juniper, Ipopt, JuMP, PowerModels
+using PRATS
+using PRATS.PRATSBase
+using PRATS.CompositeAdequacy
+#optimizer = JuMP.optimizer_with_attributes(SCIP.Optimizer, "limits/gap"=>1e-4, "display/verblevel"=>0) #"limits/time" => 3)
+optimizer = [JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), 
+JuMP.optimizer_with_attributes(Juniper.Optimizer, 
+"nl_solver"=>JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0,
+"tol"=>1e-4, "print_level"=>0), "log_levels"=>[], "allow_almost_solved_integral"=>true, "time_limit"=>3)
+]
+
+RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
+network_data = PowerModels.parse_file(RawFile)
+for (i,load) in network_data["load"]
+    get!(load, "cost", 100)
+end
+network_data["branch"][string(25)]["br_status"] = 0
+network_data["branch"][string(26)]["br_status"] = 0
+network_data["branch"][string(28)]["br_status"] = 0
+PRATSBase.SimplifyNetwork!(network_data)
+
+refs= CompositeAdequacy.ref_initialize!(network_data)
+CompositeAdequacy.ref_add!(refs)
+pm = CompositeAdequacy.DCMLPowerModel(
+    JuMP.Model(optimizer[2]),
+    network_data["load"],
+    Dict{String,Any}(), # empty solution data
+    refs
+)
+CompositeAdequacy.build_model!(pm)
+CompositeAdequacy.optimization!(pm)
+CompositeAdequacy.build_result!(pm)
+println("load_curt=$(sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]))")
 #10 samples, 8760 hrs: 
 
 #flow.nsamples
@@ -46,22 +80,6 @@ shortfall.shortfall_bus_std
 shortfall.shortfall_period_std
 shortfall.shortfall_busperiod_std
 
-"********************************************************************************************************************************"
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
-method = PRATS.SequentialMonteCarlo(samples=1, seed=1, verbose=false, threaded=true)
-@time flow,shortfall = PRATS.assess(system, method, resultspecs...)
-
-
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir)
-method = PRATS.SequentialMonteCarlo(samples=2, seed=1, verbose=false, threaded=true)
-@time flow,shortfall = PRATS.assess(system, method, resultspecs...)
-
-
-
-
-
-
-
 
 
 "********************************************************************************************************************************"
@@ -77,7 +95,7 @@ import BenchmarkTools: @btime
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 PRATSBase.silence()
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 optimizer = [
     JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), 
     JuMP.optimizer_with_attributes(Juniper.Optimizer, 
@@ -97,44 +115,33 @@ CompositeAdequacy.seed!(rng, (simspec.seed, s))
 CompositeAdequacy.initialize!(rng, systemstate, system)
 
 t=1
-data =  CompositeAdequacy.create_dict_from_system(system, t)
+data = Dict{String, Any}()
+data = CompositeAdequacy.create_dict_from_system(system, t)
 model_type = CompositeAdequacy.apply_contingencies!(data, systemstate, system, t)
-data["branch"][string(1)]["br_status"] = 0
-data["branch"][string(4)]["br_status"] = 0
-data["branch"][string(10)]["br_status"] = 0
-PRATSBase.SimplifyNetwork!(data)
-overloaded_lines = CompositeAdequacy.overloadings(data, try CompositeAdequacy.compute_dc_pf(data) catch ; "error" end)
-
-@btime pm = CompositeAdequacy.SolveModel(data, model_type, optimizer, false)
-
-# if overloaded_lines == true
-#     pm = CompositeAdequacy.SolveModel(data, model_type, optimizer)
-#     #update_systemmodel!(pm, system, t)
-#     return pm
-# else
-
-data["branch"][string(1)]["br_status"] = 0
-data["branch"][string(4)]["br_status"] = 0
-data["branch"][string(10)]["br_status"] = 0
+data["branch"][string(7)]["br_status"] = 0
+data["branch"][string(23)]["br_status"] = 0
+data["branch"][string(29)]["br_status"] = 0
 PRATSBase.SimplifyNetwork!(data)
 
+CompositeAdequacy.compute_dc_pf(data)
+using PowerModels
+s = PowerModels._calc_power_balance(data)
 
-try native = CompositeAdequacy.compute_dc_pf(data) catch; "error"end
 
-native = CompositeAdequacy.compute_dc_pf(data)
-PRATSBase.update_data!(data, native["solution"])
-CompositeAdequacy.overloadings(data, native)
+overloaded_lines = CompositeAdequacy.overloadings(CompositeAdequacy.compute_dc_pf(data))
+pm = CompositeAdequacy.InitializeAbstractPowerModel(data, CompositeAdequacy.DCMLPowerModel, optimizer)
+CompositeAdequacy.build_model!(pm)
+CompositeAdequacy.optimization!(pm)
+CompositeAdequacy.build_result!(pm)
 
-pm = CompositeAdequacy.SolveModel(data, model_type, optimizer, CompositeAdequacy.overloadings(data, native))
-pm.solution
 pm.solution["solution"]["load_curtailment"]
 
-N = 8760
+
 nbuses = length(system.network.load)
 periodsdropped_total = CompositeAdequacy.meanvariance()
 periodsdropped_bus = [CompositeAdequacy.meanvariance() for _ in 1:nbuses]
 periodsdropped_period = [CompositeAdequacy.meanvariance() for _ in 1:N]
-periodsdropped_busperiod = [CompositeAdequacy.meanvariance() for _ in 1:nbuses, _ in 1:N]
+periodsdropped_busperiod = [CompositeAdequacy.meanvariance() for _ in 1:nbuses, _ in 1:365]
 periodsdropped_total_currentsim = 0
 periodsdropped_bus_currentsim = zeros(Float16, nbuses)
 unservedload_total = CompositeAdequacy.meanvariance()

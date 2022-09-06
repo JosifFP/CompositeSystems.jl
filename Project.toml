@@ -4,6 +4,7 @@ authors = ["Josif Figueroa <josif.figueroa@unb.ca"]
 version = "0.1.0"
 
 [deps]
+Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 ContingencySolver = "5fa04437-d5b5-471c-91e8-ade99e5efab1"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -25,6 +26,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Random123 = "74087812-796a-5b5d-8853-05524746bad3"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SCIP = "82193955-e24f-5292-bf16-6f2c5261a85f"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"

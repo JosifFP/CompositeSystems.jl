@@ -23,14 +23,17 @@ function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{
 
 end
 
-function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, ::Dict{<:Any}, 
+function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dictionary_core::Dict{<:Any}, 
     dictionary_timeseries::Dict{<:Any}, network::Network{N,L,T,U}, ::Type{Loads}) where {N,L,T,U}
+    
+    tmp = Dict(string(dictionary_core[:key][i]) => Float16(dictionary_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dictionary_core[:key]))
+    for (i,load) in network.load
+        get!(load, "cost", tmp[i])
+    end
 
     if isempty(dictionary_timeseries) error("Load data must be provided") end
-
     ref = Dict(i => network.load[string(i)] for i in 1:length(keys(network.load)))
     @assert length(dictionary_timeseries) == length(ref)
-
     container_bus = [Int64.(ref[i]["load_bus"]) for i in keys(dictionary_timeseries)]
     container_data = [Float16.(dictionary_timeseries[i]/network.baseMVA) for i in keys(dictionary_timeseries)]
 
@@ -59,7 +62,6 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
 
     container_data = [Float16.(dictionary_timeseries[i]/network.baseMVA) for i in keys(dictionary_timeseries)]
     container_bus = Int64.(reduce(vcat, tmp')[:,2])
-    container_category = String.(values(dictionary_core[:category]))
     container_λ = Float32.(values(dictionary_core[Symbol("failurerate[f/year]")]))
     container_μ = Vector{Float32}(undef, length(values(dictionary_core[Symbol("repairtime[hrs]")])))
     for i in 1:length(values(dictionary_core[Symbol("repairtime[hrs]")]))
@@ -70,7 +72,7 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
         end
     end
 
-    return Generators{N,L,T,U}(container_key_core[key_order_core], container_bus[key_order_core], container_category[key_order_core], 
+    return Generators{N,L,T,U}(container_key_core[key_order_core], container_bus[key_order_core], 
         reduce(vcat,transpose.(container_data[key_order])), container_λ[key_order_core], container_μ[key_order_core])
 
 end
@@ -82,8 +84,6 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
 
     container_longterm_capacity = Dict{Int64, Any}()
     container_shortterm_capacity = Dict{Int64, Any}()
-    #container_data_longterm = Vector{Vector{Float16}}() #container_data_shortterm = Vector{Vector{Float16}}()
-    #container_f_bus = Vector{Int64}() #container_t_bus = Vector{Int64}()
 
     tmp = sort([[i, Int64.(branch["f_bus"]), Int64.(branch["t_bus"]), Float16.(branch["rate_a"]),
                 Float16.(branch["rate_b"])] for (i,branch) in ref], by = x->x[1])
@@ -104,13 +104,11 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
         @assert [i for i in keys(container_longterm_capacity)] == [i for i in keys(container_shortterm_capacity)]
     end
 
-    container_pf = zeros(Float16, length(container_key), N)
-    container_pt = zeros(Float16, length(container_key), N)
     container_f_bus = Int64.(reduce(vcat, tmp')[:,2])
     container_t_bus = Int64.(reduce(vcat, tmp')[:,3])
-    container_category = String.(values(dictionary_core[:category]))
     container_λ = Float32.(values(dictionary_core[Symbol("failurerate[f/year]")]))
     container_μ = Vector{Float32}(undef, length(values(dictionary_core[Symbol("repairtime[hrs]")])))
+
     for i in 1:length(values(dictionary_core[Symbol("repairtime[hrs]")]))
         if values(dictionary_core[Symbol("repairtime[hrs]")])[i]≠0.0
             container_μ[i] = Float32.(8760/values(dictionary_core[Symbol("repairtime[hrs]")])[i])
@@ -124,10 +122,7 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
     
     return Branches{N,L,T,U}(container_key_core[key_order_core],
                         container_f_bus[key_order_core], container_t_bus[key_order_core],
-                        container_category[key_order_core],
                         reduce(vcat,transpose.(container_data_longterm[key_order])),
                         reduce(vcat,transpose.(container_data_shortterm[key_order])),
-                        container_pf, container_pt,
                         container_λ[key_order_core], container_μ[key_order_core])
-
 end
