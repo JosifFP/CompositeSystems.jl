@@ -139,7 +139,9 @@ function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCMLPowerModel}, 
         "solution"              => Dict{String,Any}()
         )
     
+        println("stucked within loop not locally solved")
         build_solution!(pm)
+        println("stucked within loop not locally solvedx2")
     else
         build_result!(pm)
     end
