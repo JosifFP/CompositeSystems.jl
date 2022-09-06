@@ -158,7 +158,7 @@ function s_cost_terms!(pm_data::Dict{String,<:Any}; order=-1)
                 max_nonzero_index = 1
                 for i in 1:length(gen["cost"])
                     max_nonzero_index = i
-                    if gen["cost"][i] != 0.0
+                    if gen["cost"][i] ≠ 0.0
                         break
                     end
                 end
@@ -174,7 +174,7 @@ function s_cost_terms!(pm_data::Dict{String,<:Any}; order=-1)
                 max_nonzero_index = 1
                 for i in 1:length(dcline["cost"])
                     max_nonzero_index = i
-                    if dcline["cost"][i] != 0.0
+                    if dcline["cost"][i] ≠ 0.0
                         break
                     end
                 end
@@ -187,7 +187,7 @@ function s_cost_terms!(pm_data::Dict{String,<:Any}; order=-1)
     if comp_max_order <= order+1
         comp_max_order = order+1
     else
-        if order != -1 # if not the default
+        if order ≠ -1 # if not the default
             Memento.warn(_LOGGER, "a standard cost order of $(order) was requested but the given data requires an order of at least $(comp_max_order-1)")
         end
     end
@@ -204,7 +204,7 @@ end
 function _s_cost_terms!(components::Dict{String,<:Any}, comp_order::Int, cost_comp_name::String)
     modified = Set{Int}()
     for (i, comp) in components
-        if haskey(comp, "model") && comp["model"] == 2 && length(comp["cost"]) != comp_order
+        if haskey(comp, "model") && comp["model"] == 2 && length(comp["cost"]) ≠ comp_order
             std_cost = [0.0 for i in 1:comp_order]
             current_cost = reverse(comp["cost"])
 
@@ -236,25 +236,25 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
     incident_load = bus_load_lookup(network.load, network.bus)
     incident_active_load = Dict()
     for (i, load_list) in incident_load
-        incident_active_load[i] = [load for load in load_list if load["status"] != 0]
+        incident_active_load[i] = [load for load in load_list if load["status"] ≠ 0]
     end
 
     incident_shunt = bus_shunt_lookup(network.shunt, network.bus)
     incident_active_shunt = Dict()
     for (i, shunt_list) in incident_shunt
-        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] != 0]
+        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] ≠ 0]
     end
 
     incident_gen = bus_gen_lookup(network.gen, network.bus)
     incident_active_gen = Dict()
     for (i, gen_list) in incident_gen
-        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] != 0]
+        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] ≠ 0]
     end
 
     incident_strg = bus_storage_lookup(network.storage, network.bus)
     incident_active_strg = Dict()
     for (i, strg_list) in incident_strg
-        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] != 0]
+        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] ≠ 0]
     end
 
     incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
@@ -278,7 +278,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
     revised = false
 
     for (i,branch) in network.branch
-        if branch["br_status"] != 0
+        if branch["br_status"] ≠ 0
             #f_bus = buses[branch["f_bus"]]
             #t_bus = buses[branch["t_bus"]]
 
@@ -291,7 +291,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
     end
 
     for (i,dcline) in network.dcline
-        if dcline["br_status"] != 0
+        if dcline["br_status"] ≠ 0
             #f_bus = buses[dcline["f_bus"]]
             #t_bus = buses[dcline["t_bus"]]
 
@@ -304,7 +304,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
     end
 
     for (i,switch) in network.switch
-        if switch["status"] != 0
+        if switch["status"] ≠ 0
             #f_bus = buses[switch["f_bus"]]
             #t_bus = buses[switch["t_bus"]]
 
@@ -319,7 +319,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
     for (i,bus) in buses
         if bus["bus_type"] == 4
             for load in incident_active_load[i]
-                if load["status"] != 0
+                if load["status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating load $(load["index"]) due to inactive bus $(i)")
                     load["status"] = 0
                     revised = true
@@ -327,7 +327,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
             end
 
             for shunt in incident_active_shunt[i]
-                if shunt["status"] != 0
+                if shunt["status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating shunt $(shunt["index"]) due to inactive bus $(i)")
                     shunt["status"] = 0
                     revised = true
@@ -335,7 +335,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
             end
 
             for gen in incident_active_gen[i]
-                if gen["gen_status"] != 0
+                if gen["gen_status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating generator $(gen["index"]) due to inactive bus $(i)")
                     gen["gen_status"] = 0
                     revised = true
@@ -343,7 +343,7 @@ function propagate_topo_status!(network::Network{N,L,T,U}) where {N,L,T,U}
             end
 
             for strg in incident_active_strg[i]
-                if strg["status"] != 0
+                if strg["status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating storage $(strg["index"]) due to inactive bus $(i)")
                     strg["status"] = 0
                     revised = true
@@ -365,25 +365,25 @@ function propagate_topo_status!(data::Dict{String,<:Any})
     incident_load = bus_load_lookup(data["load"], data["bus"])
     incident_active_load = Dict()
     for (i, load_list) in incident_load
-        incident_active_load[i] = [load for load in load_list if load["status"] != 0]
+        incident_active_load[i] = [load for load in load_list if load["status"] ≠ 0]
     end
 
     incident_shunt = bus_shunt_lookup(data["shunt"], data["bus"])
     incident_active_shunt = Dict()
     for (i, shunt_list) in incident_shunt
-        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] != 0]
+        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] ≠ 0]
     end
 
     incident_gen = bus_gen_lookup(data["gen"], data["bus"])
     incident_active_gen = Dict()
     for (i, gen_list) in incident_gen
-        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] != 0]
+        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] ≠ 0]
     end
 
     incident_strg = bus_storage_lookup(data["storage"], data["bus"])
     incident_active_strg = Dict()
     for (i, strg_list) in incident_strg
-        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] != 0]
+        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] ≠ 0]
     end
 
     incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
@@ -407,7 +407,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
     revised = false
 
     for (i,branch) in data["branch"]
-        if branch["br_status"] != 0
+        if branch["br_status"] ≠ 0
             #f_bus = buses[branch["f_bus"]]
             #t_bus = buses[branch["t_bus"]]
 
@@ -420,7 +420,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
     end
 
     for (i,dcline) in data["dcline"]
-        if dcline["br_status"] != 0
+        if dcline["br_status"] ≠ 0
             #f_bus = buses[dcline["f_bus"]]
             #t_bus = buses[dcline["t_bus"]]
 
@@ -433,7 +433,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
     end
 
     for (i,switch) in data["switch"]
-        if switch["status"] != 0
+        if switch["status"] ≠ 0
             #f_bus = buses[switch["f_bus"]]
             #t_bus = buses[switch["t_bus"]]
 
@@ -448,7 +448,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
     for (i,bus) in buses
         if bus["bus_type"] == 4
             for load in incident_active_load[i]
-                if load["status"] != 0
+                if load["status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating load $(load["index"]) due to inactive bus $(i)")
                     load["status"] = 0
                     revised = true
@@ -456,7 +456,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
             end
 
             for shunt in incident_active_shunt[i]
-                if shunt["status"] != 0
+                if shunt["status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating shunt $(shunt["index"]) due to inactive bus $(i)")
                     shunt["status"] = 0
                     revised = true
@@ -464,7 +464,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
             end
 
             for gen in incident_active_gen[i]
-                if gen["gen_status"] != 0
+                if gen["gen_status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating generator $(gen["index"]) due to inactive bus $(i)")
                     gen["gen_status"] = 0
                     revised = true
@@ -472,7 +472,7 @@ function propagate_topo_status!(data::Dict{String,<:Any})
             end
 
             for strg in incident_active_strg[i]
-                if strg["status"] != 0
+                if strg["status"] ≠ 0
                     Memento.info(_LOGGER, "deactivating storage $(strg["index"]) due to inactive bus $(i)")
                     strg["status"] = 0
                     revised = true
@@ -497,7 +497,7 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
     revised = false
 
     for (i,load) in network.load
-        if load["status"] != 0 && all(load["pd"] .== 0.0) && all(load["qd"] .== 0.0)
+        if load["status"] ≠ 0 && all(load["pd"] .== 0.0) && all(load["qd"] .== 0.0)
             Memento.info(_LOGGER, "deactivating load $(load["index"]) due to zero pd and qd")
             load["status"] = 0
             revised = true
@@ -505,7 +505,7 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
     end
 
     for (i,shunt) in network.shunt
-        if shunt["status"] != 0 && all(shunt["gs"] .== 0.0) && all(shunt["bs"] .== 0.0)
+        if shunt["status"] ≠ 0 && all(shunt["gs"] .== 0.0) && all(shunt["bs"] .== 0.0)
             Memento.info(_LOGGER, "deactivating shunt $(shunt["index"]) due to zero gs and bs")
             shunt["status"] = 0
             revised = true
@@ -516,25 +516,25 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
     incident_load = bus_load_lookup(network.load, network.bus)
     incident_active_load = Dict()
     for (i, load_list) in incident_load
-        incident_active_load[i] = [load for load in load_list if load["status"] != 0]
+        incident_active_load[i] = [load for load in load_list if load["status"] ≠ 0]
     end
 
     incident_shunt = bus_shunt_lookup(network.shunt, network.bus)
     incident_active_shunt = Dict()
     for (i, shunt_list) in incident_shunt
-        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] != 0]
+        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] ≠ 0]
     end
 
     incident_gen = bus_gen_lookup(network.gen, network.bus)
     incident_active_gen = Dict()
     for (i, gen_list) in incident_gen
-        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] != 0]
+        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] ≠ 0]
     end
 
     incident_strg = bus_storage_lookup(network.storage, network.bus)
     incident_active_strg = Dict()
     for (i, strg_list) in incident_strg
-        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] != 0]
+        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] ≠ 0]
     end
 
     incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in network.bus)
@@ -559,7 +559,7 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
     while changed
         changed = false
         for (i,bus) in buses
-            if bus["bus_type"] != 4
+            if bus["bus_type"] ≠ 4
                 incident_active_edge = 0
                 if length(incident_branch[i]) + length(incident_dcline[i]) + length(incident_switch[i]) > 0
                     incident_branch_count = sum([0; [branch["br_status"] for branch in incident_branch[i]]])
@@ -580,7 +580,7 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
 
         if changed
             for (i,branch) in network.branch
-                if branch["br_status"] != 0
+                if branch["br_status"] ≠ 0
                     #f_bus = buses[branch["f_bus"]]
                     #t_bus = buses[branch["t_bus"]]
 
@@ -592,7 +592,7 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
             end
 
             for (i,dcline) in network.dcline
-                if dcline["br_status"] != 0
+                if dcline["br_status"] ≠ 0
                     #f_bus = buses[dcline["f_bus"]]
                     #t_bus = buses[dcline["t_bus"]]
 
@@ -604,7 +604,7 @@ function deactivate_isol_components!(network::Network{N,L,T,U}) where {N,L,T,U}
             end
 
             for (i,switch) in network.switch
-                if switch["status"] != 0
+                if switch["status"] ≠ 0
                     #f_bus = buses[switch["f_bus"]]
                     #t_bus = buses[switch["t_bus"]]
 
@@ -656,7 +656,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
     revised = false
 
     for (i,load) in data["load"]
-        if load["status"] != 0 && all(load["pd"] .== 0.0) && all(load["qd"] .== 0.0)
+        if load["status"] ≠ 0 && all(load["pd"] .== 0.0) && all(load["qd"] .== 0.0)
             Memento.info(_LOGGER, "deactivating load $(load["index"]) due to zero pd and qd")
             load["status"] = 0
             revised = true
@@ -664,7 +664,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
     end
 
     for (i,shunt) in data["shunt"]
-        if shunt["status"] != 0 && all(shunt["gs"] .== 0.0) && all(shunt["bs"] .== 0.0)
+        if shunt["status"] ≠ 0 && all(shunt["gs"] .== 0.0) && all(shunt["bs"] .== 0.0)
             Memento.info(_LOGGER, "deactivating shunt $(shunt["index"]) due to zero gs and bs")
             shunt["status"] = 0
             revised = true
@@ -675,25 +675,25 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
     incident_load = bus_load_lookup(data["load"], data["bus"])
     incident_active_load = Dict()
     for (i, load_list) in incident_load
-        incident_active_load[i] = [load for load in load_list if load["status"] != 0]
+        incident_active_load[i] = [load for load in load_list if load["status"] ≠ 0]
     end
 
     incident_shunt = bus_shunt_lookup(data["shunt"], data["bus"])
     incident_active_shunt = Dict()
     for (i, shunt_list) in incident_shunt
-        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] != 0]
+        incident_active_shunt[i] = [shunt for shunt in shunt_list if shunt["status"] ≠ 0]
     end
 
     incident_gen = bus_gen_lookup(data["gen"], data["bus"])
     incident_active_gen = Dict()
     for (i, gen_list) in incident_gen
-        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] != 0]
+        incident_active_gen[i] = [gen for gen in gen_list if gen["gen_status"] ≠ 0]
     end
 
     incident_strg = bus_storage_lookup(data["storage"], data["bus"])
     incident_active_strg = Dict()
     for (i, strg_list) in incident_strg
-        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] != 0]
+        incident_active_strg[i] = [strg for strg in strg_list if strg["status"] ≠ 0]
     end
 
     incident_branch = Dict(bus["bus_i"] => [] for (i,bus) in data["bus"])
@@ -718,7 +718,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
     while changed
         changed = false
         for (i,bus) in buses
-            if bus["bus_type"] != 4
+            if bus["bus_type"] ≠ 4
                 incident_active_edge = 0
                 if length(incident_branch[i]) + length(incident_dcline[i]) + length(incident_switch[i]) > 0
                     incident_branch_count = sum([0; [branch["br_status"] for branch in incident_branch[i]]])
@@ -739,7 +739,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
 
         if changed
             for (i,branch) in data["branch"]
-                if branch["br_status"] != 0
+                if branch["br_status"] ≠ 0
                     #f_bus = buses[branch["f_bus"]]
                     #t_bus = buses[branch["t_bus"]]
 
@@ -751,7 +751,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
             end
 
             for (i,dcline) in data["dcline"]
-                if dcline["br_status"] != 0
+                if dcline["br_status"] ≠ 0
                     #f_bus = buses[dcline["f_bus"]]
                     #t_bus = buses[dcline["t_bus"]]
 
@@ -763,7 +763,7 @@ function deactivate_isol_components!(data::Dict{String,<:Any})
             end
 
             for (i,switch) in data["switch"]
-                if switch["status"] != 0
+                if switch["status"] ≠ 0
                     #f_bus = buses[switch["f_bus"]]
                     #t_bus = buses[switch["t_bus"]]
 
@@ -852,7 +852,7 @@ returns a set of sets of bus ids, each set is a connected component
 """
 function calc_connected_components!(network::Network{N,L,T,U}; edges=["branch", "dcline", "switch"]) where {N,L,T,U}
     
-    active_bus = Dict(x for x in network.bus if x.second["bus_type"] != 4)
+    active_bus = Dict(x for x in network.bus if x.second["bus_type"] ≠ 4)
     active_bus_ids = Set{Int}([bus["bus_i"] for (i,bus) in active_bus])
 
     neighbors = Dict(i => Int[] for i in active_bus_ids)
@@ -860,7 +860,7 @@ function calc_connected_components!(network::Network{N,L,T,U}; edges=["branch", 
         status_key = get(component_status, comp_type, "status")
         status_inactive = get(component_status_inactive, comp_type, 0)
         for edge in values(getfield(network, Symbol(comp_type)))
-            if get(edge, status_key, 1) != status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
+            if get(edge, status_key, 1) ≠ status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
                 push!(neighbors[edge["f_bus"]], edge["t_bus"])
                 push!(neighbors[edge["t_bus"]], edge["f_bus"])
             end
@@ -881,7 +881,7 @@ end
 
 function calc_connected_components!(data::Dict{String,<:Any}; edges=["branch", "dcline", "switch"])
     
-    active_bus = Dict(x for x in data["bus"] if x.second["bus_type"] != 4)
+    active_bus = Dict(x for x in data["bus"] if x.second["bus_type"] ≠ 4)
     active_bus_ids = Set{Int}([bus["bus_i"] for (i,bus) in active_bus])
 
     neighbors = Dict(i => Int[] for i in active_bus_ids)
@@ -889,7 +889,7 @@ function calc_connected_components!(data::Dict{String,<:Any}; edges=["branch", "
         status_key = get(component_status, comp_type, "status")
         status_inactive = get(component_status_inactive, comp_type, 0)
         for edge in values(get(data, comp_type, Dict()))
-            if get(edge, status_key, 1) != status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
+            if get(edge, status_key, 1) ≠ status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
                 push!(neighbors[edge["f_bus"]], edge["t_bus"])
                 push!(neighbors[edge["t_bus"]], edge["f_bus"])
             end
@@ -1096,19 +1096,221 @@ end
 #     end
 # end
 
+""
+function pinv(x::Number)
+    xi = inv(x)
+    return ifelse(isfinite(xi), xi, zero(xi))
+end
+
+"""
+Stores data related to an Admittance Matrix.  Work with both complex
+(i.e. Y) and real-valued (e.g. B) valued admittance matrices.  Only supports
+sparse matrices.
+
+* `idx_to_bus` - a mapping from 1-to-n bus idx values to data model bus ids
+* `bus_to_idx` - a mapping from data model bus ids to 1-to-n bus idx values
+* `matrix` - the sparse admittance matrix values
+"""
+struct AdmittanceMatrix{T}
+    idx_to_bus::Vector{Int}
+    bus_to_idx::Dict{Int,Int}
+    matrix::SparseMatrixCSC{T,Int}
+end
+
+Base.show(io::IO, x::AdmittanceMatrix{<:Number}) = print(io, "AdmittanceMatrix($(length(x.idx_to_bus)) buses, $(length(nonzeros(x.matrix))) entries)")
+
 "get the reference bus in a network dataset"
 function reference_bus(data::Dict{String,<:Any})
     time_start = time()
     ref_bus = [bus for (i,bus) in data["bus"] if bus["bus_type"] == 3]
-    if length(ref_bus) != 1
+    if length(ref_bus) ≠ 1
         Memento.error(_LOGGER, "exactly one refrence bus in data is required when calling reference_bus, given $(length(ref_bus))")
     end
     ref_bus = ref_bus[1]
     return ref_bus
 end
 
+"an active power only variant of `calculate_bus_injection`"
+calculate_bus_injection_active(data::Dict{String,<:Any}) = calculate_bus_injection(data)[1]
+
+"""
+computes the power injection of each bus in the network, with a focus on the
+needs of Power Flow solvers.
+
+excludes voltage-dependent components (e.g. shunts), these should be addressed
+as needed by the calling functions.  note that voltage dependent components are
+resolved during an AC Power Flow solve and are not static.
+
+"""
+function calculate_bus_injection(data::Dict{String,<:Any})
+    if length(data["dcline"]) > 0
+        Memento.error(_LOGGER, "calc_bus_injection does not support data with dclines")
+    end
+    if length(data["switch"]) > 0
+        Memento.error(_LOGGER, "calc_bus_injection does not support data with switches")
+    end
+
+    bus_values = Dict(bus["index"] => Dict{String,Float64}() for (i,bus) in data["bus"])
+
+    for (i,bus) in data["bus"]
+        bvals = bus_values[bus["index"]]
+        bvals["vm"] = bus["vm"]
+
+        bvals["pd"] = 0.0
+        bvals["qd"] = 0.0
+
+        bvals["ps"] = 0.0
+        bvals["qs"] = 0.0
+
+        bvals["pg"] = 0.0
+        bvals["qg"] = 0.0
+    end
+
+    for (i,load) in data["load"]
+        if load["status"] ≠ 0
+            bvals = bus_values[load["load_bus"]]
+            bvals["pd"] += load["pd"]
+            bvals["qd"] += load["qd"]
+        end
+    end
+
+    for (i,storage) in data["storage"]
+        if storage["status"] ≠ 0
+            bvals = bus_values[storage["storage_bus"]]
+            bvals["ps"] += storage["ps"]
+            bvals["qs"] += storage["qs"]
+        end
+    end
+
+    for (i,gen) in data["gen"]
+        if gen["gen_status"] ≠ 0
+            bvals = bus_values[gen["gen_bus"]]
+            bvals["pg"] += gen["pg"]
+            bvals["qg"] += gen["qg"]
+        end
+    end
+
+    p_deltas = Dict{Int,Float64}()
+    q_deltas = Dict{Int,Float64}()
+    for (i,bus) in data["bus"]
+        if bus["bus_type"] ≠ 4
+            bvals = bus_values[bus["index"]]
+            p_delta = bvals["pg"] - bvals["ps"] - bvals["pd"]
+            q_delta = bvals["qg"] - bvals["qs"] - bvals["qd"]
+        else
+            p_delta = NaN
+            q_delta = NaN
+        end
+
+        p_deltas[bus["index"]] = p_delta
+        q_deltas[bus["index"]] = q_delta
+    end
+
+    return (p_deltas, q_deltas)
+end
+
+"only supports networks with exactly one refrence bus"
+function calculate_susceptance_matrix(data::Dict{String,<:Any})
+    if length(data["dcline"]) > 0
+        Memento.error(_LOGGER, "calc_susceptance_matrix does not support data with dclines")
+    end
+    if length(data["switch"]) > 0
+        Memento.error(_LOGGER, "calc_susceptance_matrix does not support data with switches")
+    end
+
+    #TODO check single connected component
+
+    buses = [x.second for x in data["bus"] if (x.second[component_status["bus"]] ≠ component_status_inactive["bus"])]
+    sort!(buses, by=x->x["index"])
+
+    idx_to_bus = [x["index"] for x in buses]
+    bus_type = [x["bus_type"] for x in buses]
+    bus_to_idx = Dict(x["index"] => i for (i,x) in enumerate(buses))
+
+    I = Int[]
+    J = Int[]
+    V = Float64[]
+
+    for (i,branch) in data["branch"]
+        f_bus = branch["f_bus"]
+        t_bus = branch["t_bus"]
+        if branch[component_status["branch"]] ≠ component_status_inactive["branch"] && haskey(bus_to_idx, f_bus) && haskey(bus_to_idx, t_bus)
+            f_bus = bus_to_idx[f_bus]
+            t_bus = bus_to_idx[t_bus]
+            b_val = imag(inv(branch["br_r"] + branch["br_x"]im))
+            push!(I, f_bus); push!(J, t_bus); push!(V, -b_val)
+            push!(I, t_bus); push!(J, f_bus); push!(V, -b_val)
+            push!(I, f_bus); push!(J, f_bus); push!(V,  b_val)
+            push!(I, t_bus); push!(J, t_bus); push!(V,  b_val)
+        end
+    end
+
+    m = sparse(I,J,V)
+
+    return AdmittanceMatrix(idx_to_bus, bus_to_idx, m)
+end
+
+"recursively applies new_data to data, overwriting information"
+function update_data!(data::Dict{String,<:Any}, new_data::Dict{String,<:Any})
+    for (key, new_v) in new_data
+        if haskey(data, key)
+            v = data[key]
+            if isa(v, Dict) && isa(new_v, Dict)
+                update_data!(v, new_v)
+            else
+                data[key] = new_v
+            end
+        else
+            data[key] = new_v
+        end
+    end
+end
+
+
+"assumes a vaild dc solution is included in the data and computes the branch flow values"
+function calc_branch_flow_dc(data::Dict{String,<:Any})
+
+    @assert("per_unit" in keys(data) && data["per_unit"])
+    flows = _calc_branch_flow_dc(data)
+    flows["per_unit"] = data["per_unit"]
+    flows["baseMVA"] = data["baseMVA"]
+    return flows
+
+end
+
+"helper function for calc_branch_flow_dc"
+function _calc_branch_flow_dc(data::Dict{String,<:Any})
+
+    vm = Dict(bus["index"] => bus["vm"] for (i,bus) in data["bus"])
+    va = Dict(bus["index"] => bus["va"] for (i,bus) in data["bus"])
+
+    flows = Dict{String,Any}()
+    for (i,branch) in data["branch"]
+        if branch["br_status"] ≠ 0
+            f_bus = branch["f_bus"]
+            t_bus = branch["t_bus"]
+
+            g, b = calc_branch_y(branch)
+
+            p_fr = -b*(va[f_bus] - va[t_bus])
+        else
+            p_fr = NaN
+        end
+
+        flows[i] = Dict(
+            "pf" =>  p_fr,
+            "qf" =>  NaN,
+            "pt" => -p_fr,
+            "qt" =>  NaN
+        )
+    end
+
+    return Dict{String,Any}("branch" => flows)
+end
+
 ""
-function pinv(x::Number)
-    xi = inv(x)
-    return ifelse(isfinite(xi), xi, zero(xi))
+function calc_branch_y(branch::Dict{String,<:Any})
+    y = pinv(branch["br_r"] + im * branch["br_x"])
+    g, b = real(y), imag(y)
+    return g, b
 end

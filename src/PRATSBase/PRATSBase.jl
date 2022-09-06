@@ -6,6 +6,7 @@
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
     import LinearAlgebra
+    import SparseArrays: SparseMatrixCSC, sparse
     import PowerModels, InfrastructureModels
     import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
     __init__() = Memento.register(_LOGGER)

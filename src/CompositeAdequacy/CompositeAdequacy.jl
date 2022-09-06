@@ -20,6 +20,16 @@ import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @
 optimize!, Model, LOCALLY_SOLVED
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
+"Suppresses information and warning messages output"
+function silence()
+    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
+    Memento.setlevel!(_LOGGER, "error")
+    Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
+    Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
+    Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
+    #Memento.setlevel!(Memento.getlogger(CompositeAdequacy), "error", recursive=false)
+end
+
 export
     # CompositeAdequacy submoduleexport
     assess,
@@ -56,6 +66,8 @@ include("Optimizer/variables.jl")
 include("Optimizer/constraints.jl")
 include("Optimizer/Optimizer.jl")
 include("Optimizer/solution.jl")
+
+include("Native/Native.jl")
 
 include("metrics.jl")
 include("results/results.jl")

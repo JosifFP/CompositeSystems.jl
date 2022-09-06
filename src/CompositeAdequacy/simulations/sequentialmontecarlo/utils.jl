@@ -8,7 +8,7 @@ function initialize_availability!(
     for i in 1:ndevices
         λ = devices.λ[i]/N
         μ = devices.μ[i]/N
-        if λ != 0.0 || μ != 0.0
+        if λ ≠ 0.0 || μ ≠ 0.0
             availability[i,:] = cycles!(rng, λ, μ, N)
         end
     end
@@ -58,31 +58,33 @@ end
 ""
 function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}, t::Int) where {N}
 
-    for i in eachindex(system.branches.keys)
-        if state.branches_available[i] == false
-            #system.network.branch[string(i)]["br_status"] = state.branches_available[i]
-            network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t]
-        end
-    end
+    if state.condition[t] == false
 
-    for i in eachindex(system.generators.keys)
-        if state.gens_available[i] == false
-            #system.network.gen[string(i)]["gen_status"] = state.gens_available[i]
-            network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t]
+        for i in eachindex(system.branches.keys)
+            if state.branches_available[i] == false network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t] end
         end
-    end
 
-    for i in eachindex(system.storages.keys)
-        if state.stors_available[i] == false
-            #system.network.storage[string(i)]["status"] = state.stors_available[i]
-            network_data["storage"][string(i)]["status"] = state.stors_available[i,t]
+        for i in eachindex(system.generators.keys)
+            if state.gens_available[i] == false network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t] end
         end
-    end
 
-    PRATSBase.SimplifyNetwork!(network_data)
+        for i in eachindex(system.storages.keys)
+            if state.stors_available[i] == false network_data["storage"][string(i)]["status"] = state.stors_available[i,t] end
+        end
+
+        PRATSBase.SimplifyNetwork!(network_data)
+
+        return DCMLPowerModel
+    
+    else
+
+        return DCPPowerModel
+
+    end
 
 end
 
+""
 function update_condition!(state::SystemState, N::Int)
     for t in 1:N
         if any(i->(i==0), [state.gens_available[:,t];state.stors_available[:,t]; state.genstors_available[:,t]; state.branches_available[:,t]]) == true
@@ -91,14 +93,23 @@ function update_condition!(state::SystemState, N::Int)
     end
 end
 
-function solve_model(data::Dict{String,<:Any}, model_type, optimizer)
+""
+function SolveModel(data::Dict{String,<:Any}, model_type, optimizer, violations::Bool)
 
-    pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
-    ref_add!(pm.ref)
-    build_model(pm)
-    optimization(pm)
+    if violations == false
+
+        pm = InitializeAbstractPowerModel(data, model_type)
+        build_solution!(pm)
+    else
+
+        pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
+        build_model!(pm)
+        optimization!(pm)
+        build_result!(pm)
+
+    end
+
     return pm
-    -
 end
 
 function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
@@ -108,11 +119,31 @@ function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int
         system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pt"])
     end
     
-    # for i in eachindex(pm.solution["solution"]["gen"])
-    #     system.generators.pg[i,t] = Float16.(pm.solution["solution"]["gen"][string(i)]["pg"])
-    # end
+    for i in eachindex(pm.solution["solution"]["gen"])
+         system.generators.pg[i,t] = Float16.(pm.solution["solution"]["gen"][string(i)]["pg"])
+    end
 
     return
+
+end
+
+function overloadings(data::Dict{String,Any}, newdata::Dict{String,Any})
+
+    container = false
+    for j in eachindex(data["branch"])
+        if any(abs(newdata["branch"][string(j)]["pf"]) > data["branch"][j]["rate_a"])
+            container = true
+            break
+        end
+    end
+
+    return container
+
+end
+
+function overloadings(data::Dict{String,Any}, newdata::String="error")
+
+    return true
 
 end
 

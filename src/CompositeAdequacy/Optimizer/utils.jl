@@ -34,15 +34,15 @@ end
 function ref_add!(ref::Dict{Symbol,Any})
 
     ### filter out inactive components ###
-    ref[:bus] = Dict(x for x in ref[:bus] if (x.second["bus_type"] != component_status_inactive["bus"]))
-    ref[:load] = Dict(x for x in ref[:load] if (x.second["status"] != component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
-    ref[:load_initial] = Dict(x for x in ref[:load] if (x.second["status"] != component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
-    ref[:shunt] = Dict(x for x in ref[:shunt] if (x.second["status"] != component_status_inactive["shunt"] && x.second["shunt_bus"] in keys(ref[:bus])))
-    ref[:gen] = Dict(x for x in ref[:gen] if (x.second["gen_status"] != component_status_inactive["gen"] && x.second["gen_bus"] in keys(ref[:bus])))
-    ref[:storage] = Dict(x for x in ref[:storage] if (x.second["status"] != component_status_inactive["storage"] && x.second["storage_bus"] in keys(ref[:bus])))
-    ref[:switch] = Dict(x for x in ref[:switch] if (x.second["status"] != component_status_inactive["switch"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
-    ref[:branch] = Dict(x for x in ref[:branch] if (x.second["br_status"] != component_status_inactive["branch"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
-    ref[:dcline] = Dict(x for x in ref[:dcline] if (x.second["br_status"] != component_status_inactive["dcline"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
+    ref[:bus] = Dict(x for x in ref[:bus] if (x.second["bus_type"] ≠ component_status_inactive["bus"]))
+    ref[:load] = Dict(x for x in ref[:load] if (x.second["status"] ≠ component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
+    ref[:load_initial] = Dict(x for x in ref[:load] if (x.second["status"] ≠ component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
+    ref[:shunt] = Dict(x for x in ref[:shunt] if (x.second["status"] ≠ component_status_inactive["shunt"] && x.second["shunt_bus"] in keys(ref[:bus])))
+    ref[:gen] = Dict(x for x in ref[:gen] if (x.second["gen_status"] ≠ component_status_inactive["gen"] && x.second["gen_bus"] in keys(ref[:bus])))
+    ref[:storage] = Dict(x for x in ref[:storage] if (x.second["status"] ≠ component_status_inactive["storage"] && x.second["storage_bus"] in keys(ref[:bus])))
+    ref[:switch] = Dict(x for x in ref[:switch] if (x.second["status"] ≠ component_status_inactive["switch"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
+    ref[:branch] = Dict(x for x in ref[:branch] if (x.second["br_status"] ≠ component_status_inactive["branch"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
+    ref[:dcline] = Dict(x for x in ref[:dcline] if (x.second["br_status"] ≠ component_status_inactive["dcline"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
 
     ### setup arcs from edges ###
     ref[:arcs_from] = [(i,branch["f_bus"],branch["t_bus"]) for (i,branch) in ref[:branch]]
@@ -125,7 +125,7 @@ end
 "compute bus pair level data, can be run on data or ref data structures"
 function calc_buspair_parameters(buses, branches)
 
-    bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] != 4)
+    bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
     branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 
     && haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
 

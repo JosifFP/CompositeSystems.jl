@@ -19,8 +19,11 @@ mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMonteCarlo
     unservedload_busperiod::Matrix{MeanVariance}
 
     # Running UE totals for current simulation
-    unservedload_total_currentsim::Int
-    unservedload_bus_currentsim::Vector{Int}
+    unservedload_total_currentsim::Float16
+    unservedload_bus_currentsim::Vector{Float16}
+
+    #experiment
+    unservedload::Matrix{MeanVariance}
 
 end
 
@@ -37,6 +40,8 @@ function merge!(
     foreach(merge!, x.unservedload_bus, y.unservedload_bus)
     foreach(merge!, x.unservedload_period, y.unservedload_period)
     foreach(merge!, x.unservedload_busperiod, y.unservedload_busperiod)
+
+    foreach(merge!, x.unservedload, y.unservedload)
 
     return
 
@@ -64,7 +69,9 @@ function accumulator(
     unservedload_busperiod = [meanvariance() for _ in 1:nbuses, _ in 1:N]
 
     unservedload_total_currentsim = 0
-    unservedload_bus_currentsim = zeros(Int, nbuses)
+    unservedload_bus_currentsim = zeros(Float16, nbuses)
+
+    unservedload = [meanvariance() for _ in 1:nbuses, _ in 1:N]
 
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,
@@ -72,7 +79,7 @@ function accumulator(
         periodsdropped_total_currentsim, periodsdropped_bus_currentsim,
         unservedload_total, unservedload_bus,
         unservedload_period, unservedload_busperiod,
-        unservedload_total_currentsim, unservedload_bus_currentsim)
+        unservedload_total_currentsim, unservedload_bus_currentsim, unservedload)
 
 end
 
@@ -85,21 +92,26 @@ function record!(
 
     totalshortfall = 0
     isshortfall = false
+    #keys = [i for i in eachindex(pm.solution["solution"]["load_curtailment"])]
+    #key_order = sortperm(keys)
+    #keys[key_order]
 
-    for r in eachindex(pm.solution["solution"]["load_curtailment"])
+    for r in system.loads.keys
+    #for r in eachindex(pm.solution["solution"]["load_curtailment"])
 
         busshortfall = pm.solution["solution"]["load_curtailment"][r]["pl"]
+
+        fit!(acc.unservedload[r,t],  busshortfall)
+
         isbusshortfall = busshortfall > 0
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
     
         if isbusshortfall
-    
             isshortfall = true
             totalshortfall += busshortfall
             acc.periodsdropped_bus_currentsim[r] += 1
             acc.unservedload_bus_currentsim[r] += busshortfall
-    
         end
     
     end
@@ -142,6 +154,8 @@ function finalize(
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
+    flow_mean, _ = mean_std(acc.unservedload)
+
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
     ep_period_mean, ep_period_std = mean_std(acc.periodsdropped_period)
@@ -157,11 +171,11 @@ function finalize(
     nsamples = first(acc.unservedload_total.stats).n
     #p2e = conversionfactor(L,T,P,E)
 
-    load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
+    #load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
 
     return ShortfallResult{N,L,T,U}(
         nsamples, 
-        load_indices, 
+        system.loads.keys, 
         system.timestamps,
         ep_total_mean, 
         ep_total_std, 
@@ -175,7 +189,8 @@ function finalize(
         ue_total_std,
         ue_bus_std, 
         ue_period_std, 
-        ue_busperiod_std)
+        ue_busperiod_std,
+        flow_mean)
 
 end
 

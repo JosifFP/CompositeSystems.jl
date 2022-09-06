@@ -3,10 +3,10 @@
 
 Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
-function SystemModel(RawFile::String, ReliabilityDataDir::String)
+function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
 
     CurrentDir = pwd()
-    N = 8760                                                    #timestep_count
+    #N = 8760                                                    #timestep_count
     L = 1                                                       #timestep_length
     T = timeunits["h"]                                          #timestep_unit
     U = perunit["pu"]

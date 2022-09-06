@@ -6,7 +6,7 @@ abstract type AbstractShortfallResult{N,L,T} <: Result{N,L,T} end
 getindex(x::AbstractShortfallResult, ::Colon, t::ZonedDateTime) =
     getindex.(x, x.buses, t)
 
-getindex(x::AbstractShortfallResult, r::AbstractString, ::Colon) =
+getindex(x::AbstractShortfallResult, r::Int, ::Colon) =
     getindex.(x, r, x.timestamps)
 
 getindex(x::AbstractShortfallResult, ::Colon, ::Colon) =
@@ -16,7 +16,7 @@ getindex(x::AbstractShortfallResult, ::Colon, ::Colon) =
 LOLE(x::AbstractShortfallResult, ::Colon, t::ZonedDateTime) =
     LOLE.(x, x.buses, t)
 
-LOLE(x::AbstractShortfallResult, r::AbstractString, ::Colon) =
+LOLE(x::AbstractShortfallResult, r::Int, ::Colon) =
     LOLE.(x, r, x.timestamps)
 
 LOLE(x::AbstractShortfallResult, ::Colon, ::Colon) =
@@ -26,7 +26,7 @@ LOLE(x::AbstractShortfallResult, ::Colon, ::Colon) =
 EUE(x::AbstractShortfallResult, ::Colon, t::ZonedDateTime) =
     EUE.(x, x.buses, t)
 
-EUE(x::AbstractShortfallResult, r::AbstractString, ::Colon) =
+EUE(x::AbstractShortfallResult, r::Int, ::Colon) =
     EUE.(x, r, x.timestamps)
 
 EUE(x::AbstractShortfallResult, ::Colon, ::Colon) =
@@ -60,6 +60,8 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
     shortfall_period_std::Vector{Float64}
     shortfall_busperiod_std::Matrix{Float64}
 
+    flow_mean::Matrix{Float64}
+
     function ShortfallResult{N,L,T,U}(
         nsamples::Union{Int,Nothing},
         buses::Vector{Int},
@@ -76,7 +78,10 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
         shortfall_std::Float64,
         shortfall_bus_std::Vector{Float64},
         shortfall_period_std::Vector{Float64},
-        shortfall_busperiod_std::Matrix{Float64}
+        shortfall_busperiod_std::Matrix{Float64},
+
+        flow_mean::Matrix{Float64}
+
     ) where {N,L,T<:Period,U<:PerUnit}
 
         isnothing(nsamples) || nsamples > 0 ||
@@ -106,7 +111,7 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
             eventperiod_busperiod_mean, eventperiod_busperiod_std,
             shortfall_mean, shortfall_std,
             shortfall_bus_std, shortfall_period_std,
-            shortfall_busperiod_std)
+            shortfall_busperiod_std, flow_mean)
 
     end
 
@@ -116,8 +121,8 @@ function getindex(x::ShortfallResult)
     return sum(x.shortfall_mean), x.shortfall_std
 end
 
-function getindex(x::ShortfallResult, r::AbstractString)
-    i_r = findfirstunique(x.buses, r)
+function getindex(x::ShortfallResult, r::Int)
+    i_r = getindex(x.buses, r)
     return sum(view(x.shortfall_mean, i_r, :)), x.shortfall_bus_std[i_r]
 end
 
@@ -126,8 +131,8 @@ function getindex(x::ShortfallResult, t::ZonedDateTime)
     return sum(view(x.shortfall_mean, :, i_t)), x.shortfall_period_std[i_t]
 end
 
-function getindex(x::ShortfallResult, r::AbstractString, t::ZonedDateTime)
-    i_r = findfirstunique(x.buses, r)
+function getindex(x::ShortfallResult, r::Int, t::ZonedDateTime)
+    i_r = getindex(x.buses, r)
     i_t = findfirstunique(x.timestamps, t)
     return x.shortfall_mean[i_r, i_t], x.shortfall_busperiod_std[i_r, i_t]
 end
@@ -138,8 +143,8 @@ LOLE(x::ShortfallResult{N,L,T}) where {N,L,T} =
                              x.eventperiod_std,
                              x.nsamples))
 
-function LOLE(x::ShortfallResult{N,L,T}, r::AbstractString) where {N,L,T}
-    i_r = findfirstunique(x.buses, r)
+function LOLE(x::ShortfallResult{N,L,T}, r::Int) where {N,L,T}
+    i_r = getindex(x.buses, r)
     return LOLE{N,L,T}(MeanEstimate(x.eventperiod_bus_mean[i_r],
                                     x.eventperiod_bus_std[i_r],
                                     x.nsamples))
@@ -152,8 +157,8 @@ function LOLE(x::ShortfallResult{N,L,T}, t::ZonedDateTime) where {N,L,T}
                                     x.nsamples))
 end
 
-function LOLE(x::ShortfallResult{N,L,T}, r::AbstractString, t::ZonedDateTime) where {N,L,T}
-    i_r = findfirstunique(x.buses, r)
+function LOLE(x::ShortfallResult{N,L,T}, r::Int, t::ZonedDateTime) where {N,L,T}
+    i_r = getindex(x.buses, r)
     i_t = findfirstunique(x.timestamps, t)
     return LOLE{1,L,T}(MeanEstimate(x.eventperiod_busperiod_mean[i_r, i_t],
                                     x.eventperiod_busperiod_std[i_r, i_t],
@@ -161,17 +166,17 @@ function LOLE(x::ShortfallResult{N,L,T}, r::AbstractString, t::ZonedDateTime) wh
 end
 
 
-EUE(x::ShortfallResult{N,L,T,E}) where {N,L,T,E} =
-    EUE{N,L,T,E}(MeanEstimate(x[]..., x.nsamples))
+EUE(x::ShortfallResult{N,L,T,U}) where {N,L,T,U} =
+    EUE{N,L,T,U}(MeanEstimate(x[]..., x.nsamples))
 
-EUE(x::ShortfallResult{N,L,T,E}, r::AbstractString) where {N,L,T,E} =
-    EUE{N,L,T,E}(MeanEstimate(x[r]..., x.nsamples))
+EUE(x::ShortfallResult{N,L,T,U}, r::Int) where {N,L,T,U} =
+    EUE{N,L,T,U}(MeanEstimate(x[r]..., x.nsamples))
 
-EUE(x::ShortfallResult{N,L,T,E}, t::ZonedDateTime) where {N,L,T,E} =
-    EUE{1,L,T,E}(MeanEstimate(x[t]..., x.nsamples))
+EUE(x::ShortfallResult{N,L,T,U}, t::ZonedDateTime) where {N,L,T,U} =
+    EUE{1,L,T,U}(MeanEstimate(x[t]..., x.nsamples))
 
-EUE(x::ShortfallResult{N,L,T,E}, r::AbstractString, t::ZonedDateTime) where {N,L,T,E} =
-    EUE{1,L,T,E}(MeanEstimate(x[r, t]..., x.nsamples))
+EUE(x::ShortfallResult{N,L,T,U}, r::Int, t::ZonedDateTime) where {N,L,T,U} =
+    EUE{1,L,T,U}(MeanEstimate(x[r, t]..., x.nsamples))
 
 # Full shortfall data 
 
@@ -179,7 +184,7 @@ struct ShortfallSamples <: ResultSpec end
 
 struct ShortfallSamplesResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractShortfallResult{N,L,T}
 
-    buses::Vector{String}
+    buses::Vector{Int}
     timestamps::StepRange{ZonedDateTime,T}
 
     shortfall::Array{Float16,3} # r x t x s
@@ -189,41 +194,29 @@ end
 function getindex(
     x::ShortfallSamplesResult{N,L,T,U}
 ) where {N,L,T,U}
-    P = powerunits["MW"]
-    E = energyunits["MWh"]
-    p2e = conversionfactor(L, T, P, E)
-    return vec(p2e * sum(x.shortfall, dims=1:2))
+    return vec(sum(x.shortfall, dims=1:2))
 end
 
 function getindex(
-    x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString
+    x::ShortfallSamplesResult{N,L,T,U}, r::Int
 ) where {N,L,T,U}
-    P = powerunits["MW"]
-    E = energyunits["MWh"]
-    i_r = findfirstunique(x.buses, r)
-    p2e = conversionfactor(L, T, P, E)
-    return vec(p2e * sum(view(x.shortfall, i_r, :, :), dims=1))
+    i_r = getindex(x.buses, r)
+    return vec(sum(view(x.shortfall, i_r, :, :), dims=1))
 end
 
 function getindex(
     x::ShortfallSamplesResult{N,L,T,U}, t::ZonedDateTime
 ) where {N,L,T,U}
-    P = powerunits["MW"]
-    E = energyunits["MWh"]
     i_t = findfirstunique(x.timestamps, t)
-    p2e = conversionfactor(L, T, P, E)
-    return vec(p2e * sum(view(x.shortfall, :, i_t, :), dims=1))
+    return vec(sum(view(x.shortfall, :, i_t, :), dims=1))
 end
 
 function getindex(
-    x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString, t::ZonedDateTime
+    x::ShortfallSamplesResult{N,L,T,U}, r::Int, t::ZonedDateTime
 ) where {N,L,T,U}
-    P = powerunits["MW"]
-    E = energyunits["MWh"]
-    i_r = findfirstunique(x.buses, r)
+    i_r = getindex(x.buses, r)
     i_t = findfirstunique(x.timestamps, t)
-    p2e = conversionfactor(L, T, P, E)
-    return vec(p2e * x.shortfall[i_r, i_t, :])
+    return vec(x.shortfall[i_r, i_t, :])
 end
 
 
@@ -232,8 +225,8 @@ function LOLE(x::ShortfallSamplesResult{N,L,T}) where {N,L,T}
     return LOLE{N,L,T}(MeanEstimate(eventperiods))
 end
 
-function LOLE(x::ShortfallSamplesResult{N,L,T}, r::AbstractString) where {N,L,T}
-    i_r = findfirstunique(x.buses, r)
+function LOLE(x::ShortfallSamplesResult{N,L,T}, r::Int) where {N,L,T}
+    i_r = getindex(x.buses, r)
     eventperiods = sum(view(x.shortfall, i_r, :, :) .> 0, dims=1)
     return LOLE{N,L,T}(MeanEstimate(eventperiods))
 end
@@ -244,8 +237,8 @@ function LOLE(x::ShortfallSamplesResult{N,L,T}, t::ZonedDateTime) where {N,L,T}
     return LOLE{1,L,T}(MeanEstimate(eventperiods))
 end
 
-function LOLE(x::ShortfallSamplesResult{N,L,T}, r::AbstractString, t::ZonedDateTime) where {N,L,T}
-    i_r = findfirstunique(x.buses, r)
+function LOLE(x::ShortfallSamplesResult{N,L,T}, r::Int, t::ZonedDateTime) where {N,L,T}
+    i_r = getindex(x.buses, r)
     i_t = findfirstunique(x.timestamps, t)
     eventperiods = view(x.shortfall, i_r, i_t, :) .> 0
     return LOLE{1,L,T}(MeanEstimate(eventperiods))
@@ -255,11 +248,11 @@ end
 EUE(x::ShortfallSamplesResult{N,L,T,U}) where {N,L,T,U} =
     EUE{N,L,T,U}(MeanEstimate(x[]))
 
-EUE(x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString) where {N,L,T,U} =
+EUE(x::ShortfallSamplesResult{N,L,T,U}, r::Int) where {N,L,T,U} =
     EUE{N,L,T,U}(MeanEstimate(x[r]))
 
 EUE(x::ShortfallSamplesResult{N,L,T,U}, t::ZonedDateTime) where {N,L,T,U} =
     EUE{1,L,T,U}(MeanEstimate(x[t]))
 
-EUE(x::ShortfallSamplesResult{N,L,T,U}, r::AbstractString, t::ZonedDateTime) where {N,L,T,U} =
+EUE(x::ShortfallSamplesResult{N,L,T,U}, r::Int, t::ZonedDateTime) where {N,L,T,U} =
     EUE{1,L,T,U}(MeanEstimate(x[r, t]))

@@ -76,9 +76,7 @@ function assess(
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
         for t in 1:N
-
             pm = solve!(systemstate, system, optimizer, t)
-            #advance!(pm, systemstate, system, t)
             foreach(recorder -> record!(recorder, pm, system, s, t), recorders)
 
         end
@@ -105,35 +103,27 @@ end
 
 function solve!(state::SystemState, system::SystemModel, optimizer, t::Int)
 
-    data = create_dict_from_system!(system, t)
-    if state.condition[t] == false 
-        apply_contingencies!(data, state, system, t)
-        pm = solve_model(data, DCMLPowerModel, optimizer)
-    else
-        pm = solve_model(data, DCPPowerModel, optimizer)
-    end
+    data = create_dict_from_system(system, t)
+    model_type = apply_contingencies!(data, state, system, t)
+    overloaded_lines = overloadings(data, try compute_dc_pf(data) catch ; "error" end)
+    pm = SolveModel(data, model_type, optimizer, overloaded_lines)
 
-    if pm.solution["termination_status"] != LOCALLY_SOLVED
-        println("Problem LOCALLY_INFEASIBLE                            , 
-        hour t=$(t)                                                    , 
-        condition=$(state.condition[t])                                ,
-        total_load=$(sum(system.loads.pd[:,t])*100)                     ,
-        load=$(sum(system.loads.pd[:,t])*100)                           , 
-        gens_available=$(state.gens_available[:,t])                    , 
-        branches_available=$(state.branches_available[:,t])            "
-        )
-        return
-    end
+
+    # if pm.solution["termination_status"] ≠ LOCALLY_SOLVED
+    #     println("Problem LOCALLY_INFEASIBLE                            , 
+    #     hour t=$(t)                                                    , 
+    #     condition=$(state.condition[t])                                ,
+    #     total_load=$(sum(system.loads.pd[:,t])*100)                     ,
+    #     load=$(sum(system.loads.pd[:,t])*100)                           , 
+    #     gens_available=$(state.gens_available[:,t])                    , 
+    #     branches_available=$(state.branches_available[:,t])            "
+    #     )
+    #     return
+    # end
     
-    update_systemmodel!(pm, system, t)
-
     return pm
     
 end
-
-# function advance!(pm, systemstate, system, t)
-#     return
-# end
 
 #update_energy!(state.stors_energy, system.storages, t)
 #update_energy!(state.genstors_energy, system.generatorstorages, t)

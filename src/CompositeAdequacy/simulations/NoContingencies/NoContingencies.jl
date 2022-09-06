@@ -81,9 +81,9 @@ end
 function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, t::Int) where {N}
 
     CompositeAdequacy.update_data_from_system!(network_data, system, t)
-    CompositeAdequacy.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
+    PRATSBase.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
     flow = CompositeAdequacy.calc_branch_flow_dc(network_data)
-    CompositeAdequacy.update_data!(network_data, flow)
+    PRATSBase.update_data!(network_data, flow)
     CompositeAdequacy.update_systemmodel_branches!(system, flow, t)
 
     for i in eachindex(system.generators.keys)
@@ -96,9 +96,9 @@ end
 function TimeSeriesPowerFlow!(network_data::Dict{String,Any}, system::SystemModel{N}, optimizer, t::Int) where {N}
 
     CompositeAdequacy.update_data_from_system!(network_data, system, t)
-    CompositeAdequacy.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
+    PRATSBase.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
     flow = CompositeAdequacy.calc_branch_flow_dc(network_data)
-    CompositeAdequacy.update_data!(network_data, flow)
+    PRATSBase.update_data!(network_data, flow)
     CompositeAdequacy.update_systemmodel_branches!(system, flow, t)
 
     if any(abs.(system.branches.pf[:,t]).> system.branches.longterm_rating[:,t])

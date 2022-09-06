@@ -1,6 +1,6 @@
 
 "Standard DC OPF"
-function build_model(pm::DCPPowerModel)
+function build_model!(pm::DCPPowerModel)
     # Add Optimization and State Variables
     var_bus_voltage(pm; bounded=false)
     var_gen_power(pm)
@@ -19,8 +19,7 @@ end
 Given a JuMP model and a PowerModels network data structure,
 Builds an DC-OPF or AC-OPF (Min Load Curtailment) formulation of the given data and returns the JuMP model
 """
-
-function build_model(pm::DCMLPowerModel)
+function build_model!(pm::DCMLPowerModel)
     # Add Optimization and State Variables
 
     var_bus_voltage(pm; bounded=false)
@@ -48,12 +47,12 @@ function build_model(pm::DCMLPowerModel)
 end
 
 ""
-function optimization(pm::AbstractPowerModel)
+function optimization!(pm::AbstractPowerModel)
     
     #start_time = time()
     JuMP.set_time_limit_sec(pm.model, 3.0)
 
-    if JuMP.mode(pm.model) != JuMP.DIRECT && JuMP.backend(pm.model).optimizer === nothing
+    if JuMP.mode(pm.model) ≠ JuMP.DIRECT && JuMP.backend(pm.model).optimizer === nothing
         Memento.error(_LOGGER, "No optimizer specified in `optimize_model!` or the given JuMP model.")
     end
     
@@ -66,7 +65,7 @@ function optimization(pm::AbstractPowerModel)
     end
     #Memento.debug(_LOGGER, "JuMP model optimize time: $(time() - start_time)")
 
-    if JuMP.termination_status(pm.model) != JuMP.LOCALLY_SOLVED
+    if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
 
         var_buspair_current_magnitude_sqr(pm)
         var_bus_voltage_magnitude_sqr(pm)
@@ -75,11 +74,9 @@ function optimization(pm::AbstractPowerModel)
         #solve_time = solve_time + JuMP.solve_time(pm.model)
     end
 
-    result = build_result(pm) 
     #start_time = time()
     #result = build_result(pm, solve_time)  
     #Memento.debug(_LOGGER, "solution build time: $(time() - start_time)")
-
-    return result
+    return pm
 
 end
