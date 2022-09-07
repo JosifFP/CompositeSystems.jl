@@ -36,7 +36,6 @@ function ref_add!(ref::Dict{Symbol,Any})
     ### filter out inactive components ###
     ref[:bus] = Dict(x for x in ref[:bus] if (x.second["bus_type"] ≠ component_status_inactive["bus"]))
     ref[:load] = Dict(x for x in ref[:load] if (x.second["status"] ≠ component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
-    ref[:load_initial] = Dict(x for x in ref[:load] if (x.second["status"] ≠ component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
     ref[:shunt] = Dict(x for x in ref[:shunt] if (x.second["status"] ≠ component_status_inactive["shunt"] && x.second["shunt_bus"] in keys(ref[:bus])))
     ref[:gen] = Dict(x for x in ref[:gen] if (x.second["gen_status"] ≠ component_status_inactive["gen"] && x.second["gen_bus"] in keys(ref[:bus])))
     ref[:storage] = Dict(x for x in ref[:storage] if (x.second["status"] ≠ component_status_inactive["storage"] && x.second["storage_bus"] in keys(ref[:bus])))

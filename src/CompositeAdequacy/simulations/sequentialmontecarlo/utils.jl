@@ -56,60 +56,77 @@ function add_load_curtailment_info!(network::Network)
 end
 
 ""
-function apply_contingencies!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel{N}, t::Int) where {N}
+function update_component_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
 
-    if state.condition[t] == false
 
-        for i in eachindex(system.branches.keys)
-            if state.branches_available[i] == false network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t] end
-        end
-        for i in eachindex(system.generators.keys)
-            if state.gens_available[i] == false network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t] end
-        end
-        for i in eachindex(system.storages.keys)
-            if state.stors_available[i] == false network_data["storage"][string(i)]["status"] = state.stors_available[i,t] end
-        end
-
-        network_data["branch"][string(7)]["br_status"] = 0
-        network_data["branch"][string(23)]["br_status"] = 0
-        network_data["branch"][string(29)]["br_status"] = 0
+    if state.failed_transmission[t] == true && (state.failed_generation[t] == true || state.failed_generation[t] == false)
+        update_gen_stor_states!(network_data, state, system, t)
+        update_branch_states!(network_data, state, system, t)
         PRATSBase.SimplifyNetwork!(network_data)
         return DCMLPowerModel
-    
+        
+    elseif state.failed_transmission[t] == false && state.failed_generation[t] == true
+        update_gen_stor_states!(network_data, state, system, t)
+        PRATSBase.SimplifyNetwork!(network_data)
+        return DCMLPowerModel
+
     else
-
-        overloaded_lines = overloadings(compute_dc_pf(network_data))
-        if overloaded_lines == false
-            return DCSPowerModel
-        else
-            return DCPPowerModel
-        end
-
+        return DCPPowerModel
     end
 
 end
 
 ""
-function update_condition!(state::SystemState, N::Int)
-    for t in 1:N
-        if any(i->(i==0), [state.gens_available[:,t];state.stors_available[:,t]; state.genstors_available[:,t]; state.branches_available[:,t]]) == true
-            state.condition[t] = false
-        end
+# function update_component_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
+
+#     overloaded_lines = overloadings(compute_dc_pf(network_data))
+
+#      if state.failed_transmission[t] == true && (state.failed_generation[t] == true || state.failed_generation[t] == false)
+#          update_gen_stor_states!(network_data, state, system, t)
+#          update_branch_states!(network_data, state, system, t)
+#          PRATSBase.SimplifyNetwork!(network_data)
+#          return DCMLPowerModel
+        
+#      elseif state.failed_transmission[t] == false && state.failed_generation[t] == true && overloaded_lines == true
+#          update_gen_stor_states!(network_data, state, system, t)
+#          PRATSBase.SimplifyNetwork!(network_data)
+#          return DCMLPowerModel
+
+#      else
+#          return DCPPowerModel
+#      end
+
+# end
+
+function update_gen_stor_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
+
+    for i in eachindex(system.generators.keys)
+        if state.gens_available[i] == false network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t] end
     end
+    for i in eachindex(system.storages.keys)
+        if state.stors_available[i] == false network_data["storage"][string(i)]["status"] = state.stors_available[i,t] end
+    end
+
 end
 
-function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCSPowerModel}, optimizer)
+function update_branch_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
 
-    pm = model_type(nothing, data, Dict{String,Any}(), nothing)
-    push!(pm.solution, 
-    "termination_status"    => "No optimizer used",  
-    "optimizer"             => "No optimizer used",
-    "solution"              => Dict{String,Any}()
-    )
+    for i in eachindex(system.branches.keys)
+        if state.branches_available[i] == false network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t] end
+    end
 
-    build_solution!(pm)
-    return pm
+end
 
+""
+function update_systemstates!(state::SystemState, N::Int)
+    for t in 1:N
+        if any(i->(i==0), [state.gens_available[:,t];state.stors_available[:,t]; state.genstors_available[:,t]]) == true
+            state.failed_generation[t] = true
+        end
+        if any(i->(i==0), [state.branches_available[:,t]]) == true
+            state.failed_transmission[t] = true
+        end
+    end
 end
 
 ""
@@ -131,17 +148,13 @@ function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCMLPowerModel}, 
     optimization!(pm)
 
     if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
-        pm = nothing
-        pm = Type{DCSPowerModel}(nothing, data, Dict{String,Any}(), nothing)
-        push!(pm.solution, 
-        "termination_status"    => "No optimizer used",  
-        "optimizer"             => "No optimizer used",
-        "solution"              => Dict{String,Any}()
-        )
-    
-        println("stucked within loop not locally solved")
-        build_solution!(pm)
-        println("stucked within loop not locally solvedx2")
+
+        curt_loads = Dict{Int64,Dict{String,Float16}}()
+        for (i, load) in pm.data["load"]
+            get!(curt_loads, parse(Int,i), Dict("ql" => 0.0, "pl" => 0.0))
+        end
+        pm.solution["solution"]["load_curtailment"] = curt_loads
+
     else
         build_result!(pm)
     end

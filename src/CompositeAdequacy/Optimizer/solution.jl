@@ -44,49 +44,43 @@ function guard_objective_bound(opf_model)
 end
 
 ""
-function build_solution!(pm::AbstractDCPModel)
+function build_solution!(pm::Union{DCPPowerModel,DCMLPowerModel})
     
-    if pm.model ≠ nothing
-
-        # push!(pm.solution["solution"],
-        # "bus"       => get_gens_sol!(Dict{Int64,Dict{String,Float16}}(), pm),
-        # "branch"    => get_branches_sol!(Dict{Int64,Dict{String,Float16}}(), pm),
-        # )
-
-        pm.solution["solution"]["bus"]              = get_buses_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
-        #pm.solution["solution"]["gen"]              = get_gens_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
-        pm.solution["solution"]["branch"]           = get_branches_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
-        pm.solution["solution"]["load_initial"], 
-        pm.solution["solution"]["load"], 
-        pm.solution["solution"]["load_curtailment"] = get_loads_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
-        # pm.solution["solution"]["total"]            = Dict(
-        #                                             "total_Pg"            => sum([pm.solution["solution"]["gen"][i]["pg"] for i in keys(pm.solution["solution"]["gen"])]),
-        #                                             "total_P_load_before" => sum([pm.solution["solution"]["load_initial"][i]["pl"] for i in keys(pm.solution["solution"]["load_initial"])]),
-        #                                             "total_P_load_after"  => sum([pm.solution["solution"]["load"][i]["pl"] for i in keys(pm.solution["solution"]["load"])]),
-        #                                             "P_load_curtailed"    => sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]),
-        #                                             "P_balance_mismatch"  => sum([pm.solution["solution"]["gen"][i]["pg"] for i in keys(pm.solution["solution"]["gen"])])-
-        #                                                                     sum([pm.solution["solution"]["load"][i]["pl"] for i in keys(pm.solution["solution"]["load"])])
-        # )
+    pm.solution["solution"]["bus"]              = get_buses_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
+    #pm.solution["solution"]["gen"]              = get_gens_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
+    pm.solution["solution"]["branch"]           = get_branches_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
+    pm.solution["solution"]["load_initial"], 
+    pm.solution["solution"]["load"], 
+    pm.solution["solution"]["load_curtailment"] = get_loads_sol!(Dict{Int64,Dict{String,Float16}}(), pm)
+    # pm.solution["solution"]["total"]            = Dict(
+    #                                             "total_Pg"            => sum([pm.solution["solution"]["gen"][i]["pg"] for i in keys(pm.solution["solution"]["gen"])]),
+    #                                             "total_P_load_before" => sum([pm.solution["solution"]["load_initial"][i]["pl"] for i in keys(pm.solution["solution"]["load_initial"])]),
+    #                                             "total_P_load_after"  => sum([pm.solution["solution"]["load"][i]["pl"] for i in keys(pm.solution["solution"]["load"])]),
+    #                                             "P_load_curtailed"    => sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]),
+    #                                             "P_balance_mismatch"  => sum([pm.solution["solution"]["gen"][i]["pg"] for i in keys(pm.solution["solution"]["gen"])])-
+    #                                                                     sum([pm.solution["solution"]["load"][i]["pl"] for i in keys(pm.solution["solution"]["load"])])
+    # )
         
-        #pm.solution["primal_status"] = JuMP.primal_status(pm.model)
-        #pm.solution["dual_status"] = JuMP.dual_status(pm.model)
-        #pm.solution["objective"] = guard_objective_value(pm.model)
-        #pm.solution["objective_lb"] => guard_objective_bound(pm.model)
-        #pm.solution["solve_time"] => solve_time,
-        #pm.solution["solution_details"] => JuMP.solution_summary(pm.model, verbose=false)
-    
-    else
-
-        curt_loads = Dict{Int64,Dict{String,Float16}}()
-        for (i, load) in pm.data["load"]
-            get!(curt_loads, parse(Int,i), Dict("ql" => 0.0, "pl" => 0.0))
-        end
-
-        pm.solution["solution"]["load_curtailment"] = curt_loads
-
-    end
+    #pm.solution["primal_status"] = JuMP.primal_status(pm.model)
+    #pm.solution["dual_status"] = JuMP.dual_status(pm.model)
+    #pm.solution["objective"] = guard_objective_value(pm.model)
+    #pm.solution["objective_lb"] => guard_objective_bound(pm.model)
+    #pm.solution["solve_time"] => solve_time,
+    #pm.solution["solution_details"] => JuMP.solution_summary(pm.model, verbose=false)
     
 end
+
+# ""
+# function build_solution!(pm::DCSPowerModel)
+    
+#     curt_loads = Dict{Int64,Dict{String,Float16}}()
+#     for (i, load) in pm.data["load"]
+#         get!(curt_loads, parse(Int,i), Dict("ql" => 0.0, "pl" => 0.0))
+#     end
+
+#     pm.solution["solution"]["load_curtailment"] = curt_loads
+    
+# end
 
 
 ""
@@ -95,11 +89,10 @@ function get_loads_sol!(tmp, pm::DCPPowerModel)
     loads = Dict{Int64,Dict{String,Float16}}()
     curt_loads = Dict{Int64,Dict{String,Float16}}()
 
-    for (i, load) in pm.ref[:load_initial]
-        #initial load
-        get!(tmp, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
-        get!(loads, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
-        get!(curt_loads, i, Dict("ql" => 0.0, "pl" => 0.0))
+    for (i, load) in pm.data
+        get!(tmp, parse(Int, i), Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
+        get!(loads, parse(Int, i), Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
+        get!(curt_loads, parse(Int, i), Dict("ql" => 0.0, "pl" => 0.0))
     end
 
     return tmp, loads, curt_loads
@@ -111,13 +104,11 @@ function get_loads_sol!(tmp, pm::DCMLPowerModel)
     loads = Dict{Int64,Dict{String,Float16}}()
     curt_loads = Dict{Int64,Dict{String,Float16}}()
 
-    for (i, load) in pm.ref[:load_initial]
-        #initial load
-        get!(tmp, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
-    end
-
     for (index, load) in pm.data
         i = parse(Int, index)
+
+        get!(tmp, i, Dict("ql" => 0.0, "pl" => Float16(load["pd"])))
+
         if load["status"]≠ 0
             if JuMP.value(pm.model[:plc][load["index"]])>1e-4          
                 #actual load    

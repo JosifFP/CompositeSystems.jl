@@ -1,4 +1,4 @@
-export AbstractPowerModel, DCPPowerModel, DCMLPowerModel
+export AbstractPowerModel, DCPPowerModel, DCMLPowerModel, DCSPowerModel
 
 macro def(name, definition)
     return quote
@@ -39,8 +39,7 @@ function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Typ
         Dict{String,Any}(), # empty solution data
         ref
     )
-
-    JuMP.set_silent(pm.model)
+    #JuMP.set_silent(pm.model)
     return pm
 
 end
@@ -52,13 +51,13 @@ function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Typ
     ref_add!(ref)
 
     pm = PowerModel(
-        JuMP.direct_model(optimizer[2]),
+        JuMP.direct_model(optimizer[3]),
         #JuMP.Model(optimizer[2]),
         data["load"],
         Dict{String,Any}(), # empty solution data
         ref
     )
-    JuMP.set_silent(pm.model)
+    #JuMP.set_silent(pm.model)
     return pm
     
 end

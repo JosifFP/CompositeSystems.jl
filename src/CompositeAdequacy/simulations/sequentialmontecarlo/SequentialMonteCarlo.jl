@@ -30,11 +30,12 @@ function assess(
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
 
-    optimizer = [JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), 
-            JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>
-            JuMP.optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0, "tol"=>1e-4, "print_level"=>0), 
-            "log_levels"=>[], "allow_almost_solved_integral"=>true, "time_limit"=>3)
-    ]
+    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0)
+    mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
+    minlp_solver = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
+    #minlp_solver = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "time_limit"=>1.5, "log_levels"=>[])
+    optimizer = [nl_solver, mip_solver, minlp_solver]
+
 
     @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
@@ -77,7 +78,6 @@ function assess(
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
-        JuMP.Model(optimizer[1])
         #println("s=$(s)")
 
         for t in 1:N
@@ -99,7 +99,7 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
     initialize_availability!(rng, state.stors_available, system.storages, N)
     initialize_availability!(rng, state.genstors_available, system.generatorstorages, N)
     initialize_availability!(rng, state.branches_available, system.branches, N)
-    update_condition!(state, N)
+    update_systemstates!(state, N)
 
     return
 
@@ -107,11 +107,9 @@ end
 
 function solve!(state::SystemState, system::SystemModel, data::Dict{String,Any}, optimizer, t::Int)
 
-    model_type = apply_contingencies!(data, state, system, t)
-    pm = SolveModel(data, model_type, optimizer)
-    println("t=$(t), success_state?=$(state.condition[t]), model_type=$(model_type), load_curt=$(sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]))")
-    pm.model = nothing
-    return pm
+    model_type = update_component_states!(data, state, system, t)
+    #println("t=$(t), failed_transmission?=$(state.failed_transmission[t]), load_curt=$(sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]))")
+    return SolveModel(data, model_type, optimizer)
     
 end
 

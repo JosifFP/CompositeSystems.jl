@@ -25,7 +25,7 @@ function build_model!(pm::DCMLPowerModel)
     var_bus_voltage(pm; bounded=false)
     var_gen_power(pm)
     var_branch_power(pm)
-    var_dcline_power(pm)
+    #var_dcline_power(pm)
     var_load_curtailment(pm)
 
     # index representing which side the HVDC line is starting
@@ -42,20 +42,20 @@ function build_model!(pm::DCMLPowerModel)
     constraint_theta_ref_bus(pm)
     constraint_nodal_power_balance(pm)
     constraint_branch_pf_limits(pm)
-    constraint_hvdc_line(pm)
+    #constraint_hvdc_line(pm)
 
 end
 
 ""
 function optimization!(pm::AbstractPowerModel)
-    
+    JuMP.set_time_limit_sec(pm.model, 1.0)
     #start_time = time()
-    JuMP.set_time_limit_sec(pm.model, 2.0)
 
     if JuMP.mode(pm.model) ≠ JuMP.DIRECT && JuMP.backend(pm.model).optimizer === nothing
         Memento.error(_LOGGER, "No optimizer specified in `optimize_model!` or the given JuMP model.")
     end
 
+    #println("stucked in optimize!")
     JuMP.optimize!(pm.model)
     #solve_time = @timed JuMP.optimize!(pm.model)
     try
@@ -66,7 +66,6 @@ function optimization!(pm::AbstractPowerModel)
     #Memento.debug(_LOGGER, "JuMP model optimize time: $(time() - start_time)")
 
     if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
-        println("stucked within loop not locally solved")
         JuMP.set_time_limit_sec(pm.model, 2.0)
         var_buspair_current_magnitude_sqr(pm)
         var_bus_voltage_magnitude_sqr(pm)
