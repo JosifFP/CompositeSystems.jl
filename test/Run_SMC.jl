@@ -9,10 +9,10 @@ import BenchmarkTools: @btime
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 PRATSBase.silence()
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
-resultspecs = (Shortfall(), Flow())
-method = PRATS.SequentialMonteCarlo(samples=1000, seed=123, verbose=false, threaded=true)
-@time shortfall,flow = PRATS.assess(system, method, resultspecs...)
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
+resultspecs = (Shortfall(), Shortfall())
+method = PRATS.SequentialMonteCarlo(samples=8, seed=321, verbose=false, threaded=true)
+@time shortfall,shortfall2 = PRATS.assess(system, method, resultspecs...)
 #with HiGHS, 28.511125 seconds (87.66 M allocations: 4.709 GiB, 5.10% gc time, 73.53% compilation time)
 #26.512612 seconds (87.45 M allocations: 4.704 GiB, 4.98% gc time, 74.17% compilation time)
 #26.224381 seconds (87.19 M allocations: 4.696 GiB, 5.45% gc time, 75.24% compilation time)
@@ -55,12 +55,10 @@ shortfall.shortfall_period_std
 shortfall.shortfall_busperiod_std
 
 
-
 "********************************************************************************************************************************"
 using PRATS
 using PRATS.PRATSBase
 using PRATS.CompositeAdequacy
-import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP, HiGHS
 using Test
 import BenchmarkTools: @btime
@@ -72,7 +70,6 @@ system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 
 nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0, Float32)
 mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
-#minlp_solver = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>2.0, "log_levels"=>[])
 minlp_solver = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "time_limit"=>1.5, "log_levels"=>[])
 optimizer = [nl_solver, mip_solver, minlp_solver]
 
@@ -163,26 +160,7 @@ E = energyunits["MWh"]
 V = voltageunits["kV"]
 p2e = conversionfactor(L,T,P,E)
 
-
-
-using JuMP, Ipopt, Juniper
-using HIGHS
-
-
-
 "********************************************************************************************************************************"
-
-import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
-using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
-using Test
-import BenchmarkTools: @btime
-using PRATS: PRATSBase, CompositeAdequacy
-PowerModels.silence()
-
-optimizer = [
-    JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), 
-    JuMP.optimizer_with_attributes(Juniper.Optimizer,"nl_solver"=>JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), "log_levels"=>[])]
-
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 data = PowerModels.parse_file(RawFile)
 #network_data["branch"][string(7)]["br_status"] = 0
@@ -201,52 +179,11 @@ data = PowerModels.parse_file(RawFile)
 
 #     if mva_fr > rate_a || mva_to > rate_a    
 # end
-
-
 balance = PowerModels.calc_power_balance(network_data)
 balance["bus"]
-
 [j for j in eachindex(network_data["branch"]) if any(abs.(flow["branch"][string(j)]["pf"]).>network_data["branch"][j]["rate_a"])]
-
-
-native["solution"]["branch"][string(7)]["pf"]
-network_data["branch"][string(7)]["rate_a"]
-
 [j for j in eachindex(network_data["branch"]) if any(abs.(native["solution"]["branch"][string(j)]["pf"]).>network_data["branch"][j]["rate_a"])]
-
 [native["solution"]["branch"][string(j)]["pf"] for j in eachindex(native["solution"]["branch"])]
-
-
-# if isempty([j for j in eachindex(network_data["branch"]) if any(abs(native["solution"]["branch"][string(j)]["pf"]).>network_data["branch"][j]["rate_a"])])
-#     println("great")
-# end
-
-
-
-@time pm = CompositeAdequacy.SolveModel(network_data, CompositeAdequacy.DCPPowerModel, optimizer)
-#0.014951 seconds (20.37 k allocations: 1.062 MiB, 25.04% compilation time)
-
-
-pm.solution["solution"]["total"]
-pm.solution["solution"]["total"]["P_load_curtailed"]*100
-
-
-#function ContingencyAnalysis(network_data)
-    PRATSBase.update_data!(network_data, PowerModels.compute_dc_pf(network_data)["solution"])
-    flow = CompositeAdequacy.calc_branch_flow_dc(network_data)
-    PRATSBase.update_data!(network_data, flow)
-    CompositeAdequacy.update_systemmodel_branches!(system, flow, t)
-
-for i in eachindex(system.branches.keys)
-    system.branches.pf[i,j] = Float16.(flow["branch"][string(i)]["pf"])
-    system.branches.pt[i,j] = Float16.(flow["branch"][string(i)]["pt"])
-end
-
-[j for j in eachindex(1:1) if any(abs.(system.branches.pf[:,j]).>system.branches.longterm_rating[:,j])]
-
-
-
-
 "********************************************************************************************************************************"
 mn_data =  PowerModels.replicate(data, 5)
 PowerModels.simplify_network!(mn_data)

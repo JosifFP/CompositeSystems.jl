@@ -78,7 +78,7 @@ function assess(
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
-        #println("s=$(s)")
+        println("s=$(s)")
 
         for t in 1:N
             pm = solve!(systemstate, system, create_dict_from_system(system, t), optimizer, t)
@@ -106,9 +106,7 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
 end
 
 function solve!(state::SystemState, system::SystemModel, data::Dict{String,Any}, optimizer, t::Int)
-
     model_type = update_component_states!(data, state, system, t)
-    #println("t=$(t), failed_transmission?=$(state.failed_transmission[t]), load_curt=$(sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]))")
     return SolveModel(data, model_type, optimizer)
     
 end
