@@ -1,5 +1,5 @@
 ""
-function create_dict_from_system(system::SystemModel, t::Int)
+function create_dict_from_system(system::SystemModel)
 
     network_data = Dict{String,Dict{String,<:Any}}()
 
@@ -18,17 +18,6 @@ function create_dict_from_system(system::SystemModel, t::Int)
         ("baseMVA",system.network.baseMVA)
         ("per_unit", system.network.per_unit)]
     )
-
-    #for i in eachindex(system.generators.keys)
-    #    network_data["gen"][string(i)]["pg"] = system.generators.pg[i,t]
-    #end
-
-    for i in eachindex(system.loads.keys)
-        network_data["load"][string(i)]["qd"] = Float16.(system.loads.pd[i,t]*
-            Float32.(network_data["load"][string(i)]["qd"] / network_data["load"][string(i)]["pd"]))
-        network_data["load"][string(i)]["pd"] = system.loads.pd[i,t].*1.5
-    end
-
     return network_data
     
 end

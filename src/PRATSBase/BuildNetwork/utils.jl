@@ -78,7 +78,7 @@ function parse_model(file::String)
 end
 
 ""
-function _BuildNetwork!(pm_data::Dict{String,Any})
+function _BuildNetwork!(pm_data::Dict{String,<:Any})
     
     #renumber_buses!(pm_data)
     delete!(pm_data, "source_type")
@@ -93,7 +93,7 @@ function _BuildNetwork!(pm_data::Dict{String,Any})
 end
 
 ""
-function _BuildNetwork!(pm_data::Dict{String,Any}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+function _BuildNetwork!(pm_data::Dict{String,<:Any}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
     
     #renumber_buses!(pm_data)
     PowerModels.correct_network_data!(pm_data)
@@ -112,7 +112,7 @@ end
 attempts to deactive components that are not needed in the network by repeated
 calls to `propagate_topology_status!` and `deactivate_isolated_components!`
 """
-function SimplifyNetwork!(pm_data::Dict{String,Any})
+function SimplifyNetwork!(pm_data::Dict{String,<:Any})
 
     revised = true
     iteration = 0
@@ -128,25 +128,6 @@ function SimplifyNetwork!(pm_data::Dict{String,Any})
     return iteration
 end
 
-"""
-attempts to deactive components that are not needed in the network by repeated
-calls to `propagate_topology_status!` and `deactivate_isolated_components!`
-"""
-function SimplifyNetwork!(network::Network{N,L,T,U}) where {N,L,T,U}
-
-    revised = true
-    iteration = 0
-
-    while revised
-        iteration += 1
-        revised = false
-        revised |= propagate_topo_status!(network)
-        revised |= deactivate_isol_components!(network)
-    end
-
-    Memento.info(_LOGGER, "network simplification fixpoint reached in $(iteration) rounds")
-    return revised
-end
 
 "ensures all polynomial costs functions have the same number of terms"
 function s_cost_terms!(pm_data::Dict{String,<:Any}; order=-1)
@@ -998,7 +979,7 @@ end
 
 
 # "set remaining unsupported components as inactive"
-# function unsupported_components!(data::Dict{String,Any})
+# function unsupported_components!(data::Dict{String,<:Any})
 
 #     dcline_status_key = component_status.dcline
 #     dcline_inactive_status = component_status_inactive.dcline
@@ -1009,7 +990,7 @@ end
 
 
 # "renumber bus ids"
-# function renumber_buses!(data::Dict{String,Any})
+# function renumber_buses!(data::Dict{String,<:Any})
 
 #         bus_ordered = sort([bus for (i,bus) in network.bus], by=(x) -> x["index"])
 #         bus_id_map = Dict{Int,Int}()
@@ -1041,7 +1022,7 @@ end
 
 
 #     # start renumbering process
-#     renumbered_bus_dict = Dict{String,Any}()
+#     renumbered_bus_dict = Dict{String,<:Any}()
 
 #     for (i,bus) in data.bus
 #         new_id = get(bus_id_map, bus["index"], bus["index"])

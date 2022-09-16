@@ -11,11 +11,18 @@ ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Dat
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 2160)
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=8, seed=2, verbose=false, threaded=true)
+method = PRATS.SequentialMonteCarlo(samples=8, seed=2, verbose=false, threaded=false)
 @time shortfall,shortfall2 = PRATS.assess(system, method, resultspecs...)
 
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
+
+
+systemstate = SystemState(system)
+data = Dict{String,Any}()
+CompositeAdequacy.fill_data!(systemstate, system, data, 1, CompositeAdequacy.Success)
+
+
 
 
 #RESUTLS 365HRS

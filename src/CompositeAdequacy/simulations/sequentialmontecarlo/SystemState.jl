@@ -1,3 +1,7 @@
+abstract type State end
+abstract type Success <: State end
+abstract type Failed <: State end
+
 struct SystemState
 
     gens_available::Matrix{Bool}
@@ -8,10 +12,9 @@ struct SystemState
     stors_energy::Matrix{Float16}
     genstors_energy::Matrix{Float16}
 
-    failed_generation::Vector{Bool}
-    failed_transmission::Vector{Bool}
+    condition::Vector{DataType}
 
-    function SystemState(system::SystemModel{N}) where N
+    function SystemState(system::SystemModel{N}) where {N}
 
         @inbounds gens_available = ones(Bool, Base.length(system.generators), N)
         @inbounds stors_available = ones(Bool, Base.length(system.storages), N)
@@ -20,11 +23,10 @@ struct SystemState
 
         @inbounds stors_energy = zeros(Float16, Base.length(system.storages), N)
         @inbounds genstors_energy = zeros(Float16, Base.length(system.generatorstorages), N)
+        #@inbounds condition = ones(Bool, N)
+        condition = [Success for i in 1:N]
 
-        @inbounds failed_generation = zeros(Bool, N)
-        @inbounds failed_transmission = zeros(Bool, N)
-
-        return new(gens_available, stors_available, genstors_available, branches_available, stors_energy, genstors_energy, failed_generation, failed_transmission)
+        return new(gens_available, stors_available, genstors_available, branches_available, stors_energy, genstors_energy, condition)
 
     end
 
@@ -38,7 +40,4 @@ Base.:(==)(x::T, y::T) where {T <: SystemState} =
     x.branches_available == y.branches_available &&
     x.stors_energy == y.stors_energy &&
     x.genstors_energy == y.genstors_energy &&
-    x.failed_generation == y.failed_generation &&
-    x.failed_transmission == y.failed_transmission
-
-Base.length(state::SystemState) = length(length(state.gens_available))
+    x.condition == y.condition
