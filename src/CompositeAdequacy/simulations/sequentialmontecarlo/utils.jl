@@ -163,20 +163,20 @@ function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCMLPowerModel}, 
     
 end
 
-function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+# function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
 
-    for i in eachindex(pm.solution["solution"]["branch"])
-        system.branches.pf[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pf"])
-        system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pt"])
-    end
+#     for i in eachindex(pm.solution["solution"]["branch"])
+#         system.branches.pf[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pf"])
+#         system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pt"])
+#     end
     
-    for i in eachindex(pm.solution["solution"]["gen"])
-         system.generators.pg[i,t] = Float16.(pm.solution["solution"]["gen"][string(i)]["pg"])
-    end
+#     for i in eachindex(pm.solution["solution"]["gen"])
+#          system.generators.pg[i,t] = Float16.(pm.solution["solution"]["gen"][string(i)]["pg"])
+#     end
 
-    return
+#     return
 
-end
+# end
 
 function overloadings(newdata::Dict{String,Any})
 

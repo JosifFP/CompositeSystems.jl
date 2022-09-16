@@ -108,7 +108,6 @@ end
 function solve!(state::SystemState, system::SystemModel, data::Dict{String,Any}, optimizer, t::Int)
     model_type = update_component_states!(data, state, system, t)
     return SolveModel(data, model_type, optimizer)
-    
 end
 
 #update_energy!(state.stors_energy, system.storages, t)

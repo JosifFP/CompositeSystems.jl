@@ -9,22 +9,22 @@ import BenchmarkTools: @btime
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 PRATSBase.silence()
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 2160)
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=8, seed=321, verbose=false, threaded=true)
+method = PRATS.SequentialMonteCarlo(samples=8, seed=2, verbose=false, threaded=true)
 @time shortfall,shortfall2 = PRATS.assess(system, method, resultspecs...)
+
+PRATS.LOLE.(shortfall, system.loads.keys)
+PRATS.EUE.(shortfall, system.loads.keys)
+
+
+#RESUTLS 365HRS
 #with HiGHS, 28.511125 seconds (87.66 M allocations: 4.709 GiB, 5.10% gc time, 73.53% compilation time)
 #26.512612 seconds (87.45 M allocations: 4.704 GiB, 4.98% gc time, 74.17% compilation time)
 #26.224381 seconds (87.19 M allocations: 4.696 GiB, 5.45% gc time, 75.24% compilation time)
 #28.679955 seconds (93.11 M allocations: 5.295 GiB, 5.35% gc time, 76.52% compilation time)
 #26.339830 seconds (87.15 M allocations: 4.694 GiB, 5.44% gc time, 75.46% compilation time)
 #23.912965 seconds (78.67 M allocations: 4.237 GiB, 5.36% gc time, 73.61% compilation time)
-
-PRATS.LOLE.(shortfall, system.loads.keys)
-PRATS.EUE.(shortfall, system.loads.keys)
-
-
-
 #10 samples, 8760 hrs: 
 
 #flow.nsamples

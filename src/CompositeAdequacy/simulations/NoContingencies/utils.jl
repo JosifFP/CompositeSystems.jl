@@ -26,7 +26,7 @@ function create_dict_from_system(system::SystemModel, t::Int)
     for i in eachindex(system.loads.keys)
         network_data["load"][string(i)]["qd"] = Float16.(system.loads.pd[i,t]*
             Float32.(network_data["load"][string(i)]["qd"] / network_data["load"][string(i)]["pd"]))
-        network_data["load"][string(i)]["pd"] = system.loads.pd[i,t].*1.25
+        network_data["load"][string(i)]["pd"] = system.loads.pd[i,t].*1.5
     end
 
     return network_data
