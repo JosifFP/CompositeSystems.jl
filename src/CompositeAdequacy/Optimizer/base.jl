@@ -1,5 +1,3 @@
-export AbstractPowerModel, DCPPowerModel, DCMLPowerModel, DCSPowerModel
-
 macro def(name, definition)
     return quote
         macro $(esc(name))()
@@ -8,56 +6,35 @@ macro def(name, definition)
     end
 end
 
+"Types of optimization"
+abstract type AbstractPowerModel end
+
 "a macro for adding the standard InfrastructureModels fields to a type definition"
 CompositeAdequacy.@def pm_fields begin
     model::Union{Model, Nothing}
-    data::Dict{String,<:Any}
-    solution::Dict{String,<:Any}
-    ref::Union{Dict{Symbol,<:Any}, Nothing}
+    dictionary::Dict{Symbol,<:Any}
+    ref::Dict{Symbol,<:Any}
+    load_curtailment::Dict{Int,<:Any}
+    termination_status::String
 end
 
-"Types of optimization"
-abstract type AbstractPowerModel end
-abstract type AbstractACPModel <: AbstractPowerModel end
-abstract type AbstractDCPModel <: AbstractPowerModel end
+abstract type OPFMethod <: AbstractPowerModel end
+abstract type LMOPFMethod <: AbstractPowerModel end
+mutable struct AbstractACPModel <: AbstractPowerModel @pm_fields end
+mutable struct AbstractDCPModel <: AbstractPowerModel @pm_fields end
 
-mutable struct DCMLPowerModel <: AbstractDCPModel @pm_fields end
-mutable struct DCPPowerModel <: AbstractDCPModel @pm_fields end
-mutable struct DCSPowerModel <: AbstractDCPModel @pm_fields end
-mutable struct ACMLPowerModel <: AbstractACPModel @pm_fields end
-mutable struct ACPPowerModel <: AbstractACPModel @pm_fields end
 
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCPPowerModel}, optimizer)
+function InitializeAbstractPowerModel(ref::Dict{Symbol, <:Any}, PowerModel::Type{<:AbstractPowerModel}, optimizer)
 
-    #@assert PowerModel <: AbstractDCPModel || PowerModel <: AbstractACPModel
-    ref = ref_initialize!(data)
     ref_add!(ref)
-
-    pm = PowerModel(
-        JuMP.direct_model(optimizer[1]),
-        data["load"],
-        Dict{String,Any}(), # empty solution data
-        ref
-    )
-    #JuMP.set_silent(pm.model)
-    return pm
-
-end
-
-function InitializeAbstractPowerModel(data::Dict{String, <:Any}, PowerModel::Type{DCMLPowerModel}, optimizer)
-
-    #@assert PowerModel <: AbstractDCPModel || PowerModel <: AbstractACPModel
-    ref = ref_initialize!(data)
-    ref_add!(ref)
-
-    pm = PowerModel(
-        JuMP.direct_model(optimizer[3]),
-        #JuMP.Model(optimizer[2]),
-        data["load"],
-        Dict{String,Any}(), # empty solution data
-        ref
-    )
-    #JuMP.set_silent(pm.model)
-    return pm
     
+    pm = PowerModel(
+        JuMP.direct_model(optimizer),
+        deepcopy(ref),
+        ref,
+        Dict{Int,Any}(),
+        ""
+    )
+    return pm
+
 end

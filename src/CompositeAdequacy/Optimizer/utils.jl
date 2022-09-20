@@ -10,27 +10,6 @@ const component_status_inactive = Dict(
     "dcline" => 0,
 )
 
-"Builds a ref object with dictionaries from PowerModels data"
-function get_ref(data::Dict{String,<:Any})
-    ref = ref_initialize!(data)
-    ref_add!(ref)
-    return ref
-end
-
-function ref_initialize!(data::Dict{String, <:Any})
-    # Initialize the refs dictionary.
-    refs = Dict{Symbol, Any}()
-    for (key,item) in data
-        if isa(item, Dict{String, Any})
-            refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
-        else
-            refs[Symbol(key)] = item
-        end        
-    end
-    # Return the final refs object.
-    return refs
-end
-
 function ref_add!(ref::Dict{Symbol,Any})
 
     ### filter out inactive components ###
@@ -55,8 +34,6 @@ function ref_add!(ref::Dict{Symbol,Any})
     ref[:arcs_from_sw] = [(i,switch["f_bus"],switch["t_bus"]) for (i,switch) in ref[:switch]]
     ref[:arcs_to_sw]   = [(i,switch["t_bus"],switch["f_bus"]) for (i,switch) in ref[:switch]]
     ref[:arcs_sw] = [ref[:arcs_from_sw]; ref[:arcs_to_sw]]
-
-    tmp = Dict{Int64, Vector{Int64}}
 
     ### bus connected component lookups ###
     tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
@@ -101,8 +78,6 @@ function ref_add!(ref::Dict{Symbol,Any})
     end
     ref[:bus_arcs_sw] = tmp
 
-    tmp = Dict{Int64, Vector{Int64}}
-
     ### reference bus lookup (a set to support multiple connected components) ###
     ref_buses = Dict{Int,Any}()
     for (k,v) in ref[:bus]
@@ -125,18 +100,18 @@ end
 function calc_buspair_parameters(buses, branches)
 
     bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
-    branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 
-    && haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
-
+    branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 && haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
     buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
     bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
     bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
     bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
 
     for (l,branch) in branch_lookup
-        bp_angmin[(branch["f_bus"],branch["t_bus"])] = max(bp_angmin[(branch["f_bus"],branch["t_bus"])], branch["angmin"])
-        bp_angmax[(branch["f_bus"],branch["t_bus"])] = min(bp_angmax[(branch["f_bus"],branch["t_bus"])], branch["angmax"])
-        bp_branch[(branch["f_bus"],branch["t_bus"])] = min(bp_branch[(branch["f_bus"],branch["t_bus"])], l)
+        i = branch["f_bus"]
+        j = branch["t_bus"]
+        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
+        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
     end
 
     buspairs = Dict((i,j) => Dict(

@@ -113,5 +113,5 @@ system.branches.pf
 # end
 
 # optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
-# pf_result = PowerModels.solve_mn_opf(network_data_mn, DCPPowerModel, optimizer)                 #DCPPowerModel, #ACPPowerModel
+# pf_result = PowerModels.solve_mn_opf(network_data_mn, OPFMethod, optimizer)                 #OPFMethod, #ACPPowerModel
 # @test pf_result["termination_status"] == LOCALLY_SOLVED

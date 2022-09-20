@@ -248,30 +248,33 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
 
 struct Network{N,L,T<:Period,U<:PerUnit}
 
-    bus::Dict{String,<:Any}
-    dcline::Dict{String,<:Any}
-    gen::Dict{String,<:Any}
-    branch::Dict{String,<:Any}
-    storage::Dict{String,<:Any}
-    switch::Dict{String,<:Any}
-    shunt::Dict{String,<:Any}
-    load::Dict{String,<:Any}
+    areas::Dict{Int,<:Any}
+    bus::Dict{Int,<:Any}
+    dcline::Dict{Int,<:Any}
+    gen::Dict{Int,<:Any}
+    branch::Dict{Int,<:Any}
+    storage::Dict{Int,<:Any}
+    switch::Dict{Int,<:Any}
+    shunt::Dict{Int,<:Any}
+    load::Dict{Int,<:Any}
     baseMVA::Int
     per_unit::Bool
 
-    function Network{N,L,T,U}(data::Dict{String,<:Any}) where {N,L,T,U}
+    function Network{N,L,T,U}(data::Dict{Symbol,<:Any}) where {N,L,T,U}
 
-        bus = data["bus"]
-        dcline = data["dcline"]
-        gen = data["gen"]
-        branch = data["branch"]
-        storage = data["storage"]
-        switch = data["switch"]
-        shunt = data["shunt"]
-        load = data["load"]
-        baseMVA = data["baseMVA"]
-        per_unit = data["per_unit"]
+        areas = data[:areas]
+        bus = data[:bus]
+        dcline = data[:dcline]
+        gen = data[:gen]
+        branch = data[:branch]
+        storage = data[:storage]
+        switch = data[:switch]
+        shunt = data[:shunt]
+        load = data[:load]
+        baseMVA = data[:baseMVA]
+        per_unit = data[:per_unit]
 
+        @assert isempty(areas) == false
         @assert isempty(bus) == false
         @assert isempty(gen) == false
         @assert isempty(branch) == false
@@ -279,13 +282,14 @@ struct Network{N,L,T<:Period,U<:PerUnit}
         @assert isempty(baseMVA) == false
         @assert isempty(per_unit) == false
 
-        return new(bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
+        return new(areas, bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
 
     end
 
 end
 
 Base.:(==)(x::T, y::T) where {T <: Network} =
+    x.areas == y.areas &&
     x.bus == y.bus &&
     x.dcline == y.dcline &&
     x.gen == y.gen &&

@@ -107,3 +107,53 @@ function solve_theta(am::PRATSBase.AdmittanceMatrix, ref_idx::Int, bus_injection
 
     return theta
 end
+
+
+
+"assumes a vaild dc solution is included in the data and computes the branch flow values"
+function calc_branch_flow_dc(data::Dict{String,<:Any})
+
+    @assert("per_unit" in keys(data) && data["per_unit"])
+    flows = _calc_branch_flow_dc(data)
+    flows["per_unit"] = data["per_unit"]
+    flows["baseMVA"] = data["baseMVA"]
+    return flows
+
+end
+
+"helper function for calc_branch_flow_dc"
+function _calc_branch_flow_dc(data::Dict{String,<:Any})
+
+    vm = Dict(bus["index"] => bus["vm"] for (i,bus) in data["bus"])
+    va = Dict(bus["index"] => bus["va"] for (i,bus) in data["bus"])
+
+    flows = Dict{String,Any}()
+    for (i,branch) in data["branch"]
+        if branch["br_status"] ≠ 0
+            f_bus = branch["f_bus"]
+            t_bus = branch["t_bus"]
+
+            g, b = calc_branch_y(branch)
+
+            p_fr = -b*(va[f_bus] - va[t_bus])
+        else
+            p_fr = NaN
+        end
+
+        flows[i] = Dict(
+            "pf" =>  p_fr,
+            "qf" =>  NaN,
+            "pt" => -p_fr,
+            "qt" =>  NaN
+        )
+    end
+
+    return Dict{String,Any}("branch" => flows)
+end
+
+""
+function calc_branch_y(branch::Dict{String,<:Any})
+    y = pinv(branch["br_r"] + im * branch["br_x"])
+    g, b = real(y), imag(y)
+    return g, b
+end

@@ -92,15 +92,13 @@ function record!(
 
     totalshortfall = 0
     isshortfall = false
-    #keys = [i for i in eachindex(pm.solution["solution"]["load_curtailment"])]
+    
+    #keys = [i for i in eachindex(pm.load_curtailment)]
     #key_order = sortperm(keys)
-    #keys[key_order]
-    #println(sum([pm.solution["solution"]["load_curtailment"][i]["pl"] for i in keys(pm.solution["solution"]["load_curtailment"])]))
 
     for r in system.loads.keys
-    #for r in eachindex(pm.solution["solution"]["load_curtailment"])
-
-        busshortfall = pm.solution["solution"]["load_curtailment"][r]["pl"]
+    
+        busshortfall = pm.load_curtailment[r]["pl"]
 
         fit!(acc.unservedload[r,t],  busshortfall)
 

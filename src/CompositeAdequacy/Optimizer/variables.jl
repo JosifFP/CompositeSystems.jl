@@ -120,16 +120,16 @@ function var_branch_power_real(ref::Dict{Symbol,Any}, model::Model; bounded::Boo
         end
     end
 
-    for (l,branch) in ref[:branch]
-        if haskey(branch, "pf_start")
-            f_idx = (l, branch["f_bus"], branch["t_bus"])
-            JuMP.set_start_value(p[f_idx], branch["pf_start"])
-        end
-        if haskey(branch, "pt_start")
-            t_idx = (l, branch["t_bus"], branch["f_bus"])
-            JuMP.set_start_value(p[t_idx], branch["pt_start"])
-        end
-    end
+    # for (l,branch) in ref[:branch]
+    #     if haskey(branch, "pf_start")
+    #         f_idx = (l, branch["f_bus"], branch["t_bus"])
+    #         JuMP.set_start_value(p[f_idx], branch["pf_start"])
+    #     end
+    #     if haskey(branch, "pt_start")
+    #         t_idx = (l, branch["t_bus"], branch["f_bus"])
+    #         JuMP.set_start_value(p[t_idx], branch["pt_start"])
+    #     end
+    # end
 
 end
 
@@ -148,16 +148,16 @@ function var_branch_power_imaginary(ref::Dict{Symbol,Any}, model::Model; bounded
         end
     end
 
-    for (l,branch) in ref[:branch]
-        if haskey(branch, "qf_start")
-            f_idx = (l, branch["f_bus"], branch["t_bus"])
-            JuMP.set_start_value(q[f_idx], branch["qf_start"])
-        end
-        if haskey(branch, "qt_start")
-            t_idx = (l, branch["t_bus"], branch["f_bus"])
-            JuMP.set_start_value(q[t_idx], branch["qt_start"])
-        end
-    end
+    # for (l,branch) in ref[:branch]
+    #     if haskey(branch, "qf_start")
+    #         f_idx = (l, branch["f_bus"], branch["t_bus"])
+    #         JuMP.set_start_value(q[f_idx], branch["qf_start"])
+    #     end
+    #     if haskey(branch, "qt_start")
+    #         t_idx = (l, branch["t_bus"], branch["f_bus"])
+    #         JuMP.set_start_value(q[t_idx], branch["qt_start"])
+    #     end
+    # end
 
 end
 
@@ -189,17 +189,17 @@ function var_dcline_power_real(ref::Dict{Symbol,Any}, model::Model, bounded::Boo
         end
     end
 
-    for (l,dcline) in ref[:dcline]
-        if haskey(dcline, "pf")
-            f_idx = (l, dcline["f_bus"], dcline["t_bus"])
-            JuMP.set_start_value(p_dc[f_idx], dcline["pf"])
-        end
+    # for (l,dcline) in ref[:dcline]
+    #     if haskey(dcline, "pf")
+    #         f_idx = (l, dcline["f_bus"], dcline["t_bus"])
+    #         JuMP.set_start_value(p_dc[f_idx], dcline["pf"])
+    #     end
 
-        if haskey(dcline, "pt")
-            t_idx = (l, dcline["t_bus"], dcline["f_bus"])
-            JuMP.set_start_value(p_dc[t_idx], dcline["pt"])
-        end
-    end
+    #     if haskey(dcline, "pt")
+    #         t_idx = (l, dcline["t_bus"], dcline["f_bus"])
+    #         JuMP.set_start_value(p_dc[t_idx], dcline["pt"])
+    #     end
+    # end
 
 end
 
@@ -221,17 +221,17 @@ function var_dcline_power_imaginary(ref::Dict{Symbol,Any}, model::Model, bounded
         end
     end
 
-    for (l,dcline) in ref[:dcline]
-        if haskey(dcline, "qf")
-            f_idx = (l, dcline["f_bus"], dcline["t_bus"])
-            JuMP.set_start_value(q_dc[f_idx], dcline["qf"])
-        end
+    # for (l,dcline) in ref[:dcline]
+    #     if haskey(dcline, "qf")
+    #         f_idx = (l, dcline["f_bus"], dcline["t_bus"])
+    #         JuMP.set_start_value(q_dc[f_idx], dcline["qf"])
+    #     end
 
-        if haskey(dcline, "qt")
-            t_idx = (l, dcline["t_bus"], dcline["f_bus"])
-            JuMP.set_start_value(q_dc[t_idx], dcline["qt"])
-        end
-    end
+    #     if haskey(dcline, "qt")
+    #         t_idx = (l, dcline["t_bus"], dcline["f_bus"])
+    #         JuMP.set_start_value(q_dc[t_idx], dcline["qt"])
+    #     end
+    # end
 
 end
 
@@ -267,7 +267,7 @@ function var_load_curtailment(pm::AbstractACPModel)
 end
 
 ""
-function var_load_power_factor_range(pm::Type)
+function var_load_power_factor_range(pm::AbstractPowerModel)
 
     JuMP.@variable(pm.model, z_demand[i in keys(pm.ref[:load])])
 

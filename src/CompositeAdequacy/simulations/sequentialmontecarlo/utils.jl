@@ -51,7 +51,7 @@ end
 "Add load curtailment information to data"
 function add_load_curtailment_info!(network::Network)
     for i in eachindex(network.load)
-        push!(network.load[string(i)], "cost" => float(1000))
+        push!(network.load[i], "cost" => float(1000))
     end
 end
 
@@ -65,15 +65,15 @@ end
 #          update_gen_stor_states!(network_data, state, system, t)
 #          update_branch_states!(network_data, state, system, t)
 #          PRATSBase.SimplifyNetwork!(network_data)
-#          return DCMLPowerModel
+#          return LMOPFMethod
         
 #      elseif state.failed_transmission[t] == false && state.failed_generation[t] == true && overloaded_lines == true
 #          update_gen_stor_states!(network_data, state, system, t)
 #          PRATSBase.SimplifyNetwork!(network_data)
-#          return DCMLPowerModel
+#          return LMOPFMethod
 
 #      else
-#          return DCPPowerModel
+#          return OPFMethod
 #      end
 
 # end
@@ -107,38 +107,38 @@ end
 # end
 
 ""
-function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCPPowerModel}, optimizer)
+# function SolveModel(data::Dict{String,<:Any}, model_type::Type{OPFMethod}, optimizer)
 
-    pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
-    build_model!(pm)
-    optimization!(pm)
-    build_result!(pm)
-    return pm
+#     pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
+#     build_model!(pm)
+#     optimization!(pm)
+#     build_result!(pm)
+#     return pm
     
-end
+# end
 
-""
-function SolveModel(data::Dict{String,<:Any}, model_type::Type{DCMLPowerModel}, optimizer)
+# ""
+# function SolveModel(data::Dict{String,<:Any}, model_type::Type, optimizer)
 
-    pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
-    build_model!(pm)
-    optimization!(pm)
+#     build_model!(pm)
+#     optimization!(pm)
 
-    if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
+#     if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
 
-        curt_loads = Dict{Int64,Dict{String,Float16}}()
-        for (i, load) in pm.data["load"]
-            get!(curt_loads, parse(Int,i), Dict("ql" => 0.0, "pl" => 0.0))
-        end
-        pm.solution["solution"]["load_curtailment"] = curt_loads
+#         curt_loads = Dict{Int64,Dict{String,Float16}}()
+#         for (i, load) in pm.data["load"]
+#             get!(curt_loads, parse(Int,i), Dict("ql" => 0.0, "pl" => 0.0))
+#         end
+#         pm.solution["solution"]["load_curtailment"] = curt_loads
 
-    else
-        build_result!(pm)
-    end
+#     else
+#         build_result!(pm)
+#     end
 
-    return pm
+#     return pm
     
-end
+# end
+
 
 # function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
 

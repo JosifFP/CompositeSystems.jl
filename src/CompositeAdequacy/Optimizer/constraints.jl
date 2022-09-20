@@ -14,11 +14,7 @@ function constraint_theta_ref_bus(pm::AbstractPowerModel)
 end
 
 "Nodal power balance constraints"
-function constraint_nodal_power_balance(pm::DCPPowerModel)
-
-    # Build JuMP expressions for the value of p[(l,i,j)] and p[(l,j,i)] on the branches
-    p_expr = JuMP.@expression(pm.model, Dict([((l,i,j), 1.0*pm.model[:p][(l,i,j)]) for (l,i,j) in pm.ref[:arcs_from]]))
-    p_expr = JuMP.@expression(pm.model, merge(p_expr, Dict([((l,j,i), -1.0*pm.model[:p][(l,i,j)]) for (l,i,j) in pm.ref[:arcs_from]])))
+function constraint_nodal_power_balance(pm::AbstractDCPModel, ::Type{OPFMethod})
     
     for i in keys(pm.ref[:bus])
         # Build a list of the loads and shunt elements connected to the bus i
@@ -26,23 +22,37 @@ function constraint_nodal_power_balance(pm::DCPPowerModel)
         bus_shunts = [pm.ref[:shunt][s] for s in pm.ref[:bus_shunts][i]]
         
         JuMP.@constraint(pm.model,
-            #sum(p[a] for a in pm.ref[:bus_arcs][i]) +
-            sum(p_expr[a] for a in pm.ref[:bus_arcs][i]) +                  # sum of active power flow on lines from bus i +
-            sum(pm.model[:p_dc][a_dc] for a_dc in pm.ref[:bus_arcs_dc][i]) ==     # sum of active power flow on HVDC lines from bus i =
-            sum(pm.model[:pg][g] for g in pm.ref[:bus_gens][i]) -                 # sum of active power generation at bus i -
-            sum(load["pd"] for load in bus_loads) -                 # sum of active load consumption at bus i -
-            sum(shunt["gs"] for shunt in bus_shunts)*1.0^2          # sum of active shunt element injections at bus i
+        sum(pm.model[:p][a] for a in pm.ref[:bus_arcs][i]) +
+        sum(pm.model[:p_dc][a_dc] for a_dc in pm.ref[:bus_arcs_dc][i]) ==     # sum of active power flow on HVDC lines from bus i =
+        sum(pm.model[:pg][g] for g in pm.ref[:bus_gens][i]) -                 # sum of active power generation at bus i -
+        sum(load["pd"] for load in bus_loads) -                 # sum of active load consumption at bus i -
+        sum(shunt["gs"] for shunt in bus_shunts)*1.0^2          # sum of active shunt element injections at bus i
         )
     end
 end
 
-""
-function constraint_nodal_power_balance(pm::DCMLPowerModel)
+# JuMP.@expression(pm.model, container_1[i=1:length(keys(pm.ref[:bus]))], sum(pm.model[:p][a] for a in pm.ref[:bus_arcs][i]) + 
+# sum(pm.model[:p_dc][a_dc] for a_dc in pm.ref[:bus_arcs_dc][i])
+# )
 
-    # Build JuMP expressions for the value of p[(l,i,j)] and p[(l,j,i)] on the branches
-    p_expr = JuMP.@expression(pm.model, merge(Dict([((l,i,j), 1.0*pm.model[:p][(l,i,j)]) for (l,i,j) in pm.ref[:arcs_from]]), 
-    Dict([((l,j,i), -1.0*pm.model[:p][(l,i,j)]) for (l,i,j) in pm.ref[:arcs_from]])))
-    
+# JuMP.@expression(pm.model, container_2[i=1:length(keys(pm.ref[:bus]))], sum(pm.model[:pg][g] for g in pm.ref[:bus_gens][i]) - 
+# sum(load["pd"] for load in bus_loads) - sum(shunt["gs"] for shunt in bus_shunts)*1.0^2
+# )
+# container_2
+# for i in 1:length(keys(pm.ref[:bus]))
+# if typeof(container_1[i]) == GenericAffExpr
+#     JuMP.drop_zeros!(container_1[i])
+# end
+# if typeof(container_2[i]) == GenericAffExpr
+#     JuMP.drop_zeros!(container_2[i])
+# end
+
+# JuMP.@constraint(pm.model, container_1[i] == container_2[i])
+
+
+""
+function constraint_nodal_power_balance(pm::AbstractDCPModel, ::Type{LMOPFMethod})
+
     # Nodal power balance constraints  
     #####################    PG + C = PL     ########################################################
     for i in keys(pm.ref[:bus])
@@ -52,8 +62,7 @@ function constraint_nodal_power_balance(pm::DCMLPowerModel)
 
         # Active power balance at node i
         JuMP.@constraint(pm.model,
-            #sum(p[a] for a in pm.ref[:bus_arcs][i]) +
-            sum(p_expr[a] for a in pm.ref[:bus_arcs][i]) +                  # sum of active power flow on lines from bus i +
+            sum(pm.model[:p][a] for a in pm.ref[:bus_arcs][i]) +
             sum(pm.model[:p_dc][a_dc] for a_dc in pm.ref[:bus_arcs_dc][i]) ==     # sum of active power flow on HVDC lines from bus i =
             sum(pm.model[:pg][g] for g in pm.ref[:bus_gens][i]) +                 # sum of active power generation at bus i -
             sum(pm.model[:plc][m] for m in pm.ref[:bus_loads][i]) -
@@ -64,7 +73,7 @@ function constraint_nodal_power_balance(pm::DCMLPowerModel)
 end
 
 "For AC-OPF type"
-function constraint_nodal_power_balance(pm::ACPPowerModel)
+function constraint_nodal_power_balance(pm::AbstractACPModel, ::Type{OPFMethod})
 
     for i in keys(pm.ref[:bus])
         # Build a list of the loads and shunt elements connected to the bus i
@@ -93,7 +102,7 @@ function constraint_nodal_power_balance(pm::ACPPowerModel)
 end
 
 ""
-function constraint_nodal_power_balance(pm::ACMLPowerModel)
+function constraint_nodal_power_balance(pm::AbstractACPModel, ::Type{LMOPFMethod})
 
     for (i,bus) in pm.ref[:bus]
         # Build a list of the loads and shunt elements connected to the bus i
