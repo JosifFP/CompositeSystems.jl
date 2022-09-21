@@ -94,6 +94,8 @@ function ref_add!(ref::Dict{Symbol,Any})
 
     ref[:buspairs] = calc_buspair_parameters(ref[:bus], ref[:branch])
 
+    return ref
+
 end
 
 "compute bus pair level data, can be run on data or ref data structures"

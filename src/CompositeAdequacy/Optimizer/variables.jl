@@ -1,27 +1,27 @@
 ""
 function var_bus_voltage(pm::AbstractDCPModel; kwargs...)
-    var_bus_voltage_angle(pm.ref, pm.model; kwargs...)
+    var_bus_voltage_angle(pm; kwargs...)
 end
 
 ""
 function var_bus_voltage(pm::AbstractACPModel; kwargs...)
-    var_bus_voltage_angle(pm.ref, pm.model; kwargs...)
-    var_bus_voltage_magnitude(pm.ref, pm.model; kwargs...)
+    var_bus_voltage_angle(pm; kwargs...)
+    var_bus_voltage_magnitude(pm; kwargs...)
 end
 
 ""
-function var_bus_voltage_angle(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=true)
+function var_bus_voltage_angle(pm::AbstractPowerModel; bounded::Bool=true)
 
-    JuMP.@variable(model, va[i in keys(ref[:bus])])
+    JuMP.@variable(pm.model, va[i in keys(pm.ref[:bus])])
 end
 
 ""
-function var_bus_voltage_magnitude(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=true)
+function var_bus_voltage_magnitude(pm::AbstractPowerModel; bounded::Bool=true)
 
-    JuMP.@variable(model, vm[i in keys(ref[:bus])], start=1.0)
+    JuMP.@variable(pm.model, vm[i in keys(pm.ref[:bus])], start=1.0)
 
     if bounded
-        for (i, bus) in keys(ref[:bus])
+        for (i, bus) in keys(pm.ref[:bus])
             JuMP.set_lower_bound(vm[i], bus["vmin"])
             JuMP.set_upper_bound(vm[i], bus["vmax"])
         end
@@ -53,34 +53,38 @@ end
 
 ""
 function var_gen_power(pm::AbstractDCPModel; kwargs...)
-    var_gen_power_real(pm.ref, pm.model; kwargs...)
+    var_gen_power_real(pm; kwargs...)
 end
 
 ""
 function var_gen_power(pm::AbstractACPModel; kwargs...)
-    var_gen_power_real(pm.ref, pm.model; kwargs...)
-    var_gen_power_imaginary(pm.ref, pm.model; kwargs...)
+    var_gen_power_real(pm; kwargs...)
+    var_gen_power_imaginary(pm; kwargs...)
 end
 
 ""
-function var_gen_power_real(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=true)
+function var_gen_power_real(pm::AbstractPowerModel; bounded::Bool=true)
 
-    JuMP.@variable(model, pg[i in keys(ref[:gen])])
+    JuMP.@variable(pm.model, pg[i in keys(pm.ref[:gen])])
 
     if bounded
-        for (i, gen) in ref[:gen]
+        for (i, gen) in pm.ref[:gen]
             JuMP.set_upper_bound(pg[i], gen["pmax"])
-            #JuMP.set_lower_bound(pg[i], gen["pmin"])
             JuMP.set_lower_bound(pg[i], 0.0)
+            # if gen["pmin"]>=0.0
+            #     JuMP.set_lower_bound(pg[i], gen["pmin"])
+            # else
+            #     JuMP.set_lower_bound(pg[i], 0.0)
+            # end
         end
     end
 
 end
 
 ""
-function var_gen_power_imaginary(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=true)
+function var_gen_power_imaginary(pm::AbstractPowerModel; bounded::Bool=true)
 
-    JuMP.@variable(model, qg[i in keys(ref[:gen])])
+    JuMP.@variable(pm.model, qg[i in keys(pm.ref[:gen])])
     
     if bounded
         for (i, gen) in ref[:gen]
@@ -94,30 +98,32 @@ end
 Defines DC power flow variables p to represent the active power flow for each branch
 """
 function var_branch_power(pm::AbstractDCPModel; kwargs...)
-    var_branch_power_real(pm.ref, pm.model; kwargs...)
+    var_branch_power_real(pm; kwargs...)
 end
 
 """
 Defines AC power flow variables p to represent the active power flow for each branch
 """
 function var_branch_power(pm::AbstractACPModel; kwargs...)
-    var_branch_power_real(pm.ref, pm.model; kwargs...)
-    var_branch_power_imaginary(pm.ref, pm.model; kwargs...)
+    var_branch_power_real(pm; kwargs...)
+    var_branch_power_imaginary(pm; kwargs...)
 end
 
 ""
-function var_branch_power_real(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=true)
+function var_branch_power_real(pm::AbstractPowerModel; bounded::Bool=true)
 
-    JuMP.@variable(model, p[(l,i,j) in ref[:arcs]])
+    JuMP.@variable(pm.model, p[(l,i,j) in pm.ref[:arcs]])
 
     if bounded
-        for arc in ref[:arcs]
-            branch = ref[:branch][arc[1]]
+        for arc in pm.ref[:arcs]
+            #(l,i,j) = arc
+            #branch = pm.ref[:branch][l]
+            branch = pm.ref[:branch][arc[1]]
             if haskey(branch, "rate_a")
                 JuMP.set_lower_bound(p[arc], -branch["rate_a"])
                 JuMP.set_upper_bound(p[arc],  branch["rate_a"])
             end
-        end
+        end  
     end
 
     # for (l,branch) in ref[:branch]
@@ -134,18 +140,18 @@ function var_branch_power_real(ref::Dict{Symbol,Any}, model::Model; bounded::Boo
 end
 
 ""
-function var_branch_power_imaginary(ref::Dict{Symbol,Any}, model::Model; bounded::Bool=true)
+function var_branch_power_imaginary(pm::AbstractPowerModel; bounded::Bool=true)
     
-    @variable(model, q[(l,i,j) in ref[:arcs]])
+    @variable(pm.model, q[(l,i,j) in pm.ref[:arcs]])
 
     if bounded
-        for arc in ref[:arcs]
-            branch = ref[:branch][arc[1]]
+        for arc in pm.ref[:arcs]
+            branch = pm.ref[:branch][arc[1]]
             if haskey(branch, "rate_a")
                 JuMP.set_lower_bound(q[arc], -branch["rate_a"])
                 JuMP.set_upper_bound(q[arc],  branch["rate_a"])
             end
-        end
+        end      
     end
 
     # for (l,branch) in ref[:branch]
@@ -161,23 +167,24 @@ function var_branch_power_imaginary(ref::Dict{Symbol,Any}, model::Model; bounded
 
 end
 
-
+""
 function var_dcline_power(pm::AbstractDCPModel; kwargs...)
-    var_dcline_power_real(pm.ref, pm.model; kwargs...)
-end
-
-function var_dcline_power(pm::AbstractACPModel; kwargs...)
-    var_dcline_power_real(pm.ref, pm.model; kwargs...)
-    var_dcline_power_imaginary(pm.ref, pm.model; kwargs...)
+    var_dcline_power_real(pm; kwargs...)
 end
 
 ""
-function var_dcline_power_real(ref::Dict{Symbol,Any}, model::Model, bounded::Bool=true)
+function var_dcline_power(pm::AbstractACPModel; kwargs...)
+    var_dcline_power_real(pm; kwargs...)
+    var_dcline_power_imaginary(pm; kwargs...)
+end
 
-    JuMP.@variable(model, p_dc[a in ref[:arcs_dc]])
+""
+function var_dcline_power_real(pm::AbstractPowerModel; bounded::Bool=true)
+
+    JuMP.@variable(pm.model, p_dc[a in pm.ref[:arcs_dc]], start=0.0)
 
     if bounded
-        for (l,dcline) in ref[:dcline]
+        for (l,dcline) in pm.ref[:dcline]
             f_idx = (l, dcline["f_bus"], dcline["t_bus"])
             t_idx = (l, dcline["t_bus"], dcline["f_bus"])
 
@@ -204,12 +211,12 @@ function var_dcline_power_real(ref::Dict{Symbol,Any}, model::Model, bounded::Boo
 end
 
 ""
-function var_dcline_power_imaginary(ref::Dict{Symbol,Any}, model::Model, bounded::Bool=true)
+function var_dcline_power_imaginary(pm::AbstractPowerModel; bounded::Bool=true)
 
-    JuMP.@variable(model, q_dc[a in ref[:arcs_dc]])
+    JuMP.@variable(pm.model, q_dc[a in pm.ref[:arcs_dc]], start=0.0)
 
     if bounded
-        for (l,dcline) in ref[:dcline]
+        for (l,dcline) in pm.ref[:dcline]
             f_idx = (l, dcline["f_bus"], dcline["t_bus"])
             t_idx = (l, dcline["t_bus"], dcline["f_bus"])
 
@@ -240,7 +247,18 @@ end
 """
 Defines load curtailment variables p to represent the active power flow for each branch
 """
-function var_load_curtailment(pm::AbstractDCPModel)
+
+function var_load_curtailment(pm::AbstractDCPModel; kwargs...)
+    var_load_curtailment_real(pm; kwargs...)
+end
+
+""
+function var_load_curtailment(pm::AbstractACPModel; kwargs...)
+    var_load_curtailment_real(pm; kwargs...)
+    var_load_curtailment_imaginary(pm; kwargs...)
+end
+
+function var_load_curtailment_real(pm::AbstractPowerModel)
 
     JuMP.@variable(pm.model, plc[i in keys(pm.ref[:load])])
 
@@ -253,15 +271,12 @@ end
 """
 Defines load curtailment variables q to represent the active power flow for each branch
 """
-function var_load_curtailment(pm::AbstractACPModel)
+function var_load_curtailment_imaginary(pm::AbstractPowerModel)
     
-    @variable(pm.model, plc[i in keys(pm.ref[:load])])
     @variable(pm.model, qlc[i in keys(pm.ref[:load])])
 
     for (i, load) in pm.ref[:load]
-        JuMP.set_upper_bound(plc[i],load["pd"])
         JuMP.set_upper_bound(qlc[i],load["qd"])
-        JuMP.set_lower_bound(plc[i],0.0)
         JuMP.set_lower_bound(qlc[i],0.0)
     end
 end

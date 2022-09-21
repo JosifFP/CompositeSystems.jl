@@ -8,32 +8,29 @@ end
 
 "Types of optimization"
 abstract type AbstractPowerModel end
+abstract type OPFMethod <: AbstractPowerModel end
+abstract type LMOPFMethod <: AbstractPowerModel end
 
 "a macro for adding the standard InfrastructureModels fields to a type definition"
 CompositeAdequacy.@def pm_fields begin
-    model::Union{Model, Nothing}
-    dictionary::Dict{Symbol,<:Any}
+    model::Model
     ref::Dict{Symbol,<:Any}
     load_curtailment::Dict{Int,<:Any}
-    termination_status::String
+    type::Union{Type{<:AbstractPowerModel}, Nothing}
+    termination_status::Int
 end
 
-abstract type OPFMethod <: AbstractPowerModel end
-abstract type LMOPFMethod <: AbstractPowerModel end
 mutable struct AbstractACPModel <: AbstractPowerModel @pm_fields end
 mutable struct AbstractDCPModel <: AbstractPowerModel @pm_fields end
 
+function InitializeAbstractPowerModel(network::Network, dictionary::Dict{Symbol, <:Any}, PowerModel::Type{<:AbstractPowerModel}, optimizer)
 
-function InitializeAbstractPowerModel(ref::Dict{Symbol, <:Any}, PowerModel::Type{<:AbstractPowerModel}, optimizer)
-
-    ref_add!(ref)
-    
     pm = PowerModel(
         JuMP.direct_model(optimizer),
-        deepcopy(ref),
-        ref,
+        fill_dictionary!(network, dictionary),
         Dict{Int,Any}(),
-        ""
+        nothing,
+        0
     )
     return pm
 

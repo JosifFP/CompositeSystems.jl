@@ -10,6 +10,17 @@ const component_status = Dict(
     "dcline" => "br_status",
 )
 
+const component_status_ref = Dict(
+    :bus => "bus_type",
+    :load => "status",
+    :shunt => "status",
+    :gen => "gen_status",
+    :storage => "status",
+    :switch => "status",
+    :branch => "br_status",
+    :dcline => "br_status",
+)
+
 "maps component types to inactive status values"
 const component_status_inactive = Dict(
     "bus" => 4,
@@ -20,6 +31,17 @@ const component_status_inactive = Dict(
     "switch" => 0,
     "branch" => 0,
     "dcline" => 0,
+)
+
+const component_status_inactive_ref = Dict(
+    :bus => 4,
+    :load => 0,
+    :shunt => 0,
+    :gen => 0,
+    :storage => 0,
+    :switch => 0,
+    :branch => 0,
+    :dcline => 0,
 )
 
 function conversion_to_pm_data(network::Network{N,L,T,U}) where {N,L,T,U}
@@ -110,6 +132,7 @@ function _BuildNetwork!(pm_data::Dict{String,<:Any}, N::Int, L::Int, T::Type{<:P
     return Network{N,L,T,U}(ref)
 end
 
+""
 function ref_initialize!(data::Dict{String, <:Any})
     # Initialize the refs dictionary.
     refs = Dict{Symbol, Any}()
@@ -118,6 +141,21 @@ function ref_initialize!(data::Dict{String, <:Any})
             refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
         else
             refs[Symbol(key)] = item
+        end        
+    end
+    # Return the final refs object.
+    return refs
+end
+
+""
+function data_initialize!(data::Dict{Symbol, <:Any})
+    refs = Dict{String, Any}()
+    for (key,item) in data
+        if isa(item, Dict{Int, Any})
+            item_lookup = Dict{String, Any}([(string(k), v) for (k, v) in item])
+            refs[String(key)] = item_lookup
+        else
+            refs[String(key)] = item
         end        
     end
     # Return the final refs object.
@@ -930,15 +968,15 @@ function calc_connected_components!(data::Dict{String,<:Any}; edges=["branch", "
 end
 
 ""
-function calc_connected_components!(ref::Dict{Symbol,<:Any}; edges=["branch", "dcline", "switch"])
+function calc_connected_components!(ref::Dict{Symbol,<:Any}; edges=[:branch, :dcline, :switch])
     
     active_bus = Dict(x for x in ref[:bus] if x.second["bus_type"] ≠ 4)
     active_bus_ids = Set{Int}([bus["bus_i"] for (i,bus) in active_bus])
 
     neighbors = Dict(i => Int[] for i in active_bus_ids)
     for comp_type in edges
-        status_key = get(component_status, comp_type, "status")
-        status_inactive = get(component_status_inactive, comp_type, 0)
+        status_key = get(component_status_ref, comp_type, "status")
+        status_inactive = get(component_status_inactive_ref, comp_type, 0)
         for edge in values(get(ref, comp_type, Dict()))
             if get(edge, status_key, 1) ≠ status_inactive && edge["f_bus"] in active_bus_ids && edge["t_bus"] in active_bus_ids
                 push!(neighbors[edge["f_bus"]], edge["t_bus"])

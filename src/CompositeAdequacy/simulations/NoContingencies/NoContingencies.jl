@@ -1,6 +1,5 @@
 include("utils.jl")
 
-
 struct NoContingencies <: SimulationSpec
     
     opf::Bool

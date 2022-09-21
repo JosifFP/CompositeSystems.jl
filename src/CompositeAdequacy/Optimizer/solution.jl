@@ -1,5 +1,5 @@
 ""
-function build_result!(pm::AbstractPowerModel, type::Type{<:AbstractPowerModel})
+function build_result!(pm::AbstractPowerModel, load_dict::Dict{Int, <:Any})
     
     result_count = 1
     try
@@ -8,24 +8,44 @@ function build_result!(pm::AbstractPowerModel, type::Type{<:AbstractPowerModel})
         Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
     end
 
-    if result_count <= 0
+    if result_count <= 0 
         #Memento.warn(_LOGGER, "model has no results, solution cannot be built")
-        pm.model = nothing
+        pm.termination_status = 2
+    elseif JuMP.isempty(pm.model) == true
+        pm.termination_status = 0
     end
 
-    pm.termination_status = String("$(JuMP.termination_status(pm.model))")
-    pm.load_curtailment = get_loads_sol!(Dict{Int,Dict{String,Float16}}(), pm, type)
+    status = JuMP.termination_status(pm.model)
+    #termination_status: 0=Nothing / 1=JuMP.LOCALLY_SOLVED / 2="No results available" / <3="Any other status"
+    if status == JuMP.INFEASIBLE || status == JuMP.LOCALLY_INFEASIBLE
+        pm.termination_status = 3
+    elseif status == JuMP.ITERATION_LIMIT || status == JuMP.TIME_LIMIT
+        pm.termination_status = 4
+    elseif status == JuMP.LOCALLY_SOLVED || status == JuMP.OPTIMAL
+        pm.termination_status = 1
+    elseif status == JuMP.OPTIMIZE_NOT_CALLED
+        pm.termination_status = 5
+    else
+        pm.termination_status = 6
+    end
+
+    pm.load_curtailment = get_loads_sol!(pm, Dict{Int,Dict{String,Float16}}(), load_dict, pm.type)
+
+    return
     
 end
 
+# ""
+# function get_loads_sol!(curt_loads::Dict{Int,<:Any}, pm::AbstractDCPModel, type::Type)
+#     return get_loads_sol!(curt_loads, pm, type)
+# end
+
 ""
-function get_loads_sol!(curt_loads, pm::AbstractDCPModel, type::Type{LMOPFMethod})
+function get_loads_sol!(pm::AbstractPowerModel, curt_loads::Dict{Int,<:Any}, load_dict::Dict{Int,<:Any}, type::Type{LMOPFMethod})
 
-    curt_loads = Dict{Int,Dict{String,Float16}}()
-
-    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
-        for (i, load) in pm.ref[:load]
-            if load["status"]≠ 0
+    if pm.termination_status == 1
+        for (i, load) in load_dict
+            if load["status"]≠ 0 && haskey(pm.ref[:load], i) == true
                 if JuMP.value(pm.model[:plc][load["index"]])>1e-4            
                     get!(curt_loads, i, Dict("ql"=>0.0, "pl"=> Float16(JuMP.value(pm.model[:plc][load["index"]]))))
                     #actual load    
@@ -42,61 +62,55 @@ function get_loads_sol!(curt_loads, pm::AbstractDCPModel, type::Type{LMOPFMethod
         end
     end
 
-    for key in keys(pm.dictionary[:load])
-        if haskey(curt_loads, key) == false
-            get!(curt_loads, key, Dict("ql"=>0.0, "pl"=> 0.0))
-        end
-    end
-
     return curt_loads
 
 end
 
 ""
-function get_loads_sol!(curt_loads, pm::AbstractDCPModel, type::Type{OPFMethod})
+function get_loads_sol!(pm::AbstractPowerModel, curt_loads::Dict{Int,<:Any}, load_dict::Dict{Int,<:Any}, type::Type{OPFMethod})
 
-    for (i, load) in pm.dictionary[:load]
-        get!(curt_loads, i, Dict("ql" => 0.0, "pl" => 0.0))
+    for key in keys(load_dict)
+        get!(curt_loads, key, Dict("ql"=>0.0, "pl"=> 0.0))
     end
 
     return curt_loads
 end
 
-""
-function get_buses_sol!(tmp, pm::AbstractDCPModel)
+# ""
+# function get_buses_sol!(tmp, pm::AbstractDCPModel)
 
-    for (i, bus) in pm.ref[:bus]
-        if bus["bus_type"] ≠ 4
-            get!(tmp, i, Dict("va"=>Float16(JuMP.value(pm.model[:va][bus["index"]]))))
-        end
-    end
-    return tmp
-end
+#     for (i, bus) in pm.ref[:bus]
+#         if bus["bus_type"] ≠ 4
+#             get!(tmp, i, Dict("va"=>Float16(JuMP.value(pm.model[:va][bus["index"]]))))
+#         end
+#     end
+#     return tmp
+# end
 
-""
-function get_gens_sol!(tmp, pm::AbstractDCPModel)
+# ""
+# function get_gens_sol!(tmp, pm::AbstractDCPModel)
 
-    for (i, gen) in pm.ref[:gen]
-        if gen["gen_status"] ≠ 0
-            get!(tmp, i, Dict("qg"=>0.0, "pg"=>Float16(JuMP.value(pm.model[:pg][gen["index"]]))))
-        end
-    end
-    return tmp
-end
+#     for (i, gen) in pm.ref[:gen]
+#         if gen["gen_status"] ≠ 0
+#             get!(tmp, i, Dict("qg"=>0.0, "pg"=>Float16(JuMP.value(pm.model[:pg][gen["index"]]))))
+#         end
+#     end
+#     return tmp
+# end
 
-""
-function get_branches_sol!(tmp, pm::AbstractDCPModel)
+# ""
+# function get_branches_sol!(tmp, pm::AbstractDCPModel)
 
-    for (i, branch) in pm.ref[:branch]
-        if branch["br_status"]≠ 0  
-            get!(tmp, i, Dict("qf"=>0.0, "qt"=>0.0,        
-            "pt" => float(-JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
-            "pf" => float(JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
-            )
-        end
-    end
-    return tmp
-end
+#     for (i, branch) in pm.ref[:branch]
+#         if branch["br_status"]≠ 0  
+#             get!(tmp, i, Dict("qf"=>0.0, "qt"=>0.0,        
+#             "pt" => float(-JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
+#             "pf" => float(JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
+#             )
+#         end
+#     end
+#     return tmp
+# end
 
 # ""
 # function guard_objective_value(opf_model)

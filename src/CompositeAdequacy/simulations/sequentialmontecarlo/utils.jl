@@ -48,113 +48,48 @@ function T(rng, λ::Float32, μ::Float32)::Tuple{Int32,Int32}
     return ttf,ttr
 end
 
-"Add load curtailment information to data"
-function add_load_curtailment_info!(network::Network)
-    for i in eachindex(network.load)
-        push!(network.load[i], "cost" => float(1000))
+""
+function update_load!(loads::Loads, dictionary::Dict{Symbol,<:Any}, t::Int)
+    for i in eachindex(loads.keys)
+        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
+        dictionary[:load][i]["pd"] = loads.pd[i,t]*1.5
     end
 end
 
+""
+function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int, type::Type{Failed})
+    for i in eachindex(generators.keys)
+        dictionary[:gen][i]["pg"] = generators.pg[i,t]
+        if gens_available[i] == false 
+            dictionary[:gen][i]["gen_status"] = gens_available[i,t] 
+        end
+    end
+end
 
 ""
-# function update_component_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
-
-#     overloaded_lines = overloadings(compute_dc_pf(network_data))
-
-#      if state.failed_transmission[t] == true && (state.failed_generation[t] == true || state.failed_generation[t] == false)
-#          update_gen_stor_states!(network_data, state, system, t)
-#          update_branch_states!(network_data, state, system, t)
-#          PRATSBase.SimplifyNetwork!(network_data)
-#          return LMOPFMethod
-        
-#      elseif state.failed_transmission[t] == false && state.failed_generation[t] == true && overloaded_lines == true
-#          update_gen_stor_states!(network_data, state, system, t)
-#          PRATSBase.SimplifyNetwork!(network_data)
-#          return LMOPFMethod
-
-#      else
-#          return OPFMethod
-#      end
-
-# end
-
-# function update_gen_stor_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
-
-#     for i in eachindex(system.generators.keys)
-#         if state.gens_available[i] == false network_data["gen"][string(i)]["gen_status"] = state.gens_available[i,t] end
-#     end
-#     for i in eachindex(system.storages.keys)
-#         if state.stors_available[i] == false network_data["storage"][string(i)]["status"] = state.stors_available[i,t] end
-#     end
-
-# end
-
-# function update_branch_states!(network_data::Dict{String,Any}, state::SystemState, system::SystemModel, t::Int)
-
-#     for i in eachindex(system.branches.keys)
-#         if state.branches_available[i] == false network_data["branch"][string(i)]["br_status"] = state.branches_available[i,t] end
-#     end
-
-# end
-
-# ""
-# function failed_states!(state::SystemState, N::Int)
-#     for t in 1:N
-#         if any(i->(i==0), [state.gens_available[:,t]; state.genstors_available[:,t]; state.stors_available[:,t]; state.branches_available[:,t]]) == false
-#             state.success[t] = false
-#         end
-#     end
-# end
+function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int, type::Type{Success})
+    for i in eachindex(generators.keys)
+        dictionary[:gen][i]["pg"] = generators.pg[i,t]
+    end
+end
 
 ""
-# function SolveModel(data::Dict{String,<:Any}, model_type::Type{OPFMethod}, optimizer)
+function update_stor!(storages::Storages, dictionary::Dict{Symbol,<:Any}, stors_available::Matrix{Bool}, t::Int)
+    for i in eachindex(storages.keys)
+        if stors_available[i] == false dictionary[:storage][i]["status"] = stors_available[i,t] end
+    end
+end
 
-#     pm =  InitializeAbstractPowerModel(data, model_type, optimizer)
-#     build_model!(pm)
-#     optimization!(pm)
-#     build_result!(pm)
-#     return pm
-    
-# end
+""
+function update_branches!(branches::Branches, dictionary::Dict{Symbol,<:Any}, branches_available::Matrix{Bool}, t::Int)
+    if all(branches_available[:,t]) == false
+        for i in eachindex(branches.keys)
+            if branches_available[i] == false dictionary[:branch][i]["br_status"] = branches_available[i,t] end
+        end
+    end
+end
 
-# ""
-# function SolveModel(data::Dict{String,<:Any}, model_type::Type, optimizer)
-
-#     build_model!(pm)
-#     optimization!(pm)
-
-#     if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
-
-#         curt_loads = Dict{Int64,Dict{String,Float16}}()
-#         for (i, load) in pm.data["load"]
-#             get!(curt_loads, parse(Int,i), Dict("ql" => 0.0, "pl" => 0.0))
-#         end
-#         pm.solution["solution"]["load_curtailment"] = curt_loads
-
-#     else
-#         build_result!(pm)
-#     end
-
-#     return pm
-    
-# end
-
-
-# function update_systemmodel!(pm::AbstractPowerModel, system::SystemModel, t::Int)
-
-#     for i in eachindex(pm.solution["solution"]["branch"])
-#         system.branches.pf[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pf"])
-#         system.branches.pt[i,t] = Float16.(pm.solution["solution"]["branch"][i]["pt"])
-#     end
-    
-#     for i in eachindex(pm.solution["solution"]["gen"])
-#          system.generators.pg[i,t] = Float16.(pm.solution["solution"]["gen"][string(i)]["pg"])
-#     end
-
-#     return
-
-# end
-
+""
 function overloadings(newdata::Dict{String,Any})
 
     container = false
