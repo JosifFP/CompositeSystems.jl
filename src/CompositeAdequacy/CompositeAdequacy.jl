@@ -1,7 +1,6 @@
 @reexport module CompositeAdequacy
 
 using ..PRATSBase
-import ContingencySolver
 import Base: -, broadcastable, getindex, merge!
 import Base.Threads: nthreads, @spawn
 import Dates: DateTime, Period

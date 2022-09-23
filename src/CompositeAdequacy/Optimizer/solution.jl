@@ -17,12 +17,12 @@ function build_result!(pm::AbstractPowerModel, load_dict::Dict{Int, <:Any})
 
     status = JuMP.termination_status(pm.model)
     #termination_status: 0=Nothing / 1=JuMP.LOCALLY_SOLVED / 2="No results available" / <3="Any other status"
-    if status == JuMP.INFEASIBLE || status == JuMP.LOCALLY_INFEASIBLE
+    if status == JuMP.LOCALLY_SOLVED || status == JuMP.OPTIMAL
+        pm.termination_status = 1
+    elseif status == JuMP.INFEASIBLE || status == JuMP.LOCALLY_INFEASIBLE
         pm.termination_status = 3
     elseif status == JuMP.ITERATION_LIMIT || status == JuMP.TIME_LIMIT
         pm.termination_status = 4
-    elseif status == JuMP.LOCALLY_SOLVED || status == JuMP.OPTIMAL
-        pm.termination_status = 1
     elseif status == JuMP.OPTIMIZE_NOT_CALLED
         pm.termination_status = 5
     else
@@ -31,7 +31,7 @@ function build_result!(pm::AbstractPowerModel, load_dict::Dict{Int, <:Any})
 
     pm.load_curtailment = get_loads_sol!(pm, Dict{Int,Dict{String,Float16}}(), load_dict, pm.type)
 
-    return
+    return pm.load_curtailment
     
 end
 
@@ -60,6 +60,11 @@ function get_loads_sol!(pm::AbstractPowerModel, curt_loads::Dict{Int,<:Any}, loa
             end
 
         end
+    else
+        println("check")
+        for key in keys(load_dict)
+            get!(curt_loads, key, Dict("ql"=>0.0, "pl"=> 0.0))
+        end        
     end
 
     return curt_loads

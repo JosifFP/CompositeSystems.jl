@@ -25,13 +25,20 @@ mutable struct AbstractDCPModel <: AbstractPowerModel @pm_fields end
 
 function InitializeAbstractPowerModel(network::Network, dictionary::Dict{Symbol, <:Any}, PowerModel::Type{<:AbstractPowerModel}, optimizer)
 
+    model = JuMP.direct_model(optimizer)
+    #model = JuMP.Model(optimizer, add_bridges=false)
+    JuMP.set_string_names_on_creation(model, false)
+
     pm = PowerModel(
-        JuMP.direct_model(optimizer),
-        fill_dictionary!(network, dictionary),
+        model,
+        #JuMP.Model(optimizer, add_bridges=false),
+        #fill_dictionary!(network, dictionary),
+        dictionary,
         Dict{Int,Any}(),
         nothing,
         0
     )
+    
     return pm
 
 end

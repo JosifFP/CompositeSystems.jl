@@ -54,23 +54,16 @@ function update_load!(loads::Loads, dictionary::Dict{Symbol,<:Any}, t::Int)
         #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
         dictionary[:load][i]["pd"] = loads.pd[i,t]*1.5
     end
+    return dictionary
 end
 
 ""
-function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int, type::Type{Failed})
+function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int)
     for i in eachindex(generators.keys)
         dictionary[:gen][i]["pg"] = generators.pg[i,t]
-        if gens_available[i] == false 
-            dictionary[:gen][i]["gen_status"] = gens_available[i,t] 
-        end
+        if gens_available[i] == false dictionary[:gen][i]["gen_status"] = gens_available[i,t] end
     end
-end
-
-""
-function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int, type::Type{Success})
-    for i in eachindex(generators.keys)
-        dictionary[:gen][i]["pg"] = generators.pg[i,t]
-    end
+    return dictionary
 end
 
 ""
@@ -78,6 +71,7 @@ function update_stor!(storages::Storages, dictionary::Dict{Symbol,<:Any}, stors_
     for i in eachindex(storages.keys)
         if stors_available[i] == false dictionary[:storage][i]["status"] = stors_available[i,t] end
     end
+    return dictionary
 end
 
 ""
@@ -87,6 +81,7 @@ function update_branches!(branches::Branches, dictionary::Dict{Symbol,<:Any}, br
             if branches_available[i] == false dictionary[:branch][i]["br_status"] = branches_available[i,t] end
         end
     end
+    return dictionary
 end
 
 ""

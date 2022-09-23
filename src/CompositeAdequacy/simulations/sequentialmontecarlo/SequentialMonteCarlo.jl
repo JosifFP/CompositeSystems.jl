@@ -20,20 +20,15 @@ struct SequentialMonteCarlo <: SimulationSpec
 end
 
 function assess(
-    system::SystemModel,
+    system::SystemModel{N},
     method::SequentialMonteCarlo,
+    optimizer,
     resultspecs::ResultSpec...
-)
+) where {N}
 
     threads = Base.Threads.nthreads()
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
-
-    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0)
-    #mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
-    #optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
-    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "time_limit"=>1.5, "log_levels"=>[])
-
     @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     if method.threaded
@@ -69,7 +64,7 @@ function assess(
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
-    dictionary = Dict{Symbol,Any}()
+    dictionary = fill_dictionary!(system.network, Dict{Symbol,Any}())
     pm = InitializeAbstractPowerModel(system.network, dictionary, AbstractDCPModel, optimizer)
 
     for s in sampleseeds
@@ -79,7 +74,7 @@ function assess(
         println("s=$(s)")
 
         for (_,t) in enumerate(iter)
-            #println("t=$(iter[i])")
+            #println("t=$(t), $(systemstate.condition[t])")
             solve!(pm, systemstate, system, t, systemstate.condition[t])
             foreach(recorder -> record!(recorder, pm.load_curtailment, system.loads, s, t), recorders)
             empty_pm!(pm, system.network, dictionary)
@@ -92,6 +87,7 @@ function assess(
     put!(results, recorders)
 
 end
+
 
 function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N}) where N
 
@@ -116,10 +112,12 @@ end
 function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Failed})
     pm.type = LMOPFMethod
     update_ref!(state, system, pm.ref, t, condition)
-    build_model!(pm)
-    optimization!(pm)
+    build_model!(pm, pm.type)
+    optimization!(pm, pm.type)
     build_result!(pm, system.network.load)
-    #return pm
+    
+    return
+
 end
 
 ""
@@ -127,7 +125,9 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel,
 
     pm.type = OPFMethod
     build_result!(pm, system.network.load)
-    #return pm
+
+    return
+
 end
 
 #update_energy!(state.stors_energy, system.storages, t)
@@ -136,9 +136,9 @@ include("result_shortfall.jl")
 include("result_flow.jl")
 
 ""
-function fill_dictionary!(network::Network, dictionary::Dict{Symbol,<:Any})
+function fill_dictionary!(network::Network, ref::Dict{Symbol,<:Any})
 
-    push!(dictionary, 
+    push!(ref, 
     :bus => network.bus,
     :dcline => network.dcline,
     :gen => network.gen,
@@ -148,36 +148,53 @@ function fill_dictionary!(network::Network, dictionary::Dict{Symbol,<:Any})
     :shunt => network.shunt,
     :load => network.load)
 
-    return dictionary
+    return ref
 
 end
 
 ""
-function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, type::Type{Success})
+function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Success})
 
-    update_gen!(system.generators, dictionary, state.gens_available, t, type)
+    update_gen!(system.generators, dictionary, state.gens_available, t)
     update_load!(system.loads, dictionary, t)
     ref_add!(dictionary)
+
+    return 
 
 end
 
 ""
-function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, type::Type{Failed})
+function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Failed})
 
-    update_gen!(system.generators, dictionary, state.gens_available, t, type)
-    update_stor!(system.storages, dictionary, state.stors_available, t)
     update_load!(system.loads, dictionary, t)
-    update_branches!(system.branches, dictionary, state.branches_available, t)
-    PRATSBase.SimplifyNetwork!(dictionary)
+    update_gen!(system.generators, dictionary, state.gens_available, t)
+
+    if all(state.gens_available[:,t]) == true
+        update_stor!(system.storages, dictionary, state.stors_available, t)
+        update_branches!(system.branches, dictionary, state.branches_available, t)
+        PRATSBase.SimplifyNetwork!(dictionary)
+    end
+    #PRATSBase.SimplifyNetwork!(dictionary)
     ref_add!(dictionary)
+
+    return
 
 end
 
 ""
 function empty_pm!(pm::AbstractPowerModel, network::Network, dictionary::Dict{Symbol,<:Any})
+
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
     pm.ref = fill_dictionary!(network, dictionary)
     empty!(pm.load_curtailment)
     pm.termination_status = 0
 
+    return
+
 end
+
+#nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+#mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
+#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
+#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "branch_strategy"=>:PseudoCost ,"time_limit"=>1.5, "log_levels"=>[])
+#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])

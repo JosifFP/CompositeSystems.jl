@@ -9,7 +9,6 @@ function constraint_theta_ref_bus(pm::AbstractPowerModel)
     # Fix the voltage angle to zero at the reference bus
     for i in keys(pm.ref[:ref_buses])
         JuMP.@constraint(pm.model, pm.model[:va][i] == 0)
-        # JuMP.fix(pm.model[:va][i], 0; force = true)
     end
 
 end
@@ -241,14 +240,14 @@ function constraint_voltage_magnitude_diff(pm::AbstractDCPModel)
         #f_idx = (i, branch["f_bus"], branch["t_bus"])
         #g_fr = branch["g_fr"]
         #b_fr = branch["b_fr"]
-        p_fr = pm.model[:p][(i, branch["f_bus"], branch["t_bus"])]
+        p_fr = JuMP.@expression(pm.model, pm.model[:p][(i, branch["f_bus"], branch["t_bus"])])
         #q_fr = pm.model[:q][(i, branch["f_bus"], branch["t_bus"])]
         q_fr = 0
         r = branch["br_r"]
         x = branch["br_x"]
-        w_fr = pm.model[:w][branch["f_bus"]]
-        w_to = pm.model[:w][branch["t_bus"]]
-        ccm = pm.model[:ccm][i]
+        w_fr = JuMP.@expression(pm.model, pm.model[:w][branch["f_bus"]])
+        w_to = JuMP.@expression(pm.model, pm.model[:w][branch["t_bus"]])    
+        ccm = JuMP.@expression(pm.model, pm.model[:ccm][i])
         ym_sh_sqr = branch["g_fr"]^2 + branch["b_fr"]^2
 
         JuMP.@constraint(pm.model, 
@@ -265,13 +264,13 @@ function constraint_voltage_magnitude_diff(pm::AbstractACPModel)
         #f_idx = (i, branch["f_bus"], branch["t_bus"])
         #g_fr = branch["g_fr"]
         #b_fr = branch["b_fr"]
-        p_fr = pm.model[:p][(i, branch["f_bus"], branch["t_bus"])]
-        q_fr = pm.model[:q][(i, branch["f_bus"], branch["t_bus"])]
+        p_fr = JuMP.@expression(pm.model, pm.model[:p][(i, branch["f_bus"], branch["t_bus"])])
+        q_fr = JuMP.@expression(pm.model, pm.model[:q][(i, branch["f_bus"], branch["t_bus"])])
         r = branch["br_r"]
         x = branch["br_x"]
-        w_fr = pm.model[:w][branch["f_bus"]]
-        w_to = pm.model[:w][branch["t_bus"]]
-        ccm = pm.model[:ccm][i]
+        w_fr = JuMP.@expression(pm.model, pm.model[:w][branch["f_bus"]])
+        w_to = JuMP.@expression(pm.model, pm.model[:w][branch["t_bus"]])
+        ccm = JuMP.@expression(pm.model, pm.model[:ccm][i])
         ym_sh_sqr = branch["g_fr"]^2 + branch["b_fr"]^2
 
         JuMP.@constraint(pm.model, 
