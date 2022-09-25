@@ -11,84 +11,87 @@ const component_status_inactive = Dict(
 )
 
 ""
-function ref_add!(ref::Dict{Symbol,Any})
+function ref_add!(nw_ref::Dict{Symbol,Any})
 
-    ### filter out inactive components ###
-    filter_inactive_components!(ref)
+    #for (nw, nw_ref) in ref[:nw]
+        ### filter out inactive components ###
+        filter_inactive_components!(nw_ref)
 
-    ### setup arcs from edges ###
-    ref[:arcs_from] = [(i,branch["f_bus"],branch["t_bus"]) for (i,branch) in ref[:branch]]
-    ref[:arcs_to]   = [(i,branch["t_bus"],branch["f_bus"]) for (i,branch) in ref[:branch]]
-    ref[:arcs] = [ref[:arcs_from]; ref[:arcs_to]]
+        ### setup arcs from edges ###
+        nw_ref[:arcs_from] = [(i,branch["f_bus"],branch["t_bus"]) for (i,branch) in nw_ref[:branch]]
+        nw_ref[:arcs_to]   = [(i,branch["t_bus"],branch["f_bus"]) for (i,branch) in nw_ref[:branch]]
+        nw_ref[:arcs] = [nw_ref[:arcs_from]; nw_ref[:arcs_to]]
 
-    ref[:arcs_from_dc] = [(i,dcline["f_bus"],dcline["t_bus"]) for (i,dcline) in ref[:dcline]]
-    ref[:arcs_to_dc]   = [(i,dcline["t_bus"],dcline["f_bus"]) for (i,dcline) in ref[:dcline]]
-    ref[:arcs_dc]      = [ref[:arcs_from_dc]; ref[:arcs_to_dc]]
+        nw_ref[:arcs_from_dc] = [(i,dcline["f_bus"],dcline["t_bus"]) for (i,dcline) in nw_ref[:dcline]]
+        nw_ref[:arcs_to_dc]   = [(i,dcline["t_bus"],dcline["f_bus"]) for (i,dcline) in nw_ref[:dcline]]
+        nw_ref[:arcs_dc]      = [ref[:arcs_from_dc]; ref[:arcs_to_dc]]
 
-    ref[:arcs_from_sw] = [(i,switch["f_bus"],switch["t_bus"]) for (i,switch) in ref[:switch]]
-    ref[:arcs_to_sw]   = [(i,switch["t_bus"],switch["f_bus"]) for (i,switch) in ref[:switch]]
-    ref[:arcs_sw] = [ref[:arcs_from_sw]; ref[:arcs_to_sw]]
+        nw_ref[:arcs_from_sw] = [(i,switch["f_bus"],switch["t_bus"]) for (i,switch) in nw_ref[:switch]]
+        nw_ref[:arcs_to_sw]   = [(i,switch["t_bus"],switch["f_bus"]) for (i,switch) in nw_ref[:switch]]
+        nw_ref[:arcs_sw] = [nw_ref[:arcs_from_sw]; nw_ref[:arcs_to_sw]]
 
-    ### bus connected component lookups ###
-    tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
-    for (i, load) in ref[:load]
-        push!(tmp[load["load_bus"]], i)
-    end
-    ref[:bus_loads] = tmp
-
-    tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
-    for (i,shunt) in ref[:shunt]
-        push!(tmp[shunt["shunt_bus"]], i)
-    end
-    ref[:bus_shunts] = tmp
-
-    tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
-    for (i,gen) in ref[:gen]
-        push!(tmp[gen["gen_bus"]], i)
-    end
-    ref[:bus_gens] = tmp
-
-    tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
-    for (i,strg) in ref[:storage]
-        push!(tmp[strg["storage_bus"]], i)
-    end
-    ref[:bus_storage] = tmp
-
-    tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in ref[:bus])
-    for (l,i,j) in ref[:arcs]
-        push!(tmp[i], (l,i,j))
-    end
-    ref[:bus_arcs] = tmp
-
-    tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in ref[:bus])
-    for (l,i,j) in ref[:arcs_dc]
-        push!(tmp[i], (l,i,j))
-    end
-    ref[:bus_arcs_dc] = tmp
-
-    tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in ref[:bus])
-    for (l,i,j) in ref[:arcs_sw]
-        push!(tmp[i], (l,i,j))
-    end
-    ref[:bus_arcs_sw] = tmp
-
-    ### reference bus lookup (a set to support multiple connected components) ###
-    ref_buses = Dict{Int,Any}()
-    for (k,v) in ref[:bus]
-        if v["bus_type"] == 3
-            ref_buses[k] = v
+        ### bus connected component lookups ###
+        tmp = Dict((i, Int[]) for (i,bus) in nw_ref[:bus])
+        for (i, load) in nw_ref[:load]
+            push!(tmp[load["load_bus"]], i)
         end
-    end
+        nw_ref[:bus_loads] = tmp
 
-    ref[:ref_buses] = ref_buses
+        tmp = Dict((i, Int[]) for (i,bus) in nw_ref[:bus])
+        for (i,shunt) in nw_ref[:shunt]
+            push!(tmp[shunt["shunt_bus"]], i)
+        end
+        nw_ref[:bus_shunts] = tmp
 
-    if length(ref_buses) > 1
-        Memento.warn(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
-    end
+        tmp = Dict((i, Int[]) for (i,bus) in nw_ref[:bus])
+        for (i,gen) in nw_ref[:gen]
+            push!(tmp[gen["gen_bus"]], i)
+        end
+        nw_ref[:bus_gens] = tmp
 
-    ref[:buspairs] = calc_buspair_parameters(ref[:bus], ref[:branch])
+        tmp = Dict((i, Int[]) for (i,bus) in nw_ref[:bus])
+        for (i,strg) in nw_ref[:storage]
+            push!(tmp[strg["storage_bus"]], i)
+        end
+        nw_ref[:bus_storage] = tmp
 
-    return ref
+        tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in nw_ref[:bus])
+        for (l,i,j) in nw_ref[:arcs]
+            push!(tmp[i], (l,i,j))
+        end
+        nw_ref[:bus_arcs] = tmp
+
+        tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in nw_ref[:bus])
+        for (l,i,j) in nw_ref[:arcs_dc]
+            push!(tmp[i], (l,i,j))
+        end
+        nw_ref[:bus_arcs_dc] = tmp
+
+        tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in nw_ref[:bus])
+        for (l,i,j) in nw_ref[:arcs_sw]
+            push!(tmp[i], (l,i,j))
+        end
+        nw_ref[:bus_arcs_sw] = tmp
+
+        ### reference bus lookup (a set to support multiple connected components) ###
+        ref_buses = Dict{Int,Any}()
+        for (k,v) in nw_ref[:bus]
+            if v["bus_type"] == 3
+                ref_buses[k] = v
+            end
+        end
+
+        nw_ref[:ref_buses] = ref_buses
+
+        if length(ref_buses) > 1
+            Memento.warn(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
+        end
+
+        ### aggregate info for pairs of connected buses ###
+        if !haskey(nw_ref, :buspairs)
+            nw_ref[:buspairs] = calc_buspair_parameters(nw_ref[:bus], nw_ref[:branch])
+        end
+    #end
 
 end
 
@@ -215,4 +218,44 @@ end
 function pinv(x::Number)
     xi = inv(x)
     return ifelse(isfinite(xi), xi, zero(xi))
+end
+
+"checks of any of the given keys are missing from the given dict"
+function _check_missing_keys(dict, keys, type)
+    missing = []
+    for key in keys
+        if !haskey(dict, key)
+            push!(missing, key)
+        end
+    end
+    if length(missing) > 0
+        error(_LOGGER, "the formulation $(type) requires the following varible(s) $(keys) but the $(missing) variable(s) were not found in the model")
+    end
+end
+
+"computes flow bounds on branches from ref data"
+function ref_calc_branch_flow_bounds(branches, buses)
+    flow_lb = Dict() 
+    flow_ub = Dict()
+
+    for (i, branch) in branches
+        flow_lb[i] = -Inf
+        flow_ub[i] = Inf
+
+        if haskey(branch, "rate_a")
+            flow_lb[i] = max(flow_lb[i], -branch["rate_a"])
+            flow_ub[i] = min(flow_ub[i],  branch["rate_a"])
+        end
+
+        if haskey(branch, "c_rating_a")
+            fr_vmax = buses[branch["f_bus"]]["vmax"]
+            to_vmax = buses[branch["t_bus"]]["vmax"]
+            m_vmax = max(fr_vmax, to_vmax)
+
+            flow_lb[i] = max(flow_lb[i], -branch["c_rating_a"]*m_vmax)
+            flow_ub[i] = min(flow_ub[i],  branch["c_rating_a"]*m_vmax)
+        end
+    end
+
+    return flow_lb, flow_ub
 end

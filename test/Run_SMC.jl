@@ -10,13 +10,22 @@ RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 2160)
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=1, seed=123, verbose=false, threaded=true)
+method = PRATS.SequentialMonteCarlo(samples=8, seed=123, verbose=false, threaded=true)
 
 nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
 mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
 #optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
 #optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "branch_strategy"=>:PseudoCost ,"time_limit"=>1.5, "log_levels"=>[])
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])
+
+JuMP.num_variables(pm.model)
+
+network_data = PowerModels.parse_file(RawFile)
+
+network_data["gen"]["1"]
+network_data["load"]["1"]
+network_data["shunt"]
+
 
 @time shortfall,shortfall2 = PRATS.assess(system, method, optimizer, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)

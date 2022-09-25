@@ -64,6 +64,7 @@ include("Optimizer/variables.jl")
 include("Optimizer/constraints.jl")
 include("Optimizer/Optimizer.jl")
 include("Optimizer/solution.jl")
+include("Optimizer/JuMP.jl")
 
 include("Native/Native.jl")
 

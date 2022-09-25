@@ -4,22 +4,22 @@
 ###############################################################################
 
 "Fix the voltage angle to zero at the reference bus"
-
-function constraint_theta_ref_bus(pm::AbstractPowerModel)
-    # Fix the voltage angle to zero at the reference bus
-    for i in keys(pm.ref[:ref_buses])
-        JuMP.@constraint(pm.model, pm.model[:va][i] == 0)
-    end
-
+function constraint_theta_ref(pm::AbstractPowerModel, n::Int, i::Int)
+    JuMP.@constraint(pm.model, var(pm, n, :va)[i] == 0)
 end
 
-# "Nodal power balance constraints"
-# function constraint_nodal_power_balance(pm::AbstractDCPModel, type::Type)
-#     constraint_nodal_power_balance(pm, type)
-# end
+"Nodal power balance constraints"
+function constraint_nodal_power_balance(pm::AbstractDCPModel, type::Type)
+    constraint_nodal_power_balance_real(pm, type)
+end
+
+"Nodal power balance constraints"
+function constraint_nodal_power_balance(pm::AbstractACPModel, type::Type)
+    constraint_nodal_power_balance_real_img(pm, type)
+end
 
 ""
-function constraint_nodal_power_balance(pm::AbstractPowerModel, ::Type{OPFMethod})
+function constraint_nodal_power_balance_real(pm::AbstractPowerModel, ::Type{OPFMethod})
 
     p_expr = JuMP.@expression(pm.model, merge(Dict([((l,i,j), 1.0*pm.model[:p][(l,i,j)]) for (l,i,j) 
     in pm.ref[:arcs_from]]), Dict([((l,j,i), -1.0*pm.model[:p][(l,i,j)]) for (l,i,j) in pm.ref[:arcs_from]])))
@@ -86,7 +86,7 @@ end
 # JuMP.@constraint(pm.model, container_1[i] == container_2[i])
 
 "For AC-OPF type"
-function constraint_nodal_power_balance(pm::AbstractACPModel, ::Type{OPFMethod})
+function constraint_nodal_power_balance_real_img(pm::AbstractPowerModel, ::Type{OPFMethod})
 
     for i in keys(pm.ref[:bus])
         # Build a list of the loads and shunt elements connected to the bus i
@@ -115,7 +115,7 @@ function constraint_nodal_power_balance(pm::AbstractACPModel, ::Type{OPFMethod})
 end
 
 ""
-function constraint_nodal_power_balance(pm::AbstractACPModel, ::Type{LMOPFMethod})
+function constraint_nodal_power_balance_real_img(pm::AbstractPowerModel, ::Type{LMOPFMethod})
 
     for (i,bus) in pm.ref[:bus]
         # Build a list of the loads and shunt elements connected to the bus i
@@ -146,7 +146,17 @@ function constraint_nodal_power_balance(pm::AbstractACPModel, ::Type{LMOPFMethod
 end
 
 "Branch power flow physics and limit constraints"
-function constraint_branch_pf_limits(pm::AbstractDCPModel)
+function constraint_branch_pf_limits(pm::AbstractDCPModel; kwargs...)
+    constraint_branch_pf_limits_real(pm; kwargs...)
+end
+
+""
+function constraint_branch_pf_limits(pm::AbstractACPModel; kwargs...)
+    constraint_branch_pf_limits_real_img(pm; kwargs...)
+end
+
+""
+function constraint_branch_pf_limits_real(pm::AbstractPowerModel)
 
     for (i,branch) in pm.ref[:branch]
         # Build the from variable id of the i-th branch, which is a tuple given by (branch id, from bus, to bus)
@@ -155,19 +165,20 @@ function constraint_branch_pf_limits(pm::AbstractDCPModel)
         va_fr_to = JuMP.@expression(pm.model, pm.model[:va][branch["f_bus"]]-pm.model[:va][branch["t_bus"]])         # va_fr is a reference to the optimization variable va on the from side of the branch
     
         # Compute the branch parameters and transformer ratios from the data
-        g, b = ContingencySolver.calc_branchs_y(branch)
+        g, b = calc_branchs_y(branch)
     
         # DC Line Flow Constraints
         JuMP.@constraint(pm.model, p_fr == -b*(va_fr_to))
 
         # Voltage angle difference limit
-        JuMP.@constraint(pm.model, va_fr_to <= branch["angmax"])
-        JuMP.@constraint(pm.model, va_fr_to >= branch["angmin"])
+        JuMP.@constraint(pm.model, branch["angmin"] <= va_fr_to <= branch["angmax"])
+        #JuMP.@constraint(pm.model, va_fr_to <= branch["angmax"])
+        #JuMP.@constraint(pm.model, va_fr_to >= branch["angmin"])
     end
 end
 
 ""
-function constraint_branch_pf_limits(pm::AbstractACPModel)
+function constraint_branch_pf_limits_real_img(pm::AbstractPowerModel)
 
     for (i,branch) in pm.ref[:branch]
 
@@ -202,8 +213,7 @@ function constraint_branch_pf_limits(pm::AbstractACPModel)
         JuMP.@constraint(pm.model, q_to == -(b+b_to)*vm_to^2 - (-b*tr+g*ti)/tm*(vm_to*vm_fr*cos(va_fr-va_to)) + (-g*tr-b*ti)/tm*(vm_to*vm_fr*sin(va_to-va_fr)) )
 
         # Voltage angle difference limit
-        JuMP.@constraint(pm.model, va_fr - va_to <= branch["angmax"])
-        JuMP.@constraint(pm.model, va_fr - va_to >= branch["angmin"])
+        JuMP.@constraint(pm.model, branch["angmin"] <= va_fr - va_to <= branch["angmax"])
 
         # Apparent Power Limit, From and To
         if haskey(branch, "rate_a")

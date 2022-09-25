@@ -45,13 +45,10 @@ end
 
 "It generates a sequence of seeds from a given number of samples"
 function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
-
     for s in 1:nsamples
         put!(sampleseeds, s)
     end
-
     close(sampleseeds)
-
 end
 
 function assess(
@@ -64,20 +61,20 @@ function assess(
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
-    dictionary = fill_dictionary!(system.network, Dict{Symbol,Any}())
-    pm = InitializeAbstractPowerModel(system.network, dictionary, AbstractDCPModel, optimizer)
+    ref = initialize_ref(system.network; multinetwork=true)
 
     for s in sampleseeds
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
-        println("s=$(s)")
+        pm = InitializeAbstractPowerModel(AbstractDCPModel, system.network, ref, optimizer; multinetwork=true)
+
 
         for (_,t) in enumerate(iter)
-            #println("t=$(t), $(systemstate.condition[t])")
+            #println("t=$(t)")
             solve!(pm, systemstate, system, t, systemstate.condition[t])
             foreach(recorder -> record!(recorder, pm.load_curtailment, system.loads, s, t), recorders)
-            empty_pm!(pm, system.network, dictionary)
+            empty_pm!(pm, system.network, ref)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
@@ -89,6 +86,47 @@ function assess(
 end
 
 
+function InitializeModel(pm::AbstractPowerModel, state::SystemState, system::SystemModel{N}) where {N}
+
+    threads = Base.Threads.nthreads()
+    periods = Channel{Int}(2*threads)
+    @spawn makeseeds(periods, N)
+
+    for _ in 1:threads
+        @spawn _InitializeModel(pm, state, system, periods)
+    end
+
+end
+
+function _InitializeModel(pm, state, system, periods)
+
+    for nw in periods
+        
+        state.condition == Success ? ext(pm,nw)[:type] == OPFMethod : ext(pm,nw)[:type] == LMOPFMethod
+
+        update_load!(system.loads, ref(pm,nw), nw)
+        update_gen!(system.generators, ref(pm,nw), state.gens_available, nw)
+
+        if all(state.gens_available[:,nw]) == true
+            update_stor!(system.storages, ref(pm,nw), state.stors_available, nw)
+            update_branches!(system.branches, ref(pm,nw), state.branches_available, nw)
+            PRATSBase.SimplifyNetwork!(ref(pm,nw))
+        end
+
+        ref_add!(ref(pm,nw))
+        build_method!(pm; nw)
+
+    end
+
+end
+
+
+
+
+
+
+
+""
 function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N}) where N
 
     initialize_availability!(rng, state.gens_available, system.generators, N)
@@ -110,9 +148,7 @@ end
 
 ""
 function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Failed})
-    pm.type = LMOPFMethod
-    update_ref!(state, system, pm.ref, t, condition)
-    build_model!(pm, pm.type)
+
     optimization!(pm, pm.type)
     build_result!(pm, system.network.load)
     
@@ -123,7 +159,7 @@ end
 ""
 function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Success})
 
-    pm.type = OPFMethod
+    #pm.type = OPFMethod
     build_result!(pm, system.network.load)
 
     return
@@ -136,56 +172,10 @@ include("result_shortfall.jl")
 include("result_flow.jl")
 
 ""
-function fill_dictionary!(network::Network, ref::Dict{Symbol,<:Any})
-
-    push!(ref, 
-    :bus => network.bus,
-    :dcline => network.dcline,
-    :gen => network.gen,
-    :branch => network. branch,
-    :storage => network.storage,
-    :switch => network.switch,
-    :shunt => network.shunt,
-    :load => network.load)
-
-    return ref
-
-end
-
-""
-function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Success})
-
-    update_gen!(system.generators, dictionary, state.gens_available, t)
-    update_load!(system.loads, dictionary, t)
-    ref_add!(dictionary)
-
-    return 
-
-end
-
-""
-function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Failed})
-
-    update_load!(system.loads, dictionary, t)
-    update_gen!(system.generators, dictionary, state.gens_available, t)
-
-    if all(state.gens_available[:,t]) == true
-        update_stor!(system.storages, dictionary, state.stors_available, t)
-        update_branches!(system.branches, dictionary, state.branches_available, t)
-        PRATSBase.SimplifyNetwork!(dictionary)
-    end
-    #PRATSBase.SimplifyNetwork!(dictionary)
-    ref_add!(dictionary)
-
-    return
-
-end
-
-""
 function empty_pm!(pm::AbstractPowerModel, network::Network, dictionary::Dict{Symbol,<:Any})
 
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-    pm.ref = fill_dictionary!(network, dictionary)
+    pm.ref = initialize_ref(network;  multinetwork=true)
     empty!(pm.load_curtailment)
     pm.termination_status = 0
 
