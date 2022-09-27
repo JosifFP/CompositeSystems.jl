@@ -12,7 +12,7 @@ struct SystemState
     stors_energy::Matrix{Float16}
     genstors_energy::Matrix{Float16}
 
-    condition::Vector{DataType}
+    condition::Vector{Bool}
 
     function SystemState(system::SystemModel{N}) where {N}
 
@@ -23,8 +23,8 @@ struct SystemState
 
         @inbounds stors_energy = zeros(Float16, Base.length(system.storages), N)
         @inbounds genstors_energy = zeros(Float16, Base.length(system.generatorstorages), N)
-        #@inbounds condition = ones(Bool, N)
-        condition = [Success for i in 1:N]
+        @inbounds condition = ones(Bool, N)
+        #condition = [Success for i in 1:N]
 
         return new(gens_available, stors_available, genstors_available, branches_available, stors_energy, genstors_energy, condition)
 

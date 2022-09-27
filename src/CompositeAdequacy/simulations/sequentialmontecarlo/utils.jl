@@ -49,55 +49,58 @@ function T(rng, λ::Float32, μ::Float32)::Tuple{Int32,Int32}
 end
 
 ""
-function update_load!(loads::Loads, dictionary::Dict{Symbol,<:Any}, t::Int)
+function update_load!(loads::Loads, ref_load::Dict{Int,<:Any}, t::Int)
+
+    tmp = Dict{Int,Any}()
     for i in eachindex(loads.keys)
         #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
-        dictionary[:load][i]["pd"] = loads.pd[i,t]*2
+        ref_load[i]["pd"] = loads.pd[i,t]*2
+        get!(tmp, i, ref_load[i]["pd"])
     end
-    return dictionary
+    return tmp
 end
 
 ""
-function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int)
+function update_gen!(generators::Generators, ref_gen::Dict{Int,<:Any}, gens_available::Matrix{Bool}, t::Int)
     for i in eachindex(generators.keys)
-        dictionary[:gen][i]["pg"] = generators.pg[i,t]
-        if gens_available[i] == false dictionary[:gen][i]["gen_status"] = gens_available[i,t] end
+        ref_gen[i]["pg"] = generators.pg[i,t]
+        if gens_available[i] == false ref_gen[i]["gen_status"] = gens_available[i,t] end
     end
-    return dictionary
+    return ref_gen
 end
 
 ""
-function update_stor!(storages::Storages, dictionary::Dict{Symbol,<:Any}, stors_available::Matrix{Bool}, t::Int)
+function update_stor!(storages::Storages, ref_stor::Dict{Int,<:Any}, stors_available::Matrix{Bool}, t::Int)
     for i in eachindex(storages.keys)
-        if stors_available[i] == false dictionary[:storage][i]["status"] = stors_available[i,t] end
+        if stors_available[i] == false ref_stor[i]["status"] = stors_available[i,t] end
     end
-    return dictionary
+    return ref_stor
 end
 
 ""
-function update_branches!(branches::Branches, dictionary::Dict{Symbol,<:Any}, branches_available::Matrix{Bool}, t::Int)
+function update_branches!(branches::Branches, ref_branch::Dict{Int,<:Any}, branches_available::Matrix{Bool}, t::Int)
     if all(branches_available[:,t]) == false
         for i in eachindex(branches.keys)
-            if branches_available[i] == false dictionary[:branch][i]["br_status"] = branches_available[i,t] end
+            if branches_available[i] == false ref_branch[i]["br_status"] = branches_available[i,t] end
         end
     end
-    return dictionary
+    return ref_branch
 end
 
-""
-function overloadings(newdata::Dict{String,Any})
+# ""
+# function overloadings(newdata::Dict{String,Any})
 
-    container = false
-    for j in eachindex(newdata["branch"])
-        if any(abs(newdata["branch"][string(j)]["pf"]) > newdata["branch"][string(j)]["rate_a"])
-            container = true
-            break
-        end
-    end
+#     container = false
+#     for j in eachindex(newdata["branch"])
+#         if any(abs(newdata["branch"][string(j)]["pf"]) > newdata["branch"][string(j)]["rate_a"])
+#             container = true
+#             break
+#         end
+#     end
 
-    return container
+#     return container
 
-end
+# end
 
 # ----------------------------------------------------------------------------------------------------------
 function available_capacity(

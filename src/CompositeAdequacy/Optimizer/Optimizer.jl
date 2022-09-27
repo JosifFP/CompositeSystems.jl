@@ -2,41 +2,120 @@
 Given a JuMP model and a PowerModels network data structure,
 Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data and returns the JuMP model
 """
-function build_method!(pm::AbstractPowerModel; nw::Int=0)
-    type = ext(pm, nw, :type)
-    return build_mn_lmopf!(pm; nw, type)
-end
+# function build_method!(pm::AbstractDCPowerModel; nw::Int=0)
+#     type = ext(pm, nw, :type)
+#     return  build_method!(pm; nw, type=type)
+# end
 
-""
-function build_mn_lmopf!(pm::AbstractPowerModel; n::Int, type::Type)
-    # Add Optimization and State Variables
-    var_bus_voltage(pm, nw=n)
-    var_gen_power(pm, nw=n)
-    #variable_storage_power_mi(pm, nw=n)
-    var_branch_power(pm, nw=n)
-    var_dcline_power(pm, nw=n)
-    #constraint_model_voltage(pm, nw=n)
+"Transportation"
+function build_method!(pm::AbstractDCPowerModel, type::Type{Transportation}; nw::Int=0)
+ 
+    var_gen_power(pm, nw=nw)
+    var_branch_power(pm, nw=nw)
+    var_dcline_power(pm, nw=nw)
+    var_load_curtailment(pm, nw=nw)
 
     # Add Constraints
     # ---------------
-    for i in ids(pm, :ref_buses, nw=n)
-        constraint_theta_ref(pm, i, nw=n)
+    for i in ids(pm, :bus, nw=nw)
+        constraint_power_balance(pm, i, nw=nw)
     end
 
-    if type == LMOPFMethod
-
-        var_load_curtailment(pm,nw)
-    
-        lc = JuMP.@expression(pm.model, sum(pm.ref[:load][i]["cost"]*pm.model[:p_lc][i] for i in keys(pm.ref[:load])))
-        JuMP.@objective(pm.model, Min, lc)
-
+    for i in ids(pm, :branch, nw=nw)
+        constraint_thermal_limit_from(pm, i, nw=nw)
+        constraint_thermal_limit_to(pm, i, nw=nw)
     end
 
-    constraint_nodal_power_balance(pm, type)
-    constraint_branch_pf_limits(pm)
-    constraint_hvdc_line(pm)
+    for i in ids(pm, :dcline, nw=nw)
+        constraint_dcline_power_losses(pm, i, nw=nw)
+    end
 
-    return pm
+    objective_min_load_curtailment(pm, nw=nw)
+
+    return
+
+end
+
+"DCMPPowerModel"
+function build_method!(pm::AbstractDCPowerModel, type::Type{DCMPPowerModel}; nw::Int=0)
+    # Add Optimization and State Variables
+    var_bus_voltage(pm, nw=nw)
+    var_gen_power(pm, nw=nw)
+    #variable_storage_power_mi(pm, nw=n)
+    var_branch_power(pm, nw=nw)
+    var_dcline_power(pm, nw=nw)
+
+    # Add Constraints
+    # ---------------
+    for i in ids(pm, :ref_buses, nw=nw)
+        constraint_theta_ref(pm, i, nw=nw)
+    end
+
+    for i in ids(pm, :bus, nw=nw)
+        constraint_power_balance(pm, i, nw=nw)
+    end
+
+    for i in ids(pm, :branch, nw=nw)
+        constraint_ohms_yt_from(pm, i, nw=nw)
+        #constraint_ohms_yt_to(pm, i, nw=n)
+
+        constraint_voltage_angle_difference(pm, i, nw=nw)
+
+        constraint_thermal_limit_from(pm, i, nw=nw)
+        constraint_thermal_limit_to(pm, i, nw=nw)
+    end
+
+    for i in ids(pm, :dcline, nw=nw)
+        constraint_dcline_power_losses(pm, i, nw=nw)
+    end
+
+    return
+
+end
+
+"Load Minimization version of DCOPF"
+function build_method!(pm::AbstractDCPowerModel, type::Type{DCOPF}; nw::Int=0)
+    # Add Optimization and State Variables
+    var_bus_voltage(pm, nw=nw)
+    var_gen_power(pm, nw=nw)
+    #variable_storage_power_mi(pm, nw=n)
+    var_branch_power(pm, nw=nw)
+    var_dcline_power(pm, nw=nw)
+    var_load_curtailment(pm, nw=nw)
+
+    # Add Constraints
+    # ---------------
+    for i in ids(pm, :ref_buses, nw=nw)
+        constraint_theta_ref(pm, i, nw=nw)
+    end
+
+    for i in ids(pm, :bus, nw=nw)
+        constraint_power_balance(pm, i, nw=nw)
+    end
+
+    #for i in ids(pm, :storage, nw=n)
+    #    constraint_storage_complementarity_mi(pm, i, nw=n)
+    #    constraint_storage_losses(pm, i, nw=n)
+    #    constraint_storage_thermal_limit(pm, i, nw=n)
+    #end
+
+    for i in ids(pm, :branch, nw=nw)
+        constraint_ohms_yt_from(pm, i, nw=nw)
+        constraint_ohms_yt_to(pm, i, nw=nw)
+
+        constraint_voltage_angle_difference(pm, i, nw=nw)
+
+        constraint_thermal_limit_from(pm, i, nw=nw)
+        constraint_thermal_limit_to(pm, i, nw=nw)
+    end
+
+    for i in ids(pm, :dcline, nw=nw)
+        constraint_dcline_power_losses(pm, i, nw=nw)
+    end
+
+    objective_min_load_curtailment(pm, nw=nw)
+
+    return
 
 end
 
@@ -49,28 +128,52 @@ end
 # Objective Function: minimize load curtailment
 
 ""
-function optimization!(pm::AbstractPowerModel, type::Type{OPFMethod})
+function optimization!(pm::AbstractPowerModel, type::Type; nw::Int=0)
     
-    JuMP.set_time_limit_sec(pm.model, 1.5)
-    JuMP.optimize!(pm.model)
-    return pm
-    
-end
-
-""
-function optimization!(pm::AbstractPowerModel, type::Type{LMOPFMethod})
-    
-    JuMP.set_time_limit_sec(pm.model, 1.5)
+    JuMP.set_time_limit_sec(pm.model, 2.0)
     JuMP.optimize!(pm.model)
 
-    if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED
+    if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED && type == DCOPF
         JuMP.set_time_limit_sec(pm.model, 2.0)
-        var_buspair_current_magnitude_sqr(pm)
-        var_bus_voltage_magnitude_sqr(pm)
-        constraint_voltage_magnitude_diff(pm)
+        var_buspair_current_magnitude_sqr(pm, nw=nw)
+        var_bus_voltage_magnitude_sqr(pm, nw=nw)
+        for i in ids(pm, :branch)
+            constraint_voltage_magnitude_diff(pm, i, nw=nw)
+        end
         JuMP.optimize!(pm.model)
     end
     
     return pm
 
+end
+
+function objective_min_load_curtailment(pm::AbstractDCPowerModel; nw::Int=0)
+
+    load_cost = Dict()
+    for (i,load) in ref(pm, nw, :load)
+        p_lc = CompositeAdequacy.var(pm, nw, :p_lc, i)
+        load_cost[i] = load["cost"]*p_lc
+    end
+
+
+    return JuMP.@objective(pm.model, Min,
+        sum(load_cost[i] for (i,load) in ref(pm, nw, :load))
+    )
+end
+
+function _objective_min_load_curtailment(pm)
+
+    load_cost = Dict()
+    for (n, nw_ref) in CompositeAdequacy.nws(pm)
+        for (i,load) in nw_ref[:load]
+            p_lc = CompositeAdequacy.var(pm, n, :p_lc, i)
+            load_cost[(n,i)] = load["cost"]*p_lc
+        end
+    end
+
+    return JuMP.@objective(pm.model, Min,
+        sum(
+            sum( load_cost[(n,i)] for (i,load) in nw_ref[:load] )
+        for (n, nw_ref) in CompositeAdequacy.nws(pm))
+    )
 end

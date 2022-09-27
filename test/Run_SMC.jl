@@ -17,16 +17,8 @@ mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>fals
 #optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
 #optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "branch_strategy"=>:PseudoCost ,"time_limit"=>1.5, "log_levels"=>[])
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])
-
 JuMP.num_variables(pm.model)
-
 network_data = PowerModels.parse_file(RawFile)
-
-network_data["gen"]["1"]
-network_data["load"]["1"]
-network_data["shunt"]
-
-
 @time shortfall,shortfall2 = PRATS.assess(system, method, optimizer, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
@@ -46,7 +38,7 @@ dictionary = Dict{Symbol,Any}()
 pm = CompositeAdequacy.InitializeAbstractPowerModel(system.network, dictionary, CompositeAdequacy.AbstractDCPModel, optimizer)
 t=162
 CompositeAdequacy.empty_pm!(pm, system.network, dictionary)
-pm.type = CompositeAdequacy.LMOPFMethod
+pm.type = CompositeAdequacy.LMDCOPF
 systemstate.condition[t]
 #CompositeAdequacy.update_ref!(systemstate, system, pm.ref, t, systemstate.condition[t])
 CompositeAdequacy.update_gen!(system.generators, dictionary, systemstate.gens_available, t, CompositeAdequacy.Failed)
@@ -120,11 +112,11 @@ data[:branch][29]["br_status"] = 0
 PRATSBase.SimplifyNetwork!(data)
 CompositeAdequacy.ref_add!(data)
 pm.ref = deepcopy(data)
-pm.type = CompositeAdequacy.LMOPFMethod
-@btime CompositeAdequacy.build_model!(deepcopy(pm), CompositeAdequacy.LMOPFMethod)
-CompositeAdequacy.build_model!(pm, CompositeAdequacy.LMOPFMethod)
+pm.type = CompositeAdequacy.LMDCOPF
+@btime CompositeAdequacy.build_model!(deepcopy(pm), CompositeAdequacy.LMDCOPF)
+CompositeAdequacy.build_model!(pm, CompositeAdequacy.LMDCOPF)
 @btime CompositeAdequacy.optimization!(deepcopy(pm))
-CompositeAdequacy.build_result!(pm, CompositeAdequacy.LMOPFMethod)
+CompositeAdequacy.build_result!(pm, CompositeAdequacy.LMDCOPF)
 
 # @allocated p_expr = JuMP.@expression(pm.model, merge(Dict([((l,i,j), 1.0*pm.model[:p][(l,i,j)]) 
 # for (l,i,j) in pm.ref[:arcs_from]]), Dict([((l,j,i), -1.0*pm.model[:p][(l,i,j)]) for (l,i,j) in pm.ref[:arcs_from]]))
@@ -142,7 +134,7 @@ pm.model
 JuMP.solution_summary(pm.model, verbose=true)
 println(pm.model)
 
-CompositeAdequacy.build_model!(pm, CompositeAdequacy.LMOPFMethod)
+CompositeAdequacy.build_model!(pm, CompositeAdequacy.LMDCOPF)
 JuMP.optimize!(pm.model)
 #JuMP.solution_summary(pm.model, verbose=false)
 
@@ -252,7 +244,7 @@ gens
 # network_data["branch"][string(26)]["br_status"] = 0
 # network_data["branch"][string(28)]["br_status"] = 0
 # PRATSBase.SimplifyNetwork!(network_data)
-#@time pm = CompositeAdequacy.SolveModel(network_data,CompositeAdequacy.OPFMethod, optimizer)
+#@time pm = CompositeAdequacy.SolveModel(network_data,CompositeAdequacy.DCOPF, optimizer)
 N = 8760                                                    #timestep_count
 L = 1                                                       #timestep_length
 T = timeunits["h"]                                          #timestep_unit

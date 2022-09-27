@@ -85,17 +85,16 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    #pm::AbstractPowerModel,
-    load_curtailment::Dict{Int,<:Any},
-    loads::Loads{N,L,T,U},
+    pm::AbstractPowerModel,
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 
     totalshortfall = 0
     isshortfall = false
-    
 
-    for r in loads.keys
+    load_curtailment = sol(pm, :load_curtailment)
+    
+    for r in keys(load_curtailment)
     
         busshortfall = load_curtailment[r]["pl"]
         fit!(acc.unservedload[r,t],  busshortfall)

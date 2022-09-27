@@ -13,7 +13,7 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
-import PowerModels, JuMP, Ipopt, Juniper, HiGHS
+import JuMP, Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr
 import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
 optimize!, Model, LOCALLY_SOLVED
@@ -56,7 +56,7 @@ abstract type Result{
 } end
 
 MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
-
+const nw_id_default = 0
 
 include("Optimizer/base.jl")
 include("Optimizer/utils.jl")
