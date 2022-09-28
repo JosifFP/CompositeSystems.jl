@@ -51,13 +51,11 @@ end
 ""
 function update_load!(loads::Loads, ref_load::Dict{Int,<:Any}, t::Int)
 
-    tmp = Dict{Int,Any}()
     for i in eachindex(loads.keys)
         #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
-        ref_load[i]["pd"] = loads.pd[i,t]*2
-        get!(tmp, i, ref_load[i]["pd"])
+        ref_load[i]["pd"] = loads.pd[i,t]
     end
-    return tmp
+    return ref_load
 end
 
 ""
@@ -85,6 +83,64 @@ function update_branches!(branches::Branches, ref_branch::Dict{Int,<:Any}, branc
         end
     end
     return ref_branch
+end
+
+""
+function update_ref!(state::SystemState, system::SystemModel{N}, ref::Dict{Int,<:Any}, t::Int) where {N}
+
+    for i in eachindex(system.loads.keys)
+        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
+        ref[:load][i]["pd"] = system.loads.pd[i,1]
+    end
+    
+    for i in eachindex(system.generators.keys)
+        ref[:gen][i]["pg"] = system.generators.pg[i,t]
+        if state.gens_available[i] == false ref[:gen][i]["gen_status"] = state.gens_available[i,t] end
+    end
+
+    for i in eachindex(system.storages.keys)
+        if state.stors_available[i] == false ref[:storage][i]["status"] = state.stors_available[i,t] end
+    end
+
+    if all(state.gens_available[:,t]) == true && all(state.branches_available[:,t]) == false
+        if all(state.branches_available[:,t]) == false
+            for i in eachindex(system.branches.keys)
+                if state.branches_available[i] == false ref[:branch][i]["br_status"] = state.branches_available[i,t] end
+            end
+        end
+    end
+
+    return ref
+
+end
+
+""
+function update_ref!(pm::AbstractPowerModel, state::SystemState, system::SystemModel{N}, t::Int) where {N}
+
+    for i in eachindex(system.loads.keys)
+        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
+        ref(pm, :load, i)["pd"] = system.loads.pd[i,1]
+    end
+    
+    for i in eachindex(system.generators.keys)
+        ref(pm, :gen, i)["pg"] = system.generators.pg[i,t]
+        if state.gens_available[i] == false ref(pm, :gen, i)["gen_status"] = state.gens_available[i,t] end
+    end
+
+    for i in eachindex(system.storages.keys)
+        if state.stors_available[i] == false ref(pm, :storage, i)["status"] = state.stors_available[i,t] end
+    end
+
+    if all(state.gens_available[:,t]) == true && all(state.branches_available[:,t]) == false
+        if all(state.branches_available[:,t]) == false
+            for i in eachindex(system.branches.keys)
+                if state.branches_available[i] == false ref(pm, :branch, i)["br_status"] = state.branches_available[i,t] end
+            end
+        end
+    end
+
+    return
+
 end
 
 # ""

@@ -44,7 +44,7 @@ const component_status_inactive_ref = Dict(
     :dcline => 0,
 )
 
-function conversion_to_pm_data(network::Network{N,L,T,U}) where {N,L,T,U}
+function conversion_to_pm_data(network::Network{N,U}) where {N,L,T,U}
     return Dict(
     [("bus",network.bus)
     #("source_type",network.source_type)
@@ -72,10 +72,10 @@ function BuildNetwork(file::String)
 end
 
 ""
-function BuildNetwork(file::String, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+function BuildNetwork(file::String, N::Int, U::Type{<:PerUnit})
     
     pm_data = parse_model(file)
-    network = _BuildNetwork!(pm_data,N,L,T,U)
+    network = _BuildNetwork!(pm_data,N,U)
 
     return network
 
@@ -116,7 +116,7 @@ function _BuildNetwork!(pm_data::Dict{String,<:Any})
 end
 
 ""
-function _BuildNetwork!(pm_data::Dict{String,<:Any}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+function _BuildNetwork!(pm_data::Dict{String,<:Any}, N::Int, U::Type{<:PerUnit})
     
     #renumber_buses!(pm_data)
     PowerModels.correct_network_data!(pm_data)
@@ -129,7 +129,7 @@ function _BuildNetwork!(pm_data::Dict{String,<:Any}, N::Int, L::Int, T::Type{<:P
 
     ref = ref_initialize!(pm_data)
 
-    return Network{N,L,T,U}(ref)
+    return Network{N,U}(ref)
 end
 
 ""

@@ -24,7 +24,6 @@ function silence()
     Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
     Memento.setlevel!(_LOGGER, "error")
     Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
-    Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
     Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
     #Memento.setlevel!(Memento.getlogger(CompositeAdequacy), "error", recursive=false)
 end
@@ -37,10 +36,10 @@ export
     # Simulation specifications
     SequentialMonteCarlo, NoContingencies,
 
-    SystemState, accumulator,
+    SystemState, accumulator, MutableNetwork,
 
     # Result specifications
-    Shortfall, ShortfallSamples, Flow, FlowTotal,
+    Shortfall, ShortfallSamples, Flow, FlowTotal, Report,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str
@@ -56,7 +55,6 @@ abstract type Result{
 } end
 
 MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
-const nw_id_default = 0
 
 include("Optimizer/base.jl")
 include("Optimizer/utils.jl")
@@ -64,7 +62,6 @@ include("Optimizer/variables.jl")
 include("Optimizer/constraints.jl")
 include("Optimizer/Optimizer.jl")
 include("Optimizer/solution.jl")
-include("Optimizer/JuMP.jl")
 
 include("Native/Native.jl")
 

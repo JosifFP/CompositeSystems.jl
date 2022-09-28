@@ -246,7 +246,7 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
 
 #Collection Types
 
-struct Network{N,L,T<:Period,U<:PerUnit}
+struct Network{N,U<:PerUnit}
 
     areas::Dict{Int,<:Any}
     bus::Dict{Int,<:Any}
@@ -260,7 +260,28 @@ struct Network{N,L,T<:Period,U<:PerUnit}
     baseMVA::Int
     per_unit::Bool
 
-    function Network{N,L,T,U}(data::Dict{Symbol,<:Any}) where {N,L,T,U}
+    arcs_from::Vector{Tuple{Int, Int, Int}}
+    arcs_to::Vector{Tuple{Int, Int, Int}}
+    arcs::Vector{Tuple{Int, Int, Int}}
+    arcs_from_dc::Vector{Tuple{Int, Any, Any}}
+    arcs_to_dc::Vector{Tuple{Int, Any, Any}}
+    arcs_dc::Vector{Tuple{Int, Any, Any}}
+    arcs_from_sw::Vector{Tuple{Int, Any, Any}}
+    arcs_to_sw::Vector{Tuple{Int, Any, Any}}
+    arcs_sw::Vector{Tuple{Int, Any, Any}}
+
+    bus_gens::Dict{Int, <:Any}
+    bus_loads::Dict{Int, <:Any}
+    bus_shunts::Dict{Int, <:Any}
+    bus_storage::Dict{Int, <:Any}
+    bus_arcs_dc::Dict{Int, Vector{Tuple{Int, Int, Int}}}
+    bus_arcs_sw::Dict{Int, Vector{Tuple{Int, Int, Int}}}
+    bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
+    buspairs::Dict{Tuple{Int, Int}, Dict{String, <:Any}} 
+    ref_buses::Dict{Int, <:Any}
+
+
+    function Network{N,U}(data::Dict{Symbol,<:Any}) where {N,U}
 
         areas = data[:areas]
         bus = data[:bus]
@@ -274,6 +295,25 @@ struct Network{N,L,T<:Period,U<:PerUnit}
         baseMVA = data[:baseMVA]
         per_unit = data[:per_unit]
 
+        arcs_from = Vector{Tuple{Int, Int, Int}}()
+        arcs_to = Vector{Tuple{Int, Int, Int}}()
+        arcs = Vector{Tuple{Int, Int, Int}}()
+        arcs_from_dc = Vector{Tuple{Int, Any, Any}}()
+        arcs_to_dc = Vector{Tuple{Int, Any, Any}}()
+        arcs_dc = Vector{Tuple{Int, Any, Any}}()
+        arcs_from_sw = Vector{Tuple{Int, Any, Any}}()
+        arcs_to_sw = Vector{Tuple{Int, Any, Any}}()
+        arcs_sw = Vector{Tuple{Int, Any, Any}}()
+        bus_gens = Dict{Int, Any}()
+        bus_loads = Dict{Int, Any}()
+        bus_shunts = Dict{Int, Any}()
+        bus_storage = Dict{Int, Any}()
+        bus_arcs_dc = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
+        bus_arcs_sw = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
+        bus_arcs = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
+        buspairs = Dict{Tuple{Int, Int}, Dict{String, Any}}()
+        ref_buses = Dict{Int, Any}()
+
         @assert isempty(areas) == false
         @assert isempty(bus) == false
         @assert isempty(gen) == false
@@ -282,7 +322,10 @@ struct Network{N,L,T<:Period,U<:PerUnit}
         @assert isempty(baseMVA) == false
         @assert isempty(per_unit) == false
 
-        return new(areas, bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit)
+        return new(areas, bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit, 
+        arcs_from, arcs_to, arcs, arcs_from_dc, arcs_to_dc, arcs_dc, arcs_from_sw, arcs_to_sw, arcs_sw, 
+        bus_gens, bus_loads, bus_shunts, bus_storage, bus_arcs_dc, bus_arcs_sw, bus_arcs, buspairs, ref_buses
+        )
 
     end
 
@@ -300,3 +343,5 @@ Base.:(==)(x::T, y::T) where {T <: Network} =
     x.load == y.load &&
     x.baseMVA == y.baseMVA &&
     x.per_unit == y.per_unit
+
+#

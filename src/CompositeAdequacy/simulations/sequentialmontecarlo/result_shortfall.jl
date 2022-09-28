@@ -95,8 +95,7 @@ function record!(
     load_curtailment = sol(pm, :load_curtailment)
     
     for r in keys(load_curtailment)
-    
-        busshortfall = load_curtailment[r]["pl"]
+        busshortfall = load_curtailment[r]
         fit!(acc.unservedload[r,t],  busshortfall)
 
         isbusshortfall = busshortfall > 0

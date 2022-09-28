@@ -1,7 +1,3 @@
-#************************************************************************************************
-# File is mostly based on InfrastructureModels.jl without any dependencies.
-#************************************************************************************************
-
 """
 The `def` macro is used to build other macros that can insert the same block of
 julia code into different parts of a program.
@@ -22,14 +18,61 @@ abstract type AbstractACPowerModel <: AbstractPowerModel end
 #AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
 
+""
+mutable struct MutableNetwork
+    areas::Dict{Int,<:Any}
+    bus::Dict{Int,<:Any}
+    dcline::Dict{Int,<:Any}
+    gen::Dict{Int,<:Any}
+    branch::Dict{Int,<:Any}
+    storage::Dict{Int,<:Any}
+    switch::Dict{Int,<:Any}
+    shunt::Dict{Int,<:Any}
+    load::Dict{Int,<:Any}
+    baseMVA::Int
+    per_unit::Bool
+
+    arcs_from::Vector{Tuple{Int, Int, Int}}
+    arcs_to::Vector{Tuple{Int, Int, Int}}
+    arcs::Vector{Tuple{Int, Int, Int}}
+    arcs_from_dc::Vector{Tuple{Int, Any, Any}}
+    arcs_to_dc::Vector{Tuple{Int, Any, Any}}
+    arcs_dc::Vector{Tuple{Int, Any, Any}}
+    arcs_from_sw::Vector{Tuple{Int, Any, Any}}
+    arcs_to_sw::Vector{Tuple{Int, Any, Any}}
+    arcs_sw::Vector{Tuple{Int, Any, Any}}
+
+    bus_gens::Dict{Int, <:Any}
+    bus_loads::Dict{Int, <:Any}
+    bus_shunts::Dict{Int, <:Any}
+    bus_storage::Dict{Int, <:Any}
+    bus_arcs_dc::Dict{Int, Vector{Tuple{Int, Int, Int}}}
+    bus_arcs_sw::Dict{Int, Vector{Tuple{Int, Int, Int}}}
+    bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
+    buspairs::Dict{Tuple{Int, Int}, Dict{String, <:Any}} 
+    ref_buses::Dict{Int, <:Any}
+
+    function MutableNetwork(network::Network)
+
+        return new(network.areas, network.bus, network.dcline, network.gen, network.branch, network.storage, 
+        network.switch, network.shunt, network.load, network.baseMVA, network.per_unit, 
+        network.arcs_from, network.arcs_to, network.arcs, network.arcs_from_dc, 
+        network.arcs_to_dc, network.arcs_dc, network.arcs_from_sw, network.arcs_to_sw, network.arcs_sw, 
+        network.bus_gens, network.bus_loads, network.bus_shunts, network.bus_storage, network.bus_arcs_dc, 
+        network.bus_arcs_sw, network.bus_arcs, network.buspairs, network.ref_buses
+        )
+
+    end
+end
+
 "a macro for adding the standard AbstractPowerModel fields to a type definition"
 CompositeAdequacy.@def pm_fields begin
     
     model::JuMP.AbstractModel
-    ref::Dict{Symbol,<:Any}
+    ref::MutableNetwork
     var::Dict{Symbol,<:Any}
     sol::Dict{Symbol,<:Any}
-    ext::Dict{Symbol,<:Any}
+    #ext::Dict{Symbol,<:Any}
 
 end
 
@@ -43,56 +86,31 @@ abstract type Transportation <: AbstractDCPowerModel end
 LCDCMethod = Union{DCOPF, Transportation}
 
 "Constructor for an AbstractPowerModel modeling object"
-function InitializeAbstractPowerModel(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel) where {N}
-
-    @assert PowerModel <: AbstractPowerModel
+function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel, network::MutableNetwork) where {N}
 
     pm = PowerModel(
         model,
-        Dict{Symbol,Any}(),
-        Dict{Symbol,Any}(),
-        Dict{Symbol,Any}(),
-        Dict{Symbol,Any}()
+        network,
+        Dict{Symbol, Any}(),
+        Dict{Symbol, Any}()
+        #Dict{Symbol, Any}()
     )
-    
     return pm
 end
 
 ""
-function RestartAbstractPowerModel!(pm::AbstractPowerModel, dictionary::Dict{Symbol, <:Any})
+function RestartAbstractPowerModel!(pm::AbstractPowerModel, network::MutableNetwork)
 
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-
-    ref = Dict{Symbol, Any}(:nw => Dict{Int, Any}(0 => dictionary))
-    pm.ref = ref
-    pm.var = _initialize_dict_from_ref(ref)
-    pm.sol = _initialize_dict_from_ref(ref)
-    pm.ext = _initialize_dict_from_ref(ref)
+    network
+    empty!(pm.var)
+    empty!(pm.sol)
+    #empty!(pm.ext)
     return
 end
 
 ""
-function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel, dictionary::Dict{Symbol, <:Any}) where {N}
-
-    @assert PowerModel <: AbstractPowerModel
-    
-    ref = dictionary
-    var = _initialize_dict_from_ref(ref)
-    sol = _initialize_dict_from_ref(ref)
-    ext = _initialize_dict_from_ref(ref)
-
-    pm = PowerModel(
-        model,
-        ref,
-        var,
-        sol,
-        ext
-    )
-    return pm
-end
-
-""
-function initialize_ref(network::Network{N}; multinetwork=true)  where {N}
+function initialize_ref(network::Network{N})  where {N}
 
     data = Dict{Symbol,Any}(
         :bus => network.bus,
@@ -106,83 +124,42 @@ function initialize_ref(network::Network{N}; multinetwork=true)  where {N}
         :load => network.load
     )
 
-    nws_data = Dict{Symbol,Any}(
-        :nw => Dict{Int, Any}(),
-        #:base => data,
-        #:multinetwork => multinetwork,
-        #:per_unit => network.per_unit,
-        #:baseMVA => network.baseMVA
-    )
-
-    # Build a multinetwork representation of the data.
-    if multinetwork == true
-        for i in 0:N
-            get!(nws_data[:nw], i, data)
-        end
-    else
-        get!(nws_data[:nw], 0, data)
-    end
-
-    return nws_data
+    return data
 
 end
 
-function _initialize_dict_from_ref(ref::Dict{Symbol, <:Any})
+# ""
+# function _initialize_dict_from_ref(ref::Dict{Symbol, <:Any})
 
-    dict = Dict{Symbol, Any}(:nw => Dict{Int, Any}())
+#     dict = Dict{Symbol, Any}(:nw => Dict{Int, Any}())
 
-    for nw in keys(ref[:nw])
-        dict[:nw][nw] = Dict{Symbol, Any}()
-    end
+#     for nw in keys(ref[:nw])
+#         dict[:nw][nw] = Dict{Symbol, Any}()
+#     end
 
-    return dict
-end
+#     return dict
+# end
 
+ext(pm::AbstractPowerModel) = pm.ext
+ext(pm::AbstractPowerModel, key::Symbol) = pm.ext[key]
 
-nw_ids(pm::AbstractPowerModel) = keys(pm.ref[:nw])
-nws(pm::AbstractPowerModel) = pm.ref[:nw]
+ids(pm::AbstractPowerModel, key::Symbol) = keys(getfield(pm.ref, key))
 
-ext(pm::AbstractPowerModel) = pm.ext[:nw]
-ext(pm::AbstractPowerModel, nw::Int) = pm.ext[:nw][nw]
-ext(pm::AbstractPowerModel, nw::Int, key::Symbol) = pm.ext[:nw][nw][key]
+ref(pm::AbstractPowerModel) = pm.ref
+ref(pm::AbstractPowerModel, key::Symbol) = getfield(pm.ref, key)
+ref(pm::AbstractPowerModel, key::Symbol, idx) = getfield(pm.ref, key)[idx]
+ref(pm::AbstractPowerModel, key::Symbol, idx, param::String) =  getfield(pm.ref, key)[idx][param]
 
-ids(pm::AbstractPowerModel, nw::Int, key::Symbol) = keys(pm.ref[:nw][nw][key])
-ids(pm::AbstractPowerModel, key::Symbol; nw::Int=0) = keys(pm.ref[:nw][nw][key])
+var(pm::AbstractPowerModel) = pm.var
+var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
+var(pm::AbstractPowerModel, key::Symbol, idx) = pm.var[key][idx]
 
-ref(pm::AbstractPowerModel, nw::Int) = pm.ref[:nw][nw]
-ref(pm::AbstractPowerModel, nw::Int, key::Symbol) = pm.ref[:nw][nw][key]
-ref(pm::AbstractPowerModel, nw::Int, key::Symbol, idx) = pm.ref[:nw][nw][key][idx]
-ref(pm::AbstractPowerModel, nw::Int, key::Symbol, idx, param::String) = pm.ref[:nw][nw][key][idx][param]
+con(pm::AbstractPowerModel) = pm.con
+con(pm::AbstractPowerModel, key::Symbol) = pm.con[key]
+con(pm::AbstractPowerModel, key::Symbol, idx) = pm.con[key][idx]
 
-# base(pm::AbstractPowerModel) = pm.ref[:base]
-# base(pm::AbstractPowerModel, key::Symbol) = pm.ref[:base][key]
-# base(pm::AbstractPowerModel, key::Symbol, idx) = pm.ref[:base][key][idx]
-# base(pm::AbstractPowerModel, key::Symbol, idx, param::String) = pm.ref[:base][key][idx][param]
-
-ref(pm::AbstractPowerModel; nw::Int=0) = pm.ref[:nw][nw]
-ref(pm::AbstractPowerModel, key::Symbol; nw::Int=0) = pm.ref[:nw][nw][key]
-ref(pm::AbstractPowerModel, key::Symbol, idx; nw::Int=0) = pm.ref[:nw][nw][key][idx]
-ref(pm::AbstractPowerModel, key::Symbol, idx, param::String; nw::Int=0) = pm.ref[:nw][nw][key][idx][param]
-
-var(pm::AbstractPowerModel, nw::Int) = pm.var[:nw][nw]
-var(pm::AbstractPowerModel, nw::Int, key::Symbol) = pm.var[:nw][nw][key]
-var(pm::AbstractPowerModel, nw::Int, key::Symbol, idx) = pm.var[:nw][nw][key][idx]
-
-var(pm::AbstractPowerModel; nw::Int=0) = pm.var[:nw][nw]
-var(pm::AbstractPowerModel, key::Symbol; nw::Int=0) = pm.var[:nw][nw][key]
-var(pm::AbstractPowerModel, key::Symbol, idx; nw::Int=0) = pm.var[:nw][nw][key][idx]
-
-con(pm::AbstractPowerModel, nw::Int) = pm.con[:nw][nw]
-con(pm::AbstractPowerModel, nw::Int, key::Symbol) = pm.con[:nw][nw][key]
-con(pm::AbstractPowerModel, nw::Int, key::Symbol, idx) = pm.con[:nw][nw][key][idx]
-
-con(pm::AbstractPowerModel; nw::Int=0) = pm.con[:nw][nw]
-con(pm::AbstractPowerModel, key::Symbol; nw::Int=0) = pm.con[:nw][nw][key]
-con(pm::AbstractPowerModel, key::Symbol, idx; nw::Int=0) = pm.con[:nw][nw][key][idx]
-
-sol(pm::AbstractPowerModel, nw::Int, args...) = _sol(pm.sol[:nw][nw], args...)
-sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[:nw][0][key]
-sol(pm::AbstractPowerModel, args...; nw::Int=0) = _sol(pm.sol[:nw][nw], args...)
+sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
+sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 
 ""
 function _sol(sol::Dict, args...)
@@ -196,38 +173,3 @@ function _sol(sol::Dict, args...)
 
     return sol
 end
-
-
-# function InitializeAbstractPowerModel(
-#     PowerModel::Type{<:AbstractPowerModel}, ref::Dict{Symbol, <:Any}, optimizer; multinetwork=false) where {N}
-
-#     @assert PowerModel <: AbstractPowerModel
-
-#     #if isempty(ref) == true ref = initialize_ref(network; multinetwork) end
-
-#     if optimizer === nothing
-#         JuMPmodel = JuMP.Model()
-#         @debug "The optimization model has no optimizer attached"
-#     else
-#         model = JuMP.direct_model(optimizer)
-#         JuMP.set_string_names_on_creation(model, false)
-#         #model = JuMP.Model(optimizer, add_bridges=false)
-#     end
-
-#     var = _initialize_dict_from_ref(ref)
-#     con = _initialize_dict_from_ref(ref)
-#     sol = _initialize_dict_from_ref(ref)
-#     ext = _initialize_dict_from_ref(ref)
-
-#     pm = PowerModel(
-#         model,
-#         ref,
-#         var,
-#         con,
-#         sol,
-#         ext,
-#     )
-    
-#     return pm
-
-# end

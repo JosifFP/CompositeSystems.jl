@@ -1,7 +1,3 @@
-abstract type State end
-abstract type Success <: State end
-abstract type Failed <: State end
-
 struct SystemState
 
     gens_available::Matrix{Bool}
@@ -33,11 +29,6 @@ struct SystemState
 end
 
 
-Base.:(==)(x::T, y::T) where {T <: SystemState} =
-    x.gens_available == y.gens_available &&
-    x.stors_available == y.stors_available &&
-    x.genstors_available == y.genstors_available &&
-    x.branches_available == y.branches_available &&
-    x.stors_energy == y.stors_energy &&
-    x.genstors_energy == y.genstors_energy &&
-    x.condition == y.condition
+Available(state::SystemState, t::Int) = 
+(state.gens_available[:,t], state.stors_available[:,t], state.genstors_available[:,t], state.branches_available[:,t], 
+state.stors_energy[:,t], state.genstors_energy[:,t], state.condition[t])

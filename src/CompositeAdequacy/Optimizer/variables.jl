@@ -11,27 +11,28 @@ function var_bus_voltage(pm::AbstractPowerModel; kwargs...)
 end
 
 ""
-function var_bus_voltage_angle(pm::AbstractPowerModel; nw::Int=0, bounded::Bool=true)
-    va = var(pm, nw)[:va] = JuMP.@variable(pm.model, [i in ids(pm, nw, :bus)], base_name="$(nw)_va", start = comp_start_value(ref(pm, nw, :bus, i), "va_start"))
-    #sol_component_value(pm, nw, :bus, :va, ids(pm, nw, :bus), va)
+function var_bus_voltage_angle(pm::AbstractPowerModel; bounded::Bool=true)
+    va = var(pm)[:va] = JuMP.@variable(pm.model, [i in ids(pm, :bus)])
+    #va = var(pm)[:va] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="va", start = comp_start_value(ref(pm, :bus, i), "va_start"))
+    #sol_component_value(pm, :bus, :va, ids(pm, :bus), va)
 end
 
 ""
-function var_bus_voltage_magnitude(pm::AbstractDCPowerModel; nw::Int=0, bounded::Bool=true)
-    #sol_component_fixed(pm, nw, :bus, :vm, ids(pm, nw, :bus), 1.0)
+function var_bus_voltage_magnitude(pm::AbstractDCPowerModel; bounded::Bool=true)
+    #sol_component_fixed(pm, :bus, :vm, ids(pm, :bus), 1.0)
 end
 
 "variable: `v[i]` for `i` in `bus`es"
-function var_bus_voltage_magnitude(pm::AbstractACPowerModel; nw::Int=0, bounded::Bool=true)
-
-    vm = var(pm, nw)[:vm] = JuMP.@variable(pm.model, [i in ids(pm, nw, :bus)], base_name="$(nw)_vm", start = comp_start_value(ref(pm, nw, :bus, i), "vm_start", 1.0))
+function var_bus_voltage_magnitude(pm::AbstractACPowerModel; bounded::Bool=true)
+    vm = var(pm)[:vm] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], start = 1.0)
+    #vm = var(pm)[:vm] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="vm", start = comp_start_value(ref(pm, :bus, i), "vm_start", 1.0))
     if bounded
-        for (i, bus) in ref(pm, nw, :bus)
+        for (i, bus) in ref(pm, :bus)
             JuMP.set_lower_bound(vm[i], bus["vmin"])
             JuMP.set_upper_bound(vm[i], bus["vmax"])
         end
     end
-    #sol_component_value(pm, nw, :bus, :vm, ids(pm, nw, :bus), vm)
+    #sol_component_value(pm, :bus, :vm, ids(pm, :bus), vm)
 end
 
 ""
@@ -41,12 +42,13 @@ function var_gen_power(pm::AbstractPowerModel; kwargs...)
 end
 
 ""
-function var_gen_power_real(pm::AbstractPowerModel; nw::Int=nw_id_default, bounded::Bool=true)
+function var_gen_power_real(pm::AbstractPowerModel; bounded::Bool=true)
 
-    pg = var(pm, nw)[:pg] = JuMP.@variable(pm.model, [i in ids(pm, nw, :gen)], base_name="$(nw)_pg", start = comp_start_value(ref(pm, nw, :gen, i), "pg_start"))    
+    pg = var(pm)[:pg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)])
+    #pg = var(pm)[:pg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)], base_name="pg", start = comp_start_value(ref(pm, :gen, i), "pg_start"))    
 
     if bounded
-        for (i, gen) in ref(pm, nw, :gen)
+        for (i, gen) in ref(pm, :gen)
             JuMP.set_upper_bound(pg[i], gen["pmax"])
             JuMP.set_lower_bound(pg[i], 0.0)
             # if gen["pmin"]>=0.0
@@ -57,27 +59,28 @@ function var_gen_power_real(pm::AbstractPowerModel; nw::Int=nw_id_default, bound
         end
     end
 
-    sol_component_value(pm, nw, :gen, :pg, ids(pm, nw, :gen), pg)
+    sol_component_value(pm, :gen, :pg, ids(pm, :gen), pg)
 
 end
 
 "Model ignores reactive power flows"
-function var_gen_power_imaginary(pm::AbstractDCPowerModel; nw::Int=0, kwargs...)
-    #sol_component_fixed(pm, nw, :gen, :qg, ids(pm, nw, :gen), NaN)
+function var_gen_power_imaginary(pm::AbstractDCPowerModel; kwargs...)
+    #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), NaN)
 end
 
 ""
-function var_gen_power_imaginary(pm::AbstractACPowerModel; nw::Int=0, bounded::Bool=true)
+function var_gen_power_imaginary(pm::AbstractACPowerModel; bounded::Bool=true)
 
-    qg = var(pm, nw)[:qg] = JuMP.@variable(pm.model, [i in ids(pm, nw, :gen)], base_name="$(nw)_qg", start = comp_start_value(ref(pm, nw, :gen, i), "qg_start"))
+    qg = var(pm)[:qg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)])
+    #qg = var(pm)[:qg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)], base_name="qg", start = comp_start_value(ref(pm, :gen, i), "qg_start"))
 
     if bounded
-        for (i, gen) in ref(pm, nw, :gen)
+        for (i, gen) in ref(pm, :gen)
             JuMP.set_lower_bound(qg[i], gen["qmin"])
             JuMP.set_upper_bound(qg[i], gen["qmax"])
         end
     end
-    #sol_component_fixed(pm, nw, :gen, :qg, ids(pm, nw, :gen), qg)
+    #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), qg)
 end
 
 """
@@ -89,14 +92,15 @@ function var_branch_power(pm::AbstractPowerModel; kwargs...)
 end
 
 ""
-function var_branch_power_real(pm::AbstractDCPowerModel; nw::Int=0, bounded::Bool=true)
+function var_branch_power_real(pm::AbstractDCPowerModel; bounded::Bool=true)
 
-    p = var(pm, nw)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, nw, :arcs)], base_name="$(nw)_p", start = comp_start_value(ref(pm, nw, :branch, l), "p_start"))
+    p = var(pm)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, :arcs)])
+    #p = var(pm)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
 
     if bounded
-        flow_lb, flow_ub = ref_calc_branch_flow_bounds(ref(pm, nw, :branch), ref(pm, nw, :bus))
+        flow_lb, flow_ub = ref_calc_branch_flow_bounds(ref(pm, :branch), ref(pm, :bus))
 
-        for arc in ref(pm, nw, :arcs)
+        for arc in ref(pm, :arcs)
             l,i,j = arc
             if !isinf(flow_lb[l])
                 JuMP.set_lower_bound(p[arc], flow_lb[l])
@@ -107,7 +111,7 @@ function var_branch_power_real(pm::AbstractDCPowerModel; nw::Int=0, bounded::Boo
         end
     end
 
-    for (l,branch) in ref(pm, nw, :branch)
+    for (l,branch) in ref(pm, :branch)
         if haskey(branch, "pf_start")
             f_idx = (l, branch["f_bus"], branch["t_bus"])
             JuMP.set_start_value(p[f_idx], branch["pf_start"])
@@ -115,22 +119,22 @@ function var_branch_power_real(pm::AbstractDCPowerModel; nw::Int=0, bounded::Boo
     end
 
     # this explicit type erasure is necessary
-    p_expr = Dict{Any,Any}( ((l,i,j), p[(l,i,j)]) for (l,i,j) in ref(pm, nw, :arcs_from) )
-    p_expr = merge(p_expr, Dict( ((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in ref(pm, nw, :arcs_from)))
-    var(pm, nw)[:p] = p_expr
+    p_expr = Dict{Any,Any}( ((l,i,j), p[(l,i,j)]) for (l,i,j) in ref(pm, :arcs_from) )
+    p_expr = merge(p_expr, Dict( ((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in ref(pm, :arcs_from)))
+    var(pm)[:p] = p_expr
 
-    #sol_component_value_edge(pm, nw, :branch, :pf, :pt, ref(pm, nw, :arcs_from), ref(pm, nw, :arcs_to), p_expr)
+    #sol_component_value_edge(pm, :branch, :pf, :pt, ref(pm, :arcs_from), ref(pm, :arcs_to), p_expr)
 
 end
 
 "DC models ignore reactive power flows"
-function var_branch_power_imaginary(pm::AbstractDCPowerModel; nw::Int=0, kwargs...)
-    #sol_component_fixed(pm, nw, :branch, :qf, ids(pm, nw, :branch), NaN)
-    #sol_component_fixed(pm, nw, :branch, :qt, ids(pm, nw, :branch), NaN)
+function var_branch_power_imaginary(pm::AbstractDCPowerModel; kwargs...)
+    #sol_component_fixed(pm, :branch, :qf, ids(pm, :branch), NaN)
+    #sol_component_fixed(pm, :branch, :qt, ids(pm, :branch), NaN)
 end
 
 # ""
-# function var_branch_power_real(pm::AbstractACPowerModel; nw::Int=0, bounded::Bool=true)
+# function var_branch_power_real(pm::AbstractACPowerModel; bounded::Bool=true)
 
 #     p = var(pm, nw)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, nw, :arcs)], base_name="$(nw)_p", start = comp_start_value(ref(pm, nw, :branch, l), "p_start"))
 
@@ -162,7 +166,7 @@ end
 # end
 
 # ""
-# function var_branch_power_imaginary(pm::AbstractACPowerModel; nw::Int=0, bounded::Bool=true)
+# function var_branch_power_imaginary(pm::AbstractACPowerModel; bounded::Bool=true)
     
 #     #@variable(pm.model, q[(l,i,j) in pm.ref[:arcs]])
 #     q = var(pm, nw)[:q] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, nw, :arcs)], base_name="$(nw)_q", start = comp_start_value(ref(pm, nw, :branch, l), "q_start"))
@@ -201,12 +205,13 @@ function var_dcline_power(pm::AbstractPowerModel; kwargs...)
 end
 
 "variable: `p_dc[l,i,j]` for `(l,i,j)` in `arcs_dc`"
-function var_dcline_power_real(pm::AbstractPowerModel; nw::Int=0, bounded::Bool=true)
+function var_dcline_power_real(pm::AbstractPowerModel; bounded::Bool=true)
 
-    p_dc = var(pm, nw)[:p_dc] = JuMP.@variable(pm.model, [arc in ref(pm, nw, :arcs_dc)], base_name="$(nw)_p_dc")
+    p_dc = var(pm)[:p_dc] = JuMP.@variable(pm.model, [arc in ref(pm, :arcs_dc)])
+    #p_dc = var(pm)[:p_dc] = JuMP.@variable(pm.model, [arc in ref(pm, :arcs_dc)], base_name="p_dc")
 
     if bounded
-        for (l,dcline) in ref(pm, nw, :dcline)
+        for (l,dcline) in ref(pm, :dcline)
             f_idx = (l, dcline["f_bus"], dcline["t_bus"])
             t_idx = (l, dcline["t_bus"], dcline["f_bus"])
 
@@ -218,7 +223,7 @@ function var_dcline_power_real(pm::AbstractPowerModel; nw::Int=0, bounded::Bool=
         end
     end
 
-    for (l,dcline) in ref(pm, nw, :dcline)
+    for (l,dcline) in ref(pm, :dcline)
         if haskey(dcline, "pf")
             f_idx = (l, dcline["f_bus"], dcline["t_bus"])
             JuMP.set_start_value(p_dc[f_idx], dcline["pf"])
@@ -230,23 +235,24 @@ function var_dcline_power_real(pm::AbstractPowerModel; nw::Int=0, bounded::Bool=
         end
     end
 
-    #sol_component_value_edge(pm, nw, :dcline, :pf, :pt, ref(pm, nw, :arcs_from_dc), ref(pm, nw, :arcs_to_dc), p_dc)
+    #sol_component_value_edge(pm, :dcline, :pf, :pt, ref(pm, :arcs_from_dc), ref(pm, :arcs_to_dc), p_dc)
  
 end
 
 "DC models ignore reactive power flows"
-function var_dcline_power_imaginary(pm::AbstractDCPowerModel; nw::Int=0, kwargs...)
-    #sol_component_fixed(pm, nw, :dcline, :qf, ids(pm, nw, :dcline), NaN)
-    #sol_component_fixed(pm, nw, :dcline, :qt, ids(pm, nw, :dcline), NaN)
+function var_dcline_power_imaginary(pm::AbstractDCPowerModel; kwargs...)
+    #sol_component_fixed(pm, :dcline, :qf, ids(pm, :dcline), NaN)
+    #sol_component_fixed(pm, :dcline, :qt, ids(pm, :dcline), NaN)
 end
 
 "variable: `q_dc[l,i,j]` for `(l,i,j)` in `arcs_dc`"
-function var_dcline_power_imaginary(pm::AbstractACPowerModel; nw::Int=0, bounded::Bool=true)
+function var_dcline_power_imaginary(pm::AbstractACPowerModel; bounded::Bool=true)
 
-    q_dc = var(pm, nw)[:q_dc] = JuMP.@variable(pm.model, [arc in ref(pm, nw, :arcs_dc)], base_name="$(nw)_q_dc",)
+    q_dc = var(pm)[:q_dc] = JuMP.@variable(pm.model, [arc in ref(pm, :arcs_dc)])
+    #q_dc = var(pm)[:q_dc] = JuMP.@variable(pm.model, [arc in ref(pm, :arcs_dc)], base_name="q_dc")
 
     if bounded
-        for (l,dcline) in ref(pm, nw, :dcline)
+        for (l,dcline) in ref(pm, :dcline)
             f_idx = (l, dcline["f_bus"], dcline["t_bus"])
             t_idx = (l, dcline["t_bus"], dcline["f_bus"])
 
@@ -258,7 +264,7 @@ function var_dcline_power_imaginary(pm::AbstractACPowerModel; nw::Int=0, bounded
         end
     end
 
-    for (l,dcline) in ref(pm, nw, :dcline)
+    for (l,dcline) in ref(pm, :dcline)
         if haskey(dcline, "qf")
             f_idx = (l, dcline["f_bus"], dcline["t_bus"])
             JuMP.set_start_value(q_dc[f_idx], dcline["qf"])
@@ -269,7 +275,7 @@ function var_dcline_power_imaginary(pm::AbstractACPowerModel; nw::Int=0, bounded
             JuMP.set_start_value(q_dc[t_idx], dcline["qt"])
         end
     end
-    #sol_component_value_edge(pm, nw, :dcline, :qf, :qt, ref(pm, nw, :arcs_from_dc), ref(pm, nw, :arcs_to_dc), q_dc)
+    #sol_component_value_edge(pm, :dcline, :qf, :qt, ref(pm, :arcs_from_dc), ref(pm, :arcs_to_dc), q_dc)
 end
 
 # "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
@@ -292,57 +298,59 @@ function var_load_curtailment(pm::AbstractPowerModel; kwargs...)
     var_load_curtailment_imaginary(pm; kwargs...)
 end
 
-function var_load_curtailment_real(pm::AbstractPowerModel; nw::Int=0)
+function var_load_curtailment_real(pm::AbstractPowerModel)
 
-    p_lc = var(pm, nw)[:p_lc] = JuMP.@variable(pm.model, [i in ids(pm, nw, :load)], base_name="$(nw)_p_lc")
+    p_lc = var(pm)[:p_lc] = JuMP.@variable(pm.model, [i in ids(pm, :load)], base_name="p_lc")
 
-    for (l,load) in ref(pm, nw, :load)
+    for (l,load) in ref(pm, :load)
         JuMP.set_upper_bound(p_lc[l],load["pd"])
         JuMP.set_lower_bound(p_lc[l],0.0)
     end
 
-    sol_component_value(pm, nw, :load_curtailment, :p_lc, ids(pm, nw, :load), p_lc)
+    sol_component_value(pm, :load_curtailment, :p_lc, ids(pm, :load), p_lc)
 end
 
 """
 Defines load curtailment variables q to represent the active power flow for each branch
 """
-function var_load_curtailment_imaginary(pm::AbstractDCPowerModel; nw::Int=0)
-    #sol_component_fixed(pm, nw, :load_curtailment, :q_lc, ids(pm, nw, :load), NaN)
+function var_load_curtailment_imaginary(pm::AbstractDCPowerModel)
+    #sol_component_fixed(pm, :load_curtailment, :q_lc, ids(pm, :load), NaN)
 end
 
 ""
-function var_load_curtailment_imaginary(pm::AbstractACPowerModel; nw::Int=0)
+function var_load_curtailment_imaginary(pm::AbstractACPowerModel)
     
-    q_lc = var(pm, nw)[:q_lc] = JuMP.@variable(pm.model, [i in ids(pm, nw, :load)], base_name="$(nw)_q_lc")
+    q_lc = var(pm)[:q_lc] = JuMP.@variable(pm.model, [i in ids(pm, :load)], base_name="q_lc")
 
-    for (l,load) in ref(pm, nw, :load)
+    for (l,load) in ref(pm, :load)
         JuMP.set_upper_bound(q_lc[l],load["qd"])
         JuMP.set_lower_bound(q_lc[l],0.0)
     end
-    #sol_component_fixed(pm, nw, :load_curtailment, :q_lc, ids(pm, nw, :load), NaN)
+    #sol_component_fixed(pm, :load_curtailment, :q_lc, ids(pm, :load), NaN)
 end
 
 ""
-function var_load_power_factor_range(pm::AbstractDCPowerModel; nw::Int=0)
+function var_load_power_factor_range(pm::AbstractDCPowerModel)
 
-    z_demand = var(pm, nw)[:z_demand] = JuMP.@variable(pm.model, [i in ids(pm, nw, :load)], base_name="$(nw)_z_demand")
+    z_demand = var(pm)[:z_demand] = JuMP.@variable(pm.model, [i in ids(pm, :load)])
+    #z_demand = var(pm)[:z_demand] = JuMP.@variable(pm.model, [i in ids(pm, :load)], base_name="z_demand")
 
-    for (l,load) in ref(pm, nw, :load)
+    for (l,load) in ref(pm, :load)
         JuMP.set_lower_bound(z_demand[l], -Float32(load["qd"]/load["pd"]))
         JuMP.set_upper_bound(z_demand[l], Float32(load["qd"]/load["pd"]))
     end
 
-    #sol_component_value(pm, nw, :load, :z_demand, ids(pm, nw, :load), z_demand)
+    #sol_component_value(pm, :load, :z_demand, ids(pm, :load), z_demand)
 end
 
-function var_buspair_current_magnitude_sqr(pm::AbstractDCPowerModel; nw::Int=0, bounded::Bool=true)
+function var_buspair_current_magnitude_sqr(pm::AbstractDCPowerModel; bounded::Bool=true)
     
-    branch = ref(pm, nw, :branch)
-    ccm = var(pm, nw)[:ccm] = JuMP.@variable(pm.model, [i in ids(pm, nw, :branch)], base_name="$(nw)_ccm", start = comp_start_value(branch[i], "ccm_start"))
+    branch = ref(pm, :branch)
+    ccm = var(pm)[:ccm] = JuMP.@variable(pm.model, [i in ids(pm, :branch)])
+    #ccm = var(pm)[:ccm] = JuMP.@variable(pm.model, [i in ids(pm, :branch)], base_name="ccm", start = comp_start_value(branch[i], "ccm_start"))
 
     if bounded
-        bus = ref(pm, nw, :bus)
+        bus = ref(pm, :bus)
         for (i, b) in branch
             rate_a = Inf
             if haskey(b, "rate_a")
@@ -357,35 +365,38 @@ function var_buspair_current_magnitude_sqr(pm::AbstractDCPowerModel; nw::Int=0, 
         end
     end
 
-    #sol_component_value(pm, nw, :branch, :ccm, ids(pm, nw, :branch), ccm)
+    #sol_component_value(pm, :branch, :ccm, ids(pm, :branch), ccm)
 
 end
 
 ""
-function var_bus_voltage_magnitude_sqr(pm::AbstractDCPowerModel; nw::Int=0, bounded::Bool=true)
+function var_bus_voltage_magnitude_sqr(pm::AbstractDCPowerModel; bounded::Bool=true)
     
-    w = var(pm, nw)[:w] = JuMP.@variable(pm.model, [i in ids(pm, nw, :bus)], base_name="$(nw)_w",start=1.001)
+    w = var(pm)[:w] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], start=1.001)
+    #w = var(pm)[:w] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="w", start=1.001)
 
     if bounded
-        for (i, bus) in ref(pm, nw, :bus)
+        for (i, bus) in ref(pm, :bus)
             JuMP.set_lower_bound(w[i], bus["vmin"]^2)
             JuMP.set_upper_bound(w[i], bus["vmax"]^2)
         end
     end
 
-    #sol_component_value(pm, nw, :bus, :w, ids(pm, nw, :bus), w)
+    #sol_component_value(pm, :bus, :w, ids(pm, :bus), w)
 end
 
 ""
-function var_buspair_voltage_product(pm::AbstractDCPowerModel; nw::Int=0, bounded::Bool=true)
+function var_buspair_voltage_product(pm::AbstractDCPowerModel; bounded::Bool=true)
 
-    wr = var(pm, nw)[:wr] = JuMP.@variable(pm.model, [bp in ids(pm, nw, :buspairs)], base_name="$(nw)_wr", start = comp_start_value(ref(pm, nw, :buspairs, bp), "wr_start", 1.0))
-    wi = var(pm, nw)[:wi] = JuMP.@variable(pm.model, [bp in ids(pm, nw, :buspairs)], base_name="$(nw)_wi", start = comp_start_value(ref(pm, nw, :buspairs, bp), "wi_start"))
+    wr = var(pm)[:wr] = JuMP.@variable(pm.model, [bp in ids(pm, :buspairs)], start =  1.0)
+    wi = var(pm)[:wi] = JuMP.@variable(pm.model, [bp in ids(pm, :buspairs)])
+    #wr = var(pm)[:wr] = JuMP.@variable(pm.model, [bp in ids(pm, :buspairs)], base_name="wr", start = comp_start_value(ref(pm, :buspairs, bp), "wr_start", 1.0))
+    #wi = var(pm)[:wi] = JuMP.@variable(pm.model, [bp in ids(pm, :buspairs)], base_name="wi", start = comp_start_value(ref(pm, :buspairs, bp), "wi_start"))
 
     if bounded
-        wr_min, wr_max, wi_min, wi_max = calc_voltage_product_bounds(ref(pm, nw, :buspairs))
+        wr_min, wr_max, wi_min, wi_max = calc_voltage_product_bounds(ref(pm, :buspairs))
 
-        for bp in ids(pm, nw, :buspairs)
+        for bp in ids(pm, :buspairs)
             JuMP.set_lower_bound(wr[bp], wr_min[bp])
             JuMP.set_upper_bound(wr[bp], wr_max[bp])
 
@@ -394,46 +405,46 @@ function var_buspair_voltage_product(pm::AbstractDCPowerModel; nw::Int=0, bounde
         end
     end
 
-    #sol_component_value_buspair(pm, nw, :buspairs, :wr, ids(pm, nw, :buspairs), wr)
-    #sol_component_value_buspair(pm, nw, :buspairs, :wi, ids(pm, nw, :buspairs), wi)
+    #sol_component_value_buspair(pm, :buspairs, :wr, ids(pm, :buspairs), wr)
+    #sol_component_value_buspair(pm, :buspairs, :wi, ids(pm, :buspairs), wi)
 
 end
 
 ""
-function sol_component_value(pm::AbstractPowerModel, n::Int, comp_name::Symbol, field_name::Symbol, comp_ids, variables)
+function sol_component_value(pm::AbstractPowerModel, comp_name::Symbol, field_name::Symbol, comp_ids, variables)
     for i in comp_ids
-        @assert !haskey(sol(pm, n, comp_name, i), field_name)
-        sol(pm, n, comp_name, i)[field_name] = variables[i]
+        @assert !haskey(sol(pm, comp_name, i), field_name)
+        sol(pm, comp_name, i)[field_name] = variables[i]
     end
 end
 
 "given a constant value, builds the standard component-wise solution structure"
-function sol_component_fixed(pm::AbstractPowerModel, n::Int, comp_name::Symbol, field_name::Symbol, comp_ids, constant)
+function sol_component_fixed(pm::AbstractPowerModel, comp_name::Symbol, field_name::Symbol, comp_ids, constant)
     for i in comp_ids
-        @assert !haskey(sol(pm, n, comp_name, i), field_name)
-        sol(pm, n, comp_name, i)[field_name] = constant
+        @assert !haskey(sol(pm, comp_name, i), field_name)
+        sol(pm, comp_name, i)[field_name] = constant
     end
 end
 
 "maps asymmetric edge variables into components"
-function sol_component_value_edge(pm::AbstractPowerModel, n::Int, comp_name::Symbol, field_name_fr::Symbol, field_name_to::Symbol, comp_ids_fr, comp_ids_to, variables)
+function sol_component_value_edge(pm::AbstractPowerModel, comp_name::Symbol, field_name_fr::Symbol, field_name_to::Symbol, comp_ids_fr, comp_ids_to, variables)
     for (l, i, j) in comp_ids_fr
-        @assert !haskey(sol(pm, n, comp_name, l), field_name_fr)
-        sol(pm, n, comp_name, l)[field_name_fr] = variables[(l, i, j)]
+        @assert !haskey(sol(pm, comp_name, l), field_name_fr)
+        sol(pm, comp_name, l)[field_name_fr] = variables[(l, i, j)]
     end
 
     for (l, i, j) in comp_ids_to
-        @assert !haskey(sol(pm, n, comp_name, l), field_name_to)
-        sol(pm, n, comp_name, l)[field_name_to] = variables[(l, i, j)]
+        @assert !haskey(sol(pm, comp_name, l), field_name_to)
+        sol(pm, comp_name, l)[field_name_to] = variables[(l, i, j)]
     end
 end
 
 "map sparse buspair variables into components"
-function sol_component_value_buspair(pm::AbstractPowerModel, n::Int, comp_name::Symbol, field_name::Symbol, variable_ids, variables)
+function sol_component_value_buspair(pm::AbstractPowerModel, comp_name::Symbol, field_name::Symbol, variable_ids, variables)
     for bp in variable_ids
-        buspair = ref(pm, n, comp_name, bp)
+        buspair = ref(pm, comp_name, bp)
         l = buspair["branch"]
-        @assert !haskey(sol(pm, n, :branch, l), field_name)
-        sol(pm, n, :branch, l)[field_name] = variables[bp]
+        @assert !haskey(sol(pm, :branch, l), field_name)
+        sol(pm, :branch, l)[field_name] = variables[bp]
     end
 end

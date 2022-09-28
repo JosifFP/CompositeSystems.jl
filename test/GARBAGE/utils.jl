@@ -44,7 +44,7 @@ const component_status_inactive_ref = Dict(
     :dcline => 0,
 )
 
-function conversion_to_pm_data(network::Network{N,L,T,U}) where {N,L,T,U}
+function conversion_to_pm_data(network::Network{N,U}) where {N,L,T,U}
     return Dict(
     [("bus",network.bus)
     #("source_type",network.source_type)
@@ -129,7 +129,7 @@ function _BuildNetwork!(pm_data::Dict{String,<:Any}, N::Int, L::Int, T::Type{<:P
 
     ref = ref_initialize!(pm_data)
 
-    return Network{N,L,T,U}(ref)
+    return Network{N,U}(ref)
 end
 
 ""

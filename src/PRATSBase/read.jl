@@ -18,7 +18,7 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
     assets = Vector{Any}()
     files = readdir(ReliabilityDataDir; join=false)
     cd(ReliabilityDataDir)
-    network = PRATSBase.BuildNetwork(RawFile, N, L, T, U)  #Previously BuildData
+    network = PRATSBase.BuildNetwork(RawFile, N, U)  #Previously BuildData
     
     for asset in [Generators, Loads, Branches]
     
@@ -27,7 +27,7 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
         key_order = sortperm(container_key)
         #container_key_core = Vector{Int64}()#key_order_core = Vector{Int64}()#container_bus = Vector{Int64}()#container_data = Vector{Vector{Float16}}()
         #container_category = Vector{String}()#container_λ = Vector{Float32}()#container_μ = Vector{Float32}()
-        push!(assets, container(container_key, key_order, dictionary_core, dictionary_timeseries, network, asset))
+        push!(assets, container(container_key, key_order, dictionary_core, dictionary_timeseries, network, asset, L, T))
     end
     
     storages = Storages{N,L,T,U}(

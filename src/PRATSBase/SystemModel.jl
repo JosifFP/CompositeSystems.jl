@@ -7,13 +7,13 @@ struct SystemModel{N,L,T<:Period,U<:PerUnit}
     storages::Storages{N,L,T,U}
     generatorstorages::GeneratorStorages{N,L,T,U}
     branches::Branches{N,L,T,U}
-    network::Network{N,L,T,U}
+    network::Network{N,U}
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
         generators::Generators{N,L,T,U}, loads::Loads{N,L,T,U}, storages::Storages{N,L,T,U},
         generatorstorages::GeneratorStorages{N,L,T,U}, branches::Branches{N,L,T,U},
-        network::Network{N,L,T,U}, timestamps::StepRange{ZonedDateTime,T}
+        network::Network{N,U}, timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period,U<:PerUnit}
 
     # n_gens = length(generators)

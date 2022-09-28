@@ -24,7 +24,7 @@ function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{
 end
 
 function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dictionary_core::Dict{<:Any}, 
-    dictionary_timeseries::Dict{<:Any}, network::Network{N,L,T,U}, ::Type{Loads}) where {N,L,T,U}
+    dictionary_timeseries::Dict{<:Any}, network::Network{N,U}, ::Type{Loads}, L::Int, T::Type{<:Period}) where {N,U}
     
     tmp = Dict(Int(dictionary_core[:key][i]) => Float16(dictionary_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dictionary_core[:key]))
     for (i,load) in network.load
@@ -41,7 +41,7 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
 end
 
 function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dictionary_core::Dict{<:Any}, 
-    dictionary_timeseries::Dict{<:Any}, network::Network{N,L,T,U}, ::Type{Generators}) where {N,L,T,U}
+    dictionary_timeseries::Dict{<:Any}, network::Network{N,U}, ::Type{Generators}, L::Int, T::Type{<:Period}) where {N,U}
 
     tmp = sort([[i, gen["gen_bus"]] for (i,gen) in network.gen], by = x->x[1])
     container_key_core = Int.(reduce(vcat, tmp')[:,1])
@@ -76,7 +76,7 @@ function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dicti
 end
 
 function container(container_key::Vector{<:Any}, key_order::Vector{<:Any}, dictionary_core::Dict{<:Any}, 
-    ::Dict{<:Any}, network::Network{N,L,T,U}, ::Type{Branches}) where {N,L,T,U}
+    ::Dict{<:Any}, network::Network{N,U}, ::Type{Branches}, L::Int, T::Type{<:Period}) where {N,U}
 
     container_longterm_capacity = Dict{Int64, Any}()
     container_shortterm_capacity = Dict{Int64, Any}()
