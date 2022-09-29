@@ -53,7 +53,7 @@ function update_load!(loads::Loads, ref_load::Dict{Int,<:Any}, t::Int)
 
     for i in eachindex(loads.keys)
         #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
-        ref_load[i]["pd"] = loads.pd[i,t]
+        ref_load[i]["pd"] = loads.pd[i,t]*1.25
     end
     return ref_load
 end

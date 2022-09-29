@@ -7,10 +7,48 @@ using Test
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 2160)
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 
 systemstate = CompositeAdequacy.SystemState(system)
+ref_1 = CompositeAdequacy.initialize_ref(system.network)
+ref_2 = deepcopy(CompositeAdequacy.initialize_ref(system.network))
 
+ref_1[:branch][25]["br_status"] = 0
+ref_1[:branch][26]["br_status"] = 0
+ref_1[:branch][28]["br_status"] = 0
+CompositeAdequacy.ref_add!(ref_1)
+CompositeAdequacy.ref_add!(ref_2)
+
+@assert ref_1[:arcs] == ref_2[:arcs]
+
+@show ref_1[:arcs]
+ref_2[:arcs]
+ref_1[:arcs_from]
+ref_2[:arcs_from]
+ref_1[:arcs_to]
+ref_2[:arcs_to]
+ref_1[:bus_loads]
+ref_1[:bus_arcs][15]
+ref_2[:bus_arcs][15]
+
+@assert ref_1[:bus_arcs] == ref_2[:bus_arcs]
+@assert ref_1[:branch] == ref_2[:branch]
+@assert ref_1[:areas] == ref_2[:areas]
+@assert ref_1[:bus] == ref_2[:bus]
+@assert ref_1[:gen] == ref_2[:gen]
+@assert ref_1[:storage] == ref_2[:storage]
+@assert ref_1[:switch] == ref_2[:switch]
+@assert ref_1[:shunt] == ref_2[:shunt]
+@assert ref_1[:load] == ref_2[:load]
+
+[i for i in keys(ref_1[:bus])]
+
+container_1 = [i for i in keys(ref_1[:branch])]
+container_2 = [i for i in keys(ref_2[:branch])]
+key_order_1 = sortperm(container_1)
+key_order_2 = sortperm(container_2)
+@show container_1[key_order_1]
+@show container_2[key_order_2]
 
 
 bus = convert(system.network.bus)

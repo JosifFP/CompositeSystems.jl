@@ -58,27 +58,26 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    systemstate = SystemState(system)
+    local systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
-    rng = Philox4x((0, 0), 10)
+    local rng = Philox4x((0, 0), 10)
+    local ref = MutableNetwork(system.network)
+    local pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer), ref)
 
     for s in sampleseeds
         println("s=$(s)")
-        local ref = MutableNetwork(system.network)
-        local pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer), ref)
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
         for (_,t) in enumerate(iter)
+            #if systemstate.condition[t] == 0
             #println("t=$(t)")
-            #update!(pm, systemstate, system, t)
             solve!(pm, systemstate, system, t)
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
             RestartAbstractPowerModel!(pm, ref)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-
     end
 
     put!(results, recorders)
@@ -117,7 +116,8 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel{
     end
 
     ref_add!(ref(pm))
-    state.branches_available[:,t] == true ? sol(pm)[:type] = type = Transportation : sol(pm)[:type] = type = DCOPF
+    #state.branches_available[:,t] == true ? sol(pm)[:type] = type = Transportation : sol(pm)[:type] = type = DCOPF
+    sol(pm)[:type] = type = Transportation
     build_method!(pm, type)
     JuMP.optimize!(pm.model)
     build_result!(pm, system.loads, t)

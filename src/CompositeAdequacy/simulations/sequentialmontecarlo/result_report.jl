@@ -18,7 +18,7 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMonteCarlo, ::Report
 ) where {N}
 
-    status = zeros(Int, N*2)
+    status = zeros(Int, N*10)
     return SMCReportAccumulator(status)
 
 end

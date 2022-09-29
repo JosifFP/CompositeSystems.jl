@@ -12,13 +12,14 @@ nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "accept
 mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 PRATSBase.silence()
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 2160)
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
 resultspecs = (Shortfall(), Report())
-method = PRATS.SequentialMonteCarlo(samples=1, seed=123, verbose=false, threaded=true)
+method = PRATS.SequentialMonteCarlo(samples=100, seed=1, verbose=false, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, optimizer, resultspecs...)
 
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
+sum(report.status)
 
 
 "********************************************************************************************************************************"
