@@ -2,30 +2,59 @@
 abstract type AbstractAssets{N,L,T<:Period,U<:PerUnit} end
 Base.length(a::AbstractAssets) = length(a.keys)
 
+"Generators"
 struct Generators{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
     keys::Vector{Int}
     buses::Vector{Int}
     pg::Matrix{Float16}  # Active power in per unit
-    λ::Vector{Float32} #Failure rate in failures per year
-    μ::Vector{Float32} #Repair rate in hours per year
+    qg::Matrix{Float16}  # Active power in per unit
+    pmax::Vector{Float16}
+    pmin::Vector{Float16}
+    qmax::Vector{Float16}
+    qmin::Vector{Float16}
+    source_id::Vector{String}
+    mBase::Vector{Int}
+    status::Vector{Bool}
+    cost::Vector{Vector{Float16}}
+    λ::Vector{Float64} #Failure rate in failures per year
+    μ::Vector{Float64} #Repair rate in hours per year
 
     function Generators{N,L,T,U}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, 
-        pg::Matrix{Float16}, λ::Vector{Float32}, μ::Vector{Float32}
+        keys::Vector{Int}, buses::Vector{Int}, 
+        pg::Matrix{Float16}, qg::Matrix{Float16},
+        pmax::Vector{Float16}, pmin::Vector{Float16},
+        qmax::Vector{Float16}, qmin::Vector{Float16},
+        source_id::Vector{String}, mBase::Vector{Int}, 
+        status::Vector{Bool}, cost::Vector{Vector{Float16}},
+        λ::Vector{Float64}, μ::Vector{Float64}
+
     ) where {N,L,T,U}
 
-        n_gens = length(keys)
+        ngens = length(keys)
         @assert allunique(keys)
-        @assert size(pg) == (n_gens, N)
+        @assert size(pg) == (ngens, N)
+        @assert size(qg) == (ngens, N)
         @assert all(pg .>= 0)
-        @assert length(λ) == (n_gens)
-        @assert length(μ) == (n_gens)
-        #@assert all(0 .<= λ .<= 1)
-        #@assert all(0 .<= μ .<= 1)
+        @assert length(pmax) == (ngens)
+        @assert length(qmax) == (ngens)
+        @assert length(pmin) == (ngens)
+        @assert all(pmin .>= 0)
+        @assert length(qmin) == (ngens)
+        @assert length(source_id) == (ngens)
+        @assert length(mBase) == (ngens)
+        @assert length(status) == (ngens)
+        @assert length(cost) == (ngens)
+        @assert length(λ) == (ngens)
+        @assert length(μ) == (ngens)
 
-        new{N,L,T,U}(Int.(keys), Int.(buses), pg, λ, μ)
-
+        new{N,L,T,U}(
+            Int.(keys), Int.(buses), 
+            pg, qg, 
+            Float16.(pmax), Float16.(pmin), Float16.(qmax), Float16.(qmin),
+            string.(source_id), Int.(mBase), Bool.(status), cost,
+            Float64.(λ), Float64.(μ)
+        )
     end
 
 end
@@ -34,17 +63,43 @@ Base.:(==)(x::T, y::T) where {T <: Generators} =
     x.keys == y.keys &&
     x.buses == y.buses &&
     x.pg == y.pg &&
+    x.qg == y.qg &&
+    x.pmax == y.pmax &&
+    x.qmax == y.qmax &&
+    x.pmin == y.pmin &&
+    x.qmin == y.qmin &&
+    x.source_id == y.source_id &&
+    x.mBase == y.mBase &&
+    x.status == y.status &&
+    x.cost == y.cost &&
     x.λ == y.λ &&
     x.μ == y.μ
 
+Base.getindex(g::G, idxs::AbstractVector{Int}) where {G <: Generators} =
+    G(g.keys[idxs], g.buses[idxs],
+      g.pg[idxs, :], g.qg[idxs, :],
+      g.pmax[idxs], g.qmax[idxs],
+      g.pmin[idxs], g.qmin[idxs],
+      g.source_id[idxs], g.mBase[idxs],
+      g.status[idxs], g.cost[idxs],
+      g.λ[idxs, :], g.μ[idxs, :])
+
 function Base.vcat(gs::G...) where {N, L, T, U, G <: Generators{N,L,T,U}}
 
-    n_gens = sum(length(g) for g in gs)
-    keys = Vector{Int}(undef, n_gens)
-    buses = Vector{Int}(undef, n_gens)
-    pg = Matrix{Int}(undef, n_gens, N)
-    λ = Vector{Float32}(undef, n_gens)
-    μ = Vector{Float32}(undef, n_gens)
+    ngens = sum(length(g) for g in gs)
+    keys = Vector{Int}(undef, ngens)
+    buses = Vector{Int}(undef, ngens)
+    pg = Matrix{Float16}(undef, ngens, N)
+    qg = Matrix{Float16}(undef, ngens, N)
+    pmax = Vector{Float16}(undef, ngens)
+    qmax = Vector{Float16}(undef, ngens)
+    pmin = Vector{Float16}(undef, ngens)
+    qmin = Vector{Float16}(undef, ngens)
+    source_id = Vector{Int}(undef, ngens)
+    mBase = Vector{Bool}(undef, ngens)
+    cost = Vector{Vector{Float16}}(undef, ngens)
+    λ = Vector{Float64}(undef, ngens)
+    μ = Vector{Float64}(undef, ngens)
 
     last_idx = 0
 
@@ -52,40 +107,55 @@ function Base.vcat(gs::G...) where {N, L, T, U, G <: Generators{N,L,T,U}}
 
         n = length(g)
         rows = last_idx .+ (1:n)
-
         keys[rows] = g.keys
         buses[rows] = g.buses
         pg[rows, :] = g.pg
+        qg[rows, :] = g.qg
+        pmax[rows] = g.pmax
+        qmax[rows] = g.qmax
+        pmin[rows] = g.pmin
+        qmin[rows] = g.qmin
+        source_id[rows] = g.source_id
+        mBase[rows] = g.mBase
+        cost[rows] = g.cost
         λ[rows] = g.λ
         μ[rows] = g.μ
         last_idx += n
-
     end
 
-    return Generators{N,L,T,U}(keys, buses, pg, λ, μ)
+    return Generators{N,L,T,U}(keys, buses, pg, qg, pmax, qmax, pmin, qmin, source_id, mBase, cost, λ, μ)
 
 end
 
+
+"Loads"
 struct Loads{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
     keys::Vector{Int}
     buses::Vector{Int}
     pd::Matrix{Float16} # Active power in per unit
-    #qd::Matrix{Float16} # Reactive power in per unit
+    qd::Matrix{Float16} # Reactive power in per unit
+    source_id::Vector{String}
+    status::Vector{Bool}
+    cost::Vector{Float16}
 
     function Loads{N,L,T,U}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, pd::Matrix{Float16}, #qd::Matrix{Float16}
-    ) where {N,L,T,U}
+        keys::Vector{Int}, buses::Vector{Int}, 
+        pd::Matrix{Float16}, qd::Matrix{Float16},
+        source_id::Vector{String}, status::Vector{Bool}, cost::Vector{Float16}
+        ) where {N,L,T,U}
 
-        n_loads = length(keys)
-        @assert length(buses) == n_loads
+        nloads = length(keys)
+        @assert length(buses) == nloads
         @assert allunique(keys)
-
-        @assert size(pd) == (n_loads, N)
-        #@assert size(qd) == (n_loads, N)
+        @assert size(pd) == (nloads, N)
+        @assert size(qd) == (nloads, N)
         @assert all(pd .>= 0)
+        @assert length(source_id) == (nloads)
+        @assert length(status) == (nloads)
+        @assert length(cost) == (nloads)
 
-        new{N,L,T,U}(keys, buses, pd)
+        new{N,L,T,U}(Int.(keys), Int.(buses), pd, qd, string.(source_id), Bool.(status), Float16.(cost))
 
     end
 
@@ -94,37 +164,76 @@ end
 Base.:(==)(x::T, y::T) where {T <: Loads} =
     x.keys == y.keys &&
     x.buses == y.buses &&
-    x.pd == y.pd
+    x.pd == y.pd &&
+    x.qd == y.qd &&
+    x.source_id == y.source_id &&
+    x.status == y.status &&
+    x.cost == y.cost
+#
 
-
+"Storages"
 struct Storages{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    energy_rating::Matrix{Float16} # energy_capacity
-    carryover_efficiency::Vector{Float32}
+    ps::Vector{Float16}  # Active power in per unit
+    qs::Vector{Float16}
+    energy::Vector{Float16}
+    energy_rating::Vector{Float16} # energy_capacity
+    charge_rating::Vector{Float16}
+    discharge_rating::Vector{Float16}
+    charge_efficiency::Vector{Float16}
+    discharge_efficiency::Vector{Float16}
+    #carryover_efficiency::Vector{Float16}
 
-    λ::Vector{Float32} #Failure rate in failures per year
-    μ::Vector{Float32} #Repair rate in hours per year
+    thermal_rating::Vector{Float16}
+    qmax::Vector{Float16}
+    qmin::Vector{Float16}
+    r::Vector{Float16}
+    x::Vector{Float16}
+    ploss::Vector{Float16}
+    qloss::Vector{Float16}
+    status::Vector{Bool}
+    λ::Vector{Float64} #Failure rate in failures per year
+    μ::Vector{Float64} #Repair rate in hours per year
 
     function Storages{N,L,T,U}(
-        keys::Vector{<:Int}, buses::Vector{<:Int},
-        energy_rating::Matrix{Float16}, carryover_efficiency::Vector{Float32},
-        λ::Vector{Float32}, μ::Vector{Float32}
+        keys::Vector{Int}, buses::Vector{Int},
+        energy::Vector{Float16}, energy_rating::Vector{Float16},
+        charge_rating::Vector{Float16}, discharge_rating::Vector{Float16},
+        charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16},
+        thermal_rating::Vector{Float16}, qmax::Vector{Float16}, qmin::Vector{Float16},
+        r::Vector{Float16}, x::Vector{Float16}, ploss::Vector{Float16}, qloss::Vector{Float16},
+        status::Vector{Bool}, λ::Vector{Float32}, μ::Vector{Float32}
     ) where {N,L,T,U}
 
-        n_stors = length(keys)
+        nstors = length(keys)
         @assert allunique(keys)
-        @assert size(energy_rating) == (n_stors, N)
-        @assert all(energy_rating .>= 0)
-        @assert length(carryover_efficiency) == n_stors
-        @assert length(λ) == (n_stors)
-        @assert length(μ) == (n_stors)
-        #@assert all(0 .<= λ .<= 1)
-        #@assert all(0 .<= μ .<= 1)
+        @assert length(energy) == (nstors)
+        @assert length(energy_rating) == (nstors)
+        @assert length(charge_rating) == (nstors)
+        @assert length(discharge_rating) == (nstors)
+        @assert length(thermal_rating) == (nstors)
+        @assert length(qmax) == (nstors)
+        @assert length(qmin) == (nstors)
+        @assert length(r) == (nstors)
+        @assert length(x) == (nstors)
+        @assert length(ploss) == (nstors)
+        @assert length(qloss) == (nstors)
+        @assert length(status) == (nstors)
+        @assert length(λ) == (nstors)
+        @assert length(μ) == (nstors)
+        @assert all(0 .<= energy)
+        @assert all(0 .<= energy_rating)
+        @assert all(0 .<= charge_rating)
+        @assert all(0 .<= discharge_rating)
+        @assert all(0 .<= charge_efficiency)
+        @assert all(0 .<= discharge_efficiency)
 
-        new{N,L,T,U}(Int.(keys), Int.(buses), energy_rating, carryover_efficiency, λ, μ)
-
+        new{N,L,T,U}(Int.(keys), Int.(buses), 
+        Float16.(energy), Float16.(energy_rating), Float16.(charge_rating), Float16.(discharge_rating), 
+        Float16.(thermal_rating), Float16.(qmax), Float16.(qmin),
+        Float16.(r), Float16.(x), Float16.(ploss), Float16.(qloss), Float16.(status), Float64.(λ), Float64.(μ))
     end
 
 end
@@ -132,57 +241,82 @@ end
 Base.:(==)(x::T, y::T) where {T <: Storages} =
     x.keys == y.keys &&
     x.buses == y.buses &&
+    x.energy == y.energy &&
     x.energy_rating == y.energy_rating &&
-    x.carryover_efficiency == y.carryover_efficiency &&
+    x.charge_rating == y.charge_rating &&
+    x.discharge_rating == y.discharge_rating &&
+    x.thermal_rating == y.thermal_rating &&
+    x.qmax == y.qmin &&
+    x.r == y.r &&
+    x.x == y.x &&
+    x.ploss == y.ploss &&
+    x.qloss == y.qloss &&
+    x.status == y.status &&
     x.λ == y.λ &&
     x.μ == y.μ
+#
 
-
+"GeneratorStorages"
 struct GeneratorStorages{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    energy_rating::Matrix{Float16} # energy
-    carryover_efficiency::Vector{Float32}
+    ps::Vector{Float16}  # Active power in per unit
+    qs::Vector{Float16}
+    energy::Vector{Float16}
+    energy_rating::Vector{Float16} # energy_capacity
+    charge_rating::Vector{Float16}
+    discharge_rating::Vector{Float16}
+    charge_efficiency::Vector{Float16}
+    discharge_efficiency::Vector{Float16}
+    #carryover_efficiency::Vector{Float16}
+    #thermal_rating::Vector{Float16}
+    #qmax::Vector{Float16}
+    #qmin::Vector{Float16}
+    #r::Vector{Float16}
+    #x::Vector{Float16}
+    #ploss::Vector{Float16}
+    #qloss::Vector{Float16}
+    status::Vector{Bool}
+    inflow::Matrix{Float16}
+    gridwithdrawal_rating::Matrix{Float16}
+    gridinjection_rating::Matrix{Float16}
 
-    inflow::Matrix{Int} # power
-    gridwithdrawal_rating::Matrix{Float16} # power
-    gridinjection_rating::Matrix{Float16} # power
-
-    λ::Vector{Float32} #Failure rate in failures per year
-    μ::Vector{Float32} #Repair rate in hours per year
+    λ::Vector{Float64} #Failure rate in failures per year
+    μ::Vector{Float64} #Repair rate in hours per year
 
     function GeneratorStorages{N,L,T,U}(
-        keys::Vector{<:Int}, buses::Vector{<:Int}, energy_rating::Matrix{Float16},
-        carryover_efficiency::Vector{Float32}, inflow::Matrix{Int},
-        gridwithdrawal_rating::Matrix{Float16}, gridinjection_rating::Matrix{Float16},
-        λ::Vector{Float32}, μ::Vector{Float32}
+        keys::Vector{Int}, buses::Vector{Int},
+        energy::Vector{Float16}, energy_rating::Vector{Float16},
+        charge_rating::Vector{Float16}, discharge_rating::Vector{Float16},
+        charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16},
+        status::Vector{Bool}, inflow::Matrix{Float16}, gridwithdrawal_rating::Matrix{Float16}, gridinjection_rating::Matrix{Float16},
+        λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,U}
 
-        n_stors = length(keys)
+        nstors = length(keys)
         @assert allunique(keys)
-        @assert size(energy_rating) == (n_stors, N)
-        @assert all(energy_rating .>= 0)
-        @assert length(carryover_efficiency) == n_stors
-        @assert all(0 .< carryover_efficiency .<= 1)
+        @assert length(energy) == (nstors)
+        @assert length(energy_rating) == (nstors)
+        @assert length(charge_rating) == (nstors)
+        @assert length(discharge_rating) == (nstors)
+        @assert length(status) == (nstors)
+        @assert size(inflow) == (nstors, N)
+        @assert size(gridwithdrawal_rating) == (nstors, N)
+        @assert size(gridinjection_rating) == (nstors, N)
+        @assert length(λ) == (nstors)
+        @assert length(μ) == (nstors)
+        @assert all(0 .<= energy)
+        @assert all(0 .<= energy_rating)
+        @assert all(0 .<= charge_rating)
+        @assert all(0 .<= discharge_rating)
+        @assert all(0 .<= charge_efficiency)
+        @assert all(0 .<= discharge_efficiency)
 
-        @assert size(inflow) == (n_stors, N)
-        @assert size(gridwithdrawal_rating) == (n_stors, N)
-        @assert size(gridinjection_rating) == (n_stors, N)
-
-        @assert all(inflow .>= 0)
-        @assert all(gridwithdrawal_rating .>= 0)
-        @assert all(gridinjection_rating .>= 0)
-
-        @assert length(λ) == (n_stors)
-        @assert length(μ) == (n_stors)
-        #@assert all(0 .<= λ .<= 1)
-        #@assert all(0 .<= μ .<= 1)
-
-        new{N,L,T,U}(
-            Int.(keys), Int.(buses), energy_rating, carryover_efficiency,
-            inflow, gridwithdrawal_rating, gridinjection_rating, λ, μ)
-
+        new{N,L,T,U}(Int.(keys), Int.(buses), 
+        Float16.(energy), Float16.(energy_rating), Float16.(charge_rating), Float16.(discharge_rating), 
+        Float16.(status), inflow, gridwithdrawal_rating, gridinjection_rating,
+        Float64.(λ), Float64.(μ))
     end
 
 end
@@ -190,158 +324,193 @@ end
 Base.:(==)(x::T, y::T) where {T <: GeneratorStorages} =
     x.keys == y.keys &&
     x.buses == y.buses &&
+    x.energy == y.energy &&
     x.energy_rating == y.energy_rating &&
-    x.carryover_efficiency == y.carryover_efficiency &&
+    x.charge_rating == y.charge_rating &&
+    x.discharge_rating == y.discharge_rating &&
+    x.status == y.status &&
     x.inflow == y.inflow &&
-    x.gridwithdrawal_rating == y.gridwithdrawal_rating &&
-    x.gridinjection_rating == y.gridinjection_rating &&
+    x.gridwithdrawal_capacity == y.gridwithdrawal_capacity &&
+    x.gridinjection_capacity == y.gridinjection_capacity &&
     x.λ == y.λ &&
     x.μ == y.μ
+#
 
-
+"Branches"
 struct Branches{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
     keys::Vector{Int}
-
-    buses_from::Vector{Int}
-    buses_to::Vector{Int}
-
-    longterm_rating::Matrix{Float16} #Long term rating or Rate_A
-    shortterm_rating::Matrix{Float16} #Short term rating or Rate_B
-
-    λ::Vector{Float32} #Failure rate in failures per year
-    μ::Vector{Float32} #Repair rate in hours per year
+    f_bus::Vector{Int} #buses_from
+    t_bus::Vector{Int} #buses_to
+    rate_a::Vector{Float16} #Long term rating or Rate_A
+    rate_b::Vector{Float16} #Short term rating or Rate_B
+    rate_c::Vector{Float16} #emergency rating or Rate_C
+    r::Vector{Float16} #Resistance values
+    x::Vector{Float16} #Reactance values
+    b_fr::Vector{Float16} #susceptance/2
+    b_to::Vector{Float16} #susceptance/2
+    g_fr::Vector{Float16}
+    g_to::Vector{Float16}
+    shift::Vector{Float16} #angle_shift
+    angmin::Vector{Float16}
+    angmax::Vector{Float16}
+    transformer::Vector{Bool}
+    tap::Vector{Int} #tap_ratio
+    source_id::Vector{String}
+    status::Vector{Bool}
+    λ::Vector{Float64} #Failure rate in failures per year
+    μ::Vector{Float64} #Repair rate in hours per year
 
     function Branches{N,L,T,U}(
-        keys::Vector{<:Int},
-        buses_from::Vector{<:Int}, buses_to::Vector{<:Int},
-        longterm_rating::Matrix{Float16}, shortterm_rating::Matrix{Float16},
-        λ::Vector{Float32}, μ::Vector{Float32}
+        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int},
+        rate_a::Vector{Float16}, rate_b::Vector{Float16}, rate_c::Vector{Float16},
+        r::Vector{Float16}, x::Vector{Float16}, b_fr::Vector{Float16}, b_to::Vector{Float16},
+        g_fr::Vector{Float16}, g_to::Vector{Float16}, shift::Vector{Float16},
+        angmin::Vector{Float16}, angmax::Vector{Float16}, transformer::Vector{Bool}, tap::Vector{Int},
+        source_id::Vector{String}, status::Vector{Bool}, λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,U}
 
-        n_branches = length(keys)
+        nbranches = length(keys)
         @assert allunique(keys)
+        @assert length(f_bus) == (nbranches)
+        @assert length(t_bus) == (nbranches)
+        @assert length(rate_a) == (nbranches)
+        @assert length(rate_b) == (nbranches)
+        @assert length(rate_c) == (nbranches)
+        @assert length(r) == (nbranches)
+        @assert length(x) == (nbranches)
+        @assert length(b_fr) == (nbranches)
+        @assert length(b_to) == (nbranches)
+        @assert length(g_fr) == (nbranches)
+        @assert length(g_to) == (nbranches)
+        @assert length(shift) == (nbranches)
+        @assert length(angmin) == (nbranches)
+        @assert length(angmax) == (nbranches)
+        @assert length(transformer) == (nbranches)
+        @assert length(tap) == (nbranches)
+        @assert length(source_id) == (nbranches)
+        @assert length(status) == (nbranches)
+        @assert length(λ) == (nbranches)
+        @assert length(μ) == (nbranches)
+        @assert all(rate_a .>= 0)
+        @assert all(rate_b .>= 0)
+        @assert all(rate_c .>= 0)
+        @assert all(r .>= 0)
+        @assert all(x .>= 0)
 
-        @assert size(longterm_rating) == (n_branches, N)
-        @assert size(shortterm_rating) == (n_branches, N)
-        @assert all(longterm_rating .>= 0)
-        @assert all(shortterm_rating .>= 0)
-        @assert length(λ) == (n_branches)
-        @assert length(μ) == (n_branches)
-
-        new{N,L,T,U}(Int.(keys), Int.(buses_from), Int.(buses_to), longterm_rating, shortterm_rating, λ, μ)
+        new{N,L,T,U}(
+            Int.(keys), Int.(f_bus), Int.(t_bus), Float16.(rate_a), Float16.(rate_b), Float16.(rate_c),
+            Float16.(r), Float16.(x), Float16.(b_fr), Float16.(b_to), Float16.(g_fr), Float16.(g_to), Float16.(shift),
+            Float16.(angmin), Float16.(angmax), Bool.(transformer), Int.(tap), String.(source_id), Bool.(status),
+            Float64.(λ), Float64.(μ))
     end
 
 end
 
 Base.:(==)(x::T, y::T) where {T <: Branches} =
     x.keys == y.keys &&
-    x.buses_from == y.buses_from &&
-    x.buses_to == y.buses_to &&
-    x.longterm_rating == y.longterm_rating &&
-    x.shortterm_rating == y.shortterm_rating &&
+    x.f_bus == y.f_bus &&
+    x.t_bus == y.t_bus &&
+    x.rate_a == y.rate_a &&
+    x.rate_b == y.rate_b &&
+    x.rate_c == y.rate_c &&
+    x.r == y.r &&
+    x.x == y.x &&
+    x.b_fr == y.b_fr &&
+    x.b_to == y.b_to &&
+    x.g_fr == y.g_fr &&
+    x.g_to == y.g_to &&
+    x.shift == y.shift &&
+    x.angmin == y.angmin &&
+    x.angmax == y.angmax &&
+    x.transformer == y.transformer &&
+    x.tap == y.tap &&
+    x.source_id == y.source_id &&
+    x.status == y.status &&
     x.λ == y.λ &&
     x.μ == y.μ
+#
 
 
-#Collection Types
+"Shunts"
+struct Shunts{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
+    keys::Vector{Int}
+    buses::Vector{Int}
+    bs::Vector{Float16} #susceptance
+    gs::Vector{Float16}
+    source_id::Vector{String}
+    status::Vector{Bool}
+
+    function Shunts{N,L,T,U}(
+        keys::Vector{Int}, buses::Vector{Int},
+        bs::Vector{Float16}, gs::Vector{Float16},
+        source_id::Vector{String}, status::Vector{Bool}
+    ) where {N,L,T,U}
+
+        nbranches = length(keys)
+        @assert allunique(keys)
+        @assert length(buses) == (nbranches)
+        @assert length(bs) == (nbranches)
+        @assert length(gs) == (nbranches)
+        @assert length(source_id) == (nbranches)
+        @assert length(status) == (nbranches)
+        @assert length(λ) == (nbranches)
+        @assert length(μ) == (nbranches)
+
+        new{N,L,T,U}(
+            Int.(keys), Int.(buses), Float16.(bs), Float16.(gs), String.(source_id), Bool.(status))
+    end
+
+end
+
+Base.:(==)(x::T, y::T) where {T <: Shunts} =
+    x.keys == y.keys &&
+    x.buses == y.buses &&
+    x.bs == y.bs &&
+    x.gs == y.gs &&
+    x.source_id == y.source_id &&
+    x.status == y.status
+#
+
+
+#Collection Type
 struct Network{N,U<:PerUnit}
 
-    areas::Dict{Int,<:Any}
-    bus::Dict{Int,<:Any}
-    dcline::Dict{Int,<:Any}
-    gen::Dict{Int,<:Any}
-    branch::Dict{Int,<:Any}
-    storage::Dict{Int,<:Any}
-    switch::Dict{Int,<:Any}
-    shunt::Dict{Int,<:Any}
-    load::Dict{Int,<:Any}
     baseMVA::Int
     per_unit::Bool
-
     arcs_from::Vector{Tuple{Int, Int, Int}}
     arcs_to::Vector{Tuple{Int, Int, Int}}
     arcs::Vector{Tuple{Int, Int, Int}}
-    arcs_from_dc::Vector{Tuple{Int, Any, Any}}
-    arcs_to_dc::Vector{Tuple{Int, Any, Any}}
-    arcs_dc::Vector{Tuple{Int, Any, Any}}
-    arcs_from_sw::Vector{Tuple{Int, Any, Any}}
-    arcs_to_sw::Vector{Tuple{Int, Any, Any}}
-    arcs_sw::Vector{Tuple{Int, Any, Any}}
-
     bus_gens::Dict{Int, <:Any}
     bus_loads::Dict{Int, <:Any}
     bus_shunts::Dict{Int, <:Any}
     bus_storage::Dict{Int, <:Any}
-    bus_arcs_dc::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-    bus_arcs_sw::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Dict{String, <:Any}} 
     ref_buses::Dict{Int, <:Any}
 
-
     function Network{N,U}(data::Dict{Symbol,<:Any}) where {N,U}
 
-        areas = data[:areas]
-        bus = data[:bus]
-        dcline = data[:dcline]
-        gen = data[:gen]
-        branch = data[:branch]
-        storage = data[:storage]
-        switch = data[:switch]
-        shunt = data[:shunt]
-        load = data[:load]
         baseMVA = data[:baseMVA]
         per_unit = data[:per_unit]
-
         arcs_from = Vector{Tuple{Int, Int, Int}}()
         arcs_to = Vector{Tuple{Int, Int, Int}}()
         arcs = Vector{Tuple{Int, Int, Int}}()
-        arcs_from_dc = Vector{Tuple{Int, Any, Any}}()
-        arcs_to_dc = Vector{Tuple{Int, Any, Any}}()
-        arcs_dc = Vector{Tuple{Int, Any, Any}}()
-        arcs_from_sw = Vector{Tuple{Int, Any, Any}}()
-        arcs_to_sw = Vector{Tuple{Int, Any, Any}}()
-        arcs_sw = Vector{Tuple{Int, Any, Any}}()
         bus_gens = Dict{Int, Any}()
         bus_loads = Dict{Int, Any}()
         bus_shunts = Dict{Int, Any}()
         bus_storage = Dict{Int, Any}()
-        bus_arcs_dc = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
-        bus_arcs_sw = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
         bus_arcs = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
         buspairs = Dict{Tuple{Int, Int}, Dict{String, Any}}()
         ref_buses = Dict{Int, Any}()
-
-        @assert isempty(areas) == false
-        @assert isempty(bus) == false
-        @assert isempty(gen) == false
-        @assert isempty(branch) == false
-        @assert isempty(load) == false
         @assert isempty(baseMVA) == false
         @assert isempty(per_unit) == false
 
-        return new(areas, bus, dcline, gen, branch, storage, switch, shunt, load, baseMVA, per_unit, 
-        arcs_from, arcs_to, arcs, arcs_from_dc, arcs_to_dc, arcs_dc, arcs_from_sw, arcs_to_sw, arcs_sw, 
-        bus_gens, bus_loads, bus_shunts, bus_storage, bus_arcs_dc, bus_arcs_sw, bus_arcs, buspairs, ref_buses
+        return new(baseMVA, per_unit, arcs_from, arcs_to, arcs, bus_gens, 
+        bus_loads, bus_shunts, bus_storage, bus_arcs, buspairs, ref_buses
         )
 
     end
 
 end
-
-Base.:(==)(x::T, y::T) where {T <: Network} =
-    x.areas == y.areas &&
-    x.bus == y.bus &&
-    x.dcline == y.dcline &&
-    x.gen == y.gen &&
-    x.branch == y.branch &&
-    x.storage == y.storage &&
-    x.switch == y.switch &&
-    x.shunt == y.shunt &&
-    x.load == y.load &&
-    x.baseMVA == y.baseMVA &&
-    x.per_unit == y.per_unit
-
-#

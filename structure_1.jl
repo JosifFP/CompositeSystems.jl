@@ -13,16 +13,13 @@ systemstate = CompositeAdequacy.SystemState(system)
 ref_1 = CompositeAdequacy.initialize_ref(system.network)
 CompositeAdequacy.ref_add!(ref_1)
 
-ref_1[:arcs_from_dc]
+
 ref_1[:arcs]
 ref_1[:bus_gens]
 ref_1[:bus_loads]
 ref_1[:bus_shunts]
 ref_1[:bus_arcs]
-ref_1[:buspairs][(1,2)]
 ref_1[:buspairs]
-
-
 
 sys = deepcopy(system.network)
 nbus = length(sys.bus)

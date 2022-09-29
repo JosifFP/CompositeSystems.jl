@@ -78,7 +78,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "bus" "pg[MW]" "qg[MVAR]" "failurerate[f/year]" "repairtime[hrs]"]
+            sheet["A1"] = ["key" "bus" "pg[MW]" "qg[MVAR]" "failurerate[f/year]" "repairtime[hrs]" "category"]
             tmp = sort([[i, gen["gen_bus"], 
                         Float64.(gen["pg"]*ref[:baseMVA]),
                         Float64.(gen["qg"]*ref[:baseMVA])] for (i,gen) in ref[:gen]], by = x->x[1])
@@ -90,16 +90,46 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
         end
     end
 
+    if in(InputData).("Storages") == true     
+        if isempty(ref[:storage]) == false
+
+            XLSX.openxlsx("Storages.xlsx", mode="w") do xf
+
+                sheet = xf[1]
+                XLSX.rename!(sheet, "core")
+                sheet["A1"] = ["key" "bus" "charge_rating" "discharge_rating" "energy_rating" "charge_efficiency" "discharge_efficiency" "failurerate[f/year]" "repairtime[hrs]"  "category"]
+                tmp = sort([[i, stor["storage_bus"],
+                        Float64.(stor["charge_rating"]*ref[:baseMVA]), 
+                        Float64.(stor["discharge_rating"]*ref[:baseMVA]),
+                        Float64.(stor["energy_rating"]*ref[:baseMVA]), 
+                        stor["charge_efficiency"],
+                        stor["discharge_efficiency"]] for (i,stor) in ref[:storage]], by = x->x[1])
+                sheet["A2"] = reduce(vcat, tmp')
+                #XLSX.addsheet!(xf,"time series MW")
+                #sheet = xf[2]
+                #sheet["A1"] = "Keep worksheet blank if no time series data is available"
+            end
+
+        end
+    end
+
     if in(InputData).("Branches") == true    
         XLSX.openxlsx("Branches.xlsx", mode="w") do xf
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "fbus" "tbus" "failurerate[f/year]" "repairtime[hrs]"]
+            sheet["A1"] = ["key" "fbus" "tbus" "rate_a[MW]" "rate_b[MW]" "failurerate[f/year]" "repairtime[hrs]" "category[optional]"]
             tmp = sort([[i,
                     branch["f_bus"], 
-                    branch["t_bus"]] for (i,branch) in ref[:branch]], by = x->x[1])
+                    branch["t_bus"],
+                    Float64.(branch["rate_a"]*ref[:baseMVA]),
+                    Float64.(branch["rate_b"]*ref[:baseMVA])] for (i,branch) in ref[:branch]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
+
+            XLSX.addsheet!(xf,"time series MW")
+            sheet = xf[2]
+            sheet["A1"] = "Keep worksheet blank if no time series data is available"
+
         end
     end
     

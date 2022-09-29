@@ -3,22 +3,19 @@
 
 Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
-function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
+function SystemModel(RawFile::String, ReliabilityDataDir::String, start_timestamp, N::Int)
 
     CurrentDir = pwd()
-    #N = 8760                                                    #timestep_count
-    L = 1                                                       #timestep_length
-    T = timeunits["h"]                                          #timestep_unit
+    L = 1 #timestep_length
+    T = timeunits["h"] #timestep_unit
     U = perunit["pu"]
-    #P = powerunits["MW"]
-    #E = energyunits["MWh"]
-    #V = voltageunits["kV"]
-    start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
+    #P = powerunits["MW"] #E = energyunits["MWh"] #V = voltageunits["kV"] #start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
+
     timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
     assets = Vector{Any}()
     files = readdir(ReliabilityDataDir; join=false)
     cd(ReliabilityDataDir)
-    network = PRATSBase.BuildNetwork(RawFile, N, U)  #Previously BuildData
+    network = BuildNetwork(RawFile)
     
     for asset in [Generators, Loads, Branches]
     
