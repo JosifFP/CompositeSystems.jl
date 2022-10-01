@@ -21,7 +21,7 @@
 
     export
         # System assets
-        AbstractAssets, Generators, Storages, GeneratorStorages, Branches, Loads, Network,
+        AbstractAssets, Buses, Generators, Storages, GeneratorStorages, Branches, Loads, Shunts, Network,
         # Units
         Period, Minute, Hour, Day, Year,
         PowerUnit, kW, MW, GW, TW,

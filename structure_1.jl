@@ -1,26 +1,52 @@
 using PRATS
 using PRATS.PRATSBase
-using PRATS.CompositeAdequacy
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP, HiGHS
-using Test
+using Test, Dates
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 
-systemstate = CompositeAdequacy.SystemState(system)
-ref_1 = CompositeAdequacy.initialize_ref(system.network)
-CompositeAdequacy.ref_add!(ref_1)
+
+system.branches.r
+
+N=365
+CurrentDir = pwd()
+L = 1 #timestep_length
+T = timeunits["h"] #timestep_unit
+U = perunit["pu"]
+#P = powerunits["MW"] #E = energyunits["MWh"] #V = voltageunits["kV"]
+start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
+
+timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
+files = readdir(ReliabilityDataDir; join=false)
+cd(ReliabilityDataDir)
+network = PRATSBase.BuildNetwork(RawFile)
+
+if network[:per_unit] == false error("Network data must be in per unit format") end
+
+has_buses = haskey(network, :bus) && isempty(network[:bus]) == false
+has_loads = haskey(network, :load) && isempty(network[:load]) == false
+has_generators = haskey(network, :gen) && isempty(network[:gen]) == false
+has_storages = haskey(network, :storage) && isempty(network[:storage]) == false
+has_branches = haskey(network, :branch) && isempty(network[:branch]) == false
+has_dclines = haskey(network, :dcline) && isempty(network[:dcline]) == false
+has_switches = haskey(network, :switch) && isempty(network[:switch]) == false
+has_shunts = haskey(network, :shunt) && isempty(network[:shunt]) == false
+
+has_buses || error("Bus data must be provided")
+has_generators && has_loads && has_branches || error("Generator, Load and Branch data must be provided")
 
 
-ref_1[:arcs]
-ref_1[:bus_gens]
-ref_1[:bus_loads]
-ref_1[:bus_shunts]
-ref_1[:bus_arcs]
-ref_1[:buspairs]
 
+dict_timeseries, dict_core = PRATSBase.extract(ReliabilityDataDir, files, PRATSBase.Generators, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
+container_key = [i for i in keys(dict_timeseries)]
+key_order = sortperm(container_key)
+
+
+
+"********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************"
 sys = deepcopy(system.network)
 nbus = length(sys.bus)
 nbranch = length(sys.branch)
