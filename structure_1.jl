@@ -11,6 +11,27 @@ system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 ref = PRATSBase.BuildNetwork(RawFile)
 
 
+for (i, load) in ref[:load]
+    if !(load["load_bus"] in system.buses.keys) && !(system.loads.buses[i] in system.buses.keys)
+        Memento.error(_LOGGER, "bus $(load["load_bus"]) in load $(i) is not defined")
+    end
+end
+ref[:shunt][1]["shunt_bus"]
+system.shunts.buses
+
+for (i, shunt) in ref[:shunt]
+    if !(shunt["shunt_bus"] in system.buses.keys) || !(system.shunts.buses[i] in system.buses.keys)
+        Memento.error(_LOGGER, "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
+    end
+end
+
+
+
+
+
+
+
+
 N=365
 CurrentDir = pwd()
 L = 1 #timestep_length

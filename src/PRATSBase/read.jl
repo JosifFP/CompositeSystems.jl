@@ -96,13 +96,14 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
 
 
     _check_consistency(network, buses, generators, loads, storages, branches, shunts)
+    _check_connectivity(network, buses, generators, loads, storages, branches, shunts)
 
     return SystemModel(buses, generators, loads, storages, generatorstorages, branches, shunts, timestamps)
 
 end
 
-"Check for inconsistencies between AbstractAsset and Power Model Network"
-function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, generators::Generators, loads::Loads, asset_storage::Storages, branches::Branches, shunts::Shunts)
+"Checks for inconsistencies between AbstractAsset and Power Model Network"
+function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, generators::Generators, loads::Loads, storages::Storages, branches::Branches, shunts::Shunts)
 
     for k in buses.keys
         @assert haskey(ref[:bus],k) == true
@@ -173,67 +174,45 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, generators::G
     
 end
 
+"Checks connectivity issues"
+function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, generators::Generators, loads::Loads, storages::Storages, branches::Branches, shunts::Shunts)
 
-""
-function _check_connectivity(data::Dict{String,<:Any})
-    bus_ids = Set(bus["index"] for (i,bus) in data["bus"])
-    @assert(length(bus_ids) == length(data["bus"])) # if this is not true something very bad is going on
+    @assert(length(buses.keys) == length(ref[:bus])) # if this is not true something very bad is going on
 
-    for (i, load) in data["load"]
-        if !(load["load_bus"] in bus_ids)
+    for (i, gen) in ref[:gen]
+        if !(gen["gen_bus"] in buses.keys) || !(generators.buses[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(gen["gen_bus"]) in shunt $(i) is not defined")
+        end
+    end
+
+    for (i, load) in ref[:load]
+        if !(load["load_bus"] in buses.keys) || !(loads.buses[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(load["load_bus"]) in load $(i) is not defined")
         end
     end
 
-    for (i, shunt) in data["shunt"]
-        if !(shunt["shunt_bus"] in bus_ids)
+    for (i, shunt) in ref[:shunt]
+        if !(shunt["shunt_bus"] in buses.keys) || !(shunts.buses[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
         end
     end
 
-    for (i, gen) in data["gen"]
-        if !(gen["gen_bus"] in bus_ids)
-            Memento.error(_LOGGER, "bus $(gen["gen_bus"]) in generator $(i) is not defined")
+    for (i, strg) in ref[:storage]
+        if !(strg["storage_bus"] in buses.keys) || !(storages.buses[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(strg["storage_bus"]) in shunt $(i) is not defined")
+        end
+    end
+    
+    for (i, branch) in ref[:branch]
+        if !(branch["f_bus"] in buses.keys) || !(branches.f_bus[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(branch["f_bus"]) in shunt $(i) is not defined")
+        end
+        if !(branch["t_bus"] in buses.keys) || !(branches.t_bus[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(branch["t_bus"]) in shunt $(i) is not defined")
         end
     end
 
-    for (i, strg) in data["storage"]
-        if !(strg["storage_bus"] in bus_ids)
-            Memento.error(_LOGGER, "bus $(strg["storage_bus"]) in storage unit $(i) is not defined")
-        end
-    end
-
-    for (i, switch) in data["switch"]
-        if !(switch["f_bus"] in bus_ids)
-            Memento.error(_LOGGER, "from bus $(switch["f_bus"]) in switch $(i) is not defined")
-        end
-
-        if !(switch["t_bus"] in bus_ids)
-            Memento.error(_LOGGER, "to bus $(switch["t_bus"]) in switch $(i) is not defined")
-        end
-    end
-
-    for (i, branch) in data["branch"]
-        if !(branch["f_bus"] in bus_ids)
-            Memento.error(_LOGGER, "from bus $(branch["f_bus"]) in branch $(i) is not defined")
-        end
-
-        if !(branch["t_bus"] in bus_ids)
-            Memento.error(_LOGGER, "to bus $(branch["t_bus"]) in branch $(i) is not defined")
-        end
-    end
-
-    for (i, dcline) in data["dcline"]
-        if !(dcline["f_bus"] in bus_ids)
-            Memento.error(_LOGGER, "from bus $(dcline["f_bus"]) in dcline $(i) is not defined")
-        end
-
-        if !(dcline["t_bus"] in bus_ids)
-            Memento.error(_LOGGER, "to bus $(dcline["t_bus"]) in dcline $(i) is not defined")
-        end
-    end
 end
-
 
 "checks that active components are not connected to inactive buses, otherwise prints warnings"
 function check_status(data::Dict{String,<:Any})
