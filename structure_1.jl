@@ -8,8 +8,8 @@ ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Dat
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 
+ref = PRATSBase.BuildNetwork(RawFile)
 
-system.branches.r
 
 N=365
 CurrentDir = pwd()

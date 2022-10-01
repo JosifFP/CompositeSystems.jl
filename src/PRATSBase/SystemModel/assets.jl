@@ -266,14 +266,11 @@ struct Storages{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
     μ::Vector{Float64} #Repair rate in hours per year
 
     function Storages{N,L,T,U}(
-        keys::Vector{Int}, buses::Vector{Int},
-        ps::Vector{Float16}, qs::Vector{Float16},
-        energy::Vector{Float16}, energy_rating::Vector{Float16},
-        charge_rating::Vector{Float16}, discharge_rating::Vector{Float16},
-        charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16},
-        thermal_rating::Vector{Float16}, qmax::Vector{Float16}, qmin::Vector{Float16},
-        r::Vector{Float16}, x::Vector{Float16}, ploss::Vector{Float16}, qloss::Vector{Float16},
-        status::BitVector, λ::Vector{Float64}, μ::Vector{Float64}
+        keys::Vector{Int}, buses::Vector{Int}, ps::Vector{Float16}, qs::Vector{Float16},
+        energy::Vector{Float16}, energy_rating::Vector{Float16}, charge_rating::Vector{Float16}, discharge_rating::Vector{Float16},
+        charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16}, thermal_rating::Vector{Float16}, qmax::Vector{Float16}, 
+        qmin::Vector{Float16}, r::Vector{Float16}, x::Vector{Float16}, ploss::Vector{Float16}, 
+        qloss::Vector{Float16}, status::BitVector, λ::Vector{Float64}, μ::Vector{Float64}
     ) where {N,L,T,U}
 
         nstors = length(keys)
@@ -303,9 +300,10 @@ struct Storages{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
         @assert all(0 .<= discharge_efficiency)
 
         new{N,L,T,U}(Int.(keys), Int.(buses), Float16.(ps), Float16.(qs),
-        Float16.(energy), Float16.(energy_rating), Float16.(charge_rating), Float16.(discharge_rating), 
-        Float16.(thermal_rating), Float16.(qmax), Float16.(qmin),
-        Float16.(r), Float16.(x), Float16.(ploss), Float16.(qloss), Bool.(status), Float64.(λ), Float64.(μ))
+        Float16.(energy), Float16.(energy_rating), Float16.(charge_rating), Float16.(discharge_rating),
+        Float16.(charge_efficiency), Float16.(discharge_efficiency), Float16.(thermal_rating), Float16.(qmax),
+        Float16.(qmin), Float16.(r), Float16.(x), Float16.(ploss), 
+        Float16.(qloss), Bool.(status), Float64.(λ), Float64.(μ))
     end
 end
 
@@ -318,6 +316,8 @@ Base.:(==)(x::T, y::T) where {T <: Storages} =
     x.energy_rating == y.energy_rating &&
     x.charge_rating == y.charge_rating &&
     x.discharge_rating == y.discharge_rating &&
+    x.charge_efficiency == y.charge_efficiency &&
+    x.discharge_efficiency == y.discharge_efficiency &&
     x.thermal_rating == y.thermal_rating &&
     x.qmax == y.qmax &&
     x.qmin == y.qmin &&
@@ -394,7 +394,8 @@ struct GeneratorStorages{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
 
         new{N,L,T,U}(Int.(keys), Int.(buses), Float16.(ps), Float16.(qs),
         Float16.(energy), Float16.(energy_rating), Float16.(charge_rating), Float16.(discharge_rating), 
-        Float16.(charge_efficiency), Float16.(discharge_efficiency), Bool.(status), inflow, gridwithdrawal_rating, gridinjection_rating,
+        Float16.(charge_efficiency), Float16.(discharge_efficiency), Bool.(status), 
+        inflow, gridwithdrawal_rating, gridinjection_rating,
         Float64.(λ), Float64.(μ))
     end
 end

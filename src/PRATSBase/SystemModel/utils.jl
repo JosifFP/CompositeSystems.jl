@@ -74,15 +74,15 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
 
     tmp = [[i, 
-        Int(comp["gen_bus"]), 
+        Int(comp["gen_bus"]),
         Float16(comp["pg"]),
         Float16(comp["qg"]),
         Float32(comp["vg"]),
-        Float16(comp["pmax"]), 
-        Float16(comp["qmax"]), 
-        Float16(comp["pmin"]), 
-        Float16(comp["qmin"]), 
-        Int(comp["mbase"]), 
+        Float16(comp["pmax"]),
+        Float16(comp["pmin"]),
+        Float16(comp["qmax"]),
+        Float16(comp["qmin"]),
+        Int(comp["mbase"]),
         Bool(comp["gen_status"]),
         Float16.(comp["cost"])] for (i,comp) in sort(network[:gen])]
 

@@ -32,14 +32,14 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
     has_generators && has_loads && has_branches || error("Generator, Load and Branch data must be provided")
 
     if has_buses
-        asset_bus = container(network, Buses, N, L, T, U)
+        buses = container(network, Buses, N, L, T, U)
     end
 
     if has_generators
         dict_timeseries, dict_core = extract(ReliabilityDataDir, files, Generators, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
         container_key = [i for i in keys(dict_timeseries)]
         key_order_series = sortperm(container_key)
-        asset_gen = container(container_key, key_order_series, dict_core, dict_timeseries, network, Generators, N, L, T, U)
+        generators = container(container_key, key_order_series, dict_core, dict_timeseries, network, Generators, N, L, T, U)
         empty!(dict_timeseries)
         empty!(dict_core)
         empty!(key_order_series)
@@ -49,7 +49,7 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
         dict_timeseries, dict_core = extract(ReliabilityDataDir, files, Loads, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
         container_key = [i for i in keys(dict_timeseries)]
         key_order_series = sortperm(container_key)
-        asset_load = container(container_key, key_order_series, dict_core, dict_timeseries, network, Loads, N, L, T, U)
+        loads = container(container_key, key_order_series, dict_core, dict_timeseries, network, Loads, N, L, T, U)
         empty!(dict_timeseries)
         empty!(dict_core)
         empty!(key_order_series)
@@ -57,20 +57,23 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
 
     if has_branches
         _, dict_core = extract(ReliabilityDataDir, files, Branches, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
-        asset_branch = container(dict_core, network, Branches, N, L, T, U)
+        branches = container(dict_core, network, Branches, N, L, T, U)
     end
 
     if has_shunts
-        asset_shunt = container(network, Shunts, N, L, T, U)
+        shunts = container(network, Shunts, N, L, T, U)
     end
 
     if has_storages
     else
-        asset_storage = Storages{N,L,T,U}(
-            Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-            Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], BitVector(), Float64[], Float64[])
+        storages = Storages{N,L,T,U}(
+            Int[], Int[], Float16[], Float16[], 
+            Float16[], Float16[], Float16[], Float16[], 
+            Float16[], Float16[], Float16[], Float16[], 
+            Float16[], Float16[], Float16[], Float16[], 
+            Float16[], BitVector(), Float64[], Float64[])
     end
-
+    
     if has_dclines
         #
     # else
@@ -81,15 +84,93 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
         #
     end
     
-    asset_gentor = GeneratorStorages{N,L,T,U}(
-        Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-        Float16[], BitVector(), Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Float64[], Float64[]
+    generatorstorages = GeneratorStorages{N,L,T,U}(
+        Int[], Int[], Float16[], Float16[], 
+        Float16[], Float16[], Float16[], Float16[], 
+        Float16[], Float16[], BitVector(), 
+        Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), 
+        Float64[], Float64[]
     )
 
     cd(CurrentDir)
 
-    return SystemModel(asset_bus, asset_gen, asset_load, asset_storage, asset_gentor, asset_branch, asset_shunt, timestamps)
 
+    _check_consistency(network, buses, generators, loads, storages, branches, shunts)
+
+    return SystemModel(buses, generators, loads, storages, generatorstorages, branches, shunts, timestamps)
+
+end
+
+"Check for inconsistencies between AbstractAsset and Power Model Network"
+function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, generators::Generators, loads::Loads, asset_storage::Storages, branches::Branches, shunts::Shunts)
+
+    for k in buses.keys
+        @assert haskey(ref[:bus],k) == true
+        @assert Int.(ref[:bus][k]["index"]) == buses.keys[k]
+        @assert Int.(ref[:bus][k]["index"]) == buses.index[k]
+        @assert Int.(ref[:bus][k]["area"]) == buses.area[k]
+        @assert Int.(ref[:bus][k]["bus_type"]) == buses.bus_type[k]
+        @assert Float16.(ref[:bus][k]["vmax"]) == buses.vmax[k]
+        @assert Float16.(ref[:bus][k]["vmin"]) == buses.vmin[k]
+        @assert Float16.(ref[:bus][k]["base_kv"]) == buses.base_kv[k]
+        @assert Float32.(ref[:bus][k]["va"]) == buses.va[k]
+        @assert Float32.(ref[:bus][k]["vm"]) == buses.vm[k]
+    end
+    
+    for k in generators.keys
+        @assert haskey(ref[:gen],k) == true
+        @assert Int.(ref[:gen][k]["index"]) == generators.keys[k]
+        @assert Int.(ref[:gen][k]["gen_bus"]) == generators.buses[k]
+        @assert Float16.(ref[:gen][k]["qg"]) == generators.qg[k]
+        @assert Float32.(ref[:gen][k]["vg"]) == generators.vg[k]
+        @assert Float16.(ref[:gen][k]["pmax"]) == generators.pmax[k]
+        @assert Float16.(ref[:gen][k]["pmin"]) == generators.pmin[k]
+        @assert Float16.(ref[:gen][k]["qmax"]) == generators.qmax[k]
+        @assert Float16.(ref[:gen][k]["qmin"]) == generators.qmin[k]
+        @assert Int.(ref[:gen][k]["mbase"]) == generators.mbase[k]
+        @assert Bool.(ref[:gen][k]["gen_status"]) == generators.status[k]
+        #@assert (ref[:gen][k]["cost"]) == generators.cost[k]
+    end
+    
+    for k in loads.keys
+        @assert haskey(ref[:load],k) == true
+        @assert Int.(ref[:load][k]["index"]) == loads.keys[k]
+        @assert Int.(ref[:load][k]["load_bus"]) == loads.buses[k]
+        @assert Float16.(ref[:load][k]["qd"]) == loads.qd[k]
+        @assert Bool.(ref[:load][k]["status"]) == loads.status[k]
+    end
+    
+    for k in branches.keys
+        @assert haskey(ref[:branch],k) == true
+        @assert Int.(ref[:branch][k]["index"]) == branches.keys[k]
+        @assert Int.(ref[:branch][k]["f_bus"]) == branches.f_bus[k]
+        @assert Int.(ref[:branch][k]["t_bus"]) == branches.t_bus[k]
+        @assert Float16.(ref[:branch][k]["rate_a"]) == branches.rate_a[k]
+        @assert Float16.(ref[:branch][k]["rate_b"]) == branches.rate_b[k]
+        @assert Float16.(ref[:branch][k]["rate_c"]) == branches.rate_c[k]
+        @assert Float16.(ref[:branch][k]["br_r"]) == branches.r[k]
+        @assert Float16.(ref[:branch][k]["br_x"]) == branches.x[k]
+        @assert Float16.(ref[:branch][k]["b_fr"]) == branches.b_fr[k]
+        @assert Float16.(ref[:branch][k]["b_to"]) == branches.b_to[k]
+        @assert Float16.(ref[:branch][k]["g_fr"]) == branches.g_fr[k]
+        @assert Float16.(ref[:branch][k]["g_to"]) == branches.g_to[k]
+        @assert Float16.(ref[:branch][k]["shift"]) == branches.shift[k]
+        @assert Float16.(ref[:branch][k]["angmin"]) == branches.angmin[k]
+        @assert Float16.(ref[:branch][k]["angmax"]) == branches.angmax[k]
+        @assert Bool.(ref[:branch][k]["transformer"]) == branches.transformer[k]
+        @assert Float16.(ref[:branch][k]["tap"]) == branches.tap[k]
+        @assert Bool.(ref[:branch][k]["br_status"]) == branches.status[k]
+    end
+    
+    for k in shunts.keys
+        @assert haskey(ref[:shunt],k) == true
+        @assert Int.(ref[:shunt][k]["index"]) == shunts.keys[k]
+        @assert Int.(ref[:shunt][k]["shunt_bus"]) == shunts.buses[k]
+        @assert Float16.(ref[:shunt][k]["bs"]) == shunts.bs[k]
+        @assert Float16.(ref[:shunt][k]["gs"]) == shunts.gs[k]
+        @assert Bool.(ref[:shunt][k]["status"]) == shunts.status[k]
+    end
+    
 end
 
 
