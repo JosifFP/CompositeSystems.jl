@@ -18,58 +18,12 @@ abstract type AbstractACPowerModel <: AbstractPowerModel end
 #AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
 
-""
-mutable struct MutableNetwork
-    areas::Dict{Int,<:Any}
-    bus::Dict{Int,<:Any}
-    dcline::Dict{Int,<:Any}
-    gen::Dict{Int,<:Any}
-    branch::Dict{Int,<:Any}
-    storage::Dict{Int,<:Any}
-    switch::Dict{Int,<:Any}
-    shunt::Dict{Int,<:Any}
-    load::Dict{Int,<:Any}
-    baseMVA::Int
-    per_unit::Bool
-
-    arcs_from::Vector{Tuple{Int, Int, Int}}
-    arcs_to::Vector{Tuple{Int, Int, Int}}
-    arcs::Vector{Tuple{Int, Int, Int}}
-    arcs_from_dc::Vector{Tuple{Int, Any, Any}}
-    arcs_to_dc::Vector{Tuple{Int, Any, Any}}
-    arcs_dc::Vector{Tuple{Int, Any, Any}}
-    arcs_from_sw::Vector{Tuple{Int, Any, Any}}
-    arcs_to_sw::Vector{Tuple{Int, Any, Any}}
-    arcs_sw::Vector{Tuple{Int, Any, Any}}
-
-    bus_gens::Dict{Int, <:Any}
-    bus_loads::Dict{Int, <:Any}
-    bus_shunts::Dict{Int, <:Any}
-    bus_storage::Dict{Int, <:Any}
-    bus_arcs_dc::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-    bus_arcs_sw::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-    bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Dict{String, <:Any}} 
-    ref_buses::Dict{Int, <:Any}
-
-    function MutableNetwork(network::Network)
-
-        return new(network.areas, network.bus, network.dcline, network.gen, network.branch, network.storage, 
-        network.switch, network.shunt, network.load, network.baseMVA, network.per_unit, 
-        network.arcs_from, network.arcs_to, network.arcs, network.arcs_from_dc, 
-        network.arcs_to_dc, network.arcs_dc, network.arcs_from_sw, network.arcs_to_sw, network.arcs_sw, 
-        network.bus_gens, network.bus_loads, network.bus_shunts, network.bus_storage, network.bus_arcs_dc, 
-        network.bus_arcs_sw, network.bus_arcs, network.buspairs, network.ref_buses
-        )
-
-    end
-end
 
 "a macro for adding the standard AbstractPowerModel fields to a type definition"
 CompositeAdequacy.@def pm_fields begin
     
     model::JuMP.AbstractModel
-    ref::MutableNetwork
+    ref::Topology
     var::Dict{Symbol,<:Any}
     sol::Dict{Symbol,<:Any}
     #ext::Dict{Symbol,<:Any}
@@ -86,7 +40,7 @@ abstract type Transportation <: AbstractDCPowerModel end
 LCDCMethod = Union{DCOPF, Transportation}
 
 "Constructor for an AbstractPowerModel modeling object"
-function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel, network::MutableNetwork) where {N}
+function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel, network::Topology) where {N}
 
     pm = PowerModel(
         model,
@@ -99,7 +53,7 @@ function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model:
 end
 
 ""
-function RestartAbstractPowerModel!(pm::AbstractPowerModel, network::MutableNetwork)
+function RestartAbstractPowerModel!(pm::AbstractPowerModel, network::Topology)
 
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
     network
@@ -110,7 +64,7 @@ function RestartAbstractPowerModel!(pm::AbstractPowerModel, network::MutableNetw
 end
 
 ""
-function initialize_ref(network::Network{N})  where {N}
+function initialize_ref(network::Topology)
 
     data = Dict{Symbol,Any}(
         :bus => network.bus,

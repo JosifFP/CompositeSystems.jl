@@ -95,15 +95,18 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
     cd(CurrentDir)
 
 
-    _check_consistency(network, buses, generators, loads, storages, branches, shunts)
-    _check_connectivity(network, buses, generators, loads, storages, branches, shunts)
+    _check_consistency(network, buses, loads, branches, shunts, generators, storages)
+    _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
-    return SystemModel(buses, generators, loads, storages, generatorstorages, branches, shunts, timestamps)
+    topology = container(network, Topology, buses, loads, branches, shunts, generators, storages,N, U)
+
+    return SystemModel(buses, loads, branches, shunts, generators, storages, generatorstorages, topology, timestamps)
 
 end
 
+
 "Checks for inconsistencies between AbstractAsset and Power Model Network"
-function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, generators::Generators, loads::Loads, storages::Storages, branches::Branches, shunts::Shunts)
+function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
     for k in buses.keys
         @assert haskey(ref[:bus],k) == true
@@ -174,14 +177,18 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, generators::G
     
 end
 
-"Checks connectivity issues"
-function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, generators::Generators, loads::Loads, storages::Storages, branches::Branches, shunts::Shunts)
+"Checks connectivity issues and status"
+function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
     @assert(length(buses.keys) == length(ref[:bus])) # if this is not true something very bad is going on
+    active_bus_ids = Set(bus["index"] for (i,bus) in ref[:bus] if bus["bus_type"] != 4)
 
     for (i, gen) in ref[:gen]
         if !(gen["gen_bus"] in buses.keys) || !(generators.buses[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(gen["gen_bus"]) in shunt $(i) is not defined")
+        end
+        if gen["gen_status"] != 0 && !(gen["gen_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active generator $(i) is connected to inactive bus $(gen["gen_bus"])")
         end
     end
 
@@ -189,17 +196,27 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, generators::
         if !(load["load_bus"] in buses.keys) || !(loads.buses[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(load["load_bus"]) in load $(i) is not defined")
         end
+
+        if load["status"] != 0 && !(load["load_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active load $(i) is connected to inactive bus $(load["load_bus"])")
+        end       
     end
 
     for (i, shunt) in ref[:shunt]
         if !(shunt["shunt_bus"] in buses.keys) || !(shunts.buses[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
         end
+        if shunt["status"] != 0 && !(shunt["shunt_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active shunt $(i) is connected to inactive bus $(shunt["shunt_bus"])")
+        end
     end
 
     for (i, strg) in ref[:storage]
         if !(strg["storage_bus"] in buses.keys) || !(storages.buses[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(strg["storage_bus"]) in shunt $(i) is not defined")
+        end
+        if strg["status"] != 0 && !(strg["storage_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active storage unit $(i) is connected to inactive bus $(strg["storage_bus"])")
         end
     end
     
@@ -210,44 +227,6 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, generators::
         if !(branch["t_bus"] in buses.keys) || !(branches.t_bus[i] in buses.keys)
             Memento.error(_LOGGER, "bus $(branch["t_bus"]) in shunt $(i) is not defined")
         end
-    end
-
-end
-
-"checks that active components are not connected to inactive buses, otherwise prints warnings"
-function check_status(data::Dict{String,<:Any})
-    apply_pm!(_check_status, data)
-end
-
-""
-function _check_status(data::Dict{String,<:Any})
-    active_bus_ids = Set(bus["index"] for (i,bus) in data["bus"] if bus["bus_type"] != 4)
-
-    for (i, load) in data["load"]
-        if load["status"] != 0 && !(load["load_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active load $(i) is connected to inactive bus $(load["load_bus"])")
-        end
-    end
-
-    for (i, shunt) in data["shunt"]
-        if shunt["status"] != 0 && !(shunt["shunt_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active shunt $(i) is connected to inactive bus $(shunt["shunt_bus"])")
-        end
-    end
-
-    for (i, gen) in data["gen"]
-        if gen["gen_status"] != 0 && !(gen["gen_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active generator $(i) is connected to inactive bus $(gen["gen_bus"])")
-        end
-    end
-
-    for (i, strg) in data["storage"]
-        if strg["status"] != 0 && !(strg["storage_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active storage unit $(i) is connected to inactive bus $(strg["storage_bus"])")
-        end
-    end
-
-    for (i, branch) in data["branch"]
         if branch["br_status"] != 0 && !(branch["f_bus"] in active_bus_ids)
             Memento.warn(_LOGGER, "active branch $(i) is connected to inactive bus $(branch["f_bus"])")
         end
@@ -255,15 +234,14 @@ function _check_status(data::Dict{String,<:Any})
         if branch["br_status"] != 0 && !(branch["t_bus"] in active_bus_ids)
             Memento.warn(_LOGGER, "active branch $(i) is connected to inactive bus $(branch["t_bus"])")
         end
+
+        # if dcline["br_status"] != 0 && !(dcline["f_bus"] in active_bus_ids)
+        #     Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["f_bus"])")
+        # end
+
+        # if dcline["br_status"] != 0 && !(dcline["t_bus"] in active_bus_ids)
+        #     Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
+        # end
     end
 
-    for (i, dcline) in data["dcline"]
-        if dcline["br_status"] != 0 && !(dcline["f_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["f_bus"])")
-        end
-
-        if dcline["br_status"] != 0 && !(dcline["t_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
-        end
-    end
 end

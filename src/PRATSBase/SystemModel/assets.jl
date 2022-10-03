@@ -528,13 +528,13 @@ struct Shunts{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
         source_id::Vector{String}, status::BitVector
     ) where {N,L,T,U}
 
-        nbranches = length(keys)
+        nshunts = length(keys)
         @assert allunique(keys)
-        @assert length(buses) == (nbranches)
-        @assert length(bs) == (nbranches)
-        @assert length(gs) == (nbranches)
-        @assert length(source_id) == (nbranches)
-        @assert length(status) == (nbranches)
+        @assert length(buses) == (nshunts)
+        @assert length(bs) == (nshunts)
+        @assert length(gs) == (nshunts)
+        @assert length(source_id) == (nshunts)
+        @assert length(status) == (nshunts)
 
         new{N,L,T,U}(
             Int.(keys), Int.(buses), Float16.(bs), Float16.(gs), String.(source_id), Bool.(status))
@@ -553,7 +553,7 @@ Base.:(==)(x::T, y::T) where {T <: Shunts} =
 
 
 #Collection Type
-struct Network{N,U<:PerUnit}
+struct Topology{N,U<:PerUnit}
 
     baseMVA::Int
     per_unit::Bool
@@ -565,30 +565,42 @@ struct Network{N,U<:PerUnit}
     bus_shunts::Dict{Int, <:Any}
     bus_storage::Dict{Int, <:Any}
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Dict{String, <:Any}} 
-    ref_buses::Dict{Int, <:Any}
+    buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}} 
+    ref_buses::Dict{Int, Int}
 
-    function Network{N,U}(data::Dict{Symbol,<:Any}) where {N,U}
-
-        baseMVA = data[:baseMVA]
-        per_unit = data[:per_unit]
-        arcs_from = Vector{Tuple{Int, Int, Int}}()
-        arcs_to = Vector{Tuple{Int, Int, Int}}()
-        arcs = Vector{Tuple{Int, Int, Int}}()
-        bus_gens = Dict{Int, Any}()
-        bus_loads = Dict{Int, Any}()
-        bus_shunts = Dict{Int, Any}()
-        bus_storage = Dict{Int, Any}()
-        bus_arcs = Dict{Int, Vector{Tuple{Int, Int, Int}}}()
-        buspairs = Dict{Tuple{Int, Int}, Dict{String, Any}}()
-        ref_buses = Dict{Int, Any}()
-        @assert isempty(baseMVA) == false
-        @assert isempty(per_unit) == false
-
+    function Topology{N,U}(    
+        baseMVA::Int,
+        per_unit::Bool,
+        arcs_from::Vector{Tuple{Int, Int, Int}},
+        arcs_to::Vector{Tuple{Int, Int, Int}},
+        arcs::Vector{Tuple{Int, Int, Int}},
+        bus_gens::Dict{Int, <:Any},
+        bus_loads::Dict{Int, <:Any},
+        bus_shunts::Dict{Int, <:Any},
+        bus_storage::Dict{Int, <:Any},
+        bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}},
+        buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}},
+        ref_buses::Dict{Int, Int}
+        ) where {N,U}
+        
         return new(baseMVA, per_unit, arcs_from, arcs_to, arcs, bus_gens, 
         bus_loads, bus_shunts, bus_storage, bus_arcs, buspairs, ref_buses
         )
-
     end
 
 end
+
+Base.:(==)(x::T, y::T) where {T <: Topology} =
+    x.baseMVA == y.baseMVA &&
+    x.per_unit == y.per_unit &&
+    x.arcs_from == y.arcs_from &&
+    x.arcs_to == y.arcs_to &&
+    x.arcs == y.arcs &&
+    x.bus_gens == y.bus_gens &&
+    x.bus_loads == y.bus_loads &&
+    x.bus_shunts == y.bus_shunts &&
+    x.bus_storage == y.bus_storage &&
+    x.bus_arcs == y.bus_arcs &&
+    x.buspairs == y.buspairs &&
+    x.ref_buses == y.ref_buses
+#

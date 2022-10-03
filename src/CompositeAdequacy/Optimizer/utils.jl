@@ -94,90 +94,6 @@ function ref_add!(ref::Dict{Symbol,Any})
 end
 
 ""
-function ref_add!(ref::MutableNetwork)
-
-    ### filter out inactive components ###
-    filter_inactive_components!(ref)
-
-    ### setup arcs from edges ###
-    ref.arcs_from = [(i,branch["f_bus"],branch["t_bus"]) for (i,branch) in ref.branch]
-    ref.arcs_to   = [(i,branch["t_bus"],branch["f_bus"]) for (i,branch) in ref.branch]
-    ref.arcs = [ref.arcs_from; ref.arcs_to]
-
-    ref.arcs_from_dc = [(i,dcline["f_bus"],dcline["t_bus"]) for (i,dcline) in ref.dcline]
-    ref.arcs_to_dc   = [(i,dcline["t_bus"],dcline["f_bus"]) for (i,dcline) in ref.dcline]
-    ref.arcs_dc      = [ref.arcs_from_dc; ref.arcs_to_dc]
-
-    ref.arcs_from_sw = [(i,switch["f_bus"],switch["t_bus"]) for (i,switch) in ref.switch]
-    ref.arcs_to_sw   = [(i,switch["t_bus"],switch["f_bus"]) for (i,switch) in ref.switch]
-    ref.arcs_sw = [ref.arcs_from_sw; ref.arcs_to_sw]
-
-    ### bus connected component lookups ###
-        tmp = Dict((i, Int[]) for (i,bus) in ref.bus)
-        for (i, load) in ref.load
-            push!(tmp[load["load_bus"]], i)
-        end
-        ref.bus_loads = tmp
-
-        tmp = Dict((i, Int[]) for (i,bus) in ref.bus)
-        for (i,shunt) in ref.shunt
-            push!(tmp[shunt["shunt_bus"]], i)
-        end
-        ref.bus_shunts = tmp
-
-        tmp = Dict((i, Int[]) for (i,bus) in ref.bus)
-        for (i,gen) in ref.gen
-            push!(tmp[gen["gen_bus"]], i)
-        end
-        ref.bus_gens = tmp
-
-        tmp = Dict((i, Int[]) for (i,bus) in ref.bus)
-        for (i,strg) in ref.storage
-            push!(tmp[strg["storage_bus"]], i)
-        end
-        ref.bus_storage = tmp
-
-        tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in ref.bus)
-        for (l,i,j) in ref.arcs
-            push!(tmp[i], (l,i,j))
-        end
-        ref.bus_arcs = tmp
-
-        tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in ref.bus)
-        for (l,i,j) in ref.arcs_dc
-            push!(tmp[i], (l,i,j))
-        end
-        ref.bus_arcs_dc = tmp
-
-        tmp = Dict((i, Tuple{Int,Int,Int}[]) for (i,bus) in ref.bus)
-        for (l,i,j) in ref.arcs_sw
-            push!(tmp[i], (l,i,j))
-        end
-        ref.bus_arcs_sw = tmp
-
-    ### reference bus lookup (a set to support multiple connected components) ###
-    ref_buses = Dict{Int,Any}()
-    for (k,v) in ref.bus
-        if v["bus_type"] == 3
-            ref_buses[k] = v
-        end
-    end
-
-    ref.ref_buses = ref_buses
-
-    if length(ref_buses) > 1
-        Memento.warn(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
-    end
-
-    ### aggregate info for pairs of connected buses ###
-    if isempty(ref.buspairs)
-        ref.buspairs = calc_buspair_parameters(ref.bus, ref.branch)
-    end
-
-end
-
-
-""
 function filter_inactive_components!(ref::Dict{Symbol,Any})
 
     ### filter out inactive components ###
@@ -189,22 +105,6 @@ function filter_inactive_components!(ref::Dict{Symbol,Any})
     ref[:load] = Dict(x for x in ref[:load] if (x.second["status"] ≠ component_status_inactive["load"] && x.second["load_bus"] in keys(ref[:bus])))
     ref[:shunt] = Dict(x for x in ref[:shunt] if (x.second["status"] ≠ component_status_inactive["shunt"] && x.second["shunt_bus"] in keys(ref[:bus])))
     ref[:dcline] = Dict(x for x in ref[:dcline] if (x.second["br_status"] ≠ component_status_inactive["dcline"] && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
-    return ref
-
-end
-
-""
-function filter_inactive_components!(ref::MutableNetwork)
-
-    ### filter out inactive components ###
-    ref.gen = Dict(x for x in ref.gen if (x.second["gen_status"] ≠ component_status_inactive["gen"] && x.second["gen_bus"] in keys(ref.bus)))
-    ref.storage = Dict(x for x in ref.storage if (x.second["status"] ≠ component_status_inactive["storage"] && x.second["storage_bus"] in keys(ref.bus)))
-    ref.branch = Dict(x for x in ref.branch if (x.second["br_status"] ≠ component_status_inactive["branch"] && x.second["f_bus"] in keys(ref.bus) && x.second["t_bus"] in keys(ref.bus)))
-    ref.bus = Dict(x for x in ref.bus if (x.second["bus_type"] ≠ component_status_inactive["bus"]))
-    ref.switch = Dict(x for x in ref.switch if (x.second["status"] ≠ component_status_inactive["switch"] && x.second["f_bus"] in keys(ref.bus) && x.second["t_bus"] in keys(ref.bus)))
-    ref.load = Dict(x for x in ref.load if (x.second["status"] ≠ component_status_inactive["load"] && x.second["load_bus"] in keys(ref.bus)))
-    ref.shunt = Dict(x for x in ref.shunt if (x.second["status"] ≠ component_status_inactive["shunt"] && x.second["shunt_bus"] in keys(ref.bus)))
-    ref.dcline = Dict(x for x in ref.dcline if (x.second["br_status"] ≠ component_status_inactive["dcline"] && x.second["f_bus"] in keys(ref.bus) && x.second["t_bus"] in keys(ref.bus)))
     return ref
 
 end

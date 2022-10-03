@@ -199,7 +199,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
 
     container_timeseries = [Float16.(dict_timeseries[i]) for i in key_order_series]
 
-    return Loads{N,L,T,U}(
+    return asset{N,L,T,U}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],    
         reduce(vcat,transpose.(container_timeseries)),
@@ -323,5 +323,111 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, N::Int, L:
         container_data[:gs][key_order_core],
         container_data[:source_id][key_order_core],
         container_data[:status][key_order_core])
+
+end
+
+"Creates AbstractAsset - Topology"
+function container(ref::Dict{Symbol,<:Any}, asset::Type{Topology}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages, N, U)
+
+    arcs_from = [(i, branches.f_bus[i], branches.t_bus[i]) for i in branches.keys]
+    arcs_to = [(i, branches.t_bus[i], branches.f_bus[i]) for i in branches.keys]
+    arcs = [arcs_from; arcs_to]
+
+    (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = bus_components(arcs, buses, loads, shunts, generators, storages)
+
+    ref_buses = Dict{Int,Int}()
+    for i in buses.keys
+        if buses.bus_type[i] == 3
+            ref_buses[i] = i
+        end
+    end
+
+    if length(ref_buses) > 1
+        Memento.error(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
+    end
+
+    buspairs = calculate_buspair_parameters(buses, branches)
+
+    baseMVA = Int.(ref[:baseMVA])
+    per_unit = ref[:per_unit]
+
+    return asset{N,U}(baseMVA, per_unit, arcs_from, arcs_to, arcs, bus_gens, bus_loads, bus_shunts, bus_storage, bus_arcs, buspairs, ref_buses)
+
+end
+
+function bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, loads::Loads, shunts::Shunts, generators::Generators, storages::Storages)
+
+    tmp = Dict((i, Tuple{Int,Int,Int}[]) for i in buses.keys)
+    for (l,i,j) in arcs
+        push!(tmp[i], (l,i,j))
+    end
+    bus_arcs = tmp
+
+    tmp = Dict((i, Int[]) for i in buses.keys)
+    for k in loads.keys
+        if loads.status[k] ≠ 0 push!(tmp[loads.buses[k]], k) end
+    end
+    bus_loads = tmp
+
+    tmp = Dict((i, Int[]) for i in buses.keys)
+    for k in shunts.keys
+        if shunts.status[k] ≠ 0 push!(tmp[shunts.buses[k]], k) end
+    end
+    bus_shunts = tmp
+
+    tmp = Dict((i, Int[]) for i in buses.keys)
+    for k in generators.keys
+        if generators.status[k] ≠ 0 push!(tmp[generators.buses[k]], k) end
+    end
+    bus_gens = tmp
+
+    tmp = Dict((i, Int[]) for i in buses.keys)
+    for k in storages.keys
+        if storages.status[k] ≠ 0 push!(tmp[storages.buses[k]], k) end
+    end
+    bus_storage = tmp
+
+    return (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage)
+
+end
+
+"compute bus pair level data, can be run on data or ref data structures"
+function calculate_buspair_parameters(buses::Buses, branches::Branches)
+
+    bus_lookup = [i for i in buses.keys if buses.bus_type[i] ≠ 4]
+    branch_lookup = [i for i in branches.keys if branches.status[i] == 1 && branches.f_bus[i] in bus_lookup && branches.t_bus[i] in bus_lookup]
+    
+    
+    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+    
+    for l in branch_lookup
+        i = branches.f_bus[l]
+        j = branches.t_bus[l]
+        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branches.angmin[l])
+        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branches.angmax[l])
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    end
+    
+    buspairs = Dict((i,j) => Dict(
+        "branch"=>Int(bp_branch[(i,j)]),
+        "angmin"=>Float16(bp_angmin[(i,j)]),
+        "angmax"=>Float16(bp_angmax[(i,j)]),
+        "tap"=>Float16(branches.tap[bp_branch[(i,j)]]),
+        "vm_fr_min"=>Float16(buses.vmin[i]),
+        "vm_fr_max"=>Float16(buses.vmax[i]),
+        "vm_to_min"=>Float16(buses.vmin[j]),
+        "vm_to_max"=>Float16(buses.vmax[j]),
+        ) for (i,j) in buspair_indexes
+    )
+    
+    # add optional parameters
+    for bp in buspair_indexes
+        buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
+    end
+    
+    return buspairs
 
 end
