@@ -19,12 +19,54 @@ pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, 
 CompositeAdequacy.var_bus_voltage(pm, system)
 CompositeAdequacy.var_gen_power(pm, system)
 CompositeAdequacy.var_branch_power(pm, system)
+CompositeAdequacy.var_load_curtailment(pm, system)
+
+bus_arcs = CompositeAdequacy.field(system, Topology, :bus_arcs)[1]
+bus_gens = CompositeAdequacy.field(system, Topology, :bus_gens)[1]
+bus_loads = CompositeAdequacy.field(system, Topology, :bus_loads)[1]
+bus_shunts = CompositeAdequacy.field(system, Topology, :bus_shunts)[1]
+bus_storage = CompositeAdequacy.field(system, Topology, :bus_storage)[1]
+bus_pd = Dict(k => CompositeAdequacy.field(system, Loads, :pd)[k] for k in bus_loads)
+bus_qd = Dict(k => CompositeAdequacy.field(system, Loads, :qd)[k] for k in bus_loads)
+bus_gs = Dict(k => CompositeAdequacy.field(system, Shunts, :gs)[k] for k in bus_shunts)
+bus_bs = Dict(k => CompositeAdequacy.field(system, Shunts, :bs)[k] for k in bus_shunts)
+
+p    = get(CompositeAdequacy.var(pm),    :p, Dict()); CompositeAdequacy._check_var_keys(p, bus_arcs, "active power", "branch")
+p_lc = get(CompositeAdequacy.var(pm), :p_lc, Dict()); CompositeAdequacy._check_var_keys(p, bus_loads, "active power", "loads")
+pg   = get(CompositeAdequacy.var(pm),   :pg, Dict()); CompositeAdequacy._check_var_keys(pg, bus_gens, "active power", "generator")
+ps   = get(CompositeAdequacy.var(pm),   :ps, Dict()); CompositeAdequacy._check_var_keys(ps, bus_storage, "active power", "storage")
+
+sum(p[a] for a in bus_arcs)
+sum(pg[g] for g in bus_gens)
+sum(ps[s] for s in bus_storage)
+sum(pd for pd in values(bus_pd))
+sum(gs for gs in values(bus_gs))*1.0^2
+sum(p_lc[m] for m in bus_loads)
+bus_loads
+p_lc
+
+    cstr = JuMP.@constraint(pm.model,
+        sum(p[a] for a in bus_arcs)
+        #+ sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
+        #+ sum(psw[a_sw] for a_sw in bus_arcs_sw)
+        ==
+        sum(pg[g] for g in bus_gens)
+        #+ sum(p_lc[m] for m in bus_loads)
+        - sum(ps[s] for s in bus_storage)
+        - sum(pd for pd in values(bus_pd))
+        - sum(gs for gs in values(bus_gs))*1.0^2
+    )
+
+
+
+
 
 
 for i in CompositeAdequacy.field(system, Buses, :keys)
     CompositeAdequacy.constraint_power_balance(pm, system, i)
 end
 
+pm.model
 println(pm.model)
 JuMP.solution_summary(pm.model, verbose=true)
 

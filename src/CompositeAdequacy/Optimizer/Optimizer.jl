@@ -14,7 +14,7 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type
     # Add Constraints
     # ---------------
     for i in field(system, Buses, :keys)
-        constraint_power_balance(pm, i)
+        constraint_power_balance(pm, system, i)
     end
 
     for i in field(system, Branches, :keys)
@@ -69,14 +69,14 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type
 end
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::AbstractDCPowerModel, type::Type{DCOPF})
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type{DCOPF})
     # Add Optimization and State Variables
-    var_bus_voltage(pm)
-    var_gen_power(pm)
+    var_bus_voltage(pm, system)
+    var_gen_power(pm, system)
+    var_branch_power(pm, system)
     #variable_storage_power_mi(pm)
-    var_branch_power(pm)
     #var_dcline_power(pm)
-    var_load_curtailment(pm)
+    var_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------
@@ -84,8 +84,8 @@ function build_method!(pm::AbstractDCPowerModel, type::Type{DCOPF})
         constraint_theta_ref(pm, i)
     end
 
-    for i in ids(pm, :bus)
-        constraint_power_balance(pm, i)
+    for i in field(system, Buses, :keys)
+        constraint_power_balance(pm, system, i)
     end
 
     #for i in ids(pm, :storage, nw=n)

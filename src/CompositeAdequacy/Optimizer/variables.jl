@@ -149,11 +149,11 @@ function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel)
     p_lc = JuMP.@variable(pm.model, [i in field(system, Loads, :keys); field(system, Loads, :status)[i] ≠ 0], base_name="p_lc")
 
     for l in field(system, Loads, :keys)
-        JuMP.set_upper_bound(p_lc[l], field(system, Loads, :pd)[i])
+        JuMP.set_upper_bound(p_lc[l], field(system, Loads, :pd)[l])
         JuMP.set_lower_bound(p_lc[l],0.0)
     end
 
-    sol_component_value(pm, :load_curtailment, :p_lc, field(system, :loads) , p_lc)
+    sol_component_value(pm, :load_curtailment, :p_lc, field(system, Loads, :keys) , p_lc)
 end
 
 "Defines load curtailment variables q to represent the active power flow for each branch"
@@ -166,8 +166,8 @@ function var_load_curtailment_imaginary(pm::AbstractACPowerModel, system::System
     
     q_lc = JuMP.@variable(pm.model, [i in field(system, Loads, :keys); field(system, Loads, :status)[i] ≠ 0], base_name="q_lc")
 
-    for (l,load) in field(system, Loads, :keys)
-        JuMP.set_upper_bound(q_lc[l], field(system, Loads, :qd)[i])
+    for l in field(system, Loads, :keys)
+        JuMP.set_upper_bound(q_lc[l], field(system, Loads, :qd)[l])
         JuMP.set_lower_bound(q_lc[l],0.0)
     end
     #sol_component_fixed(pm, :load_curtailment, :q_lc, ids(pm, :load), NaN)

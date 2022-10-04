@@ -12,7 +12,7 @@ end
 "Nodal power balance constraints"
 function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int)
 
-    bus = field(system, Buses, :keys)[i]
+    #bus = field(system, Buses, :keys)[i]
     bus_arcs = field(system, Topology, :bus_arcs)[i]
     #bus_arcs_dc = field(system, Topology, :bus_arcs_dc)[i]
     #bus_arcs_sw = field(system, Topology, :bus_arcs_sw)[i]
@@ -26,7 +26,7 @@ function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i
     bus_gs = Dict(k => field(system, Shunts, :gs)[k] for k in bus_shunts)
     bus_bs = Dict(k => field(system, Shunts, :bs)[k] for k in bus_shunts)
 
-    type = sol(pm, :type)
+    type = LCDCMethod
 
     _constraint_power_balance(pm, i, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type)
 end
