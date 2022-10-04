@@ -4,54 +4,53 @@ Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data
 """
 
 "Transportation"
-function build_method!(pm::AbstractDCPowerModel, type::Type{Transportation})
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type{Transportation})
  
-    var_gen_power(pm)
-    var_branch_power(pm)
-    var_dcline_power(pm)
-    var_load_curtailment(pm)
+    var_gen_power(pm, system)
+    var_branch_power(pm, system)
+    var_load_curtailment(pm, system)
+    #var_dcline_power(pm, system)
 
     # Add Constraints
     # ---------------
-    for i in ids(pm, :bus)
+    for i in field(system, Buses, :keys)
         constraint_power_balance(pm, i)
     end
 
-    for i in ids(pm, :branch)
+    for i in field(system, Branches, :keys)
         constraint_thermal_limit_from(pm, i)
         constraint_thermal_limit_to(pm, i)
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
-    end
+    # for i in field(system, DCLines, :keys)
+    #     constraint_dcline_power_losses(pm, i)
+    # end
 
     objective_min_load_curtailment(pm)
-
     return
 
 end
 
 "DCMPPowerModel"
-function build_method!(pm::AbstractDCPowerModel, type::Type{DCMPPowerModel})
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type{DCMPPowerModel})
     # Add Optimization and State Variables
-    var_bus_voltage(pm)
-    var_gen_power(pm)
+    var_bus_voltage(pm, system)
+    var_gen_power(pm, system)
+    var_branch_power(pm, system)
     #variable_storage_power_mi(pm)
-    var_branch_power(pm)
-    var_dcline_power(pm)
+    #var_dcline_power(pm)
 
     # Add Constraints
     # ---------------
-    for i in ids(pm, :ref_buses)
+    for i in keys(field(system, Topology, :ref_buses))
         constraint_theta_ref(pm, i)
     end
 
-    for i in ids(pm, :bus)
-        constraint_power_balance(pm, i)
+    for i in field(system, Buses, :keys)
+        constraint_power_balance(pm, system, i)
     end
 
-    for i in ids(pm, :branch)
+    for i in field(system, Branches, :keys)
         constraint_ohms_yt_from(pm, i)
         #constraint_ohms_yt_to(pm, i)
 
@@ -61,9 +60,9 @@ function build_method!(pm::AbstractDCPowerModel, type::Type{DCMPPowerModel})
         constraint_thermal_limit_to(pm, i)
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
-    end
+    # for i in field(system, DCLines, :keys)
+    #     constraint_dcline_power_losses(pm, i)
+    # end
 
     return
 
@@ -76,12 +75,12 @@ function build_method!(pm::AbstractDCPowerModel, type::Type{DCOPF})
     var_gen_power(pm)
     #variable_storage_power_mi(pm)
     var_branch_power(pm)
-    var_dcline_power(pm)
+    #var_dcline_power(pm)
     var_load_curtailment(pm)
 
     # Add Constraints
     # ---------------
-    for i in ids(pm, :ref_buses)
+    for i in keys(field(system, Topology, :ref_buses))
         constraint_theta_ref(pm, i)
     end
 

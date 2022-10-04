@@ -6,44 +6,43 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractDCPowerModel, i::Int)
     JuMP.@constraint(pm.model, var(pm, :va)[i] == 0)
+
 end
 
 "Nodal power balance constraints"
-function constraint_power_balance(pm::AbstractPowerModel, i::Int)
+function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int)
 
-    bus = ref(pm, :bus, i)
-    bus_arcs = ref(pm, :bus_arcs, i)
-    bus_arcs_dc = ref(pm, :bus_arcs_dc, i)
-    bus_arcs_sw = ref(pm, :bus_arcs_sw, i)
-    bus_gens = ref(pm, :bus_gens, i)
-    bus_loads = ref(pm, :bus_loads, i)
-    bus_shunts = ref(pm, :bus_shunts, i)
-    bus_storage = ref(pm, :bus_storage, i)
+    bus = field(system, Buses, :keys)[i]
+    bus_arcs = field(system, Topology, :bus_arcs)[i]
+    #bus_arcs_dc = field(system, Topology, :bus_arcs_dc)[i]
+    #bus_arcs_sw = field(system, Topology, :bus_arcs_sw)[i]
+    bus_gens = field(system, Topology, :bus_gens)[i]
+    bus_loads = field(system, Topology, :bus_loads)[i]
+    bus_shunts = field(system, Topology, :bus_shunts)[i]
+    bus_storage = field(system, Topology, :bus_storage)[i]
 
-    bus_pd = Dict(k => ref(pm, :load, k, "pd") for k in bus_loads)
-    bus_qd = Dict(k => ref(pm, :load, k, "qd") for k in bus_loads)
-
-    bus_gs = Dict(k => ref(pm, :shunt, k, "gs") for k in bus_shunts)
-    bus_bs = Dict(k => ref(pm, :shunt, k, "bs") for k in bus_shunts)
+    bus_pd = Dict(k => field(system, Loads, :pd)[k] for k in bus_loads)
+    bus_qd = Dict(k => field(system, Loads, :qd)[k] for k in bus_loads)
+    bus_gs = Dict(k => field(system, Shunts, :gs)[k] for k in bus_shunts)
+    bus_bs = Dict(k => field(system, Shunts, :bs)[k] for k in bus_shunts)
 
     type = sol(pm, :type)
 
-    _constraint_power_balance(pm, i, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type)
+    _constraint_power_balance(pm, i, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type)
 end
 
 ""
-function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type::Type{DCMPPowerModel})
+function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type::Type{DCMPPowerModel})
     p    = get(var(pm),    :p, Dict()); _check_var_keys(p, bus_arcs, "active power", "branch")
     pg   = get(var(pm),   :pg, Dict()); _check_var_keys(pg, bus_gens, "active power", "generator")
     ps   = get(var(pm),   :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
-    psw  = get(var(pm),  :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
-    p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
-
+    #psw  = get(var(pm),  :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
+    #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
     cstr = JuMP.@constraint(pm.model,
         sum(p[a] for a in bus_arcs)
-        + sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
-        + sum(psw[a_sw] for a_sw in bus_arcs_sw)
+        #+ sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
+        #+ sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
         sum(pg[g] for g in bus_gens)
         - sum(ps[s] for s in bus_storage)
@@ -53,20 +52,20 @@ function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, b
 end
 
 ""
-function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, bus_arcs_dc, bus_arcs_sw, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type::Type{<:LCDCMethod})
+function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs, type::Type{<:LCDCMethod})
 
     p    = get(var(pm),    :p, Dict()); _check_var_keys(p, bus_arcs, "active power", "branch")
     p_lc = get(var(pm), :p_lc, Dict()); _check_var_keys(p, bus_loads, "active power", "loads")
     pg   = get(var(pm),   :pg, Dict()); _check_var_keys(pg, bus_gens, "active power", "generator")
     ps   = get(var(pm),   :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
-    psw  = get(var(pm),  :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
-    p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
+    #psw  = get(var(pm),  :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
+    #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
 
     cstr = JuMP.@constraint(pm.model,
         sum(p[a] for a in bus_arcs)
-        + sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
-        + sum(psw[a_sw] for a_sw in bus_arcs_sw)
+        #+ sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
+        #+ sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
         sum(pg[g] for g in bus_gens)
         + sum(p_lc[m] for m in bus_loads)

@@ -52,3 +52,24 @@ function colsum(x::Matrix{T}, col::Integer) where {T}
     end
     return result
 end
+
+field(system::SystemModel, field::Symbol) = getfield(system, field)
+field(system::SystemModel, buses::Type{Buses}, subfield::Symbol) = getfield(getfield(system, :buses), subfield)
+field(system::SystemModel, loads::Type{Loads}, subfield::Symbol) = getfield(getfield(system, :loads), subfield)
+field(system::SystemModel, branches::Type{Branches}, subfield::Symbol) = getfield(getfield(system, :branches), subfield)
+field(system::SystemModel, shunts::Type{Shunts}, subfield::Symbol) = getfield(getfield(system, :shunts), subfield)
+field(system::SystemModel, generators::Type{Generators}, subfield::Symbol) = getfield(getfield(system, :generators), subfield)
+field(system::SystemModel, storages::Type{Storages}, subfield::Symbol) = getfield(getfield(system, :storages), subfield)
+field(system::SystemModel, generatorstorages::Type{GeneratorStorages}, subfield::Symbol) = getfield(getfield(system, :generatorstorages), subfield)
+field(system::SystemModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(system, :topology), subfield)
+
+field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
+field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
+field(branches::Branches, subfield::Symbol) = getfield(branches, subfield)
+field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
+field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
+field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
+field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
+field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
+
+field(state::SystemState, field::Symbol) = getfield(state, field)

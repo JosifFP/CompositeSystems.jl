@@ -1,5 +1,6 @@
 using PRATS
 using PRATS.PRATSBase
+using PRATS.CompositeAdequacy
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP, HiGHS
 using Test, Dates
@@ -7,98 +8,45 @@ import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
+systemstate = CompositeAdequacy.SystemState(system)
+CompositeAdequacy.update_system!(systemstate, system, 1)
 
-system.topology
-system.branches
-system.buses
-system.loads
-system.generators
-system.storages
-system.generatorstorages
-system.shunts
-system.timestamps
+nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0)
+optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, 
+    "nl_solver"=>JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), "log_levels"=>[])
 
-
-
-system.topology.bus_arcs
-system.branches.status[1] = 0
-system.branches.status[2] = 0
-
-tmp_arcs_from = [(i,a,b) for (i,a,b) in system.topology.arcs_from if system.branches.status[i] == true]
-tmp_arcs_to   = [(i,a,b) for (i,a,b) in system.topology.arcs_to if system.branches.status[i] == true]
-tmp_arcs = [(i,a,b) for (i,a,b) in system.topology.arcs if system.branches.status[i] == true]
+pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
+CompositeAdequacy.var_bus_voltage(pm, system)
+CompositeAdequacy.var_gen_power(pm, system)
+CompositeAdequacy.var_branch_power(pm, system)
 
 
-(bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = PRATSBase.bus_components(tmp_arcs, system.buses, system.loads, system.shunts, system.generators, system.storages)
-
-bus_arcs
-
-
-for k in system.buses.keys
-    system.topology.bus_gens[k] = bus_gens[k]
-    system.topology.bus_loads[k] = bus_loads[k]
-    system.topology.bus_shunts[k] = bus_shunts[k]
-    system.topology.bus_storage[k] = bus_storage[k]
-
-    if system.topology.bus_arcs[k] ≠ bus_arcs[k]
-        system.topology.bus_arcs[k] = bus_arcs[k]
-    end
-
+for i in CompositeAdequacy.field(system, Buses, :keys)
+    CompositeAdequacy.constraint_power_balance(pm, system, i)
 end
 
+println(pm.model)
+JuMP.solution_summary(pm.model, verbose=true)
 
-system.topology.buspairs
-
-
-system.branches.status[1] = 0
-system.branches.status[2] = 0
-
-tmp_buspairs = PRATSBase.calculate_buspair_parameters(system.buses, system.branches)
-system.topology.buspairs
-
-for bp in keys(system.topology.buspairs)
-    if haskey(tmp_buspairs, bp) ≠ true
-        println(bp)
-        empty!(system.topology.buspairs[bp])
-    end
-end
-
-system.topology.ref_buses
+[i for i in system.buses.keys if system.buses.bus_type[i] ≠ 4]
+[(l,i,j) for (l,i,j) in system.topology.arcs if system.branches.status[l] ≠ 0]
+[(l,i,j) in ref(pm, :arcs)]
 
 
+[i for i in CompositeAdequacy.field(system, Buses, :keys) if CompositeAdequacy.field(system, Buses, :bus_type)[i] ≠ 4]
+
+# function obtaine(system::SystemModel, buses::Type{Buses}, subfield::Symbol) 
+    
+#     for i in field(system, Buses, :keys)
+#         if field(system, Buses, :keys)[i] ≠ 4
 
 
-ref = PRATSBase.BuildNetwork(RawFile)
-CompositeAdequacy.ref_add!(ref)
-@show keys(ref)
-ref[:buspairs]
+#     return getfield(getfield(system, :buses), subfield)
+# end
 
-buspairs = PRATSBase.calculate_buspair_parameters(ref[:bus], ref[:branch])
-
-
-
-
-a.keys
-a.f_bus
-a.t_bus
-a.rate_a
-a.rate_b
-a.rate_c
-a.r
-a.x
-a.b_fr
-a.b_to
-a.g_fr
-a.g_to
-a.shift
-a.angmin
-a.angmax
-a.transformer
-a.tap
-a.source_id
-a.status
-a.λ
-a.μ
+pm.model
+empty!(pm.model)
+"hello"
 
 
 

@@ -232,26 +232,17 @@ function _check_missing_keys(dict, keys, type)
 end
 
 "computes flow bounds on branches from ref data"
-function ref_calc_branch_flow_bounds(branches, buses)
+function ref_calc_branch_flow_bounds(branches::Branches)
     flow_lb = Dict() 
     flow_ub = Dict()
 
-    for (i, branch) in branches
+    for i in field(branches, :keys)
         flow_lb[i] = -Inf
         flow_ub[i] = Inf
 
-        if haskey(branch, "rate_a")
-            flow_lb[i] = max(flow_lb[i], -branch["rate_a"])
-            flow_ub[i] = min(flow_ub[i],  branch["rate_a"])
-        end
-
-        if haskey(branch, "c_rating_a")
-            fr_vmax = buses[branch["f_bus"]]["vmax"]
-            to_vmax = buses[branch["t_bus"]]["vmax"]
-            m_vmax = max(fr_vmax, to_vmax)
-
-            flow_lb[i] = max(flow_lb[i], -branch["c_rating_a"]*m_vmax)
-            flow_ub[i] = min(flow_ub[i],  branch["c_rating_a"]*m_vmax)
+        if hasfield(Branches, :rate_a)
+            flow_lb[i] = max(flow_lb[i], -field(branches, :rate_a)[i])
+            flow_ub[i] = min(flow_ub[i],  field(branches, :rate_a)[i])
         end
     end
 
