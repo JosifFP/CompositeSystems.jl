@@ -27,7 +27,7 @@ function build_result!(pm::AbstractDCPowerModel, loads::Loads, t::Int)
         end
     end
 
-    load_initial = Dict{Int, Float16}(loads.keys.=>loads.pd[:,t]*1.25)
+    load_initial = Dict{Int, Float16}(loads.keys.=>loads.pd[:,t]*1.5)
     return get_loads_sol!(pm, load_initial, status)
     
 end

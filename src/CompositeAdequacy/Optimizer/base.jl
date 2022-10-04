@@ -23,7 +23,6 @@ abstract type AbstractACPowerModel <: AbstractPowerModel end
 CompositeAdequacy.@def pm_fields begin
     
     model::JuMP.AbstractModel
-    var::Dict{Symbol,<:Any}
     sol::Dict{Symbol,<:Any}
 
 end
@@ -42,7 +41,6 @@ function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model:
 
     pm = PowerModel(
         model,
-        Dict{Symbol, Any}(),
         Dict{Symbol, Any}()
     )
     return pm
@@ -52,21 +50,18 @@ end
 function RestartAbstractPowerModel!(pm::AbstractPowerModel)
 
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-    empty!(pm.var)
     empty!(pm.sol)
     return
 end
 
 
 
-var(pm::AbstractPowerModel) = pm.var
-var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
-var(pm::AbstractPowerModel, key::Symbol, idx) = pm.var[key][idx]
-
+#var(pm::AbstractPowerModel) = pm.var
+#var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
+#var(pm::AbstractPowerModel, key::Symbol, idx) = pm.var[key][idx]
 con(pm::AbstractPowerModel) = pm.con
 con(pm::AbstractPowerModel, key::Symbol) = pm.con[key]
 con(pm::AbstractPowerModel, key::Symbol, idx) = pm.con[key][idx]
-
 sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
 sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 

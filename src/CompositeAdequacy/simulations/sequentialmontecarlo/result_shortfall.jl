@@ -53,7 +53,7 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
 ) where {N}
 
-    nbuses = length(sys.network.load)
+    nbuses = length(sys.loads.keys)
 
     periodsdropped_total = meanvariance()
     periodsdropped_bus = [meanvariance() for _ in 1:nbuses]

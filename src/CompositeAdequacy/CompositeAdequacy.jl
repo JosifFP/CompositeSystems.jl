@@ -36,7 +36,7 @@ export
     # Simulation specifications
     SequentialMonteCarlo, NoContingencies,
 
-    SystemState, accumulator, MutableNetwork,
+    SystemState, accumulator,
 
     # Result specifications
     Shortfall, ShortfallSamples, Flow, FlowTotal, Report,

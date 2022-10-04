@@ -18,7 +18,7 @@ function initialize_availability!(
 end
 
 function cycles!(
-    rng::AbstractRNG, λ::Float32, μ::Float32, N::Int)
+    rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
     sequence = Base.ones(true, N)
     i=Int(0)
@@ -35,10 +35,10 @@ function cycles!(
 
 end
 
-function T(rng, λ::Float32, μ::Float32)::Tuple{Int32,Int32}
+function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
     
-    ttf = (x->trunc(Int32, x)).((-1/λ)log(rand(rng)))
-    ttr = (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))
+    ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
+    ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
 
     while ttf == 0.0 || ttr == 0.0
         ttf = (x->trunc(Int32, x)).((-1/λ)log(rand(rng)))

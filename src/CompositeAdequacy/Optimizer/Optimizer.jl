@@ -4,38 +4,40 @@ Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data
 """
 
 "Transportation"
-function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type{Transportation})
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{Transportation})
  
-    var_gen_power(pm, system)
+    var_gen_power(pm, system, t)
     var_branch_power(pm, system)
-    var_load_curtailment(pm, system)
+    var_load_curtailment(pm, system, t)
     #var_dcline_power(pm, system)
 
     # Add Constraints
     # ---------------
     for i in field(system, Buses, :keys)
-        constraint_power_balance(pm, system, i)
+        constraint_power_balance(pm, system, i, t)
     end
 
     for i in field(system, Branches, :keys)
-        constraint_thermal_limit_from(pm, i)
-        constraint_thermal_limit_to(pm, i)
+        if field(system, Branches, :status)[i] ≠ 0
+            constraint_thermal_limit_from(pm, system, i)
+            constraint_thermal_limit_to(pm, system, i)
+        end
     end
 
     # for i in field(system, DCLines, :keys)
     #     constraint_dcline_power_losses(pm, i)
     # end
 
-    objective_min_load_curtailment(pm)
+    objective_min_load_curtailment(pm, system)
     return
 
 end
 
 "DCMPPowerModel"
-function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type{DCMPPowerModel})
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{DCMPPowerModel})
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
-    var_gen_power(pm, system)
+    var_gen_power(pm, system, t)
     var_branch_power(pm, system)
     #variable_storage_power_mi(pm)
     #var_dcline_power(pm)
@@ -47,17 +49,17 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type
     end
 
     for i in field(system, Buses, :keys)
-        constraint_power_balance(pm, system, i)
+        constraint_power_balance(pm, system, i, t)
     end
 
     for i in field(system, Branches, :keys)
-        constraint_ohms_yt_from(pm, i)
-        #constraint_ohms_yt_to(pm, i)
-
-        constraint_voltage_angle_difference(pm, i)
-
-        constraint_thermal_limit_from(pm, i)
-        constraint_thermal_limit_to(pm, i)
+        if field(system, Branches, :status)[i] ≠ 0
+            constraint_ohms_yt_from(pm, system, i)
+            #constraint_ohms_yt_to(pm, system, i)
+            constraint_voltage_angle_difference(pm, system, i)
+            constraint_thermal_limit_from(pm, system, i)
+            constraint_thermal_limit_to(pm, system, i)
+        end
     end
 
     # for i in field(system, DCLines, :keys)
@@ -69,14 +71,14 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type
 end
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type{DCOPF})
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{DCOPF})
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
-    var_gen_power(pm, system)
+    var_gen_power(pm, system, t)
     var_branch_power(pm, system)
     #variable_storage_power_mi(pm)
     #var_dcline_power(pm)
-    var_load_curtailment(pm, system)
+    var_load_curtailment(pm, system, t)
 
     # Add Constraints
     # ---------------
@@ -85,7 +87,7 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type
     end
 
     for i in field(system, Buses, :keys)
-        constraint_power_balance(pm, system, i)
+        constraint_power_balance(pm, system, i, t)
     end
 
     #for i in ids(pm, :storage, nw=n)
@@ -94,24 +96,30 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, type::Type
     #    constraint_storage_thermal_limit(pm, i, nw=n)
     #end
 
-    for i in ids(pm, :branch)
-        constraint_ohms_yt_from(pm, i)
-        constraint_ohms_yt_to(pm, i)
-
-        constraint_voltage_angle_difference(pm, i)
-
-        constraint_thermal_limit_from(pm, i)
-        constraint_thermal_limit_to(pm, i)
+    for i in field(system, Branches, :keys)
+        if field(system, Branches, :status)[i] ≠ 0
+            constraint_ohms_yt_from(pm, system, i)
+            #constraint_ohms_yt_to(pm, system, i)
+            constraint_voltage_angle_difference(pm, system, i)
+            constraint_thermal_limit_from(pm, system, i)
+            constraint_thermal_limit_to(pm, system, i)
+        end
     end
 
-    for i in ids(pm, :dcline)
-        constraint_dcline_power_losses(pm, i)
-    end
-
-    objective_min_load_curtailment(pm)
-
+    # for i in ids(pm, :dcline)
+    #     constraint_dcline_power_losses(pm, i)
+    # end
+    objective_min_load_curtailment(pm, system)
     return
 
+end
+
+""
+function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel)
+
+    return JuMP.@objective(pm.model, Min,
+        sum(field(system, Loads, :cost)[i]*pm.model[:p_lc][i] for i in field(system, Loads, :keys) if field(system, Loads, :status)[i] ≠ 0)
+    )
 end
 
 # index representing which side the HVDC line is starting
@@ -122,36 +130,22 @@ end
 #sum(pm.ref[:load][i]["cost"]*pm.model[:plc][i] for i in keys(pm.ref[:load])))
 # Objective Function: minimize load curtailment
 
-""
-function optimization!(pm::AbstractPowerModel, type::Type)
+# ""
+# function optimization!(pm::AbstractPowerModel, type::Type)
     
-    #JuMP.set_time_limit_sec(pm.model, 2.0)
-    JuMP.optimize!(pm.model)
+#     #JuMP.set_time_limit_sec(pm.model, 2.0)
+#     JuMP.optimize!(pm.model)
 
-    # if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED && type == DCOPF
-    #     JuMP.set_time_limit_sec(pm.model, 2.0)
-    #     var_buspair_current_magnitude_sqr(pm)
-    #     var_bus_voltage_magnitude_sqr(pm)
-    #     for i in ids(pm, :branch)
-    #         constraint_voltage_magnitude_diff(pm, i)
-    #     end
-    #     JuMP.optimize!(pm.model)
-    # end
+#     # if JuMP.termination_status(pm.model) ≠ JuMP.LOCALLY_SOLVED && type == DCOPF
+#     #     JuMP.set_time_limit_sec(pm.model, 2.0)
+#     #     var_buspair_current_magnitude_sqr(pm)
+#     #     var_bus_voltage_magnitude_sqr(pm)
+#     #     for i in ids(pm, :branch)
+#     #         constraint_voltage_magnitude_diff(pm, i)
+#     #     end
+#     #     JuMP.optimize!(pm.model)
+#     # end
     
-    return
+#     return
 
-end
-
-function objective_min_load_curtailment(pm::AbstractDCPowerModel)
-
-    load_cost = Dict()
-    for (i,load) in ref(pm, :load)
-        p_lc = CompositeAdequacy.var(pm, :p_lc, i)
-        load_cost[i] = load["cost"]*p_lc
-    end
-
-
-    return JuMP.@objective(pm.model, Min,
-        sum(load_cost[i] for (i,load) in ref(pm, :load))
-    )
-end
+# end

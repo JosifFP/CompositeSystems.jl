@@ -133,7 +133,7 @@ function _calc_branch_flow_dc(data::Dict{String,<:Any})
             f_bus = branch["f_bus"]
             t_bus = branch["t_bus"]
 
-            g, b = calc_branch_y(branch)
+            g, b = _calc_branch_y(branch)
 
             p_fr = -b*(va[f_bus] - va[t_bus])
         else
@@ -152,7 +152,7 @@ function _calc_branch_flow_dc(data::Dict{String,<:Any})
 end
 
 ""
-function calc_branch_y(branch::Dict{String,<:Any})
+function _calc_branch_y(branch::Dict{String,<:Any})
     y = pinv(branch["br_r"] + im * branch["br_x"])
     g, b = real(y), imag(y)
     return g, b

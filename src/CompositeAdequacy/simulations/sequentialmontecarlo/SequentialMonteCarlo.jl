@@ -58,10 +58,10 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    local systemstate = SystemState(system)
-    local recorders = accumulator.(system, method, resultspecs)
-    local rng = Philox4x((0, 0), 10)
-    local pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
+    systemstate = SystemState(system)
+    recorders = accumulator.(system, method, resultspecs)
+    rng = Philox4x((0, 0), 10)
+    pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
 
     for s in sampleseeds
         println("s=$(s)")
@@ -69,8 +69,8 @@ function assess(
         iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
         for (_,t) in enumerate(iter)
-            #println("t=$(t)")
-            solve!(systemstate, system, t)
+            println("t=$(t)")
+            solve!(pm, systemstate, system, t)
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
             RestartAbstractPowerModel!(pm)
         end
@@ -107,21 +107,15 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
 end
 
 ""
-function solve!(state::SystemState, system::SystemModel{N}, t::Int) where {N}
+function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel{N}, t::Int) where {N}
 
     update_system!(state, system, t)
-    field(state, :branches_available)[:,t] == true ? type = Transportation : type = DCOPF
-    build_method!(pm, type)
+    all(field(state, :branches_available)[:,t]) == true ? type = Transportation : type = DCOPF
+    build_method!(pm, system, t, type)
+    JuMP.optimize!(pm.model)
+    build_result!(pm, field(system, :loads), t)
 
 end
-
-
-#ref_add!(ref(pm))
-#state.branches_available[:,t] == true ? sol(pm)[:type] = type = Transportation : sol(pm)[:type] = type = DCOPF
-#sol(pm)[:type] = type = Transportation
-#build_method!(pm, type)
-#JuMP.optimize!(pm.model)
-#build_result!(pm, system.loads, t)
 
 
 #update_energy!(state.stors_energy, system.storages, t)
@@ -132,7 +126,8 @@ include("result_report.jl")
 
 
 function update_system!(state::SystemState, system::SystemModel{N}, t::Int) where {N}
-
+    
+    field(system, Loads, :pd)[:,t] = field(system, Loads, :pd)[:,t]*1.5
     field(system, Branches, :status)[:] = field(state, :branches_available)[:,t]
     field(system, Generators, :status)[:] = field(state, :gens_available)[:,t]
     field(system, Storages, :status)[:] = field(state, :stors_available)[:,t]
@@ -190,6 +185,59 @@ function update_system!(state::SystemState, system::SystemModel{N}, t::Int) wher
     return
 end
 
+""
+function update!(system::SystemModel{N}) where {N}
+
+    for k in field(system, Branches, :keys)
+        if field(system, Branches, :status)[k] ≠ 0
+            f_bus = field(system, Branches, :f_bus)[k]
+            t_bus = field(system, Branches, :t_bus)[k]
+            if field(system, Buses, :bus_type)[f_bus] == 4 || field(system, Buses, :bus_type)[t_bus] == 4
+                Memento.info(_LOGGER, "deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
+                field(system, Branches, :status)[k] = 0
+            end
+        end
+    end
+    
+    for k in field(system, Buses, :keys)
+        if field(system, Buses, :bus_type)[k] == 4
+            if field(system, Loads, :status)[k] ≠ 0 field(system, Loads, :status)[k] = 0 end
+            if field(system, Shunts, :status)[k] ≠ 0 field(system, Shunts, :status)[k] = 0 end
+            if field(system, Generators, :status)[k] ≠ 0 field(system, Generators, :status)[k] = 0 end
+            if field(system, Storages, :status)[k] ≠ 0 field(system, Storages, :status)[k] = 0 end
+            if field(system, GeneratorStorages, :status)[k] ≠ 0 field(system, GeneratorStorages, :status)[k] = 0 end
+        end
+    end
+
+    #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
+    #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]
+    tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
+
+    (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = get_bus_components(
+        tmp_arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
+
+    for k in field(system, Buses, :keys)
+        field(system, Topology, :bus_gens)[k] = bus_gens[k]
+        field(system, Topology, :bus_loads)[k] = bus_loads[k]
+        field(system, Topology, :bus_shunts)[k] = bus_shunts[k]
+        field(system, Topology, :bus_storage)[k] = bus_storage[k]
+    
+        if field(system, Topology, :bus_arcs)[k] ≠ bus_arcs[k]
+            field(system, Topology, :bus_arcs)[k] = bus_arcs[k]
+        end
+    
+    end
+
+    tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
+
+    for (k,v) in field(system, Topology, :buspairs)
+        if haskey(tmp_buspairs, k) ≠ true
+            empty!(v)
+        end
+    end
+
+    return
+end
 
 
 function get_bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, loads::Loads, shunts::Shunts, generators::Generators, storages::Storages)

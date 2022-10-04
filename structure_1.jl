@@ -7,7 +7,29 @@ using Test, Dates
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
+nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
+optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+PRATSBase.silence()
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 2160)
+resultspecs = (Shortfall(), Report())
+method = PRATS.SequentialMonteCarlo(samples=1, seed=1, verbose=false, threaded=false)
+@time shortfall,report = PRATS.assess(system, method, optimizer, resultspecs...)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 systemstate = CompositeAdequacy.SystemState(system)
 CompositeAdequacy.update_system!(systemstate, system, 1)
 
@@ -16,79 +38,48 @@ optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer,
     "nl_solver"=>JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), "log_levels"=>[])
 
 pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
-CompositeAdequacy.var_bus_voltage(pm, system)
-CompositeAdequacy.var_gen_power(pm, system)
-CompositeAdequacy.var_branch_power(pm, system)
-CompositeAdequacy.var_load_curtailment(pm, system)
+all(CompositeAdequacy.field(systemstate, :branches_available)[:,1]) == true ? type = CompositeAdequacy.Transportation : type = CompositeAdequacy.DCOPF
 
-bus_arcs = CompositeAdequacy.field(system, Topology, :bus_arcs)[1]
-bus_gens = CompositeAdequacy.field(system, Topology, :bus_gens)[1]
-bus_loads = CompositeAdequacy.field(system, Topology, :bus_loads)[1]
-bus_shunts = CompositeAdequacy.field(system, Topology, :bus_shunts)[1]
-bus_storage = CompositeAdequacy.field(system, Topology, :bus_storage)[1]
-bus_pd = Dict(k => CompositeAdequacy.field(system, Loads, :pd)[k] for k in bus_loads)
-bus_qd = Dict(k => CompositeAdequacy.field(system, Loads, :qd)[k] for k in bus_loads)
-bus_gs = Dict(k => CompositeAdequacy.field(system, Shunts, :gs)[k] for k in bus_shunts)
-bus_bs = Dict(k => CompositeAdequacy.field(system, Shunts, :bs)[k] for k in bus_shunts)
-
-p    = get(CompositeAdequacy.var(pm),    :p, Dict()); CompositeAdequacy._check_var_keys(p, bus_arcs, "active power", "branch")
-p_lc = get(CompositeAdequacy.var(pm), :p_lc, Dict()); CompositeAdequacy._check_var_keys(p, bus_loads, "active power", "loads")
-pg   = get(CompositeAdequacy.var(pm),   :pg, Dict()); CompositeAdequacy._check_var_keys(pg, bus_gens, "active power", "generator")
-ps   = get(CompositeAdequacy.var(pm),   :ps, Dict()); CompositeAdequacy._check_var_keys(ps, bus_storage, "active power", "storage")
-
-sum(p[a] for a in bus_arcs)
-sum(pg[g] for g in bus_gens)
-sum(ps[s] for s in bus_storage)
-sum(pd for pd in values(bus_pd))
-sum(gs for gs in values(bus_gs))*1.0^2
-sum(p_lc[m] for m in bus_loads)
-bus_loads
-p_lc
-
-    cstr = JuMP.@constraint(pm.model,
-        sum(p[a] for a in bus_arcs)
-        #+ sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
-        #+ sum(psw[a_sw] for a_sw in bus_arcs_sw)
-        ==
-        sum(pg[g] for g in bus_gens)
-        #+ sum(p_lc[m] for m in bus_loads)
-        - sum(ps[s] for s in bus_storage)
-        - sum(pd for pd in values(bus_pd))
-        - sum(gs for gs in values(bus_gs))*1.0^2
-    )
-
-
-
-
-
-
-for i in CompositeAdequacy.field(system, Buses, :keys)
-    CompositeAdequacy.constraint_power_balance(pm, system, i)
+ref = PRATSBase.BuildNetwork(RawFile)
+for (k,v) in ref[:load]
+    CompositeAdequacy.field(system, Loads, :pd)[k,1] = v["pd"]
 end
 
-pm.model
+"Outages of L12, L13, L0"
+CompositeAdequacy.field(system, Branches, :status)[29] = 0
+CompositeAdequacy.field(system, Branches, :status)[36] = 0
+CompositeAdequacy.field(system, Branches, :status)[37] = 0
+CompositeAdequacy.update!(system)
+CompositeAdequacy.build_method!(pm, system, 1, type)
+
+#CompositeAdequacy.build_method!(pm, system, 1, type)
+JuMP.optimize!(pm.model)
+#JuMP.solution_summary(pm.model, verbose=true)
+#load_initial = Dict{Int, Float16}(CompositeAdequacy.field(system, Loads, :keys).=>CompositeAdequacy.field(system, Loads, :pd)[:,1]*1.25)
+CompositeAdequacy.build_sol_values(CompositeAdequacy.sol(pm, :load_curtailment))
+
+@show CompositeAdequacy.field(system, Branches, :status)
+
+
 println(pm.model)
 JuMP.solution_summary(pm.model, verbose=true)
 
-[i for i in system.buses.keys if system.buses.bus_type[i] ≠ 4]
-[(l,i,j) for (l,i,j) in system.topology.arcs if system.branches.status[l] ≠ 0]
-[(l,i,j) in ref(pm, :arcs)]
 
 
-[i for i in CompositeAdequacy.field(system, Buses, :keys) if CompositeAdequacy.field(system, Buses, :bus_type)[i] ≠ 4]
-
-# function obtaine(system::SystemModel, buses::Type{Buses}, subfield::Symbol) 
-    
-#     for i in field(system, Buses, :keys)
-#         if field(system, Buses, :keys)[i] ≠ 4
 
 
-#     return getfield(getfield(system, :buses), subfield)
-# end
 
-pm.model
-empty!(pm.model)
-"hello"
+
+
+
+
+
+
+
+
+
+
+
 
 
 

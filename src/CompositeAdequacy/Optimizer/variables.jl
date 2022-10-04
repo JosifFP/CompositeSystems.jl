@@ -13,7 +13,7 @@ end
 ""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; bounded::Bool=true)
 
-    va = var(pm)[:va] = JuMP.@variable(pm.model, [i in field(system, Buses, :keys); field(system, Buses, :bus_type)[i] ≠ 4])
+    JuMP.@variable(pm.model, va[i in field(system, Buses, :keys); field(system, Buses, :bus_type)[i] ≠ 4])
     #va = var(pm)[:va] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="va", start = comp_start_value(ref(pm, :bus, i), "va_start"))
     #sol_component_value(pm, :bus, :va, ids(pm, :bus), va)
 end
@@ -26,7 +26,7 @@ end
 "variable: `v[i]` for `i` in `bus`es"
 function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel; bounded::Bool=true)
 
-    vm = var(pm)[:vm] = JuMP.@variable(pm.model, [i in field(system, Buses, :keys); field(system, Buses, :bus_type)[i] ≠ 4], start =1.0)
+    JuMP.@variable(pm.model, vm[i in field(system, Buses, :keys); field(system, Buses, :bus_type)[i] ≠ 4], start =1.0)
     #vm = var(pm)[:vm] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="vm", start = comp_start_value(ref(pm, :bus, i), "vm_start", 1.0))
     if bounded
         for (i, bus) in field(system, Buses, :keys)
@@ -38,15 +38,15 @@ function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel
 end
 
 ""
-function var_gen_power(pm::AbstractPowerModel, system::SystemModel; kwargs...)
-    var_gen_power_real(pm, system; kwargs...)
-    var_gen_power_imaginary(pm, system; kwargs...)
+function var_gen_power(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+    var_gen_power_real(pm, system, t; kwargs...)
+    var_gen_power_imaginary(pm, system, t; kwargs...)
 end
 
 ""
-function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; bounded::Bool=true)
+function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true)
 
-    pg = var(pm)[:pg] = JuMP.@variable(pm.model, [i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
+    JuMP.@variable(pm.model, pg[i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
     #pg = var(pm)[:pg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)], base_name="pg", start = comp_start_value(ref(pm, :gen, i), "pg_start"))    
 
     if bounded
@@ -66,14 +66,14 @@ function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; bounded
 end
 
 "Model ignores reactive power flows"
-function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; kwargs...)
+function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; kwargs...)
     #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), NaN)
 end
 
 ""
-function var_gen_power_imaginary(pm::AbstractACPowerModel, system::SystemModel; bounded::Bool=true)
+function var_gen_power_imaginary(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true)
 
-    qg = var(pm)[:qg] = JuMP.@variable(pm.model, [i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
+    JuMP.@variable(pm.model, qg[i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
     #qg = var(pm)[:qg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)], base_name="qg", start = comp_start_value(ref(pm, :gen, i), "qg_start"))
 
     if bounded
@@ -96,7 +96,7 @@ end
 ""
 function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; bounded::Bool=true)
 
-    p = var(pm)[:p] = JuMP.@variable(pm.model, [(l,i,j) in field(system, Topology, :arcs); field(system, Branches, :status)[l] ≠ 0])
+    JuMP.@variable(pm.model, p[(l,i,j) in field(system, Topology, :arcs); field(system, Branches, :status)[l] ≠ 0])
     #p = var(pm)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
 
     if bounded
@@ -127,7 +127,8 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; bo
     tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
     p_expr = Dict{Any,Any}( ((l,i,j), p[(l,i,j)]) for (l,i,j) in tmp_arcs_from )
     p_expr = merge(p_expr, Dict( ((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in tmp_arcs_from))
-    var(pm)[:p] = p_expr
+    #var(pm)[:p] = p_expr 
+    pm.model[:p] = p_expr 
     #sol_component_value_edge(pm, :branch, :pf, :pt, ref(pm, :arcs_from), ref(pm, :arcs_to), p_expr)
 
 end
@@ -139,21 +140,21 @@ function var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemMode
 end
 
 "Defines load curtailment variables p to represent the active power flow for each branch"
-function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel; kwargs...)
-    var_load_curtailment_real(pm, system; kwargs...)
+function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+    var_load_curtailment_real(pm, system, t; kwargs...)
     var_load_curtailment_imaginary(pm, system; kwargs...)
 end
 
-function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel)
+function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int)
 
-    p_lc = JuMP.@variable(pm.model, [i in field(system, Loads, :keys); field(system, Loads, :status)[i] ≠ 0], base_name="p_lc")
+    JuMP.@variable(pm.model, p_lc[i in field(system, Loads, :keys); field(system, Loads, :status)[i] ≠ 0], base_name="p_lc")
 
     for l in field(system, Loads, :keys)
-        JuMP.set_upper_bound(p_lc[l], field(system, Loads, :pd)[l])
+        JuMP.set_upper_bound(p_lc[l], field(system, Loads, :pd)[l,t])
         JuMP.set_lower_bound(p_lc[l],0.0)
     end
 
-    sol_component_value(pm, :load_curtailment, :p_lc, field(system, Loads, :keys) , p_lc)
+    sol_component_value(pm, :load_curtailment, :p_lc, field(system, Loads, :keys) , pm.model[:p_lc])
 end
 
 "Defines load curtailment variables q to represent the active power flow for each branch"
@@ -164,7 +165,7 @@ end
 ""
 function var_load_curtailment_imaginary(pm::AbstractACPowerModel, system::SystemModel)
     
-    q_lc = JuMP.@variable(pm.model, [i in field(system, Loads, :keys); field(system, Loads, :status)[i] ≠ 0], base_name="q_lc")
+    JuMP.@variable(pm.model, q_lc[i in field(system, Loads, :keys); field(system, Loads, :status)[i] ≠ 0], base_name="q_lc")
 
     for l in field(system, Loads, :keys)
         JuMP.set_upper_bound(q_lc[l], field(system, Loads, :qd)[l])
