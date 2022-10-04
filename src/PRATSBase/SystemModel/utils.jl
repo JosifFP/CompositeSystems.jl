@@ -109,9 +109,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
             if in(container_key).(i) == false
-                setindex!(dict_timeseries, Float16.([container_data[:pg][i] for k in 1:N]), i)
-            else
-                dict_timeseries[i] = Float16.(dict_timeseries[i]/network.baseMVA)
+                setindex!(dict_timeseries, [container_data[:pg][i] for k in 1:N]*network[:baseMVA], i)
             end
         end
         container_key = [i for i in keys(dict_timeseries)]
@@ -119,7 +117,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
         @assert length(container_key) == length(container_data[:keys])
     end
 
-    container_timeseries = [Float16.(dict_timeseries[i]) for i in key_order_series]
+    container_timeseries = [Float16.(dict_timeseries[i]/network[:baseMVA]) for i in keys(dict_timeseries)]
 
     container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
     container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
@@ -135,7 +133,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     return asset{N,L,T,U}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],
-        reduce(vcat,transpose.(container_timeseries)),
+        reduce(vcat,transpose.(container_timeseries[key_order_series])),
         container_data[:qg][key_order_core],
         container_data[:vg][key_order_core],
         container_data[:pmax][key_order_core],
@@ -182,13 +180,11 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     if isempty(dict_timeseries) error("Load data must be provided") end
     #dict_timeseries_qd = Dict{Int, Any}()
     #powerfactor = Float32.(container_data[:pd]/container_data[:qd])
-    
+
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
             if in(container_key).(i) == false
-                setindex!(dict_timeseries, Float16.([container_data[:pd][i] for k in 1:N]), i)
-            else
-                dict_timeseries[i] = Float16.(dict_timeseries[i]/network.baseMVA)
+                setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*network[:baseMVA], i)
             end
             #get!(dict_timeseries_qd, i, Float16.(dict_timeseries_pd[i]*powerfactor))
         end
@@ -197,13 +193,16 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
         @assert length(container_key) == length(container_data[:keys])
     end
 
-    container_timeseries = [Float16.(dict_timeseries[i]) for i in key_order_series]
+    container_timeseries = [Float16.(dict_timeseries[i]/network[:baseMVA]) for i in keys(dict_timeseries)]
+    nloads = length(container_data[:keys])
 
     return asset{N,L,T,U}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],    
-        reduce(vcat,transpose.(container_timeseries)),
+        reduce(vcat,transpose.(container_timeseries[key_order_series])),
         container_data[:qd][key_order_core],
+        zeros(Float16, nloads),
+        zeros(Float16, nloads),
         container_data[:source_id][key_order_core],
         container_data[:status][key_order_core],
         container_data[:cost][key_order_core])
@@ -335,10 +334,10 @@ function container(ref::Dict{Symbol,<:Any}, asset::Type{Topology}, buses::Buses,
 
     (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = bus_components(arcs, buses, loads, shunts, generators, storages)
 
-    ref_buses = Dict{Int,Int}()
+    ref_buses = Int[]
     for i in buses.keys
         if buses.bus_type[i] == 3
-            ref_buses[i] = i
+            push!(ref_buses, i)
         end
     end
 

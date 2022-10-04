@@ -92,6 +92,6 @@ hmm = NamedTuple{Tuple(Symbol.(keys(container_keys[key_order])))}(values(contain
 
 # [filter(t -> t[1] in ) for i in eachindex(hmm)]
 
-    # var = NamedTuple{Tuple(Symbol.([:p, :ps, :pg, :p_dc, :p_lc, :psw, :va, :w, :wr, :wi]))}
+    # var = NamedTuple{Tuple(Symbol.([:p, :ps, :pg, :p_dc, :plc, :psw, :va, :w, :wr, :wi]))}
     #     ([Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]]
     # )

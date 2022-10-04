@@ -54,7 +54,7 @@ CompositeAdequacy.build_method!(pm, type)
 JuMP.optimize!(pm.model)
 JuMP.solution_summary(pm.model, verbose=true)
 CompositeAdequacy.build_result!(pm, system.loads, 1)
-#p_lc = CompositeAdequacy.build_sol_values(CompositeAdequacy.sol(pm, :load_curtailment))
+#plc = CompositeAdequacy.build_sol_values(CompositeAdequacy.sol(pm, :load_curtailment))
 
 JuMP.Containers.DenseAxisArray{}()
 a = JuMP.Containers.DenseAxisArray([], 0:6)

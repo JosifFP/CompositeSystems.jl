@@ -18,18 +18,18 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMonteCarlo, ::Report
 ) where {N}
 
-    status = zeros(Int, N*10)
+    status = zeros(Int, N)
     return SMCReportAccumulator(status)
 
 end
 
 function record!(
     acc::SMCReportAccumulator,
-    pm::AbstractPowerModel,
+    sys::SystemModel{N},
     sampleid::Int, t::Int
 ) where {N,L,T}
 
-    status = sol(pm, :termination_status)
+    status = 1
     if status != 1
         acc.status = status
     end

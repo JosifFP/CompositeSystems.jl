@@ -41,7 +41,7 @@
 #     qg::Vector{Float64}
 #     p_dc::Vector{Float64}
 #     q_dc::Vector{Float64}
-#     p_lc::Vector{Float64}
+#     plc::Vector{Float64}
 #     q_lc::Vector{Float64}
 #     psw::Vector{Float64}
 #     va::Vector{Float64}
@@ -61,7 +61,7 @@
 #         qg = Float64[]
 #         p_dc = Float64[]
 #         q_dc = Float64[]
-#         p_lc = Float64[]
+#         plc = Float64[]
 #         q_lc = Float64[]
 #         psw = Float64[]
 #         va = Float64[]
@@ -71,7 +71,7 @@
 #         wi = Float64[]
 #         ccm = Float64[]
 #         z_demand = Float64[]
-#         return new(p,ps, pg, p_dc, p_lc, psw, va, w, wr, wi)
+#         return new(p,ps, pg, p_dc, plc, psw, va, w, wr, wi)
 #     end
 # end
 

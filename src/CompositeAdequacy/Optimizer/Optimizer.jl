@@ -118,7 +118,7 @@ end
 function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel)
 
     return JuMP.@objective(pm.model, Min,
-        sum(field(system, Loads, :cost)[i]*pm.model[:p_lc][i] for i in field(system, Loads, :keys) if field(system, Loads, :status)[i] ≠ 0)
+        sum(field(system, Loads, :cost)[i]*pm.model[:plc][i] for i in field(system, Loads, :keys) if field(system, Loads, :status)[i] ≠ 0)
     )
 end
 

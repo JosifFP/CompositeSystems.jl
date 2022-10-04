@@ -1,5 +1,5 @@
 ""
-function build_result!(pm::AbstractDCPowerModel, loads::Loads, t::Int)
+function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
 
     result_count = 1
     try
@@ -8,27 +8,37 @@ function build_result!(pm::AbstractDCPowerModel, loads::Loads, t::Int)
         Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
     end
 
-    status = JuMP.termination_status(pm.model)
-
-    if status == JuMP.LOCALLY_SOLVED || status == JuMP.OPTIMAL
-        sol(pm)[:termination_status] = 1
-    elseif status == JuMP.INFEASIBLE || status == JuMP.LOCALLY_INFEASIBLE
-        sol(pm)[:termination_status] = 2
-    elseif status == JuMP.ITERATION_LIMIT || status == JuMP.TIME_LIMIT
-        sol(pm)[:termination_status] = 3
-    elseif status == JuMP.OPTIMIZE_NOT_CALLED
-        sol(pm)[:termination_status] = 4
+    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED || JuMP.termination_status(pm.model) == JuMP.OPTIMAL
+        status = 1
+    elseif JuMP.termination_status(pm.model) == JuMP.INFEASIBLE || JuMP.termination_status(pm.model) == JuMP.LOCALLY_INFEASIBLE
+        status = 2
+    elseif JuMP.termination_status(pm.model) == JuMP.ITERATION_LIMIT || JuMP.termination_status(pm.model) == JuMP.TIME_LIMIT
+        status = 3
+    elseif JuMP.termination_status(pm.model) == JuMP.OPTIMIZE_NOT_CALLED
+        status = 4
     else
         if result_count <= 0 
-            sol(pm)[:termination_status] = 5
+            status = 5
         elseif JuMP.isempty(pm.model) == true 
-            sol(pm)[:termination_status] = 6
-        else sol(pm)[:termination_status] = 7 
+            status = 6
+        else 
+            status = 7 
         end
     end
 
-    load_initial = Dict{Int, Float16}(loads.keys.=>loads.pd[:,t]*1.5)
-    return get_loads_sol!(pm, load_initial, status)
+    plc = build_sol_values(sol(pm, :load_curtailment))
+
+    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED && isempty(plc) == false
+        for i in field(system, Loads, :keys)
+            if haskey(plc, string(i)) == true
+               field(system, Loads, :plc)[i] = Float16(JuMP.value(plc[string(i)]["plc"]))
+            else
+                field(system, Loads, :plc)[i] = field(system, Loads, :pd)[i,t]
+            end
+        end
+    end
+
+    return field(system, Loads, :plc)
     
 end
 
@@ -40,13 +50,13 @@ end
 ""
 function get_loads_sol!(pm::AbstractDCPowerModel, load_initial::Dict{Int, Float16}, status)
 
-    p_lc = build_sol_values(sol(pm, :load_curtailment))
+    plc = build_sol_values(sol(pm, :load_curtailment))
 
-    if status == JuMP.LOCALLY_SOLVED && isempty(p_lc) == false
+    if status == JuMP.LOCALLY_SOLVED && isempty(plc) == false
         for i in keys(load_initial)
-            if haskey(p_lc, string(i)) == true
-                if JuMP.value(p_lc[string(i)]["p_lc"])>1e-4
-                    load_initial[i] = Float16(JuMP.value(p_lc[string(i)]["p_lc"]))
+            if haskey(plc, string(i)) == true
+                if JuMP.value(plc[string(i)]["plc"])>1e-4
+                    load_initial[i] = Float16(JuMP.value(plc[string(i)]["plc"]))
                 else
                     load_initial[i] = Float16(0.0)
                 end

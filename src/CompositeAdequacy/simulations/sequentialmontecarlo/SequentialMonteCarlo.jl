@@ -58,10 +58,10 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    systemstate = SystemState(system)
-    recorders = accumulator.(system, method, resultspecs)
-    rng = Philox4x((0, 0), 10)
-    pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
+    local systemstate = SystemState(system)
+    local rng = Philox4x((0, 0), 10)
+    local pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
+    local recorders = accumulator.(system, method, resultspecs)
 
     for s in sampleseeds
         println("s=$(s)")
@@ -71,7 +71,7 @@ function assess(
         for (_,t) in enumerate(iter)
             println("t=$(t)")
             solve!(pm, systemstate, system, t)
-            foreach(recorder -> record!(recorder, pm, s, t), recorders)
+            foreach(recorder -> record!(recorder, system, s, t), recorders)
             RestartAbstractPowerModel!(pm)
         end
 
@@ -113,7 +113,7 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel{
     all(field(state, :branches_available)[:,t]) == true ? type = Transportation : type = DCOPF
     build_method!(pm, system, t, type)
     JuMP.optimize!(pm.model)
-    build_result!(pm, field(system, :loads), t)
+    build_result!(pm, system, t)
 
 end
 
@@ -176,9 +176,11 @@ function update_system!(state::SystemState, system::SystemModel{N}, t::Int) wher
 
     tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
 
-    for (k,v) in field(system, Topology, :buspairs)
+    for k in keys(field(system, Topology, :buspairs))
         if haskey(tmp_buspairs, k) ≠ true
-            empty!(v)
+            empty!(field(system, Topology, :buspairs)[k])
+        else
+            field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
         end
     end
 
@@ -230,9 +232,11 @@ function update!(system::SystemModel{N}) where {N}
 
     tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
 
-    for (k,v) in field(system, Topology, :buspairs)
+    for k in keys(field(system, Topology, :buspairs))
         if haskey(tmp_buspairs, k) ≠ true
-            empty!(v)
+            empty!(field(system, Topology, :buspairs)[k])
+        else
+            field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
         end
     end
 

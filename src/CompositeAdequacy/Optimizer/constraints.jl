@@ -32,11 +32,11 @@ end
 function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs)
 
     _check_var_keys(pm.model[:p], bus_arcs, "active power", "branch")
-    _check_var_keys(pm.model[:p_lc], bus_loads, "active power", "loads")
+    _check_var_keys(pm.model[:plc], bus_loads, "active power", "loads")
     _check_var_keys(pm.model[:pg], bus_gens, "active power", "generator")
     #_check_var_keys(pm.model[:ps], bus_storage, "active power", "storage")
     #p    = get(var(pm),    :p, Dict()); _check_var_keys(p, bus_arcs, "active power", "branch")
-    #p_lc = get(var(pm), :p_lc, Dict()); _check_var_keys(p, bus_loads, "active power", "loads")
+    #plc = get(var(pm), :plc, Dict()); _check_var_keys(p, bus_loads, "active power", "loads")
     #pg   = get(var(pm),   :pg, Dict()); _check_var_keys(pg, bus_gens, "active power", "generator")
     #ps   = get(var(pm),   :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
     #psw  = get(var(pm),  :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
@@ -48,7 +48,7 @@ function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, b
         #+ sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
         sum(pm.model[:pg][g] for g in bus_gens)
-        + sum(pm.model[:p_lc][m] for m in bus_loads)
+        + sum(pm.model[:plc][m] for m in bus_loads)
         - sum(pm.model[:ps][s] for s in bus_storage)
         - sum(pd for pd in values(bus_pd))
         - sum(gs for gs in values(bus_gs))*1.0^2
@@ -126,6 +126,7 @@ function constraint_voltage_angle_difference(pm::AbstractPowerModel, system::Sys
     f_idx = (i, f_bus, t_bus)
     pair = (f_bus, t_bus)
     buspair = field(system, Topology, :buspairs)[pair]
+    
     if buspair["branch"] == i
         _constraint_voltage_angle_difference(pm, f_idx, buspair["angmin"], buspair["angmax"])
     end
@@ -237,11 +238,11 @@ end
 function constraint_power_factor(pm::AbstractACPowerModel)
 
     z_demand = var(pm, :z_demand)
-    p_lc = var(pm, :p_lc)
+    plc = var(pm, :plc)
     q_lc = var(pm, :q_lc)
     
     for (l,_) in ref(pm, :load)
-        JuMP.@constraint(pm.model, z_demand[i]*p_lc[i] - q_lc[i] == 0.0)      
+        JuMP.@constraint(pm.model, z_demand[i]*plc[i] - q_lc[i] == 0.0)      
     end
 end
 

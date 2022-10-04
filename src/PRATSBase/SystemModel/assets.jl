@@ -204,13 +204,16 @@ struct Loads{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
     buses::Vector{Int}
     pd::Matrix{Float16} # Active power in per unit
     qd::Vector{Float16} # Reactive power in per unit
+    plc::Vector{Float16}
+    qlc::Vector{Float16}
     source_id::Vector{String}
     status::BitVector
     cost::Vector{Float16}
 
     function Loads{N,L,T,U}(
         keys::Vector{Int}, buses::Vector{Int}, 
-        pd::Matrix{Float16}, qd::Vector{Float16},
+        pd::Matrix{Float16}, qd::Vector{Float16}, 
+        plc::Vector{Float16}, qlc::Vector{Float16},
         source_id::Vector{String}, status::BitVector, cost::Vector{Float16}
         ) where {N,L,T,U}
 
@@ -219,12 +222,15 @@ struct Loads{N,L,T<:Period,U<:PerUnit} <: AbstractAssets{N,L,T,U}
         @assert allunique(keys)
         @assert size(pd) == (nloads, N)
         @assert length(qd) == (nloads)
+        @assert length(plc) == (nloads)
+        @assert length(qlc) == (nloads)
         @assert all(pd .>= 0)
+        @assert all(plc .>= 0)
         @assert length(source_id) == (nloads)
         @assert length(status) == (nloads)
         @assert length(cost) == (nloads)
 
-        new{N,L,T,U}(Int.(keys), Int.(buses), pd, Float16.(qd), string.(source_id), Bool.(status), Float16.(cost))
+        new{N,L,T,U}(Int.(keys), Int.(buses), pd, Float16.(qd), Float16.(plc), Float16.(qlc), string.(source_id), Bool.(status), Float16.(cost))
     end
 
 end
@@ -234,6 +240,8 @@ Base.:(==)(x::T, y::T) where {T <: Loads} =
     x.buses == y.buses &&
     x.pd == y.pd &&
     x.qd == y.qd &&
+    x.plc == y.plc &&
+    x.qlc == y.qlc &&
     x.source_id == y.source_id &&
     x.status == y.status &&
     x.cost == y.cost
@@ -566,7 +574,7 @@ struct Topology{N,U<:PerUnit}
     bus_storage::Dict{Int, <:Any}
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}} 
-    ref_buses::Dict{Int, Int}
+    ref_buses::Vector{Int}
 
     function Topology{N,U}(    
         baseMVA::Int,
@@ -580,7 +588,7 @@ struct Topology{N,U<:PerUnit}
         bus_storage::Dict{Int, <:Any},
         bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}},
         buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}},
-        ref_buses::Dict{Int, Int}
+        ref_buses::Vector{Int}
         ) where {N,U}
         
         return new(baseMVA, per_unit, arcs_from, arcs_to, arcs, bus_gens, 
