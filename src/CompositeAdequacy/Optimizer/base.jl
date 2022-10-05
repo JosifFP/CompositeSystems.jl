@@ -37,7 +37,7 @@ abstract type Transportation <: AbstractDCPowerModel end
 LCDCMethod = Union{DCOPF, Transportation}
 
 "Constructor for an AbstractPowerModel modeling object"
-function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel) where {N}
+function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel)
 
     pm = PowerModel(
         model,

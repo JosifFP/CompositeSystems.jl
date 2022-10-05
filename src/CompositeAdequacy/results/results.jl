@@ -3,8 +3,6 @@ Base.Broadcast.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 include("flow.jl")
-#include("report.jl")
-
 
 function resultchannel(
     method::SimulationSpec, results::T, threads::Int
@@ -15,8 +13,10 @@ function resultchannel(
 
 end
 
-merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}} =
-    foreach(merge!, xs, ys)
+function merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}}
+    #println("pegado foreach(merge!, xs, ys)")
+    return foreach(merge!, xs, ys)
+end
 
 function finalize(
     results::Channel{<:Tuple{Vararg{ResultAccumulator}}},
@@ -28,6 +28,7 @@ function finalize(
 
     for _ in 2:threads
         thread_result = take!(results)
+        #println("pegado merge!(total_result, thread_result)")
         merge!(total_result, thread_result)
     end
     close(results)

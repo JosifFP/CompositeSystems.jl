@@ -22,9 +22,6 @@ mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMonteCarlo
     unservedload_total_currentsim::Float16
     unservedload_bus_currentsim::Vector{Float16}
 
-    #experiment
-    unservedload::Matrix{MeanVariance}
-
 end
 
 function merge!(
@@ -40,9 +37,7 @@ function merge!(
     foreach(merge!, x.unservedload_bus, y.unservedload_bus)
     foreach(merge!, x.unservedload_period, y.unservedload_period)
     foreach(merge!, x.unservedload_busperiod, y.unservedload_busperiod)
-
-    foreach(merge!, x.unservedload, y.unservedload)
-
+    println("pegado after segundo merge!")
     return
 
 end
@@ -50,8 +45,8 @@ end
 accumulatortype(::SequentialMonteCarlo, ::Shortfall) = SMCShortfallAccumulator
 
 function accumulator(
-    sys::SystemModel{N,L,T,U}, ::SequentialMonteCarlo, ::Shortfall
-) where where {N,L,T,U}
+    sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
+) where {N}
 
     nloads = length(sys.loads.keys)
 
@@ -71,31 +66,31 @@ function accumulator(
     unservedload_total_currentsim = 0
     unservedload_bus_currentsim = zeros(Float16, nloads)
 
-    unservedload = [meanvariance() for _ in 1:nloads, _ in 1:N]
-
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,
         periodsdropped_period, periodsdropped_busperiod,
         periodsdropped_total_currentsim, periodsdropped_bus_currentsim,
         unservedload_total, unservedload_bus,
         unservedload_period, unservedload_busperiod,
-        unservedload_total_currentsim, unservedload_bus_currentsim, unservedload)
+        unservedload_total_currentsim, unservedload_bus_currentsim)
 
 end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    sys::SystemModel{N,L,T,U},
+    #sys::SystemModel{N,L,T,U},
+    pm::AbstractPowerModel,
     sampleid::Int, t::Int
-) where {N,L,T,U}
+)
 
     totalshortfall = 0
     isshortfall = false
     
-    for r in field(sys, Loads, :keys)
-        busshortfall = field(sys, Loads, :plc)[r]
-        fit!(acc.unservedload[r,t],  busshortfall)
+    for r in 1:17
+    #for r in field(sys, Loads, :keys)
 
+        #busshortfall = field(sys, Loads, :plc)[r]
+        busshortfall = 0
         isbusshortfall = busshortfall > 0
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
@@ -123,9 +118,12 @@ end
 
 function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
 
+    #println("pegado en reset!_1")
     # Store busal / total sums for current simulation
     fit!(acc.periodsdropped_total, acc.periodsdropped_total_currentsim)
     fit!(acc.unservedload_total, acc.unservedload_total_currentsim)
+
+    #println("pegado en reset!_2")
 
     for r in eachindex(acc.periodsdropped_bus)
         fit!(acc.periodsdropped_bus[r], acc.periodsdropped_bus_currentsim[r])
@@ -145,7 +143,7 @@ function finalize(
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
-    flow_mean, _ = mean_std(acc.unservedload)
+    #println("pegado en finalize")
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
     ep_period_mean, ep_period_std = mean_std(acc.periodsdropped_period)
@@ -179,8 +177,7 @@ function finalize(
         ue_total_std,
         ue_bus_std, 
         ue_period_std, 
-        ue_busperiod_std,
-        flow_mean)
+        ue_busperiod_std)
 
 end
 

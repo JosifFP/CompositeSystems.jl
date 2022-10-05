@@ -37,25 +37,6 @@ struct SystemModel{N,L,T<:Period,U<:PerUnit}
 
 end
 
-# No time zone constructor
-function SystemModel(
-    buses, loads, branches, shunts, generators, storages, generatorstorages, topology, timestamps::StepRange{DateTime,T}
-) where {N,L,T<:Period,U<:PerUnit}
-
-    #@warn "No time zone data provided - defaulting to UTC. To specify a " *
-    #      "time zone for the system timestamps, provide a range of " *
-    #      "`ZonedDateTime` instead of `DateTime`."
-
-    utc = TimeZone("UTC")
-    time_start = ZonedDateTime(first(timestamps), utc)
-    time_end = ZonedDateTime(last(timestamps), utc)
-    timestamps_tz = time_start:step(timestamps):time_end
-
-    return SystemModel(
-        buses, loads, branches, shunts, generators, storages, generatorstorages, topology, timestamps_tz)
-
-end
-
 Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.buses == y.buses &&
     x.loads == y.loads &&

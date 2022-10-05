@@ -12,7 +12,12 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
     #P = powerunits["MW"] #E = energyunits["MWh"] #V = voltageunits["kV"]
     start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
 
-    timestamps = range(start_timestamp, length=N, step=T(L))::StepRange{DateTime, Hour}
+    timestamps = range(start_timestamp, length=N, step=T(L))
+    utc = TimeZone("UTC")
+    time_start = ZonedDateTime(first(timestamps), utc)
+    time_end = ZonedDateTime(last(timestamps), utc)
+    timestamps_tz = time_start:step(timestamps):time_end
+
     files = readdir(ReliabilityDataDir; join=false)
     cd(ReliabilityDataDir)
     network = BuildNetwork(RawFile)
@@ -100,7 +105,7 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
 
     topology = container(network, Topology, buses, loads, branches, shunts, generators, storages,N, U)
 
-    return SystemModel(buses, loads, branches, shunts, generators, storages, generatorstorages, topology, timestamps)
+    return SystemModel(buses, loads, branches, shunts, generators, storages, generatorstorages, topology, timestamps_tz)
 
 end
 

@@ -5,9 +5,11 @@ function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{
         XLSX.openxlsx(ReliabilityDataDir*"/"*"$asset"*".xlsx", enable_cache=false) do io
             for i in 1:XLSX.sheetcount(io)
                 if XLSX.sheetnames(io)[i] == "time series MW" 
-                    container_1[2], container_1[1] = XLSX.readtable("$asset"*".xlsx", XLSX.sheetnames(io)[i])
+                    dtable =  XLSX.readtable("$asset"*".xlsx", XLSX.sheetnames(io)[i])
+                    container_1[2], container_1[1] = dtable.data, dtable.column_labels
                 elseif XLSX.sheetnames(io)[i] == "core"
-                    container_2[2], container_2[1] = XLSX.readtable("$asset"*".xlsx",XLSX.sheetnames(io)[i])
+                    dtable =  XLSX.readtable("$asset"*".xlsx",XLSX.sheetnames(io)[i])
+                    container_2[2], container_2[1] = dtable.data, dtable.column_labels
                 end
             end
         end

@@ -15,8 +15,7 @@ import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
 import JuMP, Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr
-import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
-optimize!, Model, LOCALLY_SOLVED
+import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, optimize!, Model
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 "Suppresses information and warning messages output"

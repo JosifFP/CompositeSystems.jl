@@ -13,8 +13,10 @@ optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_so
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=4, seed=123, verbose=false)
+method = PRATS.SequentialMonteCarlo(samples=2, seed=123, verbose=false, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, optimizer, resultspecs...)
+PRATS.LOLE.(shortfall, system.loads.keys)
+PRATS.EUE.(shortfall, system.loads.keys)
 
 
 shortfall.nsamples
@@ -34,26 +36,18 @@ shortfall.shortfall_bus_std
 shortfall.shortfall_period_std
 shortfall.shortfall_busperiod_std
 
-PRATS.LOLE.(shortfall, system.loads.keys)
-
-PRATS.EUE.(shortfall, system.loads.keys)
-
-keys(CompositeAdequacy.field(system, Topology, :ref_buses))
-
-
-system.loads.buses
-
-
-
-
-
-
-
-
-CompositeAdequacy.field(system, Loads, :pd)
-CompositeAdequacy.field(system, Loads, :qd)
-
 systemstate = CompositeAdequacy.SystemState(system)
+
+
+
+start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
+timestamps = range(start_timestamp, length=N, step=PRATSBase.T(1))#::StepRange{DateTime, Hour}
+
+
+
+
+
+
 pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
 type = CompositeAdequacy.DCOPF
 

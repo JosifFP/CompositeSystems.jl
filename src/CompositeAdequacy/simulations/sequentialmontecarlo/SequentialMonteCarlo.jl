@@ -20,11 +20,11 @@ struct SequentialMonteCarlo <: SimulationSpec
 end
 
 function assess(
-    system::SystemModel{N,L,T,U},
+    system::SystemModel,
     method::SequentialMonteCarlo,
     optimizer,
     resultspecs::ResultSpec...
-) where {N,L,T,U}
+) #where {N,L,T,U}
 
     threads = nthreads()
     sampleseeds = Channel{Int}(2*threads)
@@ -34,11 +34,13 @@ function assess(
 
     if method.threaded
         for _ in 1:threads
-            Threads.@spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
+            @spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, optimizer, method, sampleseeds, results, resultspecs...)
     end
+
+    println("pegado finalize(results, system, method.threaded ? threads : 1)")
 
     return finalize(results, system, method.threaded ? threads : 1)
     
@@ -57,31 +59,32 @@ function assess(
     sampleseeds::Channel{Int},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
     resultspecs::ResultSpec...
-) where {R<:ResultSpec,N,L,T,U}
+) where {N,L,T,U}
 
-    local pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
+    pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
 
     for s in sampleseeds
-
+        println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
+        iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
+        #for (t,_) in enumerate(iter)
         for t in 1:N
             println("t=$(t)")
             #if t in iter
             update!(pm, systemstate, system, t)
             solve!(pm, systemstate, system, t) 
             #end
-            foreach(recorder -> record!(recorder, system, s, t), recorders)
+            foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
     end
 
-    Base.put!(results, recorders)
+    put!(results, recorders)
 end
 
 ""
@@ -126,7 +129,7 @@ function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel
 
     field(system, Loads, :plc)[:] = fill!(field(system, Loads, :plc)[:], 0)
 
-    field(system, Loads, :pd)[:,t] = field(system, Loads, :pd)[:,t]*1.25
+    #field(system, Loads, :pd)[:,t] = field(system, Loads, :pd)[:,t]*1.25
     field(system, Branches, :status)[:] = field(state, :branches_available)[:,t]
     field(system, Generators, :status)[:] = field(state, :gens_available)[:,t]
     field(system, Storages, :status)[:] = field(state, :stors_available)[:,t]
@@ -144,15 +147,15 @@ function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel
         end
     end
     
-    for k in field(system, Buses, :keys)
-        if field(system, Buses, :bus_type)[k] == 4
-            if field(system, Loads, :status)[k] ≠ 0 field(system, Loads, :status)[k] = 0 end
-            if field(system, Shunts, :status)[k] ≠ 0 field(system, Shunts, :status)[k] = 0 end
-            if field(system, Generators, :status)[k] ≠ 0 field(system, Generators, :status)[k] = 0 end
-            if field(system, Storages, :status)[k] ≠ 0 field(system, Storages, :status)[k] = 0 end
-            if field(system, GeneratorStorages, :status)[k] ≠ 0 field(system, GeneratorStorages, :status)[k] = 0 end
-        end
-    end
+    # for k in field(system, Buses, :keys)
+    #     if field(system, Buses, :bus_type)[k] == 4
+    #         if field(system, Loads, :status)[k] ≠ 0 field(system, Loads, :status)[k] = 0 end
+    #         if field(system, Shunts, :status)[k] ≠ 0 field(system, Shunts, :status)[k] = 0 end
+    #         if field(system, Generators, :status)[k] ≠ 0 field(system, Generators, :status)[k] = 0 end
+    #         if field(system, Storages, :status)[k] ≠ 0 field(system, Storages, :status)[k] = 0 end
+    #         if field(system, GeneratorStorages, :status)[k] ≠ 0 field(system, GeneratorStorages, :status)[k] = 0 end
+    #     end
+    # end
 
     #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
     #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]

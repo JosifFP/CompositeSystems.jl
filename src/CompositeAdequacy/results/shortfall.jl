@@ -60,8 +60,6 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
     shortfall_period_std::Vector{Float64}
     shortfall_busperiod_std::Matrix{Float64}
 
-    flow_mean::Matrix{Float64}
-
     function ShortfallResult{N,L,T,U}(
         nsamples::Union{Int,Nothing},
         loads::Vector{Int},
@@ -80,8 +78,6 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
         shortfall_period_std::Vector{Float64},
         shortfall_busperiod_std::Matrix{Float64},
 
-        flow_mean::Matrix{Float64}
-
     ) where {N,L,T<:Period,U<:PerUnit}
 
         isnothing(nsamples) || nsamples > 0 ||
@@ -91,17 +87,17 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
         length(timestamps) == N ||
             error("The provided timestamp range does not match the simulation length")
 
-        nloadbuses = length(loads)
+        nloads = length(loads)
 
-        length(eventperiod_bus_mean) == nloadbuses &&
-        length(eventperiod_bus_std) == nloadbuses &&
+        length(eventperiod_bus_mean) == nloads &&
+        length(eventperiod_bus_std) == nloads &&
         length(eventperiod_period_mean) == N &&
         length(eventperiod_period_std) == N &&
-        size(eventperiod_busperiod_mean) == (nloadbuses, N) &&
-        size(eventperiod_busperiod_std) == (nloadbuses, N) &&
-        length(shortfall_bus_std) == nloadbuses &&
+        size(eventperiod_busperiod_mean) == (nloads, N) &&
+        size(eventperiod_busperiod_std) == (nloads, N) &&
+        length(shortfall_bus_std) == nloads &&
         length(shortfall_period_std) == N &&
-        size(shortfall_busperiod_std) == (nloadbuses, N) ||
+        size(shortfall_busperiod_std) == (nloads, N) ||
             error("Inconsistent input data sizes")
 
         new{N,L,T,U}(nsamples, loads, timestamps,
@@ -111,7 +107,7 @@ struct ShortfallResult{N,L,T<:Period,U<:PerUnit} <: AbstractShortfallResult{N,L,
             eventperiod_busperiod_mean, eventperiod_busperiod_std,
             shortfall_mean, shortfall_std,
             shortfall_bus_std, shortfall_period_std,
-            shortfall_busperiod_std, flow_mean)
+            shortfall_busperiod_std)
 
     end
 
