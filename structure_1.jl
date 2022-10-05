@@ -13,9 +13,29 @@ optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_so
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=2, seed=1, verbose=false, threaded=true)
+method = PRATS.SequentialMonteCarlo(samples=4, seed=123, verbose=false)
 @time shortfall,report = PRATS.assess(system, method, optimizer, resultspecs...)
+
+
+shortfall.nsamples
+shortfall.loads
+shortfall.timestamps
+shortfall.eventperiod_mean
+shortfall.eventperiod_std
+shortfall.eventperiod_bus_mean
+shortfall.eventperiod_bus_std
+shortfall.eventperiod_period_mean
+shortfall.eventperiod_period_std
+shortfall.eventperiod_busperiod_mean
+shortfall.eventperiod_busperiod_std
+shortfall.shortfall_mean
+shortfall.shortfall_std
+shortfall.shortfall_bus_std
+shortfall.shortfall_period_std
+shortfall.shortfall_busperiod_std
+
 PRATS.LOLE.(shortfall, system.loads.keys)
+
 PRATS.EUE.(shortfall, system.loads.keys)
 
 keys(CompositeAdequacy.field(system, Topology, :ref_buses))

@@ -48,115 +48,137 @@ function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
     return ttf,ttr
 end
 
-""
-function update_load!(loads::Loads, ref_load::Dict{Int,<:Any}, t::Int)
+function get_bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, loads::Loads, shunts::Shunts, generators::Generators, storages::Storages)
 
-    for i in eachindex(loads.keys)
-        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
-        ref_load[i]["pd"] = loads.pd[i,t]*1.25
+    tmp = Dict((i, Tuple{Int,Int,Int}[]) for i in field(buses, :keys))
+    for (l,i,j) in arcs
+        push!(tmp[i], (l,i,j))
     end
-    return ref_load
+    bus_arcs = tmp
+
+    tmp = Dict((i, Int[]) for i in field(buses, :keys))
+    for k in field(loads, :keys)
+        if field(loads, :status)[k] ≠ 0 push!(tmp[field(loads, :buses)[k]], k) end
+    end
+    bus_loads = tmp
+
+    tmp = Dict((i, Int[]) for i in field(buses, :keys))
+    for k in field(shunts, :keys)
+        if field(shunts, :status)[k] ≠ 0 push!(tmp[field(shunts, :buses)[k]], k) end
+    end
+    bus_shunts = tmp
+
+    tmp = Dict((i, Int[]) for i in field(buses, :keys))
+    for k in field(generators, :keys)
+        if field(generators, :status)[k] ≠ 0 push!(tmp[field(generators, :buses)[k]], k) end
+    end
+    bus_gens = tmp
+
+    tmp = Dict((i, Int[]) for i in field(buses, :keys))
+    for k in field(storages, :keys)
+        if field(storages, :status)[k] ≠ 0 push!(tmp[field(storages, :buses)[k]], k) end
+    end
+    bus_storage = tmp
+
+    return (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage)
+
 end
 
-""
-function update_gen!(generators::Generators, ref_gen::Dict{Int,<:Any}, gens_available::Matrix{Bool}, t::Int)
-    for i in eachindex(generators.keys)
-        ref_gen[i]["pg"] = generators.pg[i,t]
-        if gens_available[i] == false ref_gen[i]["gen_status"] = gens_available[i,t] end
-    end
-    return ref_gen
-end
+"compute bus pair level data, can be run on data or ref data structures"
+function calc_buspair_parameters(buses::Buses, branches::Branches)
 
-""
-function update_stor!(storages::Storages, ref_stor::Dict{Int,<:Any}, stors_available::Matrix{Bool}, t::Int)
-    for i in eachindex(storages.keys)
-        if stors_available[i] == false ref_stor[i]["status"] = stors_available[i,t] end
-    end
-    return ref_stor
-end
-
-""
-function update_branches!(branches::Branches, ref_branch::Dict{Int,<:Any}, branches_available::Matrix{Bool}, t::Int)
-    if all(branches_available[:,t]) == false
-        for i in eachindex(branches.keys)
-            if branches_available[i] == false ref_branch[i]["br_status"] = branches_available[i,t] end
-        end
-    end
-    return ref_branch
-end
-
-""
-function update_ref!(state::SystemState, system::SystemModel{N}, ref::Dict{Int,<:Any}, t::Int) where {N}
-
-    for i in eachindex(system.loads.keys)
-        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
-        ref[:load][i]["pd"] = system.loads.pd[i,1]
+    bus_lookup = [i for i in field(buses, :keys) if field(buses, :bus_type)[i] ≠ 4]
+    branch_lookup = [i for i in field(branches, :keys) if field(branches, :status)[i] == 1 && field(branches, :f_bus)[i] in bus_lookup && field(branches, :t_bus)[i] in bus_lookup]
+    
+    buspair_indexes = Set((field(branches, :f_bus)[i], field(branches, :t_bus)[i]) for i in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+    
+    for l in branch_lookup
+        i = field(branches, :f_bus)[l]
+        j = field(branches, :t_bus)[l]
+        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], field(branches, :angmin)[l])
+        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], field(branches, :angmax)[l])
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
     end
     
-    for i in eachindex(system.generators.keys)
-        ref[:gen][i]["pg"] = system.generators.pg[i,t]
-        if state.gens_available[i] == false ref[:gen][i]["gen_status"] = state.gens_available[i,t] end
+    buspairs = Dict((i,j) => Dict(
+        "branch"=>Int(bp_branch[(i,j)]),
+        "angmin"=>Float16(bp_angmin[(i,j)]),
+        "angmax"=>Float16(bp_angmax[(i,j)]),
+        "tap"=>Float16(field(branches, :tap)[bp_branch[(i,j)]]),
+        "vm_fr_min"=>Float16(field(buses, :vmin)[i]),
+        "vm_fr_max"=>Float16(field(buses, :vmax)[i]),
+        "vm_to_min"=>Float16(field(buses, :vmin)[j]),
+        "vm_to_max"=>Float16(field(buses, :vmax)[j]),
+        ) for (i,j) in buspair_indexes
+    )
+    
+    # add optional parameters
+    for bp in buspair_indexes
+        buspairs[bp]["rate_a"] = field(branches, :rate_a)[bp_branch[bp]]
     end
+    
+    return buspairs
 
-    for i in eachindex(system.storages.keys)
-        if state.stors_available[i] == false ref[:storage][i]["status"] = state.stors_available[i,t] end
-    end
+end
 
-    if all(state.gens_available[:,t]) == true && all(state.branches_available[:,t]) == false
-        if all(state.branches_available[:,t]) == false
-            for i in eachindex(system.branches.keys)
-                if state.branches_available[i] == false ref[:branch][i]["br_status"] = state.branches_available[i,t] end
+""
+function update!(system::SystemModel{N}) where {N}
+
+    for k in field(system, Branches, :keys)
+        if field(system, Branches, :status)[k] ≠ 0
+            f_bus = field(system, Branches, :f_bus)[k]
+            t_bus = field(system, Branches, :t_bus)[k]
+            if field(system, Buses, :bus_type)[f_bus] == 4 || field(system, Buses, :bus_type)[t_bus] == 4
+                Memento.info(_LOGGER, "deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
+                field(system, Branches, :status)[k] = 0
             end
         end
     end
-
-    return ref
-
-end
-
-""
-function update_ref!(pm::AbstractPowerModel, state::SystemState, system::SystemModel{N}, t::Int) where {N}
-
-    for i in eachindex(system.loads.keys)
-        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
-        ref(pm, :load, i)["pd"] = system.loads.pd[i,1]
-    end
     
-    for i in eachindex(system.generators.keys)
-        ref(pm, :gen, i)["pg"] = system.generators.pg[i,t]
-        if state.gens_available[i] == false ref(pm, :gen, i)["gen_status"] = state.gens_available[i,t] end
+    for k in field(system, Buses, :keys)
+        if field(system, Buses, :bus_type)[k] == 4
+            if field(system, Loads, :status)[k] ≠ 0 field(system, Loads, :status)[k] = 0 end
+            if field(system, Shunts, :status)[k] ≠ 0 field(system, Shunts, :status)[k] = 0 end
+            if field(system, Generators, :status)[k] ≠ 0 field(system, Generators, :status)[k] = 0 end
+            if field(system, Storages, :status)[k] ≠ 0 field(system, Storages, :status)[k] = 0 end
+            if field(system, GeneratorStorages, :status)[k] ≠ 0 field(system, GeneratorStorages, :status)[k] = 0 end
+        end
     end
 
-    for i in eachindex(system.storages.keys)
-        if state.stors_available[i] == false ref(pm, :storage, i)["status"] = state.stors_available[i,t] end
+    #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
+    #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]
+    tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
+
+    (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = get_bus_components(
+        tmp_arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
+
+    for k in field(system, Buses, :keys)
+        field(system, Topology, :bus_gens)[k] = bus_gens[k]
+        field(system, Topology, :bus_loads)[k] = bus_loads[k]
+        field(system, Topology, :bus_shunts)[k] = bus_shunts[k]
+        field(system, Topology, :bus_storage)[k] = bus_storage[k]
+    
+        if field(system, Topology, :bus_arcs)[k] ≠ bus_arcs[k]
+            field(system, Topology, :bus_arcs)[k] = bus_arcs[k]
+        end
+    
     end
 
-    if all(state.gens_available[:,t]) == true && all(state.branches_available[:,t]) == false
-        if all(state.branches_available[:,t]) == false
-            for i in eachindex(system.branches.keys)
-                if state.branches_available[i] == false ref(pm, :branch, i)["br_status"] = state.branches_available[i,t] end
-            end
+    tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
+
+    for k in keys(field(system, Topology, :buspairs))
+        if haskey(tmp_buspairs, k) ≠ true
+            empty!(field(system, Topology, :buspairs)[k])
+        else
+            field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
         end
     end
 
     return
-
 end
-
-# ""
-# function overloadings(newdata::Dict{String,Any})
-
-#     container = false
-#     for j in eachindex(newdata["branch"])
-#         if any(abs(newdata["branch"][string(j)]["pf"]) > newdata["branch"][string(j)]["rate_a"])
-#             container = true
-#             break
-#         end
-#     end
-
-#     return container
-
-# end
 
 # ----------------------------------------------------------------------------------------------------------
 function available_capacity(

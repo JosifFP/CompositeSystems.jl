@@ -1,4 +1,3 @@
-
 ""
 function comp_start_value(comp::Dict{String,<:Any}, key::String, default=0.0)
     return get(comp, key, default)

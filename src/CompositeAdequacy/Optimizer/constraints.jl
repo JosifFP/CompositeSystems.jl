@@ -1,8 +1,3 @@
-###############################################################################
-# This file defines commonly used constraints for power flow models
-
-###############################################################################
-
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractDCPowerModel, i::Int)
     JuMP.@constraint(pm.model, pm.model[:va][i] == 0)

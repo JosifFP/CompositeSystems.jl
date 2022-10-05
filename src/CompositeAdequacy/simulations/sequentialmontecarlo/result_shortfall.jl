@@ -50,28 +50,28 @@ end
 accumulatortype(::SequentialMonteCarlo, ::Shortfall) = SMCShortfallAccumulator
 
 function accumulator(
-    sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
-) where {N}
+    sys::SystemModel{N,L,T,U}, ::SequentialMonteCarlo, ::Shortfall
+) where where {N,L,T,U}
 
-    nloadbuses = length(sys.loads.buses)
+    nloads = length(sys.loads.keys)
 
     periodsdropped_total = meanvariance()
-    periodsdropped_bus = [meanvariance() for _ in 1:nloadbuses]
+    periodsdropped_bus = [meanvariance() for _ in 1:nloads]
     periodsdropped_period = [meanvariance() for _ in 1:N]
-    periodsdropped_busperiod = [meanvariance() for _ in 1:nloadbuses, _ in 1:N]
+    periodsdropped_busperiod = [meanvariance() for _ in 1:nloads, _ in 1:N]
 
     periodsdropped_total_currentsim = 0
-    periodsdropped_bus_currentsim = zeros(Int, nloadbuses)
+    periodsdropped_bus_currentsim = zeros(Int, nloads)
 
     unservedload_total = meanvariance()
-    unservedload_bus = [meanvariance() for _ in 1:nloadbuses]
+    unservedload_bus = [meanvariance() for _ in 1:nloads]
     unservedload_period = [meanvariance() for _ in 1:N]
-    unservedload_busperiod = [meanvariance() for _ in 1:nloadbuses, _ in 1:N]
+    unservedload_busperiod = [meanvariance() for _ in 1:nloads, _ in 1:N]
 
     unservedload_total_currentsim = 0
-    unservedload_bus_currentsim = zeros(Float16, nloadbuses)
+    unservedload_bus_currentsim = zeros(Float16, nloads)
 
-    unservedload = [meanvariance() for _ in 1:nloadbuses, _ in 1:N]
+    unservedload = [meanvariance() for _ in 1:nloads, _ in 1:N]
 
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,
@@ -145,7 +145,6 @@ function finalize(
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
-    println("pegado en finalize()")
     flow_mean, _ = mean_std(acc.unservedload)
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
@@ -166,7 +165,7 @@ function finalize(
 
     return ShortfallResult{N,L,T,U}(
         nsamples, 
-        system.loads.buses, 
+        system.loads.keys, 
         system.timestamps,
         ep_total_mean, 
         ep_total_std, 
@@ -209,8 +208,8 @@ function accumulator(
     sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::ShortfallSamples
 ) where {N}
 
-    nloadbuses = length(sys.loads.buses)
-    shortfall = zeros(Int, nloadbuses, N, simspec.nsamples)
+    nloads = length(sys.loads.keys)
+    shortfall = zeros(Int, nloads, N, simspec.nsamples)
 
     return SMCShortfallSamplesAccumulator(shortfall)
 
@@ -237,6 +236,6 @@ function finalize(
 ) where {N,L,T,U}
 
     return ShortfallSamplesResult{N,L,T,U}(
-        system.loads.buses, system.timestamps, acc.shortfall)
+        system.loads.keys, system.timestamps, acc.shortfall)
 
 end
