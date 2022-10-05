@@ -20,11 +20,11 @@ struct SequentialMonteCarlo <: SimulationSpec
 end
 
 function assess(
-    system::SystemModel{N},
+    system::SystemModel,
     method::SequentialMonteCarlo,
     optimizer,
     resultspecs::ResultSpec...
-) where {N}
+)
 
     threads = Base.Threads.nthreads()
     sampleseeds = Channel{Int}(2*threads)
@@ -38,7 +38,7 @@ function assess(
     else
         assess(system, optimizer, method, sampleseeds, results, resultspecs...)
     end
-
+    println("pegado en finalize")
     return finalize(results, system, method.threaded ? threads : 1)
     
 end
@@ -58,26 +58,26 @@ function assess(
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    local systemstate = SystemState(system)
-    local rng = Philox4x((0, 0), 10)
-    local pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
-    local recorders = accumulator.(system, method, resultspecs)
+    systemstate = SystemState(system)
+    recorders = accumulator.(system, method, resultspecs)
+    rng = Philox4x((0, 0), 10)
+    pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
 
     for s in sampleseeds
         println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
-        for (_,t) in enumerate(iter)
+        for t in 1:N
             println("t=$(t)")
-            solve!(pm, systemstate, system, t)
+            if t in iter solve!(pm, systemstate, system, t) end
             foreach(recorder -> record!(recorder, system, s, t), recorders)
-            RestartAbstractPowerModel!(pm)
+            RestartAbstractPowerModel!(pm, system)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
     end
-
+    println("pegado en put!(results, recorders)")
     put!(results, recorders)
 
 end
@@ -122,12 +122,12 @@ end
 #update_energy!(state.genstors_energy, system.generatorstorages, t)
 include("result_shortfall.jl")
 include("result_flow.jl")
-include("result_report.jl")
+#include("result_report.jl")
 
 
 function update_system!(state::SystemState, system::SystemModel{N}, t::Int) where {N}
     
-    field(system, Loads, :pd)[:,t] = field(system, Loads, :pd)[:,t]*1.5
+    field(system, Loads, :pd)[:,t] = field(system, Loads, :pd)[:,t]*1.25
     field(system, Branches, :status)[:] = field(state, :branches_available)[:,t]
     field(system, Generators, :status)[:] = field(state, :gens_available)[:,t]
     field(system, Storages, :status)[:] = field(state, :stors_available)[:,t]
@@ -318,4 +318,13 @@ function calc_buspair_parameters(buses::Buses, branches::Branches)
     
     return buspairs
 
+end
+
+""
+function RestartAbstractPowerModel!(pm::AbstractPowerModel, system::SystemModel)
+
+    if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
+    empty!(pm.sol)
+    field(system, Loads, :plc)[:] = fill!(field(system, Loads, :plc)[:], 0)
+    return
 end

@@ -53,25 +53,25 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
 ) where {N}
 
-    nbuses = length(sys.loads.keys)
+    nloadbuses = length(sys.loads.buses)
 
     periodsdropped_total = meanvariance()
-    periodsdropped_bus = [meanvariance() for _ in 1:nbuses]
+    periodsdropped_bus = [meanvariance() for _ in 1:nloadbuses]
     periodsdropped_period = [meanvariance() for _ in 1:N]
-    periodsdropped_busperiod = [meanvariance() for _ in 1:nbuses, _ in 1:N]
+    periodsdropped_busperiod = [meanvariance() for _ in 1:nloadbuses, _ in 1:N]
 
     periodsdropped_total_currentsim = 0
-    periodsdropped_bus_currentsim = zeros(Int, nbuses)
+    periodsdropped_bus_currentsim = zeros(Int, nloadbuses)
 
     unservedload_total = meanvariance()
-    unservedload_bus = [meanvariance() for _ in 1:nbuses]
+    unservedload_bus = [meanvariance() for _ in 1:nloadbuses]
     unservedload_period = [meanvariance() for _ in 1:N]
-    unservedload_busperiod = [meanvariance() for _ in 1:nbuses, _ in 1:N]
+    unservedload_busperiod = [meanvariance() for _ in 1:nloadbuses, _ in 1:N]
 
     unservedload_total_currentsim = 0
-    unservedload_bus_currentsim = zeros(Float16, nbuses)
+    unservedload_bus_currentsim = zeros(Float16, nloadbuses)
 
-    unservedload = [meanvariance() for _ in 1:nbuses, _ in 1:N]
+    unservedload = [meanvariance() for _ in 1:nloadbuses, _ in 1:N]
 
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,
@@ -85,9 +85,9 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    sys::SystemModel{N},
+    sys::SystemModel{N,L,T,U},
     sampleid::Int, t::Int
-) where {N}
+) where {N,L,T,U}
 
     totalshortfall = 0
     isshortfall = false
@@ -131,13 +131,11 @@ function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
         fit!(acc.periodsdropped_bus[r], acc.periodsdropped_bus_currentsim[r])
         fit!(acc.unservedload_bus[r], acc.unservedload_bus_currentsim[r])
     end
-
     # Reset for new simulation
     acc.periodsdropped_total_currentsim = 0
     fill!(acc.periodsdropped_bus_currentsim, 0)
     acc.unservedload_total_currentsim = 0
     fill!(acc.unservedload_bus_currentsim, 0)
-
     return
 
 end
@@ -147,8 +145,8 @@ function finalize(
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
+    println("pegado en finalize()")
     flow_mean, _ = mean_std(acc.unservedload)
-
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
     ep_period_mean, ep_period_std = mean_std(acc.periodsdropped_period)
@@ -168,7 +166,7 @@ function finalize(
 
     return ShortfallResult{N,L,T,U}(
         nsamples, 
-        system.loads.keys, 
+        system.loads.buses, 
         system.timestamps,
         ep_total_mean, 
         ep_total_std, 
@@ -211,8 +209,8 @@ function accumulator(
     sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::ShortfallSamples
 ) where {N}
 
-    nbuses = length(length(sys.network.load))
-    shortfall = zeros(Int, nbuses, N, simspec.nsamples)
+    nloadbuses = length(sys.loads.buses)
+    shortfall = zeros(Int, nloadbuses, N, simspec.nsamples)
 
     return SMCShortfallSamplesAccumulator(shortfall)
 
@@ -220,15 +218,13 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
-    pm::AbstractPowerModel,
     system::SystemModel{N,L,T,U},
     sampleid::Int, t::Int
 ) where {N,L,T,U}
 
-    for r in eachindex(system.network.load)
-        acc.shortfall[r,t,sampleid] = pm.solution["solution"]["load_curtailment"][r]["pl"]
+    for r in field(system, Loads, :keys)
+        acc.shortfall[r,t,sampleid] = field(system, Loads, :plc)[r]
     end
-
     return
 
 end
@@ -240,9 +236,7 @@ function finalize(
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
-    load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
-
     return ShortfallSamplesResult{N,L,T,U}(
-        load_indices, system.timestamps, acc.shortfall)
+        system.loads.buses, system.timestamps, acc.shortfall)
 
 end

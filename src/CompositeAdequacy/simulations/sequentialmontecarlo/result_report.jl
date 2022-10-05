@@ -37,13 +37,18 @@ function record!(
 
 end
 
-reset!(acc::SMCReportAccumulator, sampleid::Int) = nothing
+function reset!(acc::SMCReportAccumulator, sampleid::Int)
+
+    fill!(acc.status, 0)
+    return
+
+end
 
 function finalize(
     acc::SMCReportAccumulator,
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
-    return ReportResult{N,L,T}(acc.status, system.timestamps)
+    return ReportResult{N,L,T}(zeros(Int, N), system.timestamps)
 
 end

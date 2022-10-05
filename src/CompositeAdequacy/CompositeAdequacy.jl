@@ -39,7 +39,7 @@ export
     SystemState, accumulator,
 
     # Result specifications
-    Shortfall, ShortfallSamples, Flow, FlowTotal, Report,
+    Shortfall, ShortfallSamples, Flow, FlowTotal, #Report,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str
@@ -62,8 +62,6 @@ include("Optimizer/variables.jl")
 include("Optimizer/constraints.jl")
 include("Optimizer/Optimizer.jl")
 include("Optimizer/solution.jl")
-
-include("Native/Native.jl")
 
 include("metrics.jl")
 include("results/results.jl")

@@ -3,7 +3,7 @@ Base.Broadcast.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 include("flow.jl")
-include("report.jl")
+#include("report.jl")
 
 
 function resultchannel(

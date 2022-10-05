@@ -46,15 +46,6 @@ function BuildAbstractPowerModel!(PowerModel::Type{<:AbstractPowerModel}, model:
     return pm
 end
 
-""
-function RestartAbstractPowerModel!(pm::AbstractPowerModel)
-
-    if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-    empty!(pm.sol)
-    return
-end
-
-
 
 #var(pm::AbstractPowerModel) = pm.var
 #var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
