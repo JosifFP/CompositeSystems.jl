@@ -3,10 +3,10 @@
 
 Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
-function SystemModel(RawFile::String, ReliabilityDataDir::String)
+function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
 
     CurrentDir = pwd()
-    N = 8760                                                    #timestep_count
+    #N = 8760                                                    #timestep_count
     L = 1                                                       #timestep_length
     T = timeunits["h"]                                          #timestep_unit
     U = perunit["pu"]
@@ -31,19 +31,23 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String)
     end
     
     storages = Storages{N,L,T,U}(
-        Int[], Int[], String[],
-        zeros(Float16, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
-        Float32[], Float32[],
-        Float32[], Float32[])
+        Int[], Int[], zeros(Float16, 0, N),
+        Float32[], Float32[], Float32[])
     
     generatorstorages = GeneratorStorages{N,L,T,U}(
-        Int[], Int[], String[],
-        zeros(Float16, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
-        Float32[], Float32[],
+        Int[], Int[],
+        zeros(Float16, 0, N), Float32[],
         zeros(Int, 0, N), zeros(Float16, 0, N), zeros(Float16, 0, N),
         Float32[], Float32[])
     
     cd(CurrentDir)
+
+
+
     return SystemModel(assets[1], assets[2], storages, generatorstorages, assets[3], network, timestamps)    
 
 end
+
+# function check_limits()
+# @assert network_data["gen"][string(i)]["pg"] <= network_data["gen"][string(i)]["pmax"] "Generator Pmax violated"
+# end

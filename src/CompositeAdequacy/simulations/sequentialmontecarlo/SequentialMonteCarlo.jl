@@ -10,7 +10,7 @@ struct SequentialMonteCarlo <: SimulationSpec
 
     function SequentialMonteCarlo(;
         samples::Int=1_000, seed::Int=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=true
+        verbose::Bool=false, threaded::Bool=false
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
@@ -20,28 +20,26 @@ struct SequentialMonteCarlo <: SimulationSpec
 end
 
 function assess(
-    system::SystemModel,
+    system::SystemModel{N},
     method::SequentialMonteCarlo,
+    optimizer,
     resultspecs::ResultSpec...
-)
-    
+) where {N}
+
     threads = Base.Threads.nthreads()
-    #threads = 1
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
     @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     if method.threaded
         for _ in 1:threads
-            @spawn assess(system, method, sampleseeds, results, resultspecs...)
+            @spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
         end
     else
-        assess(system, method, sampleseeds, results, resultspecs...)
+        assess(system, optimizer, method, sampleseeds, results, resultspecs...)
     end
 
     return finalize(results, system, method.threaded ? threads : 1)
-    #assess(system, method, sampleseeds, results, resultspecs...)
-    #return finalize(results, system)
     
 end
 
@@ -57,30 +55,29 @@ function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
 end
 
 function assess(
-    system::SystemModel{N}, method::SequentialMonteCarlo,
+    system::SystemModel{N}, optimizer, method::SequentialMonteCarlo,
     sampleseeds::Channel{Int},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
     resultspecs::ResultSpec...
 ) where {R<:ResultSpec, N}
 
-    #dispatchproblem = DispatchProblem(system)
-    sequences = UpDownSequence(system)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
-
     rng = Philox4x((0, 0), 10)
+    dictionary = fill_dictionary!(system.network, Dict{Symbol,Any}())
+    pm = InitializeAbstractPowerModel(system.network, dictionary, AbstractDCPModel, optimizer)
 
     for s in sampleseeds
 
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        initialize!(rng, systemstate, system, sequences) #creates the up/down sequence for each device.
+        iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
+        println("s=$(s)")
 
-        for t in 1:N
-            
-            advance!(sequences, systemstate, system, t)
-            #solve!(dispatchproblem, systemstate, system, t)
-            #foreach(recorder -> record!(recorder, system, systemstate, dispatchproblem, s, t), recorders)
-
+        for (_,t) in enumerate(iter)
+            #println("t=$(t), $(systemstate.condition[t])")
+            solve!(pm, systemstate, system, t, systemstate.condition[t])
+            foreach(recorder -> record!(recorder, pm.load_curtailment, system.loads, s, t), recorders)
+            empty_pm!(pm, system.network, dictionary)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
@@ -91,44 +88,113 @@ function assess(
 
 end
 
-function initialize!(
-    rng::AbstractRNG, state::SystemState, system::SystemModel{N}, sequences::UpDownSequence
-) where N
 
-    initialize_availability!(rng, sequences.Up_gens, system.generators, N)
-    initialize_availability!(rng, sequences.Up_stors, system.storages, N)
-    initialize_availability!(rng, sequences.Up_genstors, system.generatorstorages, N)
-    initialize_availability!(rng, sequences.Up_branches, system.branches, N)
+function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N}) where N
 
-    fill!(state.stors_energy, 0)
-    fill!(state.genstors_energy, 0)
+    initialize_availability!(rng, state.gens_available, system.generators, N)
+    initialize_availability!(rng, state.stors_available, system.storages, N)
+    initialize_availability!(rng, state.genstors_available, system.generatorstorages, N)
+    initialize_availability!(rng, state.branches_available, system.branches, N)
+    
+    tmp = []
+    for t in 1:N
+        if all([state.gens_available[:,t]; state.genstors_available[:,t]; state.stors_available[:,t]; state.branches_available[:,t]]) == false 
+            state.condition[t] = Failed 
+            push!(tmp,t)
+        end
+    end
 
-    return sequences
-
-end
-
-function advance!(
-    sequences::UpDownSequence,
-    state::SystemState,
-    system::SystemModel{N}, t::Int) where N
-
-    update_availability!(state.gens_available, sequences.Up_gens[:,t], length(system.generators))
-    update_availability!(state.stors_available,sequences.Up_stors[:,t], length(system.storages))
-    update_availability!(state.genstors_available,sequences.Up_genstors[:,t], length(system.generatorstorages))
-    update_availability!(state.branches_available,sequences.Up_branches[:,t], length(system.branches))
-
-    update_energy!(state.stors_energy, system.storages, t)
-    update_energy!(state.genstors_energy, system.generatorstorages, t)
+    return tmp
 
 end
 
-function solve!(
-    dispatchproblem::DispatchProblem, state::SystemState,
-    system::SystemModel, t::Int
-)
-    solveflows!(dispatchproblem.fp)
-    update_state!(state, dispatchproblem, system, t)
+""
+function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Failed})
+    pm.type = LMOPFMethod
+    update_ref!(state, system, pm.ref, t, condition)
+    build_model!(pm, pm.type)
+    optimization!(pm, pm.type)
+    build_result!(pm, system.network.load)
+    
+    return
+
 end
 
+""
+function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Success})
+
+    pm.type = OPFMethod
+    build_result!(pm, system.network.load)
+
+    return
+
+end
+
+#update_energy!(state.stors_energy, system.storages, t)
+#update_energy!(state.genstors_energy, system.generatorstorages, t)
 include("result_shortfall.jl")
-#include("result_flow.jl")
+include("result_flow.jl")
+
+""
+function fill_dictionary!(network::Network, ref::Dict{Symbol,<:Any})
+
+    push!(ref, 
+    :bus => network.bus,
+    :dcline => network.dcline,
+    :gen => network.gen,
+    :branch => network. branch,
+    :storage => network.storage,
+    :switch => network.switch,
+    :shunt => network.shunt,
+    :load => network.load)
+
+    return ref
+
+end
+
+""
+function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Success})
+
+    update_gen!(system.generators, dictionary, state.gens_available, t)
+    update_load!(system.loads, dictionary, t)
+    ref_add!(dictionary)
+
+    return 
+
+end
+
+""
+function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Failed})
+
+    update_load!(system.loads, dictionary, t)
+    update_gen!(system.generators, dictionary, state.gens_available, t)
+
+    if all(state.gens_available[:,t]) == true
+        update_stor!(system.storages, dictionary, state.stors_available, t)
+        update_branches!(system.branches, dictionary, state.branches_available, t)
+        PRATSBase.SimplifyNetwork!(dictionary)
+    end
+    #PRATSBase.SimplifyNetwork!(dictionary)
+    ref_add!(dictionary)
+
+    return
+
+end
+
+""
+function empty_pm!(pm::AbstractPowerModel, network::Network, dictionary::Dict{Symbol,<:Any})
+
+    if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
+    pm.ref = fill_dictionary!(network, dictionary)
+    empty!(pm.load_curtailment)
+    pm.termination_status = 0
+
+    return
+
+end
+
+#nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+#mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
+#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
+#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "branch_strategy"=>:PseudoCost ,"time_limit"=>1.5, "log_levels"=>[])
+#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])

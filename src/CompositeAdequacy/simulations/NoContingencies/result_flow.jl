@@ -1,6 +1,6 @@
 # Flow
 
-struct SMCFlowAccumulator <: ResultAccumulator{NoContingencies,Flow}
+struct NCFlowAccumulator <: ResultAccumulator{NoContingencies,Flow}
 
     flow_branch::Vector{MeanVariance}
     flow_branchperiod::Matrix{MeanVariance}
@@ -9,7 +9,7 @@ struct SMCFlowAccumulator <: ResultAccumulator{NoContingencies,Flow}
 end
 
 function merge!(
-    x::SMCFlowAccumulator, y::SMCFlowAccumulator
+    x::NCFlowAccumulator, y::NCFlowAccumulator
 )
 
     foreach(merge!, x.flow_branch, y.flow_branch)
@@ -17,7 +17,7 @@ function merge!(
 
 end
 
-accumulatortype(::NoContingencies, ::Flow) = SMCFlowAccumulator
+accumulatortype(::NoContingencies, ::Flow) = NCFlowAccumulator
 
 function accumulator(
     system::SystemModel{N}, ::NoContingencies, ::Flow
@@ -29,13 +29,13 @@ function accumulator(
 
     flow_branch_currentsim = zeros(Int, n_branches)
 
-    return SMCFlowAccumulator(
+    return NCFlowAccumulator(
         flow_branch, flow_branchperiod,  flow_branch_currentsim)
 
 end
 
 function record!(
-    acc::SMCFlowAccumulator,
+    acc::NCFlowAccumulator,
     system::SystemModel{N,L,T,U},
     #state::SystemState,
     sampleid::Int, t::Int
@@ -48,7 +48,7 @@ end
 
 end
 
-function reset!(acc::SMCFlowAccumulator, sampleid::Int)
+function reset!(acc::NCFlowAccumulator, sampleid::Int)
 
     for i in eachindex(acc.flow_branch_currentsim)
         fit!(acc.flow_branch[i], acc.flow_branch_currentsim[i])
@@ -58,7 +58,7 @@ function reset!(acc::SMCFlowAccumulator, sampleid::Int)
 end
 
 function finalize(
-    acc::SMCFlowAccumulator,
+    acc::NCFlowAccumulator,
     system::SystemModel{N,L,T,U},
 ) where {N,L,T,U}
 
@@ -78,20 +78,20 @@ end
 # --------------------------------------------------------------------------------------------------------------------
 # FlowTotal
 
- struct NoContingencieFlowTotalAccumulator <: ResultAccumulator{NoContingencies,FlowTotal}
+ struct NCFlowTotalAccumulator <: ResultAccumulator{NoContingencies,FlowTotal}
 
     total::Array{Float16,3}
 
  end
 
- function merge!(x::NoContingencieFlowTotalAccumulator, y::NoContingencieFlowTotalAccumulator)
+ function merge!(x::NCFlowTotalAccumulator, y::NCFlowTotalAccumulator)
 
      x.total .+= y.total
      return
 
  end
 
- accumulatortype(::NoContingencies, ::FlowTotal) = NoContingencieFlowTotalAccumulator
+ accumulatortype(::NoContingencies, ::FlowTotal) = NCFlowTotalAccumulator
 
  function accumulator(system::SystemModel{N}, simspec::NoContingencies, ::FlowTotal) where {N}
 
@@ -99,11 +99,11 @@ end
      #flow = zeros(Float16, nbranches, N)
      flow = zeros(Float16, nbranches, N, 1)#simspec.nsamples)
 
-     return NoContingencieFlowTotalAccumulator(flow)
+     return NCFlowTotalAccumulator(flow)
  end
 
  function record!(
-     acc::NoContingencieFlowTotalAccumulator,
+     acc::NCFlowTotalAccumulator,
      system::SystemModel{N,L,T,U}, sampleid::Int, t::Int
  ) where {N,L,T,U}
 
@@ -112,10 +112,10 @@ end
 
  end
 
- reset!(acc::NoContingencieFlowTotalAccumulator, sampleid::Int) = nothing
+ reset!(acc::NCFlowTotalAccumulator, sampleid::Int) = nothing
 
  function finalize(
-     acc::NoContingencieFlowTotalAccumulator,
+     acc::NCFlowTotalAccumulator,
      system::SystemModel{N,L,T,U},
  ) where {N,L,T,U}
 

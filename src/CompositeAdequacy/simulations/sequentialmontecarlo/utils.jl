@@ -1,6 +1,6 @@
 function initialize_availability!(
     rng::AbstractRNG,
-    sequence::Matrix{Bool},
+    availability::Matrix{Bool},
     devices::AbstractAssets, N::Int)
     
     ndevices = Base.length(devices)
@@ -8,23 +8,13 @@ function initialize_availability!(
     for i in 1:ndevices
         λ = devices.λ[i]/N
         μ = devices.μ[i]/N
-        if λ != 0.0 || μ != 0.0
-            sequence[i,:] = cycles!(rng, λ, μ, N)
+        if λ ≠ 0.0 || μ ≠ 0.0
+            availability[i,:] = cycles!(rng, λ, μ, N)
         end
     end
 
-    return sequence
-    
-end
-
-function update_availability!(
-    availability::Vector{Bool}, sequences_device::Vector{Bool}, ndevices::Int)
-
-    for i in 1:ndevices
-        availability[i] = sequences_device[i]
-    end
-
     return availability
+    
 end
 
 function cycles!(
@@ -58,7 +48,58 @@ function T(rng, λ::Float32, μ::Float32)::Tuple{Int32,Int32}
     return ttf,ttr
 end
 
+""
+function update_load!(loads::Loads, dictionary::Dict{Symbol,<:Any}, t::Int)
+    for i in eachindex(loads.keys)
+        #dictionary[:load][i]["qd"] = Float16.(system.loads.pd[i,t]*Float32.(dictionary[:load][i]["qd"] / dictionary[:load][i]["pd"]))
+        dictionary[:load][i]["pd"] = loads.pd[i,t]*1.5
+    end
+    return dictionary
+end
 
+""
+function update_gen!(generators::Generators, dictionary::Dict{Symbol,<:Any}, gens_available::Matrix{Bool}, t::Int)
+    for i in eachindex(generators.keys)
+        dictionary[:gen][i]["pg"] = generators.pg[i,t]
+        if gens_available[i] == false dictionary[:gen][i]["gen_status"] = gens_available[i,t] end
+    end
+    return dictionary
+end
+
+""
+function update_stor!(storages::Storages, dictionary::Dict{Symbol,<:Any}, stors_available::Matrix{Bool}, t::Int)
+    for i in eachindex(storages.keys)
+        if stors_available[i] == false dictionary[:storage][i]["status"] = stors_available[i,t] end
+    end
+    return dictionary
+end
+
+""
+function update_branches!(branches::Branches, dictionary::Dict{Symbol,<:Any}, branches_available::Matrix{Bool}, t::Int)
+    if all(branches_available[:,t]) == false
+        for i in eachindex(branches.keys)
+            if branches_available[i] == false dictionary[:branch][i]["br_status"] = branches_available[i,t] end
+        end
+    end
+    return dictionary
+end
+
+""
+function overloadings(newdata::Dict{String,Any})
+
+    container = false
+    for j in eachindex(newdata["branch"])
+        if any(abs(newdata["branch"][string(j)]["pf"]) > newdata["branch"][string(j)]["rate_a"])
+            container = true
+            break
+        end
+    end
+
+    return container
+
+end
+
+# ----------------------------------------------------------------------------------------------------------
 function available_capacity(
     availability::Vector{Bool},
     branches::Branches,
@@ -105,7 +146,8 @@ function update_energy!(
     for i in 1:length(stors_energy)
 
         soc = stors_energy[i]
-        efficiency = stors.carryover_efficiency[i,t]
+        #efficiency = stors.carryover_efficiency[i,t]
+        efficiency = 1.0
         maxenergy = stors.energy_capacity[i,t]
 
         # Decay SoC
@@ -115,62 +157,5 @@ function update_energy!(
         stors_energy[i] = min(soc, maxenergy)
 
     end
-
-end
-
-function maxtimetocharge_discharge(system::SystemModel)
-
-    if length(system.storages) > 0
-
-        if any(iszero, system.storages.charge_capacity)
-            stor_charge_max = length(system.timestamps) + 1
-        else
-            stor_charge_durations =
-                system.storages.energy_capacity ./ system.storages.charge_capacity
-            stor_charge_max = ceil(Int, maximum(stor_charge_durations))
-        end
-
-        if any(iszero, system.storages.discharge_capacity)
-            stor_discharge_max = length(system.timestamps) + 1
-        else
-            stor_discharge_durations =
-                system.storages.energy_capacity ./ system.storages.discharge_capacity
-            stor_discharge_max = ceil(Int, maximum(stor_discharge_durations))
-        end
-
-    else
-
-        stor_charge_max = 0
-        stor_discharge_max = 0
-
-    end
-
-    if length(system.generatorstorages) > 0
-
-        if any(iszero, system.generatorstorages.charge_capacity)
-            genstor_charge_max = length(system.timestamps) + 1
-        else
-            genstor_charge_durations =
-                system.generatorstorages.energy_capacity ./ system.generatorstorages.charge_capacity
-            genstor_charge_max = ceil(Int, maximum(genstor_charge_durations))
-        end
-
-        if any(iszero, system.generatorstorages.discharge_capacity)
-            genstor_discharge_max = length(system.timestamps) + 1
-        else
-            genstor_discharge_durations =
-                system.generatorstorages.energy_capacity ./ system.generatorstorages.discharge_capacity
-            genstor_discharge_max = ceil(Int, maximum(genstor_discharge_durations))
-        end
-
-    else
-
-        genstor_charge_max = 0
-        genstor_discharge_max = 0
-
-    end
-
-    return (max(stor_charge_max, genstor_charge_max),
-            max(stor_discharge_max, genstor_discharge_max))
 
 end

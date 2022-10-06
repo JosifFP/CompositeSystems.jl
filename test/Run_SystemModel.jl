@@ -150,7 +150,7 @@ tmp = sort([[i, gen["gen_bus"]] for (i,gen) in ref], by = x->x[1])
 container_key_core = Int64.(reduce(vcat, tmp')[:,1])
 key_order_core = sortperm(container_key_core)
 
-if length(container_key) != length(container_key_core)
+if length(container_key) ≠ length(container_key_core)
     for i in container_key_core
         if in(container_key).(i) == false
             setindex!(dictionary_timeseries, Float16.([ref[i]["pmax"]*network.baseMVA for k in 1:N]), i)
@@ -167,7 +167,7 @@ container_category = String.(values(dictionary_core[:category]))
 container_λ = Float32.(values(dictionary_core[Symbol("failurerate[f/year]")]))
 container_μ = Vector{Float32}(undef, length(values(dictionary_core[Symbol("repairtime[hrs]")])))
 for i in 1:length(values(dictionary_core[Symbol("repairtime[hrs]")]))
-    if values(dictionary_core[Symbol("repairtime[hrs]")])[i]!=0.0
+    if values(dictionary_core[Symbol("repairtime[hrs]")])[i]≠0.0
         container_μ[i] = Float32.(8760/values(dictionary_core[Symbol("repairtime[hrs]")])[i])
     else
         container_μ[i] = 0.0

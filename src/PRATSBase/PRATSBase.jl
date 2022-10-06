@@ -5,10 +5,8 @@
         Period, Minute, Hour, Day, Year, Date, hour, now
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
-    import LinearAlgebra, SparseArrays, JuMP
-    import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
-                optimize!, Model
-
+    import LinearAlgebra
+    import SparseArrays: SparseMatrixCSC, sparse, nonzeros
     import PowerModels, InfrastructureModels
     import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
     __init__() = Memento.register(_LOGGER)
@@ -16,9 +14,9 @@
     "Suppresses information and warning messages output"
     function silence()
         Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-        Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error")
-        Memento.setlevel!(Memento.getlogger(PowerModels), "error")
-        Memento.setlevel!(Memento.getlogger(PRATSBase), "error")
+        Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error", recursive=false)
+        Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
+        Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
     end
 
     export
@@ -38,8 +36,7 @@
     include("SystemModel/assets.jl")
     include("SystemModel//utils.jl")
 
-    include("BuildNetwork/data.jl")
-    include("BuildNetwork/ref.jl")
+    include("BuildNetwork/utils.jl")
     include("BuildNetwork/FileGenerator.jl")
 
     include("SystemModel.jl")

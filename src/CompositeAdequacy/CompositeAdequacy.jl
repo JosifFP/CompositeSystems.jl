@@ -1,8 +1,6 @@
 @reexport module CompositeAdequacy
 
-using MinCostFlows
 using ..PRATSBase
-
 import Base: -, broadcastable, getindex, merge!
 import Base.Threads: nthreads, @spawn
 import Dates: DateTime, Period
@@ -15,8 +13,21 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
-import PowerModels, JuMP, Ipopt
+import PowerModels, JuMP, Ipopt, Juniper, HiGHS
+import LinearAlgebra: qr
+import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
+optimize!, Model, LOCALLY_SOLVED
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
+
+"Suppresses information and warning messages output"
+function silence()
+    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
+    Memento.setlevel!(_LOGGER, "error")
+    Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
+    Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
+    Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
+    #Memento.setlevel!(Memento.getlogger(CompositeAdequacy), "error", recursive=false)
+end
 
 export
     # CompositeAdequacy submoduleexport
@@ -26,7 +37,7 @@ export
     # Simulation specifications
     SequentialMonteCarlo, NoContingencies,
 
-    DispatchProblem, SystemState, accumulator, UpDownSequence,
+    SystemState, accumulator,
 
     # Result specifications
     Shortfall, ShortfallSamples, Flow, FlowTotal,
@@ -34,7 +45,6 @@ export
     # Convenience re-exports
     ZonedDateTime, @tz_str
 #
-
 abstract type ReliabilityMetric end
 abstract type SimulationSpec end
 abstract type ResultSpec end
@@ -46,6 +56,16 @@ abstract type Result{
 } end
 
 MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
+
+
+include("Optimizer/base.jl")
+include("Optimizer/utils.jl")
+include("Optimizer/variables.jl")
+include("Optimizer/constraints.jl")
+include("Optimizer/Optimizer.jl")
+include("Optimizer/solution.jl")
+
+include("Native/Native.jl")
 
 include("metrics.jl")
 include("results/results.jl")
