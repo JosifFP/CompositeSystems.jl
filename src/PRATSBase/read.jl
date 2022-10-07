@@ -57,6 +57,11 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
     if has_branches
         _, dict_core = extract(ReliabilityDataDir, files, Branches, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
         branches = container(dict_core, network, Branches, S, N, L, T)
+
+        arcs_from = [(l,branches.f_bus[l],branches.t_bus[l]) for l in branches.keys]
+        arcs_to = [(l,branches.t_bus[l],branches.f_bus[l]) for l in branches.keys]
+        arcs = [arcs_from; arcs_to]
+
     end
 
     if has_shunts
@@ -107,7 +112,9 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
         Memento.error(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
     end
 
-    return SystemModel(buses, loads, branches, shunts, generators, storages, generatorstorages, timestamps_tz)
+    return SystemModel(
+        buses, loads, branches, shunts, generators, storages, generatorstorages, 
+        arcs_from, arcs_to, arcs, ref_buses, timestamps_tz)
 
 end
 

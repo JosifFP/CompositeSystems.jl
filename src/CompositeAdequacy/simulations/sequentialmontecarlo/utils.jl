@@ -76,34 +76,8 @@ function update!(system::SystemModel{N}) where {N}
 
     #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
     #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]
-    tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
+    #tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
 
-    (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = get_bus_components(
-        tmp_arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
-
-    for k in field(system, Buses, :keys)
-        field(system, Topology, :bus_gens)[k] = bus_gens[k]
-        field(system, Topology, :bus_loads)[k] = bus_loads[k]
-        field(system, Topology, :bus_shunts)[k] = bus_shunts[k]
-        field(system, Topology, :bus_storage)[k] = bus_storage[k]
-    
-        if field(system, Topology, :bus_arcs)[k] ≠ bus_arcs[k]
-            field(system, Topology, :bus_arcs)[k] = bus_arcs[k]
-        end
-    
-    end
-
-    tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
-
-    for k in keys(field(system, Topology, :buspairs))
-        if haskey(tmp_buspairs, k) ≠ true
-            empty!(field(system, Topology, :buspairs)[k])
-        else
-            field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
-        end
-    end
-
-    return
 end
 
 "Update Asset states"
@@ -118,9 +92,53 @@ function update_states!(system::SystemModel, state::SystemState, t::Int)
 
 end
 
+""
+function update_asset_idxs!(asset::AbstractAssets, asset_idxs::Vector{UnitRange{Int}}, bus_asset_idxs::Vector{UnitRange{Int}}, asset_states::Vector{Bool}, nbuses::Int)
 
+    if all(asset_states) ≠ true && isempty(asset_idxs) ≠ true
 
+        key_assets = [i for i in assetgrouplist(asset_idxs) if asset_states[i] ≠ 0]
+        asset_idxs[:] = makeidxlist(key_assets, length(asset))
+        bus_asset_idxs[:] = makeidxlist([field(asset, :buses)[i] for i in key_assets], nbuses)
 
+    end
+
+end
+
+""
+function update_branch_idxs!(
+    topology::Topology, branches::Branches, buses::Buses, branches_idxs::Vector{UnitRange{Int}}, 
+    buses_idxs::Vector{UnitRange{Int}}, branch_states::Vector{Bool}, arcs::Vector{Tuple{Int, Int, Int}})
+
+    if all(branch_states) ≠ true && isempty(branches_idxs) ≠ true
+
+        key_buses = [i for i in assetgrouplist(buses_idxs) if field(buses, :bus_type)[i] ≠ 4]
+        key_branches = [i for i in assetgrouplist(branches_idxs) if branch_states[i] ≠ 0]
+        branches_idxs[:] = makeidxlist(key_branches, length(branches))
+
+        for i in  key_buses
+            field(topology, :bus_arcs)[i] = Tuple{Int,Int,Int}[]
+        end
+        
+        for (l,i,j) in arcs
+            if branch_states[l] ≠ 0
+                push!(field(topology, :bus_arcs)[i], (l,i,j))
+            end
+        end
+        
+        tmp_buspairs = calc_buspair_parameters(buses, branches, key_branches)
+        
+        for (k,_) in field(topology, :buspairs)
+            if haskey(tmp_buspairs, k) ≠ true
+                empty!(field(topology, :buspairs)[k])
+            else
+                field(topology, :buspairs)[k] = tmp_buspairs[k]
+            end
+        end
+
+    end
+
+end
 
 
 # ----------------------------------------------------------------------------------------------------------

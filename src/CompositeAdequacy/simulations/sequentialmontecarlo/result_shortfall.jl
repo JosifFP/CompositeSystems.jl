@@ -79,7 +79,6 @@ end
 function record!(
     acc::SMCShortfallAccumulator,
     sys::SystemModel{N,L,T,S},
-    #vector::Vector{Float16},
     sampleid::Int, t::Int
 ) where {N,L,T,S}
 
@@ -88,7 +87,8 @@ function record!(
 
     for r in 1:17
 
-        busshortfall = field(sys, Loads, :plc)[r]
+        #busshortfall = field(sys, Loads, :plc)[r]
+        busshortfall = 0
         isbusshortfall = busshortfall > 0
 
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
@@ -161,7 +161,7 @@ function finalize(
     E = PRATSBase.energyunits["MWh"]
     p2e = conversionfactor(S,L,T,P,E)
 
-    return ShortfallResult{N,L,T,P,E,S}(
+    return ShortfallResult{N,L,T,E}(
         nsamples, 
         system.loads.keys, 
         system.timestamps,
@@ -234,7 +234,7 @@ function finalize(
     P = PRATSBase.powerunits["MW"]
     E = PRATSBase.energyunits["MWh"]
     p2e = conversionfactor(S,L,T,P,E)
-    return ShortfallSamplesResult{N,L,T,P,E,S}(
+    return ShortfallSamplesResult{N,L,T,P,E}(
         system.loads.keys, system.timestamps, p2e*acc.shortfall)
 
 end

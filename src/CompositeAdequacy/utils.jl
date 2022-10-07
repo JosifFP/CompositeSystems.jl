@@ -5,6 +5,7 @@ function mean_std(x::MeanVariance)
     return m, sqrt(v)
 end
 
+""
 function mean_std(x::AbstractArray{<:MeanVariance})
 
     means = similar(x, Float64)
@@ -20,6 +21,7 @@ function mean_std(x::AbstractArray{<:MeanVariance})
 
 end
 
+""
 function findfirstunique_directional(a::AbstractVector{<:Pair}, i::Pair)
     i_idx = findfirst(isequal(i), a)
     if isnothing(i_idx)
@@ -31,20 +33,64 @@ function findfirstunique_directional(a::AbstractVector{<:Pair}, i::Pair)
     return i_idx, reverse
 end
 
+""
 function findfirstunique(a::AbstractVector{T}, i::T) where T
     i_idx = findfirst(isequal(i), a)
     i_idx === nothing && throw(BoundsError(a))
     return i_idx
 end
 
+""
 function assetgrouplist(idxss::Vector{UnitRange{Int}})
-    results = Vector{Int}(undef, last(idxss[end]))
-    for (g, idxs) in enumerate(idxss)
-        results[idxs] .= g
+    
+    if isempty(idxss)
+        results = Int[]
+    else
+        results = Vector{Int}(undef, last(idxss[end]))
+        for (g, idxs) in enumerate(idxss)
+            results[idxs] .= g
+        end
     end
     return results
+
 end
 
+""
+function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
+
+    if isempty(collectionidxs)
+        idxlist = fill(1:0, n_collections)
+    else
+        n_assets = length(collectionidxs)
+        idxlist = Vector{UnitRange{Int}}(undef, n_collections)
+        active_collection = 1
+        start_idx = 1
+        a = 1
+
+        while a <= n_assets
+        if collectionidxs[a] > active_collection
+                idxlist[active_collection] = start_idx:(a-1)       
+                active_collection += 1
+                start_idx = a
+        else
+            a += 1
+        end
+        end
+
+        idxlist[active_collection] = start_idx:n_assets       
+        active_collection += 1
+
+        while active_collection <= n_collections
+            idxlist[active_collection] = (n_assets+1):n_assets
+            active_collection += 1
+        end
+    end
+
+    return idxlist
+
+end
+
+""
 function colsum(x::Matrix{T}, col::Integer) where {T}
     result = zero(T)
     for i in 1:size(x, 1)
@@ -70,6 +116,7 @@ field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
 field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
 field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
 
+field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
 field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
 field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
 

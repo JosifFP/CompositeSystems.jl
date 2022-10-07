@@ -16,14 +16,11 @@ struct Topology
     bus_storages_idxs::Vector{UnitRange{Int}}
     bus_generatorstorages_idxs::Vector{UnitRange{Int}}
 
-    arcs_from_0::Vector{Tuple{Int, Int, Int}}
-    arcs_to_0::Vector{Tuple{Int, Int, Int}}
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}} 
-    ref_buses::Vector{Int}
+    buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}}
 
-    sol_plc::Vector{Float16}
-    sol_pg::Vector{Float16}
+    plc::Vector{Float16}
+    pg::Vector{Float16}
 
     function Topology(system::SystemModel)
 
@@ -60,25 +57,20 @@ struct Topology
         generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
         bus_generatorstorages_idxs = makeidxlist(bus_generatorstorages, nbuses)
 
-        arcs_from_0 = [(l,field(system, Branches, :f_bus)[l],field(system, Branches, :t_bus)[l]) for l in key_branches]
-        arcs_to_0 = [(l,field(system, Branches, :t_bus)[l],field(system, Branches, :f_bus)[l]) for l in key_branches]
-
         bus_arcs = Dict((i, Tuple{Int,Int,Int}[]) for i in key_buses)
-        for (l,i,j) in [arcs_from_0; arcs_to_0]
+        for (l,i,j) in field(system, :arcs)
             push!(bus_arcs[i], (l,i,j))
         end
-        
-        ref_buses = [i for i in key_buses if field(system, Buses, :bus_type)[i] == 3]
 
-        buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
+        buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches), key_branches)
 
-        sol_plc = zeros(Float16, length(system.loads))
-        sol_pg = zeros(Float16, length(system.generators))
+        plc = zeros(Float16, length(system.loads))
+        pg = zeros(Float16, length(system.generators))
 
         return new(
         buses_idxs, loads_idxs, branches_idxs, shunts_idxs, generators_idxs, storages_idxs, generatorstorages_idxs, 
         bus_loads_idxs, bus_shunts_idxs, bus_generators_idxs, bus_storages_idxs, bus_generatorstorages_idxs,
-        arcs_from_0, arcs_to_0, bus_arcs, buspairs, ref_buses, sol_plc, sol_pg)
+        bus_arcs, buspairs, plc, pg)
     end
 
 end
@@ -128,7 +120,7 @@ CompositeAdequacy.@def pm_fields begin
 
 end
 
-struct AbstractDCPowerModel <: AbstractPowerModel @pm_fields end
+mutable struct AbstractDCPowerModel <: AbstractPowerModel @pm_fields end
 struct AbstractACPowerModel <: AbstractPowerModel @pm_fields end
 #AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}

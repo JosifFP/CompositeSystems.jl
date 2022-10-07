@@ -35,11 +35,8 @@ function get_bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, lo
 end
 
 "compute bus pair level data, can be run on data or ref data structures"
-function calc_buspair_parameters(buses::Buses, branches::Branches)
-
-    bus_lookup = [i for i in field(buses, :keys) if field(buses, :bus_type)[i] ≠ 4]
-    branch_lookup = [i for i in field(branches, :keys) if field(branches, :status)[i] == 1 && field(branches, :f_bus)[i] in bus_lookup && field(branches, :t_bus)[i] in bus_lookup]
-    
+function calc_buspair_parameters(buses::Buses, branches::Branches, branch_lookup::Vector{Int})
+ 
     buspair_indexes = Set((field(branches, :f_bus)[i], field(branches, :t_bus)[i]) for i in branch_lookup)
     bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
     bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
@@ -114,42 +111,4 @@ function ref_calc_branch_flow_bounds(branches::Branches)
     end
 
     return flow_lb, flow_ub
-end
-
-""
-function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
-
-    if isempty(collectionidxs)
-        idxlist = fill(1:0, n_collections)
-    else
-
-        n_assets = length(collectionidxs)
-
-        idxlist = Vector{UnitRange{Int}}(undef, n_collections)
-        active_collection = 1
-        start_idx = 1
-        a = 1
-
-        while a <= n_assets
-        if collectionidxs[a] > active_collection
-                idxlist[active_collection] = start_idx:(a-1)       
-                active_collection += 1
-                start_idx = a
-        else
-            a += 1
-        end
-        end
-
-        idxlist[active_collection] = start_idx:n_assets       
-        active_collection += 1
-
-        while active_collection <= n_collections
-            idxlist[active_collection] = (n_assets+1):n_assets
-            active_collection += 1
-        end
-
-    end
-
-    return idxlist
-
 end

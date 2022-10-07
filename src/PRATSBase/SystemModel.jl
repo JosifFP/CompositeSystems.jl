@@ -9,6 +9,10 @@ struct SystemModel{N,L,T<:Period,S} #S=baseMVA as Integer
     generators::Generators{N,L,T,S}
     storages::Storages{N,L,T,S}
     generatorstorages::GeneratorStorages{N,L,T,S}
+    arcs_from::Vector{Tuple{Int, Int, Int}}
+    arcs_to::Vector{Tuple{Int, Int, Int}}
+    arcs::Vector{Tuple{Int, Int, Int}}
+    ref_buses::Vector{Int}
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
@@ -19,18 +23,18 @@ struct SystemModel{N,L,T<:Period,S} #S=baseMVA as Integer
         generators::Generators{N,L,T,S},
         storages::Storages{N,L,T,S},
         generatorstorages::GeneratorStorages{N,L,T,S},
+        arcs_from::Vector{Tuple{Int, Int, Int}},
+        arcs_to::Vector{Tuple{Int, Int, Int}},
+        arcs::Vector{Tuple{Int, Int, Int}},
+        ref_buses::Vector{Int},
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period,S}
 
-    # n_gens = length(generators)
-    # n_stors = length(storages)
-    # n_genstors = length(generatorstorages)
-    # n_branches = length(branches)
     @assert step(timestamps) == T(L)
     @assert length(timestamps) == N
 
     new{N,L,T,S}(
-        buses, loads, branches, shunts, generators, storages, generatorstorages, timestamps)
+        buses, loads, branches, shunts, generators, storages, generatorstorages, arcs_from, arcs_to, arcs, ref_buses, timestamps)
     end
 
 end
@@ -43,6 +47,10 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.generators == y.generators &&
     x.storages == y.storages &&
     x.generatorstorages == y.generatorstorages &&
+    x.arcs_from == y.arcs_from &&
+    x.arcs_to == y.arcs_to &&
+    x.arcs == y.arcs &&
+    x.ref_buses == y.ref_buses &&
     x.timestamps == y.timestamps
 
 broadcastable(x::SystemModel) = Ref(x)

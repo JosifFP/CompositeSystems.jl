@@ -75,12 +75,11 @@ function assess(
         for t in 1:N
             println("t=$(t)")
             if field(systemstate, :condition)[t] ≠ true
-                update!(pm, systemstate, system, t)
+                update!(pm.topology, systemstate, system, t)
                 solve!(pm, systemstate, system, t)
+                foreach(recorder -> record!(recorder, system, s, t), recorders)
+                empty_model!(pm)
             end
-            vector = zeros(Float16,17)
-            foreach(recorder -> record!(recorder, system, s, t), recorders)
-            empty_model!(pm)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
@@ -114,60 +113,52 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel,
     #all(field(state, :branches_available)[:,t]) == true ? type = Transportation : type = DCOPF
     type = Transportation
     #build_method!(pm, system, t, type)
+    var_bus_voltage(pm, system, t)
     var_gen_power(pm, system, t)
-    var_branch_power(pm, system, t)
-    var_load_curtailment(pm, system, t)
+    #var_branch_power(pm, system, t)
+    #var_load_curtailment(pm, system, t)
     #JuMP.optimize!(pm.model)
     #build_result!(pm, system, t)
-
 end
-
-
-function update_topology!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
-    
-    nbuses = length(system.buses)
-    buses_idxs = makeidxlist([i for i in assetgrouplist(pm.topology.buses_idxs) if field(system, Buses, :bus_type)[i] != 4], nbuses)
-
-end
-
 
 ""
-function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
+function update!(topology::Topology, state::SystemState, system::SystemModel, t::Int)
 
-    field(system, Loads, :plc)[:] = fill!(field(system, Loads, :plc)[:], 0)
     #update_states!(system, state, t)
-    update_topology!(pm, state, system, t)
+    field(topology, :plc)[:] = fill!(field(topology, :plc), 0.0)
 
-    #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
-    #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]
-    # tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
+    if field(state, :condition)[t] ≠ true
+        
+        nbuses = length(system.buses)
+        
+        update_asset_idxs!(
+            field(system, :loads), field(topology, :loads_idxs), field(topology, :bus_loads_idxs), 
+            field(state, :loads)[:,t], nbuses)
 
-    # (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = get_bus_components(
-    #     tmp_arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
+        update_asset_idxs!(
+            field(system, :shunts), field(topology, :shunts_idxs), field(topology, :bus_shunts_idxs), 
+            field(state, :shunts)[:,t], nbuses)
 
-    # for k in field(system, Buses, :keys)
-    #     field(system, Topology, :bus_gens)[k] = bus_gens[k]
-    #     field(system, Topology, :bus_loads)[k] = bus_loads[k]
-    #     field(system, Topology, :bus_shunts)[k] = bus_shunts[k]
-    #     field(system, Topology, :bus_storage)[k] = bus_storage[k]
-    
-    #     if field(system, Topology, :bus_arcs)[k] ≠ bus_arcs[k]
-    #         field(system, Topology, :bus_arcs)[k] = bus_arcs[k]
-    #     end
-    
-    # end
+        update_asset_idxs!(
+            field(system, :generators), field(topology, :generators_idxs), field(topology, :bus_generators_idxs), 
+            field(state, :generators)[:,t], nbuses)
 
-    # tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
+        update_asset_idxs!(
+            field(system, :storages), field(topology, :storages_idxs), field(topology, :bus_storages_idxs), 
+            field(state, :storages)[:,t], nbuses)
 
-    # for k in keys(field(system, Topology, :buspairs))
-    #     if haskey(tmp_buspairs, k) ≠ true
-    #         empty!(field(system, Topology, :buspairs)[k])
-    #     else
-    #         field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
-    #     end
-    # end
+        update_asset_idxs!(
+            field(system, :generatorstorages), field(topology, :generatorstorages_idxs), 
+            field(topology, :bus_generatorstorages_idxs), field(state, :generatorstorages)[:,t], nbuses)
 
-    # return
+        update_branch_idxs!(
+            topology, field(system, :branches), field(system, :buses), field(topology, :branches_idxs), 
+            field(topology, :buses_idxs), field(state, :branches)[:,t], field(system, :arcs))
+
+    end
+
+    return
+
 end
 
 ""
@@ -175,6 +166,7 @@ function empty_model!(pm::AbstractPowerModel)
 
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
     empty!(pm.sol)
+    println("done")
     return
 end
 
