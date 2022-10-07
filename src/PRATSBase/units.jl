@@ -1,6 +1,6 @@
 # Augment time units
 
-export timeunits, powerunits, energyunits, voltageunits, perunit
+export timeunits, powerunits, energyunits, voltageunits
 
 unitsymbol(T::Type{<:Period}) = string(T)
 unitsymbol(::Type{Minute}) = "min"
@@ -91,6 +91,14 @@ function conversionfactor(F::Type{<:EnergyUnit}, T::Type{<:EnergyUnit})
 end
 
 function conversionfactor(
+    S::Int, L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit})
+    to_power, to_time = subunits(E)
+    powerconversion = conversionfactor(P, to_power)
+    timeconversion = conversionfactor(T, to_time)
+    return powerconversion * timeconversion * L * S
+end
+
+function conversionfactor(
     L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit})
     to_power, to_time = subunits(E)
     powerconversion = conversionfactor(P, to_power)
@@ -117,7 +125,6 @@ energytopower(
     P::Type{<:PowerUnit}) = e*conversionfactor(L, T, E, P)
 
 
-
 abstract type VoltageUnit end
 struct kV <: VoltageUnit end
 unitsymbol(T::Type{<:VoltageUnit}) = string(T)
@@ -125,12 +132,3 @@ unitsymbol(::Type{kV}) = "kV"
 voltageunits = Dict(
     unitsymbol(T) => T
     for T in [kV])
-
-
-abstract type PerUnit end
-struct pu <: PerUnit end
-unitsymbol(T::Type{<:PerUnit}) = string(T)
-unitsymbol(::Type{pu}) = "pu"
-perunit = Dict(
-    unitsymbol(T) => T
-    for T in [pu])

@@ -25,7 +25,7 @@ function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{
 end
 
 "Creates AbstractAsset - Buses"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, S::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["zone"]),
@@ -56,7 +56,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, N::Int, L::
 
     key_order_core = sortperm(container_data[:keys])
 
-    return asset{N,L,T,U}(
+    return asset{N,L,T,S}(
         container_data[:keys][key_order_core],
         container_data[:zone][key_order_core],
         container_data[:bus_type][key_order_core],
@@ -73,7 +73,7 @@ end
 
 "Creates AbstractAsset - Generators"
 function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}, dict_core::Dict{<:Any}, 
-    dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+    dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["gen_bus"]),
@@ -111,7 +111,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
             if in(container_key).(i) == false
-                setindex!(dict_timeseries, [container_data[:pg][i] for k in 1:N]*network[:baseMVA], i)
+                setindex!(dict_timeseries, [container_data[:pg][i] for k in 1:N]*S, i)
             end
         end
         container_key = [i for i in keys(dict_timeseries)]
@@ -119,7 +119,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
         @assert length(container_key) == length(container_data[:keys])
     end
 
-    container_timeseries = [Float16.(dict_timeseries[i]/network[:baseMVA]) for i in keys(dict_timeseries)]
+    container_timeseries = [Float16.(dict_timeseries[i]/S) for i in keys(dict_timeseries)]
 
     container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
     container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
@@ -132,7 +132,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
         end
     end
 
-    return asset{N,L,T,U}(
+    return asset{N,L,T,S}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],
         reduce(vcat,transpose.(container_timeseries[key_order_series])),
@@ -152,7 +152,7 @@ end
 
 "Creates AbstractAsset - Loads"
 function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}, dict_core::Dict{<:Any}, 
-    dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+    dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp_cost = Dict(Int(dict_core[:key][i]) => Float16(dict_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dict_core[:key]))
     for (i,load) in network[:load]
@@ -186,7 +186,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
             if in(container_key).(i) == false
-                setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*network[:baseMVA], i)
+                setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*S, i)
             end
             #get!(dict_timeseries_qd, i, Float16.(dict_timeseries_pd[i]*powerfactor))
         end
@@ -195,16 +195,14 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
         @assert length(container_key) == length(container_data[:keys])
     end
 
-    container_timeseries = [Float16.(dict_timeseries[i]/network[:baseMVA]) for i in keys(dict_timeseries)]
+    container_timeseries = [Float16.(dict_timeseries[i]/S) for i in keys(dict_timeseries)]
     nloads = length(container_data[:keys])
 
-    return asset{N,L,T,U}(
+    return asset{N,L,T,S}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],    
         reduce(vcat,transpose.(container_timeseries[key_order_series])),
         container_data[:qd][key_order_core],
-        zeros(Float16, nloads),
-        zeros(Float16, nloads),
         container_data[:source_id][key_order_core],
         container_data[:status][key_order_core],
         container_data[:cost][key_order_core])
@@ -212,7 +210,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
 end
 
 "Creates AbstractAsset - Branches"
-function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["f_bus"]),
@@ -270,7 +268,7 @@ function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::
         end
     end
 
-    return asset{N,L,T,U}(
+    return asset{N,L,T,S}(
         container_data[:keys][key_order_core],
         container_data[:f_bus][key_order_core],
         container_data[:t_bus][key_order_core],
@@ -295,7 +293,7 @@ function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::
 end
 
 "Creates AbstractAsset - Shunts"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, N::Int, L::Int, T::Type{<:Period}, U::Type{<:PerUnit})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, S::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [
         [i, 
@@ -317,7 +315,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, N::Int, L:
 
     key_order_core = sortperm(container_data[:keys])
 
-    return asset{N,L,T,U}(
+    return asset{N,L,T,S}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],
         container_data[:bs][key_order_core],
@@ -327,108 +325,143 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, N::Int, L:
 
 end
 
-"Creates AbstractAsset - Topology"
-function container(ref::Dict{Symbol,<:Any}, asset::Type{Topology}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages, N, U)
+"Checks for inconsistencies between AbstractAsset and Power Model Network"
+function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
-    arcs_from = [(i, branches.f_bus[i], branches.t_bus[i]) for i in branches.keys]
-    arcs_to = [(i, branches.t_bus[i], branches.f_bus[i]) for i in branches.keys]
-    arcs = [arcs_from; arcs_to]
+    for k in buses.keys
+        @assert haskey(ref[:bus],k) == true
+        @assert Int.(ref[:bus][k]["index"]) == buses.keys[k]
+        @assert Int.(ref[:bus][k]["index"]) == buses.index[k]
+        @assert Int.(ref[:bus][k]["area"]) == buses.area[k]
+        @assert Int.(ref[:bus][k]["bus_type"]) == buses.bus_type[k]
+        @assert Float16.(ref[:bus][k]["vmax"]) == buses.vmax[k]
+        @assert Float16.(ref[:bus][k]["vmin"]) == buses.vmin[k]
+        @assert Float16.(ref[:bus][k]["base_kv"]) == buses.base_kv[k]
+        @assert Float32.(ref[:bus][k]["va"]) == buses.va[k]
+        @assert Float32.(ref[:bus][k]["vm"]) == buses.vm[k]
+    end
+    
+    for k in generators.keys
+        @assert haskey(ref[:gen],k) == true
+        @assert Int.(ref[:gen][k]["index"]) == generators.keys[k]
+        @assert Int.(ref[:gen][k]["gen_bus"]) == generators.buses[k]
+        @assert Float16.(ref[:gen][k]["qg"]) == generators.qg[k]
+        @assert Float32.(ref[:gen][k]["vg"]) == generators.vg[k]
+        @assert Float16.(ref[:gen][k]["pmax"]) == generators.pmax[k]
+        @assert Float16.(ref[:gen][k]["pmin"]) == generators.pmin[k]
+        @assert Float16.(ref[:gen][k]["qmax"]) == generators.qmax[k]
+        @assert Float16.(ref[:gen][k]["qmin"]) == generators.qmin[k]
+        @assert Int.(ref[:gen][k]["mbase"]) == generators.mbase[k]
+        @assert Bool.(ref[:gen][k]["gen_status"]) == generators.status[k]
+        #@assert (ref[:gen][k]["cost"]) == generators.cost[k]
+    end
+    
+    for k in loads.keys
+        @assert haskey(ref[:load],k) == true
+        @assert Int.(ref[:load][k]["index"]) == loads.keys[k]
+        @assert Int.(ref[:load][k]["load_bus"]) == loads.buses[k]
+        @assert Float16.(ref[:load][k]["qd"]) == loads.qd[k]
+        @assert Bool.(ref[:load][k]["status"]) == loads.status[k]
+    end
+    
+    for k in branches.keys
+        @assert haskey(ref[:branch],k) == true
+        @assert Int.(ref[:branch][k]["index"]) == branches.keys[k]
+        @assert Int.(ref[:branch][k]["f_bus"]) == branches.f_bus[k]
+        @assert Int.(ref[:branch][k]["t_bus"]) == branches.t_bus[k]
+        @assert Float16.(ref[:branch][k]["rate_a"]) == branches.rate_a[k]
+        @assert Float16.(ref[:branch][k]["rate_b"]) == branches.rate_b[k]
+        @assert Float16.(ref[:branch][k]["rate_c"]) == branches.rate_c[k]
+        @assert Float16.(ref[:branch][k]["br_r"]) == branches.r[k]
+        @assert Float16.(ref[:branch][k]["br_x"]) == branches.x[k]
+        @assert Float16.(ref[:branch][k]["b_fr"]) == branches.b_fr[k]
+        @assert Float16.(ref[:branch][k]["b_to"]) == branches.b_to[k]
+        @assert Float16.(ref[:branch][k]["g_fr"]) == branches.g_fr[k]
+        @assert Float16.(ref[:branch][k]["g_to"]) == branches.g_to[k]
+        @assert Float16.(ref[:branch][k]["shift"]) == branches.shift[k]
+        @assert Float16.(ref[:branch][k]["angmin"]) == branches.angmin[k]
+        @assert Float16.(ref[:branch][k]["angmax"]) == branches.angmax[k]
+        @assert Bool.(ref[:branch][k]["transformer"]) == branches.transformer[k]
+        @assert Float16.(ref[:branch][k]["tap"]) == branches.tap[k]
+        @assert Bool.(ref[:branch][k]["br_status"]) == branches.status[k]
+    end
+    
+    for k in shunts.keys
+        @assert haskey(ref[:shunt],k) == true
+        @assert Int.(ref[:shunt][k]["index"]) == shunts.keys[k]
+        @assert Int.(ref[:shunt][k]["shunt_bus"]) == shunts.buses[k]
+        @assert Float16.(ref[:shunt][k]["bs"]) == shunts.bs[k]
+        @assert Float16.(ref[:shunt][k]["gs"]) == shunts.gs[k]
+        @assert Bool.(ref[:shunt][k]["status"]) == shunts.status[k]
+    end
+    
+end
 
-    (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = bus_components(arcs, buses, loads, shunts, generators, storages)
+"Checks connectivity issues and status"
+function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
-    ref_buses = Int[]
-    for i in buses.keys
-        if buses.bus_type[i] == 3
-            push!(ref_buses, i)
+    @assert(length(buses.keys) == length(ref[:bus])) # if this is not true something very bad is going on
+    active_bus_ids = Set(bus["index"] for (i,bus) in ref[:bus] if bus["bus_type"] != 4)
+
+    for (i, gen) in ref[:gen]
+        if !(gen["gen_bus"] in buses.keys) || !(generators.buses[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(gen["gen_bus"]) in shunt $(i) is not defined")
+        end
+        if gen["gen_status"] != 0 && !(gen["gen_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active generator $(i) is connected to inactive bus $(gen["gen_bus"])")
         end
     end
 
-    if length(ref_buses) > 1
-        Memento.error(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
+    for (i, load) in ref[:load]
+        if !(load["load_bus"] in buses.keys) || !(loads.buses[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(load["load_bus"]) in load $(i) is not defined")
+        end
+
+        if load["status"] != 0 && !(load["load_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active load $(i) is connected to inactive bus $(load["load_bus"])")
+        end       
     end
 
-    buspairs = calculate_buspair_parameters(buses, branches)
-
-    baseMVA = Int.(ref[:baseMVA])
-    per_unit = ref[:per_unit]
-
-    return asset{N,U}(baseMVA, per_unit, arcs_from, arcs_to, arcs, bus_gens, bus_loads, bus_shunts, bus_storage, bus_arcs, buspairs, ref_buses)
-
-end
-
-function bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, loads::Loads, shunts::Shunts, generators::Generators, storages::Storages)
-
-    tmp = Dict((i, Tuple{Int,Int,Int}[]) for i in buses.keys)
-    for (l,i,j) in arcs
-        push!(tmp[i], (l,i,j))
+    for (i, shunt) in ref[:shunt]
+        if !(shunt["shunt_bus"] in buses.keys) || !(shunts.buses[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
+        end
+        if shunt["status"] != 0 && !(shunt["shunt_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active shunt $(i) is connected to inactive bus $(shunt["shunt_bus"])")
+        end
     end
-    bus_arcs = tmp
 
-    tmp = Dict((i, Int[]) for i in buses.keys)
-    for k in loads.keys
-        if loads.status[k] ≠ 0 push!(tmp[loads.buses[k]], k) end
-    end
-    bus_loads = tmp
-
-    tmp = Dict((i, Int[]) for i in buses.keys)
-    for k in shunts.keys
-        if shunts.status[k] ≠ 0 push!(tmp[shunts.buses[k]], k) end
-    end
-    bus_shunts = tmp
-
-    tmp = Dict((i, Int[]) for i in buses.keys)
-    for k in generators.keys
-        if generators.status[k] ≠ 0 push!(tmp[generators.buses[k]], k) end
-    end
-    bus_gens = tmp
-
-    tmp = Dict((i, Int[]) for i in buses.keys)
-    for k in storages.keys
-        if storages.status[k] ≠ 0 push!(tmp[storages.buses[k]], k) end
-    end
-    bus_storage = tmp
-
-    return (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage)
-
-end
-
-"compute bus pair level data, can be run on data or ref data structures"
-function calculate_buspair_parameters(buses::Buses, branches::Branches)
-
-    bus_lookup = [i for i in buses.keys if buses.bus_type[i] ≠ 4]
-    branch_lookup = [i for i in branches.keys if branches.status[i] == 1 && branches.f_bus[i] in bus_lookup && branches.t_bus[i] in bus_lookup]
-    
-    
-    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
-    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
-    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
-    
-    for l in branch_lookup
-        i = branches.f_bus[l]
-        j = branches.t_bus[l]
-        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branches.angmin[l])
-        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branches.angmax[l])
-        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    for (i, strg) in ref[:storage]
+        if !(strg["storage_bus"] in buses.keys) || !(storages.buses[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(strg["storage_bus"]) in shunt $(i) is not defined")
+        end
+        if strg["status"] != 0 && !(strg["storage_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active storage unit $(i) is connected to inactive bus $(strg["storage_bus"])")
+        end
     end
     
-    buspairs = Dict((i,j) => Dict(
-        "branch"=>Int(bp_branch[(i,j)]),
-        "angmin"=>Float16(bp_angmin[(i,j)]),
-        "angmax"=>Float16(bp_angmax[(i,j)]),
-        "tap"=>Float16(branches.tap[bp_branch[(i,j)]]),
-        "vm_fr_min"=>Float16(buses.vmin[i]),
-        "vm_fr_max"=>Float16(buses.vmax[i]),
-        "vm_to_min"=>Float16(buses.vmin[j]),
-        "vm_to_max"=>Float16(buses.vmax[j]),
-        ) for (i,j) in buspair_indexes
-    )
-    
-    # add optional parameters
-    for bp in buspair_indexes
-        buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
+    for (i, branch) in ref[:branch]
+        if !(branch["f_bus"] in buses.keys) || !(branches.f_bus[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(branch["f_bus"]) in shunt $(i) is not defined")
+        end
+        if !(branch["t_bus"] in buses.keys) || !(branches.t_bus[i] in buses.keys)
+            Memento.error(_LOGGER, "bus $(branch["t_bus"]) in shunt $(i) is not defined")
+        end
+        if branch["br_status"] != 0 && !(branch["f_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active branch $(i) is connected to inactive bus $(branch["f_bus"])")
+        end
+
+        if branch["br_status"] != 0 && !(branch["t_bus"] in active_bus_ids)
+            Memento.warn(_LOGGER, "active branch $(i) is connected to inactive bus $(branch["t_bus"])")
+        end
+
+        # if dcline["br_status"] != 0 && !(dcline["f_bus"] in active_bus_ids)
+        #     Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["f_bus"])")
+        # end
+
+        # if dcline["br_status"] != 0 && !(dcline["t_bus"] in active_bus_ids)
+        #     Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
+        # end
     end
-    
-    return buspairs
 
 end

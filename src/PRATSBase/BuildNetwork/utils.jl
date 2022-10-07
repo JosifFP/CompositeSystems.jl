@@ -26,6 +26,7 @@ const component_status_inactive = Dict(
 function BuildNetwork(file::String)
     
     pm_data = parse_model(file)
+    PowerModels.make_per_unit!(pm_data)
     network = _BuildNetwork!(pm_data)
 
     return network

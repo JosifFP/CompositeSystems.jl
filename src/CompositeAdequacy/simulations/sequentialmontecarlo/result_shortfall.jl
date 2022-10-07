@@ -37,7 +37,7 @@ function merge!(
     foreach(merge!, x.unservedload_bus, y.unservedload_bus)
     foreach(merge!, x.unservedload_period, y.unservedload_period)
     foreach(merge!, x.unservedload_busperiod, y.unservedload_busperiod)
-    println("pegado after segundo merge!")
+
     return
 
 end
@@ -78,28 +78,30 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    #sys::SystemModel{N,L,T,U},
-    pm::AbstractPowerModel,
+    sys::SystemModel{N,L,T,S},
+    #vector::Vector{Float16},
     sampleid::Int, t::Int
-)
+) where {N,L,T,S}
 
     totalshortfall = 0
     isshortfall = false
-    
-    for r in 1:17
-    #for r in field(sys, Loads, :keys)
 
-        #busshortfall = field(sys, Loads, :plc)[r]
-        busshortfall = 0
+    for r in 1:17
+
+        busshortfall = field(sys, Loads, :plc)[r]
         isbusshortfall = busshortfall > 0
+
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
     
         if isbusshortfall
+
             isshortfall = true
             totalshortfall += busshortfall
+
             acc.periodsdropped_bus_currentsim[r] += 1
             acc.unservedload_bus_currentsim[r] += busshortfall
+
         end
     
     end
@@ -118,32 +120,30 @@ end
 
 function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
 
-    #println("pegado en reset!_1")
     # Store busal / total sums for current simulation
     fit!(acc.periodsdropped_total, acc.periodsdropped_total_currentsim)
     fit!(acc.unservedload_total, acc.unservedload_total_currentsim)
-
-    #println("pegado en reset!_2")
 
     for r in eachindex(acc.periodsdropped_bus)
         fit!(acc.periodsdropped_bus[r], acc.periodsdropped_bus_currentsim[r])
         fit!(acc.unservedload_bus[r], acc.unservedload_bus_currentsim[r])
     end
+
     # Reset for new simulation
     acc.periodsdropped_total_currentsim = 0
     fill!(acc.periodsdropped_bus_currentsim, 0)
     acc.unservedload_total_currentsim = 0
     fill!(acc.unservedload_bus_currentsim, 0)
+
     return
 
 end
 
 function finalize(
     acc::SMCShortfallAccumulator,
-    system::SystemModel{N,L,T,U},
-) where {N,L,T,U}
+    system::SystemModel{N,L,T,S},
+) where {N,L,T,S}
 
-    #println("pegado en finalize")
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
     ep_period_mean, ep_period_std = mean_std(acc.periodsdropped_period)
@@ -157,11 +157,11 @@ function finalize(
         mean_std(acc.unservedload_busperiod)
 
     nsamples = first(acc.unservedload_total.stats).n
-    #p2e = conversionfactor(L,T,P,E)
+    P = PRATSBase.powerunits["MW"]
+    E = PRATSBase.energyunits["MWh"]
+    p2e = conversionfactor(S,L,T,P,E)
 
-    #load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
-
-    return ShortfallResult{N,L,T,U}(
+    return ShortfallResult{N,L,T,P,E,S}(
         nsamples, 
         system.loads.keys, 
         system.timestamps,
@@ -173,12 +173,11 @@ function finalize(
         ep_period_std,
         ep_busperiod_mean, 
         ep_busperiod_std,
-        ue_busperiod_mean, 
-        ue_total_std,
-        ue_bus_std, 
-        ue_period_std, 
-        ue_busperiod_std)
-
+        p2e*ue_busperiod_mean, 
+        p2e*ue_total_std,
+        p2e*ue_bus_std, 
+        p2e*ue_period_std, 
+        p2e*ue_busperiod_std)
 end
 
 # ShortfallSamples
@@ -214,9 +213,9 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,U},
+    system::SystemModel{N,L,T,S},
     sampleid::Int, t::Int
-) where {N,L,T,U}
+) where {N,L,T,S}
 
     for r in field(system, Loads, :keys)
         acc.shortfall[r,t,sampleid] = field(system, Loads, :plc)[r]
@@ -229,10 +228,13 @@ reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,U},
-) where {N,L,T,U}
+    system::SystemModel{N,L,T,S},
+) where {N,L,T,S}
 
-    return ShortfallSamplesResult{N,L,T,U}(
-        system.loads.keys, system.timestamps, acc.shortfall)
+    P = PRATSBase.powerunits["MW"]
+    E = PRATSBase.energyunits["MWh"]
+    p2e = conversionfactor(S,L,T,P,E)
+    return ShortfallSamplesResult{N,L,T,P,E,S}(
+        system.loads.keys, system.timestamps, p2e*acc.shortfall)
 
 end

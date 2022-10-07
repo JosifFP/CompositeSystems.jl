@@ -20,13 +20,16 @@ struct SequentialMonteCarlo <: SimulationSpec
 end
 
 function assess(
-    system::SystemModel,
+    system::SystemModel{N},
     method::SequentialMonteCarlo,
-    optimizer,
     resultspecs::ResultSpec...
-) #where {N,L,T,U}
+) where {N}
 
-    threads = nthreads()
+    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+
+
+    threads = Base.Threads.nthreads()
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
     
@@ -39,8 +42,6 @@ function assess(
     else
         assess(system, optimizer, method, sampleseeds, results, resultspecs...)
     end
-
-    println("pegado finalize(results, system, method.threaded ? threads : 1)")
 
     return finalize(results, system, method.threaded ? threads : 1)
     
@@ -55,77 +56,74 @@ function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
 end
 
 function assess(
-    system::SystemModel{N,L,T,U}, optimizer, method::SequentialMonteCarlo,
+    system::SystemModel{N}, optimizer, method::SequentialMonteCarlo,
     sampleseeds::Channel{Int},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
     resultspecs::ResultSpec...
-) where {N,L,T,U}
+) where {N}
 
+    pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.direct_model(optimizer), Topology(system))
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
-    pm = BuildAbstractPowerModel!(DCPowerModel, JuMP.direct_model(optimizer))
 
     for s in sampleseeds
         println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
+        initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
-        #for (t,_) in enumerate(iter)
         for t in 1:N
             println("t=$(t)")
-            #if t in iter
-            update!(pm, systemstate, system, t)
-            solve!(pm, systemstate, system, t) 
-            #end
-            foreach(recorder -> record!(recorder, pm, s, t), recorders)
+            if field(systemstate, :condition)[t] ≠ true
+                update!(pm, systemstate, system, t)
+                solve!(pm, systemstate, system, t)
+            end
+            vector = zeros(Float16,17)
+            foreach(recorder -> record!(recorder, system, s, t), recorders)
+            empty_model!(pm)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
     end
 
     put!(results, recorders)
+
 end
 
 ""
 function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N}) where N
 
-    initialize_availability!(rng, field(state, :gens_available), field(system, :generators), N)
-    initialize_availability!(rng, field(state, :stors_available), field(system, :storages), N)
-    initialize_availability!(rng, field(state, :genstors_available), field(system, :generatorstorages), N)
-    initialize_availability!(rng, field(state, :branches_available), field(system, :branches), N)
+    initialize_availability!(rng, field(state, :branches), field(system, :branches), N)
+    initialize_availability!(rng, field(state, :generators), field(system, :generators), N)
+    initialize_availability!(rng, field(state, :storages), field(system, :storages), N)
+    initialize_availability!(rng, field(state, :generatorstorages), field(system, :generatorstorages), N)
     
-    tmp = []
     for t in 1:N
-        if all([
-            field(state, :gens_available)[:,t]; 
-            field(state, :stors_available)[:,t]; 
-            field(state, :genstors_available)[:,t]; 
-            field(state, :branches_available)[:,t]]) == false 
+        if all([field(state, :branches)[:,t]; field(state, :generators)[:,t]; field(state, :storages)[:,t]; field(state, :generatorstorages)[:,t]]) ≠ true
             field(state, :condition)[t] = 0 
-            push!(tmp,t)
         end
     end
 
-    return tmp
+    return
 
 end
 
 ""
-function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel{N}, t::Int) where {N}
+function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
 
-    all(field(state, :branches_available)[:,t]) == true ? type = Transportation : type = DCOPF
-    build_method!(pm, system, t, type)
-    JuMP.optimize!(pm.model)
-    build_result!(pm, system, t)
+    #all(field(state, :branches_available)[:,t]) == true ? type = Transportation : type = DCOPF
+    type = Transportation
+    #build_method!(pm, system, t, type)
+    var_gen_power(pm, system, t)
+    var_branch_power(pm, system, t)
+    var_load_curtailment(pm, system, t)
+    #JuMP.optimize!(pm.model)
+    #build_result!(pm, system, t)
 
 end
 
 ""
 function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
-    
-    if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-    if isempty(pm.sol)==false empty!(pm.sol) end
 
     field(system, Loads, :plc)[:] = fill!(field(system, Loads, :plc)[:], 0)
 
@@ -136,26 +134,6 @@ function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel
     field(system, GeneratorStorages, :status)[:] = field(state, :genstors_available)[:,t]
     
 
-    for k in field(system, Branches, :keys)
-        if field(system, Branches, :status)[k] ≠ 0
-            f_bus = field(system, Branches, :f_bus)[k]
-            t_bus = field(system, Branches, :t_bus)[k]
-            if field(system, Buses, :bus_type)[f_bus] == 4 || field(system, Buses, :bus_type)[t_bus] == 4
-                Memento.info(_LOGGER, "deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
-                field(system, Branches, :status)[k] = 0
-            end
-        end
-    end
-    
-    # for k in field(system, Buses, :keys)
-    #     if field(system, Buses, :bus_type)[k] == 4
-    #         if field(system, Loads, :status)[k] ≠ 0 field(system, Loads, :status)[k] = 0 end
-    #         if field(system, Shunts, :status)[k] ≠ 0 field(system, Shunts, :status)[k] = 0 end
-    #         if field(system, Generators, :status)[k] ≠ 0 field(system, Generators, :status)[k] = 0 end
-    #         if field(system, Storages, :status)[k] ≠ 0 field(system, Storages, :status)[k] = 0 end
-    #         if field(system, GeneratorStorages, :status)[k] ≠ 0 field(system, GeneratorStorages, :status)[k] = 0 end
-    #     end
-    # end
 
     #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
     #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]
@@ -190,16 +168,15 @@ function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel
 end
 
 ""
-function RestartAbstractPowerModel!(pm::AbstractPowerModel, system::SystemModel)
+function empty_model!(pm::AbstractPowerModel)
 
     if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
     empty!(pm.sol)
-    field(system, Loads, :plc)[:] = fill!(field(system, Loads, :plc)[:], 0)
     return
 end
 
 #update_energy!(state.stors_energy, system.storages, t)
 #update_energy!(state.genstors_energy, system.generatorstorages, t)
-include("result_shortfall.jl")
-include("result_flow.jl")
+
 #include("result_report.jl")
+include("result_shortfall.jl")

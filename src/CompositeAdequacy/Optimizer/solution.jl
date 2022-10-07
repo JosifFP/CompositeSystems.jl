@@ -31,7 +31,11 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
     if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED && isempty(plc) == false
         for i in field(system, Loads, :keys)
             if haskey(plc, string(i)) == true
-               field(system, Loads, :plc)[i] = abs(Float16(JuMP.value(plc[string(i)]["plc"])))
+                if JuMP.value(plc[string(i)]["plc"]) >= 1e-4
+                    field(system, Loads, :plc)[i] = abs(Float16(JuMP.value(plc[string(i)]["plc"])))
+                else
+                    field(system, Loads, :plc)[i] = 0
+                end
             else
                 field(system, Loads, :plc)[i] = field(system, Loads, :pd)[i,t]
             end

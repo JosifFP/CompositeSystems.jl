@@ -12,9 +12,95 @@ mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>fals
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
+
+CompositeAdequacy.Topology(system)
+pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.direct_model(optimizer), CompositeAdequacy.Topology(system))
+systemstate = CompositeAdequacy.SystemState(system)
+
+systemstate.generators
+
+@btime CompositeAdequacy.Available(system)
+@btime CompositeAdequacy.Available(systemstate,1)
+
+
+
+
+CompositeAdequacy.Available(system) = CompositeAdequacy.Available(state,1)
+
+
+
+
 resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMonteCarlo(samples=2, seed=123, verbose=false, threaded=true)
-@time shortfall,report = PRATS.assess(system, method, optimizer, resultspecs...)
+method = PRATS.SequentialMonteCarlo(samples=4, seed=123, verbose=false, threaded=true)
+@time shortfall,report = PRATS.assess(system, method, resultspecs...)
+
+model = JuMP.direct_model(optimizer)
+
+keyss = [i for i in CompositeAdequacy.field(system, Generators, :keys) if CompositeAdequacy.field(system, Generators, :status)[i] ≠ 0]
+
+JuMP.@variable(model, pg[i in CompositeAdequacy.field(system, Generators, :keys); CompositeAdequacy.field(system, Generators, :status)[i] ≠ 0])
+
+for i in eachindex(model[:pg])
+    println(i[1])
+end
+
+@btime for i in CompositeAdequacy.field(system, Generators, :keys)
+    #println(i[1])
+end
+
+
+
+CompositeAdequacy.field(system, Generators, :pmax)[11]
+ref = PRATSBase.BuildNetwork(RawFile)
+typeof(ref[:gen][11]["pmax"])
+
+
+t=1
+state = CompositeAdequacy.SystemState(system)
+pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+iter = CompositeAdequacy.initialize!(rng, state, system) #creates the up/down sequence for each device.
+CompositeAdequacy.update_system!(state, system, t)
+system.loads.status
+@show system.branches.status
+@show system.generators.status
+type = CompositeAdequacy.DCOPF
+pm.model
+CompositeAdequacy.build_method!(pm, system, t, type)
+JuMP.optimize!(pm.model)
+JuMP.solution_summary(pm.model, verbose=true)
+CompositeAdequacy.build_result!(pm, system, t)
+CompositeAdequacy.build_sol_values(CompositeAdequacy.sol(pm, :load_curtailment))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@time shortfall,report = PRATS.assess(system, method, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 
@@ -76,38 +162,6 @@ CompositeAdequacy.field(system, Branches, :status)[28] = 1
 
 CompositeAdequacy.field(system, Generators, :pg)
 CompositeAdequacy.field(system, Generators, :qg)
-
-
-
-
-
-
-
-
-
-
-t=1
-state = CompositeAdequacy.SystemState(system)
-pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-iter = CompositeAdequacy.initialize!(rng, state, system) #creates the up/down sequence for each device.
-CompositeAdequacy.update_system!(state, system, t)
-system.loads.status
-@show system.branches.status
-@show system.generators.status
-type = CompositeAdequacy.DCOPF
-pm.model
-CompositeAdequacy.build_method!(pm, system, t, type)
-JuMP.optimize!(pm.model)
-JuMP.solution_summary(pm.model, verbose=true)
-CompositeAdequacy.build_result!(pm, system, t)
-CompositeAdequacy.build_sol_values(CompositeAdequacy.sol(pm, :load_curtailment))
-
-
-
-
-
-
 
 
 

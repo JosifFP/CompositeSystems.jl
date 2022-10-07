@@ -7,7 +7,7 @@ Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data
 function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{Transportation})
  
     var_gen_power(pm, system, t)
-    var_branch_power(pm, system)
+    var_branch_power(pm, system, t)
     var_load_curtailment(pm, system, t)
     #var_dcline_power(pm, system)
 
@@ -33,49 +33,12 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, ty
 
 end
 
-"DCMPPowerModel"
-function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{DCMPPowerModel})
-    # Add Optimization and State Variables
-    var_bus_voltage(pm, system)
-    var_gen_power(pm, system, t)
-    var_branch_power(pm, system)
-    #variable_storage_power_mi(pm)
-    #var_dcline_power(pm)
-
-    # Add Constraints
-    # ---------------
-    for i in keys(field(system, Topology, :ref_buses))
-        constraint_theta_ref(pm, i)
-    end
-
-    for i in field(system, Buses, :keys)
-        constraint_power_balance(pm, system, i, t)
-    end
-
-    for i in field(system, Branches, :keys)
-        if field(system, Branches, :status)[i] ≠ 0
-            constraint_ohms_yt_from(pm, system, i)
-            #constraint_ohms_yt_to(pm, system, i)
-            constraint_voltage_angle_difference(pm, system, i)
-            constraint_thermal_limit_from(pm, system, i)
-            constraint_thermal_limit_to(pm, system, i)
-        end
-    end
-
-    # for i in field(system, DCLines, :keys)
-    #     constraint_dcline_power_losses(pm, i)
-    # end
-
-    return
-
-end
-
 "Load Minimization version of DCOPF"
 function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{DCOPF})
     # Add Optimization and State Variables
-    var_bus_voltage(pm, system)
+    var_bus_voltage(pm, system, t)
     var_gen_power(pm, system, t)
-    var_branch_power(pm, system)
+    var_branch_power(pm, system, t)
     #variable_storage_power_mi(pm)
     #var_dcline_power(pm)
     var_load_curtailment(pm, system, t)

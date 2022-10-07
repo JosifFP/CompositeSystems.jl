@@ -21,24 +21,22 @@
 
     export
         # System assets
-        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, Topology,
+        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages,
         # Units
         Period, Minute, Hour, Day, Year,
         PowerUnit, kW, MW, GW, TW,
         EnergyUnit, kWh, MWh, GWh, TWh,
         VoltageUnit, kV,
-        PerUnit, pu,
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
         SystemModel
-
-    include("SystemModel/units.jl")
-    include("SystemModel/assets.jl")
-    include("SystemModel//utils.jl")
+    #
 
     include("BuildNetwork/utils.jl")
     include("BuildNetwork/FileGenerator.jl")
-
+    include("units.jl")
+    include("assets.jl")
+    include("utils.jl")
     include("SystemModel.jl")
     include("read.jl")
 

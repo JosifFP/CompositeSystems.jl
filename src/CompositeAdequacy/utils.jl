@@ -61,7 +61,6 @@ field(system::SystemModel, shunts::Type{Shunts}, subfield::Symbol) = getfield(ge
 field(system::SystemModel, generators::Type{Generators}, subfield::Symbol) = getfield(getfield(system, :generators), subfield)
 field(system::SystemModel, storages::Type{Storages}, subfield::Symbol) = getfield(getfield(system, :storages), subfield)
 field(system::SystemModel, generatorstorages::Type{GeneratorStorages}, subfield::Symbol) = getfield(getfield(system, :generatorstorages), subfield)
-field(system::SystemModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(system, :topology), subfield)
 
 field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
 field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
@@ -70,6 +69,19 @@ field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
 field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
 field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
 field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
+
+field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
 field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
 
 field(state::SystemState, field::Symbol) = getfield(state, field)
+
+
+Available(state::SystemModel) = (
+    field(state, Loads, :status), field(state, Loads, :status), field(state, Loads, :status), 
+    field(state, Loads, :status), field(state, Loads, :status), field(state, Loads, :status)
+)
+
+Available(state::SystemState, t::Int) = (
+    field(state, :loads)[:,t], field(state, :branches)[:,t], field(state, :shunts)[:,t], 
+    field(state, :generators)[:,t], field(state, :storages)[:,t], field(state, :generatorstorages)[:,t]
+)

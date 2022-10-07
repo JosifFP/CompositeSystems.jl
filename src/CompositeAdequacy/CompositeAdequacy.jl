@@ -13,9 +13,10 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
-import JuMP, Ipopt, Juniper, HiGHS
+import PowerModels, JuMP, Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr
-import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, optimize!, Model
+import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
+optimize!, Model, LOCALLY_SOLVED
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 "Suppresses information and warning messages output"
@@ -33,12 +34,12 @@ export
     # Metrics
     ReliabilityMetric, LOLE, EUE, val, stderror,
     # Simulation specifications
-    SequentialMonteCarlo, NoContingencies,
+    SequentialMonteCarlo,
 
     SystemState, accumulator,
 
     # Result specifications
-    Shortfall, ShortfallSamples, Flow, FlowTotal, #Report,
+    Shortfall, ShortfallSamples,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str
