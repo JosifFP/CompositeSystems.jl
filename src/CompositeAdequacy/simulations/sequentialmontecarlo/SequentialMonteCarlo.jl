@@ -122,49 +122,52 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel,
 
 end
 
+
+function update_topology!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
+    
+    nbuses = length(system.buses)
+    buses_idxs = makeidxlist([i for i in assetgrouplist(pm.topology.buses_idxs) if field(system, Buses, :bus_type)[i] != 4], nbuses)
+
+end
+
+
 ""
 function update!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
 
     field(system, Loads, :plc)[:] = fill!(field(system, Loads, :plc)[:], 0)
-
-    #field(system, Loads, :pd)[:,t] = field(system, Loads, :pd)[:,t]*1.25
-    field(system, Branches, :status)[:] = field(state, :branches_available)[:,t]
-    field(system, Generators, :status)[:] = field(state, :gens_available)[:,t]
-    field(system, Storages, :status)[:] = field(state, :stors_available)[:,t]
-    field(system, GeneratorStorages, :status)[:] = field(state, :genstors_available)[:,t]
-    
-
+    #update_states!(system, state, t)
+    update_topology!(pm, state, system, t)
 
     #tmp_arcs_from = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_from) if field(system, Branches, :status)[l] ≠ 0]
     #tmp_arcs_to   = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs_to) if field(system, Branches, :status)[l] ≠ 0]
-    tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
+    # tmp_arcs = [(l,i,j) for (l,i,j) in field(system, Topology, :arcs) if field(system, Branches, :status)[l] ≠ 0]
 
-    (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = get_bus_components(
-        tmp_arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
+    # (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage) = get_bus_components(
+    #     tmp_arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
 
-    for k in field(system, Buses, :keys)
-        field(system, Topology, :bus_gens)[k] = bus_gens[k]
-        field(system, Topology, :bus_loads)[k] = bus_loads[k]
-        field(system, Topology, :bus_shunts)[k] = bus_shunts[k]
-        field(system, Topology, :bus_storage)[k] = bus_storage[k]
+    # for k in field(system, Buses, :keys)
+    #     field(system, Topology, :bus_gens)[k] = bus_gens[k]
+    #     field(system, Topology, :bus_loads)[k] = bus_loads[k]
+    #     field(system, Topology, :bus_shunts)[k] = bus_shunts[k]
+    #     field(system, Topology, :bus_storage)[k] = bus_storage[k]
     
-        if field(system, Topology, :bus_arcs)[k] ≠ bus_arcs[k]
-            field(system, Topology, :bus_arcs)[k] = bus_arcs[k]
-        end
+    #     if field(system, Topology, :bus_arcs)[k] ≠ bus_arcs[k]
+    #         field(system, Topology, :bus_arcs)[k] = bus_arcs[k]
+    #     end
     
-    end
+    # end
 
-    tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
+    # tmp_buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
 
-    for k in keys(field(system, Topology, :buspairs))
-        if haskey(tmp_buspairs, k) ≠ true
-            empty!(field(system, Topology, :buspairs)[k])
-        else
-            field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
-        end
-    end
+    # for k in keys(field(system, Topology, :buspairs))
+    #     if haskey(tmp_buspairs, k) ≠ true
+    #         empty!(field(system, Topology, :buspairs)[k])
+    #     else
+    #         field(system, Topology, :buspairs)[k] = tmp_buspairs[k]
+    #     end
+    # end
 
-    return
+    # return
 end
 
 ""

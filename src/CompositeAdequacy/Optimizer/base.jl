@@ -1,85 +1,106 @@
 ""
 struct Topology
 
-    sol_plc::Vector{Int}
-    sol_qlc::Vector{Int}
-    sol_pg::Vector{Int}
-    sol_qg::Vector{Int}
-    arcs_from::Vector{Tuple{Int, Int, Int}}
-    arcs_to::Vector{Tuple{Int, Int, Int}}
-    arcs::Vector{Tuple{Int, Int, Int}}
-    key_buses::Vector{Int}
-    key_loads::Vector{Int}
-    key_branches::Vector{Int}
-    key_shunts::Vector{Int}
-    key_generators::Vector{Int}
-    key_storages::Vector{Int}
-    key_generatorstorages::Vector{Int}
-    bus_gens::Dict{Int, <:Any}
-    bus_loads::Dict{Int, <:Any}
-    bus_shunts::Dict{Int, <:Any}
-    bus_storage::Dict{Int, <:Any}
+    #::Union{UnitRange{Int}, Vector{UnitRange{Int}}}
+    buses_idxs::Vector{UnitRange{Int}}
+    loads_idxs::Vector{UnitRange{Int}}
+    branches_idxs::Vector{UnitRange{Int}}
+    shunts_idxs::Vector{UnitRange{Int}}
+    generators_idxs::Vector{UnitRange{Int}}
+    storages_idxs::Vector{UnitRange{Int}}
+    generatorstorages_idxs::Vector{UnitRange{Int}}
+    
+    bus_loads_idxs::Vector{UnitRange{Int}}
+    bus_shunts_idxs::Vector{UnitRange{Int}}
+    bus_generators_idxs::Vector{UnitRange{Int}}
+    bus_storages_idxs::Vector{UnitRange{Int}}
+    bus_generatorstorages_idxs::Vector{UnitRange{Int}}
+
+    arcs_from_0::Vector{Tuple{Int, Int, Int}}
+    arcs_to_0::Vector{Tuple{Int, Int, Int}}
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}} 
     ref_buses::Vector{Int}
 
-    function Topology(system::SystemModel{N,L,T,S}) where {N,L,T,S}
+    sol_plc::Vector{Float16}
+    sol_pg::Vector{Float16}
 
-        key_buses = deepcopy(field(system, Buses, :keys))
-        key_loads = deepcopy(field(system, Loads, :keys))
-        key_branches = deepcopy(field(system, Branches, :keys))
-        key_shunts = deepcopy(field(system, Shunts, :keys))
-        key_generators = deepcopy(field(system, Generators, :keys))
-        key_storages = deepcopy(field(system, Storages, :keys))
-        key_generatorstorages = deepcopy(field(system, GeneratorStorages, :keys))
+    function Topology(system::SystemModel)
 
-        arcs_from = [(l,field(system, Branches, :f_bus)[l],field(system, Branches, :t_bus)[l]) for l in key_branches]
-        arcs_to   = [(l,field(system, Branches, :t_bus)[l],field(system, Branches, :f_bus)[l]) for l in key_branches]
-        arcs = [arcs_from; arcs_to]
+        nbuses = length(system.buses)
 
-        bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage = get_bus_components(
-            arcs, field(system, :buses), field(system, :loads), field(system, :shunts), field(system, :generators), field(system, :storages))
+        key_buses = [i for i in CompositeAdequacy.field(system, Buses, :keys) if CompositeAdequacy.field(system, Buses, :bus_type)[i] != 4]
+        buses_idxs = makeidxlist(key_buses, nbuses)
+
+        key_loads = [i for i in field(system, Loads, :keys) if field(system, Loads, :status)[i] == 1]
+        bus_loads = [field(system, Loads, :buses)[i] for i in key_loads]
+        loads_idxs = makeidxlist(key_loads, length(system.loads))
+        bus_loads_idxs = makeidxlist(bus_loads, nbuses)
+        
+        key_branches = [i for i in field(system, Branches, :keys) if field(system, Branches, :status)[i] == 1]
+        branches_idxs = makeidxlist(key_branches, length(system.branches))
+
+        key_shunts = [i for i in field(system, Shunts, :keys) if field(system, Shunts, :status)[i] == 1]
+        bus_shunts = [field(system, Shunts, :buses)[i] for i in key_shunts]
+        shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
+        bus_shunts_idxs = makeidxlist(bus_shunts, nbuses)
+
+        key_generators = [i for i in field(system, Generators, :keys) if field(system, Generators, :status)[i] == 1]
+        bus_generators = [field(system, Generators, :buses)[i] for i in key_generators]
+        generators_idxs = makeidxlist(key_generators, length(system.generators))
+        bus_generators_idxs = makeidxlist(bus_generators, nbuses)
+
+        key_storages = [i for i in field(system, Storages, :keys) if field(system, Storages, :status)[i] == 1]
+        bus_storages = [field(system, Storages, :buses)[i] for i in key_storages]
+        storages_idxs = makeidxlist(key_storages, length(system.storages))
+        bus_storages_idxs = makeidxlist(bus_storages, nbuses)
+
+        key_generatorstorages = [i for i in field(system, GeneratorStorages, :keys) if field(system, GeneratorStorages, :status)[i] == 1]
+        bus_generatorstorages = [field(system, GeneratorStorages, :buses)[i] for i in key_generatorstorages]
+        generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
+        bus_generatorstorages_idxs = makeidxlist(bus_generatorstorages, nbuses)
+
+        arcs_from_0 = [(l,field(system, Branches, :f_bus)[l],field(system, Branches, :t_bus)[l]) for l in key_branches]
+        arcs_to_0 = [(l,field(system, Branches, :t_bus)[l],field(system, Branches, :f_bus)[l]) for l in key_branches]
+
+        bus_arcs = Dict((i, Tuple{Int,Int,Int}[]) for i in key_buses)
+        for (l,i,j) in [arcs_from_0; arcs_to_0]
+            push!(bus_arcs[i], (l,i,j))
+        end
         
         ref_buses = [i for i in key_buses if field(system, Buses, :bus_type)[i] == 3]
 
-        if length(ref_buses) > 1
-            Memento.error(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
-        end
-
         buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches))
 
+        sol_plc = zeros(Float16, length(system.loads))
+        sol_pg = zeros(Float16, length(system.generators))
+
         return new(
-        zeros(Int, length(key_loads)), zeros(Int, length(key_loads)), 
-        zeros(Int, length(key_loads)), zeros(Int, length(key_loads)),
-        arcs_from, arcs_to, arcs,
-        key_buses, key_loads, key_branches, key_shunts, key_generators, key_storages, key_generatorstorages, 
-        bus_gens, bus_loads, bus_shunts, bus_storage, bus_arcs, buspairs, ref_buses)
+        buses_idxs, loads_idxs, branches_idxs, shunts_idxs, generators_idxs, storages_idxs, generatorstorages_idxs, 
+        bus_loads_idxs, bus_shunts_idxs, bus_generators_idxs, bus_storages_idxs, bus_generatorstorages_idxs,
+        arcs_from_0, arcs_to_0, bus_arcs, buspairs, ref_buses, sol_plc, sol_pg)
     end
 
 end
 
 Base.:(==)(x::T, y::T) where {T <: Topology} =
-    x.sol_plc == y.sol_plc &&
-    x.sol_qlc == y.sol_qlc &&
-    x.sol_pg == y.sol_pg &&
-    x.sol_qg == y.sol_qg &&
-    x.arcs_from == y.arcs_from &&
-    x.arcs_to == y.arcs_to &&
-    x.arcs == y.arcs &&
-    x.key_buses == y.key_buses &&
-    x.key_loads == y.key_loads &&
-    x.key_branches == y.key_branches &&
-    x.key_shunts == y.key_shunts &&
-    x.key_generators == y.key_generators &&
-    x.key_storages == y.key_storages &&
-    x.key_generatorstorages == y.key_generatorstorages &&
-    x.bus_gens == y.bus_gens &&
-    x.bus_loads == y.bus_loads &&
-    x.bus_shunts == y.bus_shunts &&
-    x.bus_storage == y.bus_storage &&
-    x.bus_arcs == y.bus_arcs &&
-    x.buspairs == y.buspairs &&
-    x.ref_buses == y.ref_buses
+    x.buses_idxs == y.buses_idxs &&
+    x.loads_idxs == y.loads_idxs &&
+    x.shunts_idxs == y.shunts_idxs &&
+    x.generators_idxs == y.generators_idxs &&
+    x.storages_idxs == y.storages_idxs &&
+    x.generatorstorages_idxs == y.generatorstorages_idxs &&
+    x.bus_loads_idxs == y.bus_loads_idxs &&
+    x.bus_shunts_idxs == y.bus_shunts_idxs &&
+    x.bus_generators_idxs == y.bus_generators_idxs &&
+    x.bus_storages_idxs == y.bus_storages_idxs &&
+    x.bus_generatorstorages_idxs == y.bus_generatorstorages_idxs &&
+    x.arcs_from_0 == y.key_generators &&
+    x.arcs_to_0 == y.key_storages &&
+    x.buspairs == y.key_generatorstorages &&
+    x.ref_buses == y.bus_gens &&
+    x.sol_plc == y.bus_loads &&
+    x.sol_pg == y.bus_shunts
 #
 
 
@@ -142,3 +163,4 @@ function _sol(sol::Dict, args...)
 
     return sol
 end
+

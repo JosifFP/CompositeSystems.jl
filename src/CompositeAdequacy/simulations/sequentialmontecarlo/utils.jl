@@ -7,8 +7,8 @@ function initialize_availability!(
 
     for i in 1:ndevices
         if field(asset, :status) ≠ false
-            λ = asset.λ[i]
-            μ = asset.μ[i]
+            λ = asset.λ[i]/N
+            μ = asset.μ[i]/N
             if λ ≠ 0.0 || μ ≠ 0.0
                 availability[i,:] = cycles!(rng, λ, μ, N)
             end
@@ -42,9 +42,9 @@ function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
     ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
     ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
 
-    while ttf == 0.0 || ttr == 0.0
-        ttf = (x->trunc(Int32, x)).((-1/λ)log(rand(rng)))
-        ttr = (y->trunc(Int32, y)).((-1/μ)log(rand(rng)))
+    while ttf == 0.0
+        ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
+        ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
     end
 
     return ttf,ttr
@@ -105,6 +105,23 @@ function update!(system::SystemModel{N}) where {N}
 
     return
 end
+
+"Update Asset states"
+function update_states!(system::SystemModel, state::SystemState, t::Int)
+
+    field(system, Loads, :status)[:] = field(state, :loads)[:,t]
+    field(system, Branches, :status)[:] = field(state, :branches)[:,t]
+    field(system, Shunts, :status)[:] = field(state, :shunts)[:,t]
+    field(system, Generators, :status)[:] = field(state, :generators)[:,t]
+    field(system, Storages, :status)[:] = field(state, :storages)[:,t]
+    field(system, GeneratorStorages, :status)[:] = field(state, :generatorstorages)[:,t]
+
+end
+
+
+
+
+
 
 # ----------------------------------------------------------------------------------------------------------
 function available_capacity(

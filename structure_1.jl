@@ -13,19 +13,123 @@ optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_so
 PRATSBase.silence()
 system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 365)
 
-CompositeAdequacy.Topology(system)
+@btime topology = CompositeAdequacy.Topology(system)
 pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.direct_model(optimizer), CompositeAdequacy.Topology(system))
 systemstate = CompositeAdequacy.SystemState(system)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+CompositeAdequacy.initialize!(rng, systemstate, system)
 
-systemstate.generators
-
-@btime CompositeAdequacy.Available(system)
-@btime CompositeAdequacy.Available(systemstate,1)
-
+pm.topology.buses_idxs
 
 
+@btime CompositeAdequacy.makeidxlist([i for i in CompositeAdequacy.assetgrouplist(pm.topology.buses_idxs) if CompositeAdequacy.field(system, Buses, :bus_type)[i] != 4], 24)
 
-CompositeAdequacy.Available(system) = CompositeAdequacy.Available(state,1)
+@btime [i for i in CompositeAdequacy.assetgrouplist(pm.topology.buses_idxs) if CompositeAdequacy.field(system, Buses, :bus_type)[i] != 4]
+@btime [i for i in CompositeAdequacy.field(system, Buses, :keys) if CompositeAdequacy.field(system, Buses, :bus_type)[i] != 4]
+
+buses_idxs = makeidxlist(key_buses, nbuses)
+
+tmp = Dict((i, Tuple{Int,Int,Int}[]) for i in CompositeAdequacy.field(system.buses, :keys))
+for (l,i,j) in topology.arcs
+    push!(tmp[i], (l,i,j))
+end
+bus_arcs = tmp
+line_interfaces = getindex.(Ref(interface_lookup),tuple.(f_bus_branches, t_bus_branches))
+
+
+
+
+assetgrouplist(interface_branch_idxs)
+
+collect(interface_line_idxs[35])
+collect(interface_line_idxs[36])
+collect(interface_line_idxs[37])
+collect(interface_line_idxs[38])
+collect(interface_line_idxs[5])
+collect(interface_line_idxs[6])
+collect(interface_line_idxs[7])
+
+
+gens_idxs = makeidxlist([i for i in system.generators.keys if system.generators.status[i] == 1], length(system.generators))
+
+@btime first(system.generators.keys):last(system.generators.keys)
+first(system.generators.keys):last(system.generators.keys)
+indices_after(1:33, 22)
+
+a = [i for i in 1:17 if CompositeAdequacy.field(system, Loads, :status)[i] == 1]
+bus_loads = [CompositeAdequacy.field(system, Loads, :buses)[i] for i in key_loads if CompositeAdequacy.field(system, Loads, :status)[i] == 1]
+
+
+key_buses = [i for i in CompositeAdequacy.field(system, Buses, :keys) if CompositeAdequacy.field(system, Buses, :bus_type)[i] != 4]
+buses_idxs = makeidxlist(key_buses, length(system.buses))
+assetgrouplist(buses_idxs)
+
+
+loads_idxs = makeidxlist(a, 17)
+assetgrouplist(loads_idxs)
+
+
+
+idxlist = Vector{UnitRange{Int}}(undef, n_collections)
+
+
+
+UnitRange{Int}[]
+indices_after(lastset::UnitRange{Int}, setsize::Int) =
+    last(lastset) .+ (1:setsize)
+
+system.generators.keys
+system.generators.status[1] = 0
+bus_gens_keys = [i for i in system.generators.buses if system.generators.status[i] == true]
+bus_gens_idxs = makeidxlist([system.generators.buses[i] for i in system.generators.keys if system.generators.status[i] == 1], 24)
+assetgrouplist(bus_gens_idxs)
+
+[i for i in system.generators.keys if i in assetgrouplist(bus_gens_idxs)]
+
+collect(bus_gens_idxs[1])
+collect(bus_gens_idxs[2])
+collect(bus_gens_idxs[3])
+
+bus_nodes = 1:24
+for (r, gens_idxs) in zip(2:33, bus_gens_idxs)
+    println(r)
+    # for i in gens_idxs
+    #     println(gens_idxs)
+    # end
+end
+
+
+@btime tmp_arcs = [(l,i,j) for (l,i,j) in [topology.arcs_from;topology.arcs_to] if CompositeAdequacy.field(system, Branches, :status)[l] ≠ 0]
+@btime tmp_arcs = [(l,i,j) for (l,i,j) in topology.arcs if CompositeAdequacy.field(system, Branches, :status)[l] ≠ 0]
+
+@btime tmp_arcs_from = [(l,i,j) for (l,i,j) in topology.arcs_from if  CompositeAdequacy.field(system, Branches, :status)[l] ≠ 0]
+
+assetgrouplist(bus_gens_idxs)
+bus_gens = CompositeAdequacy.field(topology, :bus_gens)
+
+for (r, gen_idxs) in zip(1:24, bus_gens_idxs)
+    println(r)
+end
+assetgrouplist(bus_gens_idxs)
+@btime collect(bus_gens_idxs[1])
+collect(bus_gens_idxs[2])
+collect(bus_gens_idxs[3])
+collect(bus_gens_idxs[4])
+collect(bus_gens_idxs[5])
+collect(bus_gens_idxs[6])
+collect(bus_gens_idxs[7])
+
+
+
+
+
+
+
+tmp = Dict((i, Tuple{Int,Int,Int}[]) for i in field(buses, :keys))
+for (l,i,j) in arcs
+    push!(tmp[i], (l,i,j))
+end
+bus_arcs = tmp
 
 
 
@@ -35,69 +139,6 @@ method = PRATS.SequentialMonteCarlo(samples=4, seed=123, verbose=false, threaded
 @time shortfall,report = PRATS.assess(system, method, resultspecs...)
 
 model = JuMP.direct_model(optimizer)
-
-keyss = [i for i in CompositeAdequacy.field(system, Generators, :keys) if CompositeAdequacy.field(system, Generators, :status)[i] ≠ 0]
-
-JuMP.@variable(model, pg[i in CompositeAdequacy.field(system, Generators, :keys); CompositeAdequacy.field(system, Generators, :status)[i] ≠ 0])
-
-for i in eachindex(model[:pg])
-    println(i[1])
-end
-
-@btime for i in CompositeAdequacy.field(system, Generators, :keys)
-    #println(i[1])
-end
-
-
-
-CompositeAdequacy.field(system, Generators, :pmax)[11]
-ref = PRATSBase.BuildNetwork(RawFile)
-typeof(ref[:gen][11]["pmax"])
-
-
-t=1
-state = CompositeAdequacy.SystemState(system)
-pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-iter = CompositeAdequacy.initialize!(rng, state, system) #creates the up/down sequence for each device.
-CompositeAdequacy.update_system!(state, system, t)
-system.loads.status
-@show system.branches.status
-@show system.generators.status
-type = CompositeAdequacy.DCOPF
-pm.model
-CompositeAdequacy.build_method!(pm, system, t, type)
-JuMP.optimize!(pm.model)
-JuMP.solution_summary(pm.model, verbose=true)
-CompositeAdequacy.build_result!(pm, system, t)
-CompositeAdequacy.build_sol_values(CompositeAdequacy.sol(pm, :load_curtailment))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @time shortfall,report = PRATS.assess(system, method, resultspecs...)
@@ -122,20 +163,7 @@ shortfall.shortfall_bus_std
 shortfall.shortfall_period_std
 shortfall.shortfall_busperiod_std
 
-systemstate = CompositeAdequacy.SystemState(system)
 
-
-
-start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
-timestamps = range(start_timestamp, length=N, step=PRATSBase.T(1))#::StepRange{DateTime, Hour}
-
-
-
-
-
-
-pm = CompositeAdequacy.BuildAbstractPowerModel!(CompositeAdequacy.DCPowerModel, JuMP.direct_model(optimizer))
-type = CompositeAdequacy.DCOPF
 
 ref = PRATSBase.BuildNetwork(RawFile)
 for (k,v) in ref[:load]
@@ -168,127 +196,21 @@ CompositeAdequacy.field(system, Generators, :qg)
 "***************************************************************************************************************************"
 ref = PRATSBase.BuildNetwork(RawFile)
 CompositeAdequacy.ref_add!(ref)
-nbus = length(buses)
-buslookup = Dict(n=>i for (i, n) in enumerate(system.generators.keys)) #bus_gens = getindex.(Ref(buslookup), system.generators.buses)
-bus_gens_idxs = makeidxlist(generators.buses, nbus)
+
 
 loads.status[1]=false
 loadlookup = Dict(n=>i for (i, n) in enumerate(loads.keys) if loads.status[i]==true)
 
-buslookup = Dict(n=>i for (i, n) in enumerate(buses.keys))
-
-bus_keys = [i for i in loads.keys if loads.status[i] == true]
-
-load_buses = getindex.(Ref(buslookup), bus_keys)
-bus_order = sortperm(load_buses)
-bus_loads_idxs = makeidxlist(load_buses[bus_order], nbus)
-
-bus_nodes = 1:nbus
-for (r, load_idxs) in zip(bus_nodes, bus_loads_idxs)
-    #println(load_idxs)
-    for i in load_idxs
-        println(i)
-    end
-end
-
-bus_nodes = 1:nbus
-for (r, gen_idxs) in zip(bus_nodes, bus_gens_idxs)
-    println(gen_idxs)
-end
 
 
 "***************************************************************************************************************************"
 
 
-branches.f_bus
-branches.t_bus
-branch_frombus = getindex.(Ref(buses.keys), branches.f_bus)
-branch_tobus  = getindex.(Ref(buses.keys), branches.t_bus)
-
-branch_lookup = Dict((r1, r2) => i for (i, (r1, r2)) in enumerate(tuple.(branches.f_bus, branches.t_bus)))
-branches_interfaces = getindex.(Ref(interface_lookup),tuple.(branches.f_bus, branches.t_bus))
-#branches_interfaces = [v for v in values(interface_lookup)]
-branch_order = sortperm(branches_interfaces)
-nbranches = length(branches)
-interface_line_idxs = makeidxlist(branches_interfaces[branch_order], 38)
-
-for (i, line_idxs) in enumerate(interface_line_idxs)
-
-   #println(line_idxs)
-   for i in line_idxs
-    println(i)
-    end
-
-end
-
-branches.status[4] = false
-[i for i in branches.keys if branches.status[i] == true]
-
-branch_keys = [i for i in branches.keys if branches.status[i] == true]
-
-branch_lookup = Dict((r1, r2) => i for (i, (r1, r2)) in enumerate(tuple.(branches.f_bus, branches.t_bus)) if branches.status[i] == true)
-group = [tuple.(branches.f_bus[i], branches.t_bus[i]) for i in branches.keys if branches.status[i] == true]
 
 
-branches_interfaces = getindex.(Ref(branch_lookup),group)
-branch_order = sortperm(branches_interfaces)
-branches_interfaces[branch_order]
-interface_line_idxs = makeidxlist(branches_interfaces[branch_order], 38)
 
-for (i, line_idxs) in enumerate(interface_line_idxs)
-
-    #println(line_idxs)
-    for i in line_idxs
-     println(i)
-     end
- 
-end
 
 
 [filter(t -> t[1] in starts[i] && t[2] in valid[i], my_tuple) for i in eachindex(starts, valid)]
 
 
-
-function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
-
-    n_assets = length(collectionidxs)
-
-    idxlist = Vector{UnitRange{Int}}(undef, n_collections)
-    active_collection = 1
-    start_idx = 1
-    a = 1
-
-    while a <= n_assets
-       if collectionidxs[a] > active_collection
-            idxlist[active_collection] = start_idx:(a-1)       
-            active_collection += 1
-            start_idx = a
-       else
-           a += 1
-       end
-    end
-
-    idxlist[active_collection] = start_idx:n_assets       
-    active_collection += 1
-
-    while active_collection <= n_collections
-        idxlist[active_collection] = (n_assets+1):n_assets
-        active_collection += 1
-    end
-
-    return idxlist
-
-end
-
-"***************************************************************************************************************************"
-
-
-@assert ref_1[:bus_arcs] == ref_2[:bus_arcs]
-@assert ref_1[:branch] == ref_2[:branch]
-@assert ref_1[:areas] == ref_2[:areas]
-@assert ref_1[:bus] == ref_2[:bus]
-@assert ref_1[:gen] == ref_2[:gen]
-@assert ref_1[:storage] == ref_2[:storage]
-@assert ref_1[:switch] == ref_2[:switch]
-@assert ref_1[:shunt] == ref_2[:shunt]
-@assert ref_1[:load] == ref_2[:load]
