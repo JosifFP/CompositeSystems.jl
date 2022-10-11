@@ -79,16 +79,17 @@ end
 function record!(
     acc::SMCShortfallAccumulator,
     sys::SystemModel{N,L,T,S},
+    pm::AbstractPowerModel,
     sampleid::Int, t::Int
 ) where {N,L,T,S}
 
     totalshortfall = 0
     isshortfall = false
+    busshortfalls = sol(pm)[:plc]
 
-    for r in 1:17
+    for r in sys.loads.keys
 
-        #busshortfall = field(sys, Loads, :plc)[r]
-        busshortfall = 0
+        busshortfall = busshortfalls[r]
         isbusshortfall = busshortfall > 0
 
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)

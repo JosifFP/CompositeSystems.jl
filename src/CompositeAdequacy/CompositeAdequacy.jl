@@ -14,7 +14,7 @@ import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
 import PowerModels, JuMP, Ipopt, Juniper, HiGHS
-import LinearAlgebra: qr
+import LinearAlgebra: qr, pinv
 import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
 optimize!, Model, LOCALLY_SOLVED
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)

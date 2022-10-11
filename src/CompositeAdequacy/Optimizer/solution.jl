@@ -26,24 +26,20 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
         end
     end
 
-    plc = build_sol_values(sol(pm, :load_curtailment))
+    plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
 
-    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED && isempty(plc) == false
+    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
         for i in field(system, Loads, :keys)
-            if haskey(plc, string(i)) == true
-                if JuMP.value(plc[string(i)]["plc"]) >= 1e-4
-                    field(system, Loads, :plc)[i] = abs(Float16(JuMP.value(plc[string(i)]["plc"])))
-                else
-                    field(system, Loads, :plc)[i] = 0
-                end
-            else
-                field(system, Loads, :plc)[i] = field(system, Loads, :pd)[i,t]
+            if haskey(plc, i) == false
+                get!(plc, i, field(system, Loads, :pd)[i,t])
             end
         end
+    else
+        for i in field(system, Loads, :keys)
+            get!(plc, i, Float16(0.0))
+        end        
     end
 
-    return field(system, Loads, :plc)
-    
 end
 
 # ""
@@ -51,31 +47,7 @@ end
 #     return get_loads_sol!(curt_loads, pm, type)
 # end
 
-""
-function get_loads_sol!(pm::AbstractDCPowerModel, load_initial::Dict{Int, Float16}, status)
 
-    plc = build_sol_values(sol(pm, :load_curtailment))
-
-    if status == JuMP.LOCALLY_SOLVED && isempty(plc) == false
-        for i in keys(load_initial)
-            if haskey(plc, string(i)) == true
-                if JuMP.value(plc[string(i)]["plc"])>1e-4
-                    load_initial[i] = Float16(JuMP.value(plc[string(i)]["plc"]))
-                else
-                    load_initial[i] = Float16(0.0)
-                end
-            end
-        end
-    else
-        for i in keys(load_initial)
-            load_initial[i] = Float16(0.0)
-        end
-    end
-
-    return sol(pm)[:load_curtailment] = load_initial
-
-end
-""
 # ""
 # function get_buses_sol!(tmp, pm::AbstractDCPModel)
 
@@ -162,11 +134,17 @@ end
 ""
 function build_sol_values(var::Dict)
 
-    sol = Dict{String, Any}()
+    sol = Dict{Int, Float16}()
 
     for (key, val) in var
-        sol[string(key)] = build_sol_values(val)
+        val_r = abs(CompositeAdequacy.build_sol_values(val))
+        if val_r > 1e-4
+            sol[key] = Float16(val_r)
+        else
+            sol[key] = Float16(0.0)
+        end
     end
+
     return sol
 end
 

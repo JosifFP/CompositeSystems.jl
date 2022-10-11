@@ -10,52 +10,50 @@ struct Topology
     storages_idxs::Vector{UnitRange{Int}}
     generatorstorages_idxs::Vector{UnitRange{Int}}
     
-    bus_loads_idxs::Vector{UnitRange{Int}}
-    bus_shunts_idxs::Vector{UnitRange{Int}}
-    bus_generators_idxs::Vector{UnitRange{Int}}
-    bus_storages_idxs::Vector{UnitRange{Int}}
-    bus_generatorstorages_idxs::Vector{UnitRange{Int}}
+    bus_loads::Dict{Int, Vector{Int}}
+    bus_shunts::Dict{Int, Vector{Int}}
+    bus_generators::Dict{Int, Vector{Int}}
+    bus_storages::Dict{Int, Vector{Int}}
+    bus_generatorstorages::Dict{Int, Vector{Int}}
 
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}}
-
-    plc::Vector{Float16}
-    pg::Vector{Float16}
 
     function Topology(system::SystemModel)
 
         nbuses = length(system.buses)
 
-        key_buses = [i for i in CompositeAdequacy.field(system, Buses, :keys) if CompositeAdequacy.field(system, Buses, :bus_type)[i] != 4]
+        key_buses = [i for i in field(system, Buses, :keys) if field(system, Buses, :bus_type)[i] != 4]
         buses_idxs = makeidxlist(key_buses, nbuses)
 
         key_loads = [i for i in field(system, Loads, :keys) if field(system, Loads, :status)[i] == 1]
-        bus_loads = [field(system, Loads, :buses)[i] for i in key_loads]
+        #bus_loads = [field(system, Loads, :buses)[i] for i in key_loads] #bus_loads_idxs = makeidxlist(bus_loads, nbuses)
         loads_idxs = makeidxlist(key_loads, length(system.loads))
-        bus_loads_idxs = makeidxlist(bus_loads, nbuses)
-        
+        tmp = Dict((i, Int[]) for i in key_buses)
+        bus_loads = bus_asset!(tmp, key_loads, field(system, Loads, :buses))
+
         key_branches = [i for i in field(system, Branches, :keys) if field(system, Branches, :status)[i] == 1]
         branches_idxs = makeidxlist(key_branches, length(system.branches))
 
         key_shunts = [i for i in field(system, Shunts, :keys) if field(system, Shunts, :status)[i] == 1]
-        bus_shunts = [field(system, Shunts, :buses)[i] for i in key_shunts]
         shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
-        bus_shunts_idxs = makeidxlist(bus_shunts, nbuses)
+        tmp = Dict((i, Int[]) for i in key_buses)
+        bus_shunts = bus_asset!(tmp, key_shunts, field(system, Shunts, :buses))
 
         key_generators = [i for i in field(system, Generators, :keys) if field(system, Generators, :status)[i] == 1]
-        bus_generators = [field(system, Generators, :buses)[i] for i in key_generators]
         generators_idxs = makeidxlist(key_generators, length(system.generators))
-        bus_generators_idxs = makeidxlist(bus_generators, nbuses)
+        tmp = Dict((i, Int[]) for i in key_buses)
+        bus_generators = bus_asset!(tmp, key_generators, field(system, Generators, :buses))
 
         key_storages = [i for i in field(system, Storages, :keys) if field(system, Storages, :status)[i] == 1]
-        bus_storages = [field(system, Storages, :buses)[i] for i in key_storages]
         storages_idxs = makeidxlist(key_storages, length(system.storages))
-        bus_storages_idxs = makeidxlist(bus_storages, nbuses)
+        tmp = Dict((i, Int[]) for i in key_buses)
+        bus_storages = bus_asset!(tmp, key_storages, field(system, Storages, :buses))
 
         key_generatorstorages = [i for i in field(system, GeneratorStorages, :keys) if field(system, GeneratorStorages, :status)[i] == 1]
-        bus_generatorstorages = [field(system, GeneratorStorages, :buses)[i] for i in key_generatorstorages]
         generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
-        bus_generatorstorages_idxs = makeidxlist(bus_generatorstorages, nbuses)
+        tmp = Dict((i, Int[]) for i in key_buses)
+        bus_generatorstorages = bus_asset!(tmp, key_generatorstorages, field(system, GeneratorStorages, :buses))
 
         bus_arcs = Dict((i, Tuple{Int,Int,Int}[]) for i in key_buses)
         for (l,i,j) in field(system, :arcs)
@@ -64,13 +62,9 @@ struct Topology
 
         buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches), key_branches)
 
-        plc = zeros(Float16, length(system.loads))
-        pg = zeros(Float16, length(system.generators))
-
         return new(
         buses_idxs, loads_idxs, branches_idxs, shunts_idxs, generators_idxs, storages_idxs, generatorstorages_idxs, 
-        bus_loads_idxs, bus_shunts_idxs, bus_generators_idxs, bus_storages_idxs, bus_generatorstorages_idxs,
-        bus_arcs, buspairs, plc, pg)
+        bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, bus_arcs, buspairs)
     end
 
 end
@@ -82,17 +76,13 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.generators_idxs == y.generators_idxs &&
     x.storages_idxs == y.storages_idxs &&
     x.generatorstorages_idxs == y.generatorstorages_idxs &&
-    x.bus_loads_idxs == y.bus_loads_idxs &&
-    x.bus_shunts_idxs == y.bus_shunts_idxs &&
-    x.bus_generators_idxs == y.bus_generators_idxs &&
-    x.bus_storages_idxs == y.bus_storages_idxs &&
-    x.bus_generatorstorages_idxs == y.bus_generatorstorages_idxs &&
-    x.arcs_from_0 == y.key_generators &&
-    x.arcs_to_0 == y.key_storages &&
-    x.buspairs == y.key_generatorstorages &&
-    x.ref_buses == y.bus_gens &&
-    x.sol_plc == y.bus_loads &&
-    x.sol_pg == y.bus_shunts
+    x.bus_loads == y.bus_loads &&
+    x.bus_shunts == y.bus_shunts &&
+    x.bus_generators == y.bus_generators &&
+    x.bus_storages == y.bus_storages &&
+    x.bus_generatorstorages == y.bus_generatorstorages &&
+    x.bus_arcs == y.bus_arcs &&
+    x.buspairs == y.buspairs
 #
 
 
@@ -116,13 +106,15 @@ CompositeAdequacy.@def pm_fields begin
     
     model::JuMP.AbstractModel
     topology:: Topology
+    var::Dict{Symbol,<:Any}
     sol::Dict{Symbol,<:Any}
 
 end
 
-mutable struct AbstractDCPowerModel <: AbstractPowerModel @pm_fields end
+struct AbstractDCPowerModel <: AbstractPowerModel @pm_fields end
 struct AbstractACPowerModel <: AbstractPowerModel @pm_fields end
 #AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
+#AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
 #struct ACPowerModel <: AbstractACPowerModel @pm_fields end
 #struct DCPowerModel <: AbstractDCPowerModel @pm_fields end
@@ -135,11 +127,28 @@ LCDCMethod = Union{DCOPF, Transportation}
 "Constructor for an AbstractPowerModel modeling object"
 function PowerFlowProblem(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel, topology:: Topology)
 
-    return PowerModel(model, topology, Dict{Symbol, Any}())
+    var = Dict{Symbol, Any}(
+        :va => Array{Int, JuMP.VariableRef}[],
+        #:vm => Dict{Int, JuMP.VariableRef}(),
+        :pg => Dict{Int, JuMP.VariableRef}(),
+        #:qg => Dict{Int, JuMP.VariableRef}(),
+        :p => Dict{Tuple{Int, Int, Int}, Any}(),
+        #:q => Dict{Tuple{Int, Int, Int}, Any}(),
+        :plc => Dict{Int, JuMP.VariableRef}(),
+        #:qlc => Dict{Int, JuMP.VariableRef}()
+    )
+
+    sol = Dict{Symbol, Any}(
+        :plc => Dict{Int, Float16}()
+    )
+
+    return PowerModel(model, topology, var, sol)
 
 end
 
-
+var(pm::AbstractPowerModel) = pm.var
+var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
+var(pm::AbstractPowerModel, key::Symbol, idx) = pm.var[key][idx]
 sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
 sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 

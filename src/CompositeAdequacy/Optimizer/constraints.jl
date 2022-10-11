@@ -1,53 +1,153 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractDCPowerModel, i::Int)
-    JuMP.@constraint(pm.model, pm.model[:va][i] == 0)
+    #JuMP.@constraint(pm.model, var(pm, :va)[i] == 0, container = Array)
+    JuMP.fix(var(pm, :va)[i], 0, force = true)
 end
 
 "Nodal power balance constraints"
 function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int)
 
-    #bus = field(system, Buses, :keys)[i]
-    bus_arcs = field(system, Topology, :bus_arcs)[i]
-    #bus_arcs_dc = field(system, Topology, :bus_arcs_dc)[i]
-    #bus_arcs_sw = field(system, Topology, :bus_arcs_sw)[i]
-    bus_gens = field(system, Topology, :bus_gens)[i]
-    bus_loads = field(system, Topology, :bus_loads)[i]
-    bus_shunts = field(system, Topology, :bus_shunts)[i]
-    bus_storage = field(system, Topology, :bus_storage)[i]
+    bus_arcs = field(pm, Topology, :bus_arcs)[i]
+    bus_gens = field(pm, Topology, :bus_generators)[i]
+    bus_loads = field(pm, Topology, :bus_loads)[i]
+    bus_shunts = field(pm, Topology, :bus_shunts)[i]
+    #bus_storage = assetgrouplist(field(pm.topology, :bus_storage))[i]
 
-    bus_pd = Dict(k => field(system, Loads, :pd)[k,t] for k in bus_loads)
-    bus_qd = Dict(k => field(system, Loads, :qd)[k] for k in bus_loads)
-    bus_gs = Dict(k => field(system, Shunts, :gs)[k] for k in bus_shunts)
-    bus_bs = Dict(k => field(system, Shunts, :bs)[k] for k in bus_shunts)
+#    bus_pd = Float16.([field(system, Loads, :pd)[k,t] for k in bus_loads])
+#    bus_qd = Float16.([field(system, Loads, :qd)[k] for k in bus_loads])
+#    bus_gs = Float16.([field(system, Shunts, :gs)[k] for k in bus_shunts])
+#    bus_bs = Float16.([field(system, Shunts, :bs)[k] for k in bus_shunts])
 
-    _constraint_power_balance(pm, i, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs)
+    _constraint_power_balance(pm, system, t, bus_arcs, bus_gens, bus_loads, bus_shunts)
 end
 
 ""
-function _constraint_power_balance(pm::AbstractDCPowerModel, i::Int, bus_arcs, bus_gens, bus_storage, bus_loads, bus_pd, bus_qd, bus_gs, bus_bs)
+function _constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, t::Int, bus_arcs, bus_gens, bus_loads, bus_shunts)
 
-    _check_var_keys(pm.model[:p], bus_arcs, "active power", "branch")
-    _check_var_keys(pm.model[:plc], bus_loads, "active power", "loads")
-    _check_var_keys(pm.model[:pg], bus_gens, "active power", "generator")
-    #_check_var_keys(pm.model[:ps], bus_storage, "active power", "storage")
-    #p    = get(var(pm),    :p, Dict()); _check_var_keys(p, bus_arcs, "active power", "branch")
-    #plc = get(var(pm), :plc, Dict()); _check_var_keys(p, bus_loads, "active power", "loads")
-    #pg   = get(var(pm),   :pg, Dict()); _check_var_keys(pg, bus_gens, "active power", "generator")
-    #ps   = get(var(pm),   :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
-    #psw  = get(var(pm),  :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
+    p    = get(var(pm), :p, Dict())
+    pg   = get(var(pm), :pg, Dict())
+    plc   = get(var(pm), :plc, Dict())
+    #ps   = get(var(pm), :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
+    #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
     #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
-    cstr = JuMP.@constraint(pm.model,
-        sum(pm.model[:p][a] for a in bus_arcs)
-        #+ sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
-        #+ sum(psw[a_sw] for a_sw in bus_arcs_sw)
+    JuMP.@constraint(pm.model,
+        sum(pg[g] for g in bus_gens)
+        + sum(plc[m] for m in bus_loads)
+        - sum(p[a] for a in bus_arcs)
+        #- sum(ps[s] for s in bus_storage)
+        #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
+        #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
-        sum(pm.model[:pg][g] for g in bus_gens)
-        + sum(pm.model[:plc][m] for m in bus_loads)
-        - sum(pm.model[:ps][s] for s in bus_storage)
-        - sum(pd for pd in values(bus_pd))
-        - sum(gs for gs in values(bus_gs))*1.0^2
+        sum(pd for pd in Float16.([field(system, Loads, :pd)[k,t] for k in bus_loads]))
+        + sum(gs for gs in Float16.([field(system, Shunts, :gs)[k] for k in bus_shunts]))*1.0^2
     )
+end
+
+"Branch - Ohm's Law Constraints"
+function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int)
+    
+    f_bus = field(system, Branches, :f_bus)[i]
+    t_bus = field(system, Branches, :t_bus)[i]
+    #f_idx = (i, f_bus, t_bus) #t_idx = (i, t_bus, f_bus)
+    g, b = calc_branch_y(field(system, :branches), i)
+    tr, ti = calc_branch_t(field(system, :branches), i)
+    tm = field(system, Branches, :tap)[i]
+    #g_fr = field(system, Branches, :g_fr)[i]
+    #b_fr = field(system, Branches, :b_fr)[i]
+    #g_to = field(system, Branches, :g_to)[i]
+    #b_to = field(system, Branches, :b_to)[i]
+
+    va_fr_to = JuMP.@expression(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus))
+
+    _constraint_ohms_yt_from(pm, i, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+    _constraint_ohms_yt_to(pm, i, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+
+end
+
+"DC Line Flow Constraints"
+function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+
+    # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
+    x = -b / (g^2 + b^2)
+    #ta = atan(ti, tr)
+    JuMP.@constraint(pm.model, var(pm, :p, (i, f_bus, t_bus)) == (va_fr_to - atan(ti, tr))/(x*tm))
+    #JuMP.@constraint(pm.model, var(pm, :p, (i, f_bus, t_bus)) == -b*(va_fr_to))
+
+end
+
+"nothing to do, this model is symetric"
+function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+end
+
+"Branch - Phase Angle Difference Constraints "
+function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int)
+
+    f_bus = field(system, Branches, :f_bus)[i]
+    t_bus = field(system, Branches, :t_bus)[i]
+    buspair = field(pm.topology, :buspairs)[(f_bus, t_bus)]
+    
+    _constraint_voltage_angle_diff(pm, f_bus, t_bus, buspair["angmin"], buspair["angmax"])
+
+end
+
+"Polar Form"
+function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, f_bus, t_bus, angmin, angmax)
+    
+    #va_fr = var(pm, :va, f_bus) va_to = var(pm, :va, t_bus)
+    JuMP.@constraint(pm.model, angmin <= var(pm, :va, f_bus) - var(pm, :va, t_bus) <= angmax)
+
+end
+
+"""
+constraint_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
+Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel.
+"""
+function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int)
+
+    f_bus = field(system, Branches, :f_bus)[i] 
+    t_bus = field(system, Branches, :t_bus)[i]
+    f_idx = (i, f_bus, t_bus)
+    t_idx = (i, t_bus, f_bus)
+    p_fr = var(pm, :p, f_idx)
+
+    if hasfield(Branches, :rate_a)
+        _constraint_thermal_limit_from(pm, f_idx, p_fr, field(system, Branches, :rate_a)[i])
+        _constraint_thermal_limit_to(pm, t_idx, p_fr, field(system, Branches, :rate_a)[i])
+    end
+
+end
+
+"""
+Generic thermal limit constraint
+`p[f_idx]^2 + q[f_idx]^2 <= rate_a^2`
+"""
+function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, f_idx, p_fr, rate_a)
+
+    if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
+        
+        JuMP.LowerBoundRef(p_fr)
+        JuMP.lower_bound(p_fr) < -rate_a && JuMP.set_lower_bound(p_fr, -rate_a)
+
+        if JuMP.has_upper_bound(p_fr)
+            JuMP.upper_bound(p_fr) > rate_a && JuMP.set_upper_bound(p_fr, rate_a)
+        end
+
+    else
+        JuMP.@constraint(pm.model, p_fr <= rate_a)
+    end
+
+end
+
+"`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
+function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, t_idx, p_fr, rate_a)
+    
+    if isa(p_fr, JuMP.VariableRef) && JuMP.has_upper_bound(p_fr)
+        JuMP.UpperBoundRef(p_fr)
+    else
+        #p_to = var(pm, :p, t_idx)
+        JuMP.@constraint(pm.model, var(pm, :p, t_idx) <= rate_a)
+    end
 end
 
 "checks if a sufficient number of variables exist for the given keys collection"
@@ -56,147 +156,6 @@ function _check_var_keys(vars, keys, var_name, comp_name)
         error(_LOGGER, "$(var_name) decision variables appear to be missing for $(comp_name) components")
     end
 end
-
-"Branch - Ohm's Law Constraints"
-function constraint_ohms_yt_from(pm::AbstractPowerModel, system::SystemModel, i::Int)
-    
-    f_bus = field(system, Branches, :f_bus)[i]
-    t_bus = field(system, Branches, :t_bus)[i]
-    f_idx = (i, f_bus, t_bus)
-    t_idx = (i, t_bus, f_bus)
-    g, b = calc_branch_y(field(system, :branches), i)
-    #tr, ti = calc_branch_t(field(system, :branches), i)
-    #g_fr = field(system, Branches, :g_fr)[i]
-    #b_fr = field(system, Branches, :b_fr)[i]
-    #tm = field(system, Branches, :tap)[i]
-    _constraint_ohms_yt_from(pm, f_bus, t_bus, f_idx, t_idx, g, b)
-
-end
-
-"DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, g, b)
-    va_fr = pm.model[:va][f_bus]
-    va_to = pm.model[:va][t_bus]
-    JuMP.@constraint(pm.model, pm.model[:p][f_idx] == -b*(va_fr - va_to))
-end
-
-#  ""
-# function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, g, b, g_fr, b_fr, tr, ti, tm)
-#     p_fr  = var(pm, :p, f_idx)
-#     va_fr = var(pm, :va, f_bus)
-#     va_to = var(pm, :va, t_bus)
-
-#     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
-#     x = -b / (g^2 + b^2)
-#     ta = atan(ti, tr)
-#     JuMP.@constraint(pm.model, p_fr == (va_fr - va_to - ta)/(x*tm))
-# end
-
-""
-function constraint_ohms_yt_to(pm::AbstractPowerModel, system::SystemModel, i::Int)
-    
-    #branch = ref(pm, :branch, i)
-    f_bus = field(system, Branches, :f_bus)[i]
-    t_bus = field(system, Branches, :t_bus)[i]
-    f_idx = (i, f_bus, t_bus)
-    t_idx = (i, t_bus, f_bus)
-    g, b = calc_branch_y(field(system, :branches), i)
-    tr, ti = calc_branch_t(field(system, :branches), i)
-    g_to = field(system, Branches, :g_to)[i]
-    b_to = field(system, Branches, :b_to)[i]
-    tm = field(system, Branches, :tap)[i]
-    _constraint_ohms_yt_to(pm, f_bus, t_bus, f_idx, t_idx, g, b, g_to, b_to, tr, ti, tm)
-
-end
-
-"nothing to do, this model is symetric"
-function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, g, b, g_to, b_to, tr, ti, tm)
-end
-
-"Branch - Phase Angle Difference Constraints "
-function constraint_voltage_angle_difference(pm::AbstractPowerModel, system::SystemModel, i::Int)
-
-    f_bus = field(system, Branches, :f_bus)[i]
-    t_bus = field(system, Branches, :t_bus)[i]
-    f_idx = (i, f_bus, t_bus)
-    pair = (f_bus, t_bus)
-    buspair = field(system, Topology, :buspairs)[pair]
-    
-    if buspair["branch"] == i
-        _constraint_voltage_angle_difference(pm, f_idx, buspair["angmin"], buspair["angmax"])
-    end
-end
-
-"Polar Form"
-function _constraint_voltage_angle_difference(pm::AbstractDCPowerModel, f_idx, angmin, angmax)
-    
-    i, f_bus, t_bus = f_idx
-    va_fr = pm.model[:va][f_bus]
-    va_to = pm.model[:va][t_bus]
-    JuMP.@constraint(pm.model, angmin <= va_fr - va_to <= angmax)
-
-end
-
-"""
-constraint_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
-Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel.
-"""
-function constraint_thermal_limit_from(pm::AbstractPowerModel, system::SystemModel, i::Int)
-
-    f_bus = field(system, Branches, :f_bus)[i]
-    t_bus = field(system, Branches, :t_bus)[i]
-    f_idx = (i, f_bus, t_bus)
-
-    if hasfield(Branches, :rate_a)
-        _constraint_thermal_limit_from(pm, f_idx, field(system, Branches, :rate_a)[i])
-    end
-end
-
-"""
-Generic thermal limit constraint
-`p[f_idx]^2 + q[f_idx]^2 <= rate_a^2`
-"""
-function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, f_idx, rate_a)
-
-    p_fr = pm.model[:p][f_idx]
-
-    if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
-        cstr = JuMP.LowerBoundRef(p_fr)
-        JuMP.lower_bound(p_fr) < -rate_a && JuMP.set_lower_bound(p_fr, -rate_a)
-        if JuMP.has_upper_bound(p_fr)
-            JuMP.upper_bound(p_fr) > rate_a && JuMP.set_upper_bound(p_fr, rate_a)
-        end
-    else
-        cstr = JuMP.@constraint(pm.model, p_fr <= rate_a)
-    end
-
-end
-
-""
-function constraint_thermal_limit_to(pm::AbstractPowerModel, system::SystemModel, i::Int)
-
-    f_bus = field(system, Branches, :f_bus)[i]
-    t_bus = field(system, Branches, :t_bus)[i]
-    t_idx = (i, t_bus, f_bus)
-
-    if hasfield(Branches, :rate_a)
-        _constraint_thermal_limit_to(pm, t_idx, field(system, Branches, :rate_a)[i])
-    end
-end
-
-"`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
-function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, t_idx, rate_a)
-    
-    l,i,j = t_idx
-    p_fr = pm.model[:p][(l,j,i)]
-    if isa(p_fr, JuMP.VariableRef) && JuMP.has_upper_bound(p_fr)
-        cstr = JuMP.UpperBoundRef(p_fr)
-    else
-        cstr = JuMP.@constraint(pm.model, pm.model[:p][t_idx] <= rate_a)
-    end
-end
-
-
 
 
 #"***************************************************************************************************************************"

@@ -23,7 +23,7 @@ function cycles!(
     rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
     sequence = Base.ones(true, N)
-    i=Int(0)
+    i=Int(1)
     (ttf,ttr) = T(rng,λ,μ)
     if i + ttf > N - ttr && i + ttf < N ttr = N - ttf - i end
 
@@ -93,14 +93,20 @@ function update_states!(system::SystemModel, state::SystemState, t::Int)
 end
 
 ""
-function update_asset_idxs!(asset::AbstractAssets, asset_idxs::Vector{UnitRange{Int}}, bus_asset_idxs::Vector{UnitRange{Int}}, asset_states::Vector{Bool}, nbuses::Int)
-
-    if all(asset_states) ≠ true && isempty(asset_idxs) ≠ true
-
-        key_assets = [i for i in assetgrouplist(asset_idxs) if asset_states[i] ≠ 0]
+function update_asset_idxs!(asset::AbstractAssets, asset_idxs::Vector{UnitRange{Int}}, bus_asset::Dict{Int, Vector{Int}}, asset_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+    
+    if all(asset_states[:,t]) ≠ true && asset_states[:,t] ≠ asset_states[:,t-1] && isempty(asset_idxs) ≠ true
+        
+        key_assets = [i for i in field(asset, :keys) if asset_states[i,t] == 1]
         asset_idxs[:] = makeidxlist(key_assets, length(asset))
-        bus_asset_idxs[:] = makeidxlist([field(asset, :buses)[i] for i in key_assets], nbuses)
 
+        for i in key_buses
+            bus_asset[i] = Int[]
+        end
+        
+        for k in key_assets
+            push!(bus_asset[field(asset, :buses)[k]], k)
+        end
     end
 
 end
@@ -108,20 +114,19 @@ end
 ""
 function update_branch_idxs!(
     topology::Topology, branches::Branches, buses::Buses, branches_idxs::Vector{UnitRange{Int}}, 
-    buses_idxs::Vector{UnitRange{Int}}, branch_states::Vector{Bool}, arcs::Vector{Tuple{Int, Int, Int}})
+    key_buses::Vector{Int}, branch_states::Matrix{Bool}, arcs::Vector{Tuple{Int, Int, Int}}, t::Int)
 
-    if all(branch_states) ≠ true && isempty(branches_idxs) ≠ true
+    if all(branch_states[:,t]) ≠ true && branch_states[:,t] ≠ branch_states[:,t-1] && isempty(branches_idxs) ≠ true
 
-        key_buses = [i for i in assetgrouplist(buses_idxs) if field(buses, :bus_type)[i] ≠ 4]
-        key_branches = [i for i in assetgrouplist(branches_idxs) if branch_states[i] ≠ 0]
+        key_branches = [i for i in field(branches, :keys) if branch_states[i,t] == 1]
         branches_idxs[:] = makeidxlist(key_branches, length(branches))
 
-        for i in  key_buses
+        for i in key_buses
             field(topology, :bus_arcs)[i] = Tuple{Int,Int,Int}[]
         end
         
         for (l,i,j) in arcs
-            if branch_states[l] ≠ 0
+            if branch_states[l,t] ≠ 0
                 push!(field(topology, :bus_arcs)[i], (l,i,j))
             end
         end

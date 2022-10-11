@@ -9,24 +9,16 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, ty
     var_gen_power(pm, system, t)
     var_branch_power(pm, system, t)
     var_load_curtailment(pm, system, t)
-    #var_dcline_power(pm, system)
 
     # Add Constraints
     # ---------------
-    for i in field(system, Buses, :keys)
+    for i in assetgrouplist(field(pm, Topology, :buses_idxs))
         constraint_power_balance(pm, system, i, t)
     end
 
-    for i in field(system, Branches, :keys)
-        if field(system, Branches, :status)[i] ≠ 0
-            constraint_thermal_limit_from(pm, system, i)
-            constraint_thermal_limit_to(pm, system, i)
-        end
-    end
-
-    # for i in field(system, DCLines, :keys)
-    #     constraint_dcline_power_losses(pm, i)
-    # end
+    #for i in assetgrouplist(field(pm, Topology, :branches_idxs))
+    #    constraint_thermal_limits(pm, system, i, t)
+    #end
 
     objective_min_load_curtailment(pm, system)
     return
@@ -39,34 +31,24 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, ty
     var_bus_voltage(pm, system, t)
     var_gen_power(pm, system, t)
     var_branch_power(pm, system, t)
+    var_load_curtailment(pm, system, t)
     #variable_storage_power_mi(pm)
     #var_dcline_power(pm)
-    var_load_curtailment(pm, system, t)
 
     # Add Constraints
     # ---------------
-    for i in keys(field(system, Topology, :ref_buses))
+    for i in field(system, :ref_buses)
         constraint_theta_ref(pm, i)
     end
 
-    for i in field(system, Buses, :keys)
+    for i in assetgrouplist(field(pm, Topology, :buses_idxs))
         constraint_power_balance(pm, system, i, t)
     end
 
-    #for i in ids(pm, :storage, nw=n)
-    #    constraint_storage_complementarity_mi(pm, i, nw=n)
-    #    constraint_storage_losses(pm, i, nw=n)
-    #    constraint_storage_thermal_limit(pm, i, nw=n)
-    #end
-
-    for i in field(system, Branches, :keys)
-        if field(system, Branches, :status)[i] ≠ 0
-            constraint_ohms_yt_from(pm, system, i)
-            #constraint_ohms_yt_to(pm, system, i)
-            constraint_voltage_angle_difference(pm, system, i)
-            constraint_thermal_limit_from(pm, system, i)
-            constraint_thermal_limit_to(pm, system, i)
-        end
+    for i in assetgrouplist(field(pm, Topology, :branches_idxs))
+        constraint_ohms_yt(pm, system, i, t)
+        constraint_voltage_angle_diff(pm, system, i, t)
+        #constraint_thermal_limits(pm, system, i, t)
     end
 
     # for i in ids(pm, :dcline)
@@ -81,7 +63,7 @@ end
 function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel)
 
     return JuMP.@objective(pm.model, Min,
-        sum(field(system, Loads, :cost)[i]*pm.model[:plc][i] for i in field(system, Loads, :keys) if field(system, Loads, :status)[i] ≠ 0)
+        sum(field(system, Loads, :cost)[i]*var(pm, :plc)[i] for i in assetgrouplist(field(pm, Topology, :loads_idxs)))
     )
 end
 
