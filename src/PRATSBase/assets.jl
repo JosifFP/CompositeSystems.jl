@@ -104,7 +104,7 @@ struct Generators{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
         @assert length(qg) == (ngens)
         @assert all(pg .>= 0)
         @assert length(vg) == (ngens)
-        @assert all(vg .> 0)
+        @assert all(vg .>= 0)
         @assert length(pmax) == (ngens)
         @assert length(qmax) == (ngens)
         @assert length(pmin) == (ngens)

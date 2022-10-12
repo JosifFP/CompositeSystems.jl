@@ -126,7 +126,7 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
 
     for i in 1:length(values(dict_core[Symbol("repairtime[hrs]")]))
         if values(dict_core[Symbol("repairtime[hrs]")])[i]≠0.0
-            container_μ[i] = Float64.(8760/values(dict_core[Symbol("repairtime[hrs]")])[i])
+            container_μ[i] = Float64.(8736/values(dict_core[Symbol("repairtime[hrs]")])[i])
         else
             container_μ[i] = 0.0
         end

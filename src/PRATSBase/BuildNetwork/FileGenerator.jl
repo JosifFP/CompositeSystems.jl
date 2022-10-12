@@ -11,7 +11,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
     PRATSInputData = dirname(RawFile)
 
     cd(PRATSInputData)
-    mkdir("Reliability Data")
+    #mkdir("Reliability Data")
     cd("Reliability Data")
     ReliabilityDataDir = pwd()
 
@@ -104,8 +104,6 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
     end
     
     cd(CurrentDir)
-    return ref, ReliabilityDataDir
-
 end
 
 

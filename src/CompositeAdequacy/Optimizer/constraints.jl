@@ -1,7 +1,7 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractDCPowerModel, i::Int)
-    #JuMP.@constraint(pm.model, var(pm, :va)[i] == 0, container = Array)
-    JuMP.fix(var(pm, :va)[i], 0, force = true)
+    JuMP.@constraint(pm.model, var(pm, :va)[i] == 0, container = Array)
+    #JuMP.fix(var(pm, :va)[i], 0, force = true)
 end
 
 "Nodal power balance constraints"

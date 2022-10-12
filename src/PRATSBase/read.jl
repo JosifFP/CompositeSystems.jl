@@ -66,6 +66,10 @@ function SystemModel(RawFile::String, ReliabilityDataDir::String, N::Int)
 
     if has_shunts
         shunts = container(network, Shunts, S, N, L, T)
+    else
+        shunts = Shunts{N,L,T,S}(
+        Int[], Int[], Float16[], Float16[], String[], BitVector()
+        )
     end
 
     if has_storages

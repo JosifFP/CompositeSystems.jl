@@ -62,7 +62,8 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    local pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.direct_model(optimizer), Topology(system))
+    local pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), Topology(system))
+    #JuMP.Model(optimizer; add_bridges = false) #JuMP.direct_model(optimizer)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
@@ -75,7 +76,7 @@ function assess(
         for t in 1:N
             update!(pm.topology, systemstate, system, t)
             if field(systemstate, :condition)[t] ≠ true
-                #println("t=$(t)")
+                println("t=$(t)")
                 solve!(pm, systemstate, system, t)
                 foreach(recorder -> record!(recorder, system, pm, s, t), recorders)
                 empty_model!(pm)
@@ -125,28 +126,22 @@ function update!(topology::Topology, state::SystemState, system::SystemModel, t:
         key_buses = field(system, Buses, :keys)
 
         update_asset_idxs!(
-            field(system, :loads), field(topology, :loads_idxs), field(topology, :bus_loads), 
-            field(state, :loads), key_buses, t)
+            topology, field(system, :loads), field(state, :loads), key_buses, t)
 
         update_asset_idxs!(
-            field(system, :shunts), field(topology, :shunts_idxs), field(topology, :bus_shunts), 
-            field(state, :shunts), key_buses, t)
+            topology, field(system, :shunts), field(state, :shunts), key_buses, t)
 
         update_asset_idxs!(
-            field(system, :generators), field(topology, :generators_idxs), field(topology, :bus_generators), 
-            field(state, :generators), key_buses, t)
+            topology, field(system, :generators), field(state, :generators), key_buses, t)
 
         update_asset_idxs!(
-            field(system, :storages), field(topology, :storages_idxs), field(topology, :bus_storages), 
-            field(state, :storages), key_buses, t)
+            topology, field(system, :storages), field(state, :storages), key_buses, t)
 
         update_asset_idxs!(
-            field(system, :generatorstorages), field(topology, :generatorstorages_idxs), 
-            field(topology, :bus_generatorstorages), field(state, :generatorstorages), key_buses, t)
+            topology, field(system, :generatorstorages), field(state, :generatorstorages), key_buses, t)
 
         update_branch_idxs!(
-            topology, field(system, :branches), field(system, :buses), field(topology, :branches_idxs), 
-            key_buses, field(state, :branches), field(system, :arcs), t)
+            topology, system, field(state, :branches), key_buses, t)
 
     end
 

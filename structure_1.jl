@@ -5,12 +5,15 @@ using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
-RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
+RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RBTS.m"
+PRATSBase.silence()
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
+
+
 nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
 mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
-PRATSBase.silence()
-system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir, 8760)
+
 resultspecs = (Shortfall(), Shortfall())
 method = PRATS.SequentialMonteCarlo(samples=100, seed=123, verbose=false, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, resultspecs...)
@@ -51,21 +54,7 @@ CompositeAdequacy.var_load_curtailment(pm, system, t)
     CompositeAdequacy.constraint_power_balance(pm, system, i, t)
 end
 
-#39.500 μs (1034 allocations: 79.88 KiB)
-#36.900 μs (937 allocations: 74.78 KiB)
 
-expr = :(
-    $(sum(p[a] for a in bus_arcs; init=0)) 
-    - $(sum(pg[g] for g in bus_gens; init=0)) 
-    - $(sum(plc[m] for m in bus_loads; init=0)) 
-    + $(sum(pd for pd in bus_pd; init=0)) 
-    + $(sum(gs for gs in bus_gs; init=0)*1.0^2)
-)
-
-
-
-bus_loads = CompositeAdequacy.field(pm, CompositeAdequacy.Topology, :bus_loads)[i]
-bus_shunts = CompositeAdequacy.field(pm, CompositeAdequacy.Topology, :bus_shunts)[i]
 
 i=1
 sum_p = :($(sum(p[a] for a in CompositeAdequacy.field(pm, CompositeAdequacy.Topology, :bus_arcs)[i]; init=0)))
@@ -82,8 +71,6 @@ expr = :(
     +$(sum(gs for pd in Float16.([CompositeAdequacy.field(system, Shunts, :gs)[k] for k in bus_shunts]); init=0))
 )
 
-
-JuMP.@constraint(pm.model, sum_p + ==0)
 
 ref = PRATSBase.BuildNetwork(RawFile)
 for (k,v) in ref[:load]
