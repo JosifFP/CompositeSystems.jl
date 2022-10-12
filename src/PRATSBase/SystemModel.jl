@@ -1,63 +1,58 @@
 
-struct SystemModel{N,L,T<:Period,U<:PerUnit}
+"SystemModel structure"
+struct SystemModel{N,L,T<:Period,S} #S=baseMVA as Integer
 
-    #buses::Buses{N,P}
-    generators::Generators{N,L,T,U}
-    loads::Loads{N,L,T,U}
-    storages::Storages{N,L,T,U}
-    generatorstorages::GeneratorStorages{N,L,T,U}
-    branches::Branches{N,L,T,U}
-    network::Network{N,L,T,U}
+    buses::Buses{N,L,T,S}
+    loads::Loads{N,L,T,S}
+    branches::Branches{N,L,T,S}
+    shunts::Shunts{N,L,T,S}
+    generators::Generators{N,L,T,S}
+    storages::Storages{N,L,T,S}
+    generatorstorages::GeneratorStorages{N,L,T,S}
+    arcs_from::Vector{Tuple{Int, Int, Int}}
+    arcs_to::Vector{Tuple{Int, Int, Int}}
+    arcs::Vector{Tuple{Int, Int, Int}}
+    ref_buses::Vector{Int}
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
-        generators::Generators{N,L,T,U}, loads::Loads{N,L,T,U}, storages::Storages{N,L,T,U},
-        generatorstorages::GeneratorStorages{N,L,T,U}, branches::Branches{N,L,T,U},
-        network::Network{N,L,T,U}, timestamps::StepRange{ZonedDateTime,T}
-    ) where {N,L,T<:Period,U<:PerUnit}
-
-    # n_gens = length(generators)
-    # n_stors = length(storages)
-    # n_genstors = length(generatorstorages)
-    # n_branches = length(branches)
+        buses::Buses{N,L,T,S},
+        loads::Loads{N,L,T,S},
+        branches::Branches{N,L,T,S},
+        shunts::Shunts{N,L,T,S},
+        generators::Generators{N,L,T,S},
+        storages::Storages{N,L,T,S},
+        generatorstorages::GeneratorStorages{N,L,T,S},
+        arcs_from::Vector{Tuple{Int, Int, Int}},
+        arcs_to::Vector{Tuple{Int, Int, Int}},
+        arcs::Vector{Tuple{Int, Int, Int}},
+        ref_buses::Vector{Int},
+        timestamps::StepRange{ZonedDateTime,T}
+    ) where {N,L,T<:Period,S}
 
     @assert step(timestamps) == T(L)
     @assert length(timestamps) == N
 
-    new{N,L,T,U}(
-        generators, loads, storages, generatorstorages, branches, network, timestamps)
+    new{N,L,T,S}(
+        buses, loads, branches, shunts, generators, storages, generatorstorages, arcs_from, arcs_to, arcs, ref_buses, timestamps)
     end
 
 end
 
-# No time zone constructor
-function SystemModel(
-    generators, loads, storages, generatorstorages, branches, network, timestamps::StepRange{DateTime,T}
-) where {N,L,T<:Period,U<:PerUnit}
-
-    #@warn "No time zone data provided - defaulting to UTC. To specify a " *
-    #      "time zone for the system timestamps, provide a range of " *
-    #      "`ZonedDateTime` instead of `DateTime`."
-
-    utc = TimeZone("UTC")
-    time_start = ZonedDateTime(first(timestamps), utc)
-    time_end = ZonedDateTime(last(timestamps), utc)
-    timestamps_tz = time_start:step(timestamps):time_end
-
-    return SystemModel(
-        generators, loads, storages, generatorstorages, branches, network, timestamps_tz)
-
-end
-
 Base.:(==)(x::T, y::T) where {T <: SystemModel} =
+    x.buses == y.buses &&
+    x.loads == y.loads &&
+    x.branches == y.branches &&
+    x.shunts == y.shunts &&
     x.generators == y.generators &&
-    x.loads == y.bus_gen_idxs &&
     x.storages == y.storages &&
     x.generatorstorages == y.generatorstorages &&
-    x.branches == y.branches &&
-    x.network == y.bus_branch_idxs &&
+    x.arcs_from == y.arcs_from &&
+    x.arcs_to == y.arcs_to &&
+    x.arcs == y.arcs &&
+    x.ref_buses == y.ref_buses &&
     x.timestamps == y.timestamps
 
 broadcastable(x::SystemModel) = Ref(x)
 
-unitsymbol(::SystemModel{N,L,T,U}) where {N,L,T<:Period,U<:PerUnit} = unitsymbol(T), unitsymbol(U)
+unitsymbol(::SystemModel{N,L,T,S}) where {N,L,T<:Period,S} = unitsymbol(S), unitsymbol(T)

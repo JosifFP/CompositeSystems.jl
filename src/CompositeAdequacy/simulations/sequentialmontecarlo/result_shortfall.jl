@@ -22,9 +22,6 @@ mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMonteCarlo
     unservedload_total_currentsim::Float16
     unservedload_bus_currentsim::Vector{Float16}
 
-    #experiment
-    unservedload::Matrix{MeanVariance}
-
 end
 
 function merge!(
@@ -41,8 +38,6 @@ function merge!(
     foreach(merge!, x.unservedload_period, y.unservedload_period)
     foreach(merge!, x.unservedload_busperiod, y.unservedload_busperiod)
 
-    foreach(merge!, x.unservedload, y.unservedload)
-
     return
 
 end
@@ -53,25 +48,23 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
 ) where {N}
 
-    nbuses = length(sys.network.load)
+    nloads = length(sys.loads.keys)
 
     periodsdropped_total = meanvariance()
-    periodsdropped_bus = [meanvariance() for _ in 1:nbuses]
+    periodsdropped_bus = [meanvariance() for _ in 1:nloads]
     periodsdropped_period = [meanvariance() for _ in 1:N]
-    periodsdropped_busperiod = [meanvariance() for _ in 1:nbuses, _ in 1:N]
+    periodsdropped_busperiod = [meanvariance() for _ in 1:nloads, _ in 1:N]
 
     periodsdropped_total_currentsim = 0
-    periodsdropped_bus_currentsim = zeros(Int, nbuses)
+    periodsdropped_bus_currentsim = zeros(Int, nloads)
 
     unservedload_total = meanvariance()
-    unservedload_bus = [meanvariance() for _ in 1:nbuses]
+    unservedload_bus = [meanvariance() for _ in 1:nloads]
     unservedload_period = [meanvariance() for _ in 1:N]
-    unservedload_busperiod = [meanvariance() for _ in 1:nbuses, _ in 1:N]
+    unservedload_busperiod = [meanvariance() for _ in 1:nloads, _ in 1:N]
 
     unservedload_total_currentsim = 0
-    unservedload_bus_currentsim = zeros(Float16, nbuses)
-
-    unservedload = [meanvariance() for _ in 1:nbuses, _ in 1:N]
+    unservedload_bus_currentsim = zeros(Float16, nloads)
 
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,
@@ -79,36 +72,37 @@ function accumulator(
         periodsdropped_total_currentsim, periodsdropped_bus_currentsim,
         unservedload_total, unservedload_bus,
         unservedload_period, unservedload_busperiod,
-        unservedload_total_currentsim, unservedload_bus_currentsim, unservedload)
+        unservedload_total_currentsim, unservedload_bus_currentsim)
 
 end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    #pm::AbstractPowerModel,
-    load_curtailment::Dict{Int,<:Any},
-    loads::Loads{N,L,T,U},
+    sys::SystemModel{N,L,T,S},
+    pm::AbstractPowerModel,
     sampleid::Int, t::Int
-) where {N,L,T,U}
+) where {N,L,T,S}
 
     totalshortfall = 0
     isshortfall = false
-    
+    busshortfalls = sol(pm)[:plc]
 
-    for r in loads.keys
-    
-        busshortfall = load_curtailment[r]["pl"]
-        fit!(acc.unservedload[r,t],  busshortfall)
+    for r in sys.loads.keys
 
+        busshortfall = busshortfalls[r]
         isbusshortfall = busshortfall > 0
+
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
     
         if isbusshortfall
+
             isshortfall = true
             totalshortfall += busshortfall
+
             acc.periodsdropped_bus_currentsim[r] += 1
             acc.unservedload_bus_currentsim[r] += busshortfall
+
         end
     
     end
@@ -148,10 +142,8 @@ end
 
 function finalize(
     acc::SMCShortfallAccumulator,
-    system::SystemModel{N,L,T,U},
-) where {N,L,T,U}
-
-    flow_mean, _ = mean_std(acc.unservedload)
+    system::SystemModel{N,L,T,S},
+) where {N,L,T,S}
 
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
@@ -166,11 +158,11 @@ function finalize(
         mean_std(acc.unservedload_busperiod)
 
     nsamples = first(acc.unservedload_total.stats).n
-    #p2e = conversionfactor(L,T,P,E)
+    P = PRATSBase.powerunits["MW"]
+    E = PRATSBase.energyunits["MWh"]
+    p2e = conversionfactor(S,L,T,P,E)
 
-    #load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
-
-    return ShortfallResult{N,L,T,U}(
+    return ShortfallResult{N,L,T,E}(
         nsamples, 
         system.loads.keys, 
         system.timestamps,
@@ -182,13 +174,11 @@ function finalize(
         ep_period_std,
         ep_busperiod_mean, 
         ep_busperiod_std,
-        ue_busperiod_mean, 
-        ue_total_std,
-        ue_bus_std, 
-        ue_period_std, 
-        ue_busperiod_std,
-        flow_mean)
-
+        p2e*ue_busperiod_mean, 
+        p2e*ue_total_std,
+        p2e*ue_bus_std, 
+        p2e*ue_period_std, 
+        p2e*ue_busperiod_std)
 end
 
 # ShortfallSamples
@@ -215,8 +205,8 @@ function accumulator(
     sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::ShortfallSamples
 ) where {N}
 
-    nbuses = length(length(sys.network.load))
-    shortfall = zeros(Int, nbuses, N, simspec.nsamples)
+    nloads = length(sys.loads.keys)
+    shortfall = zeros(Int, nloads, N, simspec.nsamples)
 
     return SMCShortfallSamplesAccumulator(shortfall)
 
@@ -224,15 +214,13 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
-    pm::AbstractPowerModel,
-    system::SystemModel{N,L,T,U},
+    system::SystemModel{N,L,T,S},
     sampleid::Int, t::Int
-) where {N,L,T,U}
+) where {N,L,T,S}
 
-    for r in eachindex(system.network.load)
-        acc.shortfall[r,t,sampleid] = pm.solution["solution"]["load_curtailment"][r]["pl"]
+    for r in field(system, Loads, :keys)
+        acc.shortfall[r,t,sampleid] = field(system, Loads, :plc)[r]
     end
-
     return
 
 end
@@ -241,12 +229,13 @@ reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,U},
-) where {N,L,T,U}
+    system::SystemModel{N,L,T,S},
+) where {N,L,T,S}
 
-    load_indices = [parse(Int,i) for i in eachindex(system.network.load)]
-
-    return ShortfallSamplesResult{N,L,T,U}(
-        load_indices, system.timestamps, acc.shortfall)
+    P = PRATSBase.powerunits["MW"]
+    E = PRATSBase.energyunits["MWh"]
+    p2e = conversionfactor(S,L,T,P,E)
+    return ShortfallSamplesResult{N,L,T,P,E}(
+        system.loads.keys, system.timestamps, p2e*acc.shortfall)
 
 end

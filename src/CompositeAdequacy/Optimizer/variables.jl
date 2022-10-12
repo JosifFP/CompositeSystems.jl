@@ -1,311 +1,195 @@
 ""
-function var_bus_voltage(pm::AbstractDCPModel; kwargs...)
-    var_bus_voltage_angle(pm; kwargs...)
+function comp_start_value(comp::Dict{String,<:Any}, key::String, default=0.0)
+    return get(comp, key, default)
 end
 
 ""
-function var_bus_voltage(pm::AbstractACPModel; kwargs...)
-    var_bus_voltage_angle(pm; kwargs...)
-    var_bus_voltage_magnitude(pm; kwargs...)
+function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+    var_bus_voltage_angle(pm, system, t::Int; kwargs...)
+    var_bus_voltage_magnitude(pm, system, t::Int; kwargs...)
 end
 
 ""
-function var_bus_voltage_angle(pm::AbstractPowerModel; bounded::Bool=true)
+function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
 
-    JuMP.@variable(pm.model, va[i in keys(pm.ref[:bus])])
+    var(pm)[:va] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], container = Array)
+    #va = var(pm)[:va] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="va", start = comp_start_value(ref(pm, :bus, i), "va_start"))
+
 end
 
 ""
-function var_bus_voltage_magnitude(pm::AbstractPowerModel; bounded::Bool=true)
+function var_bus_voltage_magnitude(pm::AbstractDCPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
 
-    JuMP.@variable(pm.model, vm[i in keys(pm.ref[:bus])], start=1.0)
+end
 
+"variable: `v[i]` for `i` in `bus`es"
+function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
+
+    vm = var(pm)[:vm] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], container = Array, start =1.0)
+    #vm = var(pm)[:vm] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="vm", start = comp_start_value(ref(pm, :bus, i), "vm_start", 1.0))
     if bounded
-        for (i, bus) in keys(pm.ref[:bus])
-            JuMP.set_lower_bound(vm[i], bus["vmin"])
-            JuMP.set_upper_bound(vm[i], bus["vmax"])
+        for i in assetgrouplist(field(pm, Topology, :buses_idxs))
+            JuMP.set_lower_bound(vm[i], field(system, Buses, :vmin)[i])
+            JuMP.set_upper_bound(vm[i], field(system, Buses, :vmax)[i])
         end
     end
 
 end
 
 ""
-function var_bus_voltage_magnitude_sqr(pm::AbstractPowerModel; bounded::Bool=true)
+function var_gen_power(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+    var_gen_power_real(pm, system, t; kwargs...)
+    var_gen_power_imaginary(pm, system, t; kwargs...)
+end
+
+""
+function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true)
     
-    JuMP.@variable(pm.model, w[i in keys(pm.ref[:bus])], start=1.001)
+    pg = var(pm)[:pg] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))], container = Dict{Int, JuMP.VariableRef})
+    #JuMP.@variable(pm.model, qg[i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
 
     if bounded
-        for i in keys(pm.ref[:bus])
-            JuMP.set_lower_bound(w[i], pm.ref[:bus][i]["vmin"]^2)
-            JuMP.set_upper_bound(w[i], pm.ref[:bus][i]["vmax"]^2)
-        end
-    end
-end
-
-""
-function var_buspair_voltage_product(pm::AbstractPowerModel)
-
-    wr_min, wr_max, wi_min, wi_max = calc_voltage_product_bounds(pm.ref[:buspairs])
-
-    JuMP.@variable(pm.model, wr_min[bp] <= wr[bp in keys(pm.ref[:buspairs])] <= wr_max[bp], start=1.0)
-    JuMP.@variable(pm.model, wi_min[bp] <= wi[bp in keys(pm.ref[:buspairs])] <= wi_max[bp])    
-end
-
-""
-function var_gen_power(pm::AbstractDCPModel; kwargs...)
-    var_gen_power_real(pm; kwargs...)
-end
-
-""
-function var_gen_power(pm::AbstractACPModel; kwargs...)
-    var_gen_power_real(pm; kwargs...)
-    var_gen_power_imaginary(pm; kwargs...)
-end
-
-""
-function var_gen_power_real(pm::AbstractPowerModel; bounded::Bool=true)
-
-    JuMP.@variable(pm.model, pg[i in keys(pm.ref[:gen])])
-
-    if bounded
-        for (i, gen) in pm.ref[:gen]
-            JuMP.set_upper_bound(pg[i], gen["pmax"])
-            JuMP.set_lower_bound(pg[i], 0.0)
-            # if gen["pmin"]>=0.0
-            #     JuMP.set_lower_bound(pg[i], gen["pmin"])
-            # else
-            #     JuMP.set_lower_bound(pg[i], 0.0)
-            # end
+        for l in assetgrouplist(field(pm, Topology, :generators_idxs))
+            JuMP.set_upper_bound(pg[l], field(system, Generators, :pmax)[l])
+            JuMP.set_lower_bound(pg[l], 0.0)
         end
     end
 
 end
 
-""
-function var_gen_power_imaginary(pm::AbstractPowerModel; bounded::Bool=true)
+"Model ignores reactive power flows"
+function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
+    #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), NaN)
+end
 
-    JuMP.@variable(pm.model, qg[i in keys(pm.ref[:gen])])
+""
+function var_gen_power_imaginary(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
+
+    qg = var(pm)[:qg] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))], container = Dict{Int, JuMP.VariableRef})
+    #qg = var(pm)[:qg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)], base_name="qg", start = comp_start_value(ref(pm, :gen, i), "qg_start"))
+
+    if bounded
+        for l in assetgrouplist(field(pm, Topology, :generators_idxs))
+            JuMP.set_upper_bound(qg[l], field(system, Generators, :qmax)[l])
+            JuMP.set_lower_bound(qg[l], 0.0)
+        end
+    end
+    #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), qg)
+end
+
+"Defines DC or AC power flow variables p to represent the active power flow for each branch"
+function var_branch_power(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+    var_branch_power_real(pm, system, t; kwargs...)
+    var_branch_power_imaginary(pm, system, t; kwargs...)
+end
+
+""
+function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
+
+    arcs_from = [(l,i,j) for (l,i,j) in field(system, :arcs_from) if l in assetgrouplist(field(pm, Topology, :branches_idxs))]
+    arcs = [(l,i,j) for (l,i,j) in field(system, :arcs) if l in assetgrouplist(field(pm, Topology, :branches_idxs))]
+    p = JuMP.@variable(pm.model, [arcs], container = Dict{Tuple{Int, Int, Int}, Any})
+    #p = var(pm)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
+
+    if bounded
+        for (l,i,j) in arcs
+            JuMP.set_lower_bound(p[(l,i,j)], max(-Inf, -field(system, Branches, :rate_a)[l]))
+            JuMP.set_upper_bound(p[(l,i,j)], min(Inf,  field(system, Branches, :rate_a)[l]))
+        end
+    end
+
+    # this explicit type erasure is necessary
+    return var(pm)[:p] = merge(
+        Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in arcs_from), 
+        Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in arcs_from))
+    #sol_component_value_edge(pm, :branch, :pf, :pt, ref(pm, :arcs_from), ref(pm, :arcs_to), p_expr)
+end
+
+"DC models ignore reactive power flows"
+function var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
+end
+
+"Defines load curtailment variables p to represent the active power flow for each branch"
+function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+    var_load_curtailment_real(pm, system, t; kwargs...)
+    var_load_curtailment_imaginary(pm, system, t; kwargs...)
+end
+
+""
+function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=true)
+
+    plc = var(pm)[:plc] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))], container = Dict{Int, JuMP.VariableRef})
+
+    for l in assetgrouplist(field(pm, Topology, :loads_idxs))
+        JuMP.set_upper_bound(plc[l], field(system, Loads, :pd)[l,t])
+        JuMP.set_lower_bound(plc[l],0.0)
+    end
+    #report && sol_component_value(pm, :plc, assetgrouplist(field(pm, Topology, :loads_idxs)), plc)
+end
+
+""
+function var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
+end
+
+""
+function var_load_curtailment_imaginary(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
     
-    if bounded
-        for (i, gen) in ref[:gen]
-            JuMP.set_lower_bound(qg[i], gen["qmin"])
-            JuMP.set_upper_bound(qg[i], gen["qmax"])
-        end
+    qlc = var(pm)[:qlc] =JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))], container=Array, container = Dict{Int, JuMP.VariableRef})
+
+    for l in assetgrouplist(field(pm, Topology, :loads_idxs))
+        JuMP.set_upper_bound(qlc[l], field(system, Loads, :qd)[l])
+        JuMP.set_lower_bound(qlc[l],0.0)
     end
-end
-
-"""
-Defines DC power flow variables p to represent the active power flow for each branch
-"""
-function var_branch_power(pm::AbstractDCPModel; kwargs...)
-    var_branch_power_real(pm; kwargs...)
-end
-
-"""
-Defines AC power flow variables p to represent the active power flow for each branch
-"""
-function var_branch_power(pm::AbstractACPModel; kwargs...)
-    var_branch_power_real(pm; kwargs...)
-    var_branch_power_imaginary(pm; kwargs...)
-end
-
-""
-function var_branch_power_real(pm::AbstractPowerModel; bounded::Bool=true)
-
-    JuMP.@variable(pm.model, p[(l,i,j) in pm.ref[:arcs]])
-
-    if bounded
-        for arc in pm.ref[:arcs]
-            #(l,i,j) = arc
-            #branch = pm.ref[:branch][l]
-            branch = pm.ref[:branch][arc[1]]
-            if haskey(branch, "rate_a")
-                JuMP.set_lower_bound(p[arc], -branch["rate_a"])
-                JuMP.set_upper_bound(p[arc],  branch["rate_a"])
-            end
-        end  
-    end
-
-    # for (l,branch) in ref[:branch]
-    #     if haskey(branch, "pf_start")
-    #         f_idx = (l, branch["f_bus"], branch["t_bus"])
-    #         JuMP.set_start_value(p[f_idx], branch["pf_start"])
-    #     end
-    #     if haskey(branch, "pt_start")
-    #         t_idx = (l, branch["t_bus"], branch["f_bus"])
-    #         JuMP.set_start_value(p[t_idx], branch["pt_start"])
-    #     end
-    # end
 
 end
 
 ""
-function var_branch_power_imaginary(pm::AbstractPowerModel; bounded::Bool=true)
-    
-    @variable(pm.model, q[(l,i,j) in pm.ref[:arcs]])
-
-    if bounded
-        for arc in pm.ref[:arcs]
-            branch = pm.ref[:branch][arc[1]]
-            if haskey(branch, "rate_a")
-                JuMP.set_lower_bound(q[arc], -branch["rate_a"])
-                JuMP.set_upper_bound(q[arc],  branch["rate_a"])
-            end
-        end      
-    end
-
-    # for (l,branch) in ref[:branch]
-    #     if haskey(branch, "qf_start")
-    #         f_idx = (l, branch["f_bus"], branch["t_bus"])
-    #         JuMP.set_start_value(q[f_idx], branch["qf_start"])
-    #     end
-    #     if haskey(branch, "qt_start")
-    #         t_idx = (l, branch["t_bus"], branch["f_bus"])
-    #         JuMP.set_start_value(q[t_idx], branch["qt_start"])
-    #     end
-    # end
-
-end
-
-""
-function var_dcline_power(pm::AbstractDCPModel; kwargs...)
-    var_dcline_power_real(pm; kwargs...)
-end
-
-""
-function var_dcline_power(pm::AbstractACPModel; kwargs...)
-    var_dcline_power_real(pm; kwargs...)
-    var_dcline_power_imaginary(pm; kwargs...)
-end
-
-""
-function var_dcline_power_real(pm::AbstractPowerModel; bounded::Bool=true)
-
-    JuMP.@variable(pm.model, p_dc[a in pm.ref[:arcs_dc]], start=0.0)
-
-    if bounded
-        for (l,dcline) in pm.ref[:dcline]
-            f_idx = (l, dcline["f_bus"], dcline["t_bus"])
-            t_idx = (l, dcline["t_bus"], dcline["f_bus"])
-
-            JuMP.set_lower_bound(p_dc[f_idx], dcline["pminf"])
-            JuMP.set_upper_bound(p_dc[f_idx], dcline["pmaxf"])
-
-            JuMP.set_lower_bound(p_dc[t_idx], dcline["pmint"])
-            JuMP.set_upper_bound(p_dc[t_idx], dcline["pmaxt"])
-        end
-    end
-
-    # for (l,dcline) in ref[:dcline]
-    #     if haskey(dcline, "pf")
-    #         f_idx = (l, dcline["f_bus"], dcline["t_bus"])
-    #         JuMP.set_start_value(p_dc[f_idx], dcline["pf"])
-    #     end
-
-    #     if haskey(dcline, "pt")
-    #         t_idx = (l, dcline["t_bus"], dcline["f_bus"])
-    #         JuMP.set_start_value(p_dc[t_idx], dcline["pt"])
-    #     end
-    # end
-
-end
-
-""
-function var_dcline_power_imaginary(pm::AbstractPowerModel; bounded::Bool=true)
-
-    JuMP.@variable(pm.model, q_dc[a in pm.ref[:arcs_dc]], start=0.0)
-
-    if bounded
-        for (l,dcline) in pm.ref[:dcline]
-            f_idx = (l, dcline["f_bus"], dcline["t_bus"])
-            t_idx = (l, dcline["t_bus"], dcline["f_bus"])
-
-            JuMP.set_lower_bound(q_dc[f_idx], dcline["qminf"])
-            JuMP.set_upper_bound(q_dc[f_idx], dcline["qmaxf"])
-
-            JuMP.set_lower_bound(q_dc[t_idx], dcline["qmint"])
-            JuMP.set_upper_bound(q_dc[t_idx], dcline["qmaxt"])
-        end
-    end
-
-    # for (l,dcline) in ref[:dcline]
-    #     if haskey(dcline, "qf")
-    #         f_idx = (l, dcline["f_bus"], dcline["t_bus"])
-    #         JuMP.set_start_value(q_dc[f_idx], dcline["qf"])
-    #     end
-
-    #     if haskey(dcline, "qt")
-    #         t_idx = (l, dcline["t_bus"], dcline["f_bus"])
-    #         JuMP.set_start_value(q_dc[t_idx], dcline["qt"])
-    #     end
-    # end
-
-end
-
-
-
-"""
-Defines load curtailment variables p to represent the active power flow for each branch
-"""
-
-function var_load_curtailment(pm::AbstractDCPModel; kwargs...)
-    var_load_curtailment_real(pm; kwargs...)
-end
-
-""
-function var_load_curtailment(pm::AbstractACPModel; kwargs...)
-    var_load_curtailment_real(pm; kwargs...)
-    var_load_curtailment_imaginary(pm; kwargs...)
-end
-
-function var_load_curtailment_real(pm::AbstractPowerModel)
-
-    JuMP.@variable(pm.model, plc[i in keys(pm.ref[:load])])
-
-    for (i, load) in pm.ref[:load]
-        JuMP.set_upper_bound(plc[i],load["pd"])
-        JuMP.set_lower_bound(plc[i],0.0)
+function sol_component_value(pm::AbstractPowerModel, field_name::Symbol, comp_ids, variables)
+    for i in comp_ids
+        @assert !haskey(sol(pm, field_name), i)
+        sol(pm, field_name)[i] = variables[i]
     end
 end
 
-"""
-Defines load curtailment variables q to represent the active power flow for each branch
-"""
-function var_load_curtailment_imaginary(pm::AbstractPowerModel)
-    
-    @variable(pm.model, qlc[i in keys(pm.ref[:load])])
-
-    for (i, load) in pm.ref[:load]
-        JuMP.set_upper_bound(qlc[i],load["qd"])
-        JuMP.set_lower_bound(qlc[i],0.0)
+"given a constant value, builds the standard component-wise solution structure"
+function sol_component_fixed(pm::AbstractPowerModel, field_name::Symbol, comp_ids, constant)
+    for i in comp_ids
+        @assert !haskey(sol(pm, field_name), i)
+        sol(pm, field_name)[i] = constant
     end
 end
 
-""
-function var_load_power_factor_range(pm::AbstractPowerModel)
+# "maps asymmetric edge variables into components"
+# function sol_component_value_edge(pm::AbstractPowerModel, comp_name::Symbol, field_name_fr::Symbol, field_name_to::Symbol, comp_ids_fr, comp_ids_to, variables)
+#     for (l, i, j) in comp_ids_fr
+#         @assert !haskey(sol(pm, comp_name, l), field_name_fr)
+#         sol(pm, comp_name, l)[field_name_fr] = variables[(l, i, j)]
+#     end
 
-    JuMP.@variable(pm.model, z_demand[i in keys(pm.ref[:load])])
+#     for (l, i, j) in comp_ids_to
+#         @assert !haskey(sol(pm, comp_name, l), field_name_to)
+#         sol(pm, comp_name, l)[field_name_to] = variables[(l, i, j)]
+#     end
+# end
 
-    for (i, load) in pm.ref[:load]
-        JuMP.set_lower_bound(z_demand[i], -Float32(load["qd"]/load["pd"]))
-        JuMP.set_upper_bound(z_demand[i], Float32(load["qd"]/load["pd"]))
-    end
-end
+# "map sparse buspair variables into components"
+# function sol_component_value_buspair(pm::AbstractPowerModel, comp_name::Symbol, field_name::Symbol, variable_ids, variables)
+#     for bp in variable_ids
+#         buspair = ref(pm, comp_name, bp)
+#         l = buspair["branch"]
+#         @assert !haskey(sol(pm, :branch, l), field_name)
+#         sol(pm, :branch, l)[field_name] = variables[bp]
+#     end
+# end
 
-function var_buspair_current_magnitude_sqr(pm::AbstractPowerModel)
-    
-    JuMP.@variable(pm.model, ccm[i in keys(pm.ref[:branch])])
-
-    for (i, b) in pm.ref[:branch]
-        rate_a = Inf
-        if haskey(b, "rate_a")
-            rate_a = b["rate_a"]
-        end
-        ub = ((rate_a*b["tap"])/(pm.ref[:bus][b["f_bus"]]["vmin"]))^2
-        JuMP.set_lower_bound(ccm[i], 0.0)
-        if !isinf(ub)
-            JuMP.set_upper_bound(ccm[i], ub)
-        end
-    end
-
-end
+# "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
+# function variable_storage_power_mi(pm::AbstractDCPowerModel; kwargs...)
+#     PowerModels.variable_storage_power_real(pm; kwargs...)
+#     PowerModels.variable_storage_power_imaginary(pm; kwargs...)
+#     PowerModels.variable_storage_power_control_imaginary(pm; kwargs...)
+#     PowerModels.variable_storage_current(pm; kwargs...)
+#     PowerModels.variable_storage_energy(pm; kwargs...)
+#     PowerModels.variable_storage_charge(pm; kwargs...)
+#     PowerModels.variable_storage_discharge(pm; kwargs...)
+#     PowerModels.variable_storage_complementary_indicator(pm; kwargs...)
+# end

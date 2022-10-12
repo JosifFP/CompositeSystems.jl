@@ -11,17 +11,12 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
     PRATSInputData = dirname(RawFile)
 
     cd(PRATSInputData)
-    mkdir("Reliability Data")
+    #mkdir("Reliability Data")
     cd("Reliability Data")
     ReliabilityDataDir = pwd()
 
     # Import Transmission Network file (.raw)
-    network = PRATSBase.BuildNetwork(RawFile)
-    ref = Dict{Symbol, Any}()
-    ref[:load] = Dict(i => network.load[string(i)] for i in 1:length(keys(network.load)))
-    ref[:gen] = Dict(i => network.gen[string(i)] for i in 1:length(keys(network.gen)))
-    ref[:storage] = Dict(i => network.storage[string(i)] for i in 1:length(keys(network.storage)))
-    ref[:branch] = Dict(i => network.branch[string(i)] for i in 1:length(keys(network.branch)))
+    ref = BuildNetwork(RawFile)
 
     #create files to be imported
     cd(ReliabilityDataDir)
@@ -33,8 +28,8 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
             XLSX.rename!(sheet, "core")
             sheet["A1"] = [ "key" "bus" "pd[MW]" "qd[MVAR]" "powerfactor"] #pf=powerfactor
             tmp = sort([[i, load["load_bus"], 
-                        Float64.(load["pd"]*network.baseMVA),
-                        Float64.(load["qd"]*network.baseMVA),
+                        Float64.(load["pd"]*ref[:baseMVA]),
+                        Float64.(load["qd"]*ref[:baseMVA]),
                         Float64.(load["qd"]./load["pd"])] for (i,load) in ref[:load]], by = x->x[1])
             tmp = reduce(vcat, tmp')
             sheet["A2"] = tmp
@@ -83,10 +78,10 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "bus" "pg[MW]" "qg[MVAR]" "failurerate[f/year]" "repairtime[hrs]" "category"]
+            sheet["A1"] = ["key" "bus" "pg[MW]" "qg[MVAR]" "failurerate[f/year]" "repairtime[hrs]"]
             tmp = sort([[i, gen["gen_bus"], 
-                        Float64.(gen["pg"]*network.baseMVA),
-                        Float64.(gen["qg"]*network.baseMVA)] for (i,gen) in ref[:gen]], by = x->x[1])
+                        Float64.(gen["pg"]*ref[:baseMVA]),
+                        Float64.(gen["qg"]*ref[:baseMVA])] for (i,gen) in ref[:gen]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
 
             XLSX.addsheet!(xf,"time series MW")
@@ -95,53 +90,20 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
         end
     end
 
-    if in(InputData).("Storages") == true     
-        if isempty(ref[:storage]) == false
-
-            XLSX.openxlsx("Storages.xlsx", mode="w") do xf
-
-                sheet = xf[1]
-                XLSX.rename!(sheet, "core")
-                sheet["A1"] = ["key" "bus" "charge_rating" "discharge_rating" "energy_rating" "charge_efficiency" "discharge_efficiency" "failurerate[f/year]" "repairtime[hrs]"  "category"]
-                tmp = sort([[i, stor["storage_bus"],
-                        Float64.(stor["charge_rating"]*network.baseMVA), 
-                        Float64.(stor["discharge_rating"]*network.baseMVA),
-                        Float64.(stor["energy_rating"]*network.baseMVA), 
-                        stor["charge_efficiency"],
-                        stor["discharge_efficiency"]] for (i,stor) in ref[:storage]], by = x->x[1])
-                sheet["A2"] = reduce(vcat, tmp')
-
-                XLSX.addsheet!(xf,"time series MW")
-                sheet = xf[2]
-                sheet["A1"] = "Keep worksheet blank if no time series data is available"
-            end
-
-        end
-    end
-
     if in(InputData).("Branches") == true    
         XLSX.openxlsx("Branches.xlsx", mode="w") do xf
 
             sheet = xf[1]
             XLSX.rename!(sheet, "core")
-            sheet["A1"] = ["key" "fbus" "tbus" "rate_a[MW]" "rate_b[MW]" "failurerate[f/year]" "repairtime[hrs]" "category[optional]"]
+            sheet["A1"] = ["key" "fbus" "tbus" "failurerate[f/year]" "repairtime[hrs]"]
             tmp = sort([[i,
                     branch["f_bus"], 
-                    branch["t_bus"],
-                    Float64.(branch["rate_a"]*network.baseMVA),
-                    Float64.(branch["rate_b"]*network.baseMVA)] for (i,branch) in ref[:branch]], by = x->x[1])
+                    branch["t_bus"]] for (i,branch) in ref[:branch]], by = x->x[1])
             sheet["A2"] = reduce(vcat, tmp')
-
-            XLSX.addsheet!(xf,"time series MW")
-            sheet = xf[2]
-            sheet["A1"] = "Keep worksheet blank if no time series data is available"
-
         end
     end
     
     cd(CurrentDir)
-    return network, ref, ReliabilityDataDir
-
 end
 
 

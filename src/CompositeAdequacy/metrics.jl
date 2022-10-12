@@ -90,14 +90,14 @@ function Base.show(io::IO, x::LOLE{N,L,T}) where {N,L,T}
 end
 
 # Expected Unserved Energy
-struct EUE{N,L,T<:Period,U<:PerUnit} <: ReliabilityMetric
+struct EUE{N,L,T<:Period,E<:EnergyUnit} <: ReliabilityMetric
 
     eue::MeanEstimate
 
-    function EUE{N,L,T,U}(eue::MeanEstimate) where {N,L,T<:Period,U<:PerUnit}
+    function EUE{N,L,T,E}(eue::MeanEstimate) where {N,L,T<:Period,E<:EnergyUnit}
         val(eue) >= 0 || throw(DomainError(
             "$val is not a valid unserved energy expectation"))
-        new{N,L,T,U}(eue)
+        new{N,L,T,E}(eue)
     end
 
 end
@@ -105,9 +105,9 @@ end
 val(x::EUE) = val(x.eue)
 stderror(x::EUE) = stderror(x.eue)
 
-function Base.show(io::IO, x::EUE{N,L,T,U}) where {N,L,T,U}
+function Base.show(io::IO, x::EUE{N,L,T,E}) where {N,L,T,E}
 
     print(io, "EUE = ", x.eue, " ",
-          unitsymbol(U), "/", N*L == 1 ? "" : N*L, unitsymbol(T))
+        unitsymbol(E), "/", N*L == 1 ? "" : N*L, unitsymbol(T))
 
 end

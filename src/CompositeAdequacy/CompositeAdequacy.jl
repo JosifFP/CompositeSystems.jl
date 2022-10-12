@@ -14,7 +14,7 @@ import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
 import PowerModels, JuMP, Ipopt, Juniper, HiGHS
-import LinearAlgebra: qr
+import LinearAlgebra: qr, pinv
 import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
 optimize!, Model, LOCALLY_SOLVED
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
@@ -24,7 +24,6 @@ function silence()
     Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
     Memento.setlevel!(_LOGGER, "error")
     Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
-    Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
     Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
     #Memento.setlevel!(Memento.getlogger(CompositeAdequacy), "error", recursive=false)
 end
@@ -35,12 +34,12 @@ export
     # Metrics
     ReliabilityMetric, LOLE, EUE, val, stderror,
     # Simulation specifications
-    SequentialMonteCarlo, NoContingencies,
+    SequentialMonteCarlo,
 
     SystemState, accumulator,
 
     # Result specifications
-    Shortfall, ShortfallSamples, Flow, FlowTotal,
+    Shortfall, ShortfallSamples,
 
     # Convenience re-exports
     ZonedDateTime, @tz_str
@@ -57,15 +56,12 @@ abstract type Result{
 
 MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
 
-
 include("Optimizer/base.jl")
 include("Optimizer/utils.jl")
 include("Optimizer/variables.jl")
 include("Optimizer/constraints.jl")
 include("Optimizer/Optimizer.jl")
 include("Optimizer/solution.jl")
-
-include("Native/Native.jl")
 
 include("metrics.jl")
 include("results/results.jl")

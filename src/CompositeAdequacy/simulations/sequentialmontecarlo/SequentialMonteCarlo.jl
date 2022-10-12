@@ -10,7 +10,7 @@ struct SequentialMonteCarlo <: SimulationSpec
 
     function SequentialMonteCarlo(;
         samples::Int=1_000, seed::Int=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=false
+        verbose::Bool=false, threaded::Bool=true
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
@@ -22,13 +22,17 @@ end
 function assess(
     system::SystemModel{N},
     method::SequentialMonteCarlo,
-    optimizer,
     resultspecs::ResultSpec...
 ) where {N}
+
+    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+
 
     threads = Base.Threads.nthreads()
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
+    
     @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     if method.threaded
@@ -45,13 +49,10 @@ end
 
 "It generates a sequence of seeds from a given number of samples"
 function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
-
     for s in 1:nsamples
         put!(sampleseeds, s)
     end
-
     close(sampleseeds)
-
 end
 
 function assess(
@@ -59,142 +60,110 @@ function assess(
     sampleseeds::Channel{Int},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
     resultspecs::ResultSpec...
-) where {R<:ResultSpec, N}
+) where {N}
 
+    local pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), Topology(system))
+    #JuMP.Model(optimizer; add_bridges = false) #JuMP.direct_model(optimizer)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
-    dictionary = fill_dictionary!(system.network, Dict{Symbol,Any}())
-    pm = InitializeAbstractPowerModel(system.network, dictionary, AbstractDCPModel, optimizer)
 
     for s in sampleseeds
-
-        seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        iter = initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
         println("s=$(s)")
+        seed!(rng, (method.seed, s))  #using the same seed for entire period.
+        initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
-        for (_,t) in enumerate(iter)
-            #println("t=$(t), $(systemstate.condition[t])")
-            solve!(pm, systemstate, system, t, systemstate.condition[t])
-            foreach(recorder -> record!(recorder, pm.load_curtailment, system.loads, s, t), recorders)
-            empty_pm!(pm, system.network, dictionary)
+        for t in 1:N
+            update!(pm.topology, systemstate, system, t)
+            if field(systemstate, :condition)[t] ≠ true
+                println("t=$(t)")
+                solve!(pm, systemstate, system, t)
+                foreach(recorder -> record!(recorder, system, pm, s, t), recorders)
+                empty_model!(pm)
+            end
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-
     end
 
     put!(results, recorders)
 
 end
 
-
+""
 function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N}) where N
 
-    initialize_availability!(rng, state.gens_available, system.generators, N)
-    initialize_availability!(rng, state.stors_available, system.storages, N)
-    initialize_availability!(rng, state.genstors_available, system.generatorstorages, N)
-    initialize_availability!(rng, state.branches_available, system.branches, N)
+    initialize_availability!(rng, field(state, :branches), field(system, :branches), N)
+    initialize_availability!(rng, field(state, :generators), field(system, :generators), N)
+    initialize_availability!(rng, field(state, :storages), field(system, :storages), N)
+    initialize_availability!(rng, field(state, :generatorstorages), field(system, :generatorstorages), N)
     
-    tmp = []
     for t in 1:N
-        if all([state.gens_available[:,t]; state.genstors_available[:,t]; state.stors_available[:,t]; state.branches_available[:,t]]) == false 
-            state.condition[t] = Failed 
-            push!(tmp,t)
+        if all([field(state, :branches)[:,t]; field(state, :generators)[:,t]; field(state, :storages)[:,t]; field(state, :generatorstorages)[:,t]]) ≠ true
+            field(state, :condition)[t] = 0 
         end
     end
 
-    return tmp
-
-end
-
-""
-function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Failed})
-    pm.type = LMOPFMethod
-    update_ref!(state, system, pm.ref, t, condition)
-    build_model!(pm, pm.type)
-    optimization!(pm, pm.type)
-    build_result!(pm, system.network.load)
-    
     return
 
 end
 
 ""
-function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int, condition::Type{Success})
+function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
 
-    pm.type = OPFMethod
-    build_result!(pm, system.network.load)
+    all(field(state, :branches)[:,t]) == true ? type = Transportation : type = DCOPF
+    build_method!(pm, system, t, type)
+    JuMP.optimize!(pm.model)
+    build_result!(pm, system, t)
+end
+
+""
+function update!(topology::Topology, state::SystemState, system::SystemModel, t::Int)
+
+    #update_states!(system, state, t)
+    if field(state, :condition)[t] ≠ true
+        
+        key_buses = field(system, Buses, :keys)
+
+        update_asset_idxs!(
+            topology, field(system, :loads), field(state, :loads), key_buses, t)
+
+        update_asset_idxs!(
+            topology, field(system, :shunts), field(state, :shunts), key_buses, t)
+
+        update_asset_idxs!(
+            topology, field(system, :generators), field(state, :generators), key_buses, t)
+
+        update_asset_idxs!(
+            topology, field(system, :storages), field(state, :storages), key_buses, t)
+
+        update_asset_idxs!(
+            topology, field(system, :generatorstorages), field(state, :generatorstorages), key_buses, t)
+
+        update_branch_idxs!(
+            topology, system, field(state, :branches), key_buses, t)
+
+    end
 
     return
 
+end
+
+""
+function empty_model!(pm::AbstractPowerModel)
+
+    #if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
+    JuMP.empty!(pm.model)
+    empty!(pm.var[:va])
+    empty!(pm.var[:pg])
+    empty!(pm.var[:p])
+    empty!(pm.var[:plc])
+    empty!(pm.sol[:plc])
+    return
 end
 
 #update_energy!(state.stors_energy, system.storages, t)
 #update_energy!(state.genstors_energy, system.generatorstorages, t)
+
+#include("result_report.jl")
 include("result_shortfall.jl")
-include("result_flow.jl")
-
-""
-function fill_dictionary!(network::Network, ref::Dict{Symbol,<:Any})
-
-    push!(ref, 
-    :bus => network.bus,
-    :dcline => network.dcline,
-    :gen => network.gen,
-    :branch => network. branch,
-    :storage => network.storage,
-    :switch => network.switch,
-    :shunt => network.shunt,
-    :load => network.load)
-
-    return ref
-
-end
-
-""
-function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Success})
-
-    update_gen!(system.generators, dictionary, state.gens_available, t)
-    update_load!(system.loads, dictionary, t)
-    ref_add!(dictionary)
-
-    return 
-
-end
-
-""
-function update_ref!(state::SystemState, system::SystemModel, dictionary::Dict{Symbol,<:Any}, t::Int, condition::Type{Failed})
-
-    update_load!(system.loads, dictionary, t)
-    update_gen!(system.generators, dictionary, state.gens_available, t)
-
-    if all(state.gens_available[:,t]) == true
-        update_stor!(system.storages, dictionary, state.stors_available, t)
-        update_branches!(system.branches, dictionary, state.branches_available, t)
-        PRATSBase.SimplifyNetwork!(dictionary)
-    end
-    #PRATSBase.SimplifyNetwork!(dictionary)
-    ref_add!(dictionary)
-
-    return
-
-end
-
-""
-function empty_pm!(pm::AbstractPowerModel, network::Network, dictionary::Dict{Symbol,<:Any})
-
-    if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-    pm.ref = fill_dictionary!(network, dictionary)
-    empty!(pm.load_curtailment)
-    pm.termination_status = 0
-
-    return
-
-end
-
-#nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-#mip_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
-#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "mip_solver"=>mip_solver,"time_limit"=>1.0, "log_levels"=>[])
-#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "branch_strategy"=>:PseudoCost ,"time_limit"=>1.5, "log_levels"=>[])
-#optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])

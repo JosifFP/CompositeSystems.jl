@@ -1,6 +1,6 @@
 ""
-function build_result!(pm::AbstractPowerModel, load_dict::Dict{Int, <:Any})
-    
+function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
+
     result_count = 1
     try
         result_count = JuMP.result_count(pm.model)
@@ -8,31 +8,38 @@ function build_result!(pm::AbstractPowerModel, load_dict::Dict{Int, <:Any})
         Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
     end
 
-    if result_count <= 0 
-        #Memento.warn(_LOGGER, "model has no results, solution cannot be built")
-        pm.termination_status = 2
-    elseif JuMP.isempty(pm.model) == true
-        pm.termination_status = 0
-    end
-
-    status = JuMP.termination_status(pm.model)
-    #termination_status: 0=Nothing / 1=JuMP.LOCALLY_SOLVED / 2="No results available" / <3="Any other status"
-    if status == JuMP.LOCALLY_SOLVED || status == JuMP.OPTIMAL
-        pm.termination_status = 1
-    elseif status == JuMP.INFEASIBLE || status == JuMP.LOCALLY_INFEASIBLE
-        pm.termination_status = 3
-    elseif status == JuMP.ITERATION_LIMIT || status == JuMP.TIME_LIMIT
-        pm.termination_status = 4
-    elseif status == JuMP.OPTIMIZE_NOT_CALLED
-        pm.termination_status = 5
+    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED || JuMP.termination_status(pm.model) == JuMP.OPTIMAL
+        status = 1
+    elseif JuMP.termination_status(pm.model) == JuMP.INFEASIBLE || JuMP.termination_status(pm.model) == JuMP.LOCALLY_INFEASIBLE
+        status = 2
+    elseif JuMP.termination_status(pm.model) == JuMP.ITERATION_LIMIT || JuMP.termination_status(pm.model) == JuMP.TIME_LIMIT
+        status = 3
+    elseif JuMP.termination_status(pm.model) == JuMP.OPTIMIZE_NOT_CALLED
+        status = 4
     else
-        pm.termination_status = 6
+        if result_count <= 0 
+            status = 5
+        elseif JuMP.isempty(pm.model) == true 
+            status = 6
+        else 
+            status = 7 
+        end
     end
 
-    pm.load_curtailment = get_loads_sol!(pm, Dict{Int,Dict{String,Float16}}(), load_dict, pm.type)
+    plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
 
-    return pm.load_curtailment
-    
+    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
+        for i in field(system, Loads, :keys)
+            if haskey(plc, i) == false
+                get!(plc, i, field(system, Loads, :pd)[i,t])
+            end
+        end
+    else
+        for i in field(system, Loads, :keys)
+            get!(plc, i, Float16(0.0))
+        end        
+    end
+
 end
 
 # ""
@@ -40,46 +47,6 @@ end
 #     return get_loads_sol!(curt_loads, pm, type)
 # end
 
-""
-function get_loads_sol!(pm::AbstractPowerModel, curt_loads::Dict{Int,<:Any}, load_dict::Dict{Int,<:Any}, type::Type{LMOPFMethod})
-
-    if pm.termination_status == 1
-        for (i, load) in load_dict
-            if load["status"]≠ 0 && haskey(pm.ref[:load], i) == true
-                if JuMP.value(pm.model[:plc][load["index"]])>1e-4            
-                    get!(curt_loads, i, Dict("ql"=>0.0, "pl"=> Float16(JuMP.value(pm.model[:plc][load["index"]]))))
-                    #actual load    
-                    #get!(loads, i, Dict("ql"=>0.0, "pl"=> Float16(load["pd"]-JuMP.value(pm.model[:plc][load["index"]]))))
-                else
-                    get!(curt_loads, i, Dict("ql"=>0.0, "pl"=> 0.0))
-                    #get!(loads, i, Dict("ql"=>0.0, "pl"=> Float16(load["pd"])))
-                end
-            else
-                get!(curt_loads, i, Dict("ql"=>0.0, "pl"=> Float16(load["pd"])))
-                #get!(loads, i, Dict("ql"=>0.0, "pl"=> 0.0)) 
-            end
-
-        end
-    else
-        println("check")
-        for key in keys(load_dict)
-            get!(curt_loads, key, Dict("ql"=>0.0, "pl"=> 0.0))
-        end        
-    end
-
-    return curt_loads
-
-end
-
-""
-function get_loads_sol!(pm::AbstractPowerModel, curt_loads::Dict{Int,<:Any}, load_dict::Dict{Int,<:Any}, type::Type{OPFMethod})
-
-    for key in keys(load_dict)
-        get!(curt_loads, key, Dict("ql"=>0.0, "pl"=> 0.0))
-    end
-
-    return curt_loads
-end
 
 # ""
 # function get_buses_sol!(tmp, pm::AbstractDCPModel)
@@ -163,3 +130,66 @@ end
 #     #pm.solution["solution_details"] => JuMP.solution_summary(pm.model, verbose=false)
     
 # end
+
+""
+function build_sol_values(var::Dict)
+
+    sol = Dict{Int, Float16}()
+
+    for (key, val) in var
+        val_r = abs(CompositeAdequacy.build_sol_values(val))
+        if val_r > 1e-4
+            sol[key] = Float16(val_r)
+        else
+            sol[key] = Float16(0.0)
+        end
+    end
+
+    return sol
+end
+
+""
+function build_sol_values(var::Array{<:Any,1})
+    return [build_sol_values(val) for val in var]
+end
+
+""
+function build_sol_values(var::Array{<:Any,2})
+    return [build_sol_values(var[i, j]) for i in 1:size(var, 1), j in 1:size(var, 2)]
+end
+
+""
+function build_sol_values(var::Number)
+    return var
+end
+
+""
+function build_sol_values(var::JuMP.VariableRef)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::JuMP.GenericAffExpr)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::JuMP.GenericQuadExpr)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::JuMP.NonlinearExpression)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::JuMP.ConstraintRef)
+    return JuMP.dual(var)
+end
+
+""
+function build_sol_values(var::Any)
+    Memento.warn(_LOGGER, "build_solution_values found unknown type $(typeof(var))")
+    return var
+end
