@@ -24,9 +24,6 @@ PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)
 shortfall.shortfall_bus_std
 
-pd = Matrix{Float64}(undef, 17, 100)
-size(pd, 2)
-
 shortfall.nsamples
 shortfall.loads
 shortfall.timestamps
@@ -43,20 +40,3 @@ shortfall.shortfall_std
 shortfall.shortfall_bus_std
 @show shortfall.shortfall_period_std
 @show shortfall.shortfall_busperiod_std
-
-
-
-topology = CompositeAdequacy.Topology(system)
-pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.direct_model(optimizer), CompositeAdequacy.Topology(system))
-systemstate = CompositeAdequacy.SystemState(system)
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-CompositeAdequacy.initialize!(rng, systemstate, system)
-
-t=1
-CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-type = CompositeAdequacy.DCOPF
-CompositeAdequacy.build_method!(pm, system, t, type)
-JuMP.optimize!(pm.model)
-CompositeAdequacy.build_result!(pm, system, t)
-CompositeAdequacy.empty_model!(pm)
-CompositeAdequacy.solve!(pm, systemstate, system, t)

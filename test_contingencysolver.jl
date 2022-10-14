@@ -7,8 +7,6 @@ PRATSBase.silence()
 
 RawFile = "test/data/RBTS.m"
 system = PRATSBase.SystemModel(RawFile)
-CompositeAdequacy.field(system, Loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
-
 nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 
@@ -16,31 +14,13 @@ CompositeAdequacy.empty_model!(pm)
 pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
 systemstate = CompositeAdequacy.SystemState(system)
 t=1
-system.loads.pd
-system.loads.keys
-sum(system.loads.pd[:,1])
 
-CompositeAdequacy.field(systemstate, :branches)[3,t] = 0
-CompositeAdequacy.field(systemstate, :branches)[4,t] = 0
-CompositeAdequacy.field(systemstate, :branches)[8,t] = 0
+CompositeAdequacy.field(systemstate, :branches)[7,t] = 0
+CompositeAdequacy.field(systemstate, :branches)[23,t] = 0
+CompositeAdequacy.field(systemstate, :branches)[29,t] = 0
+#CompositeAdequacy.field(systemstate, :generators)[1,t] = 0
 CompositeAdequacy.field(systemstate, :condition)[t] = 0
 CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-CompositeAdequacy.solve!(pm, systemstate, system, t)
-values(pm.topology.plc)[:,t]
-sum(values(pm.topology.plc)[:,t])
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
