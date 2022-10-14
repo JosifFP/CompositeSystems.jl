@@ -13,7 +13,7 @@ struct SystemModel{N,L,T<:Period,S} #S=baseMVA as Integer
     arcs_to::Vector{Tuple{Int, Int, Int}}
     arcs::Vector{Tuple{Int, Int, Int}}
     ref_buses::Vector{Int}
-    timestamps::StepRange{ZonedDateTime,T}
+    timestamps::Union{StepRange{ZonedDateTime,T}, Nothing}
 
     function SystemModel{}(
         buses::Buses{N,L,T,S},
@@ -27,14 +27,17 @@ struct SystemModel{N,L,T<:Period,S} #S=baseMVA as Integer
         arcs_to::Vector{Tuple{Int, Int, Int}},
         arcs::Vector{Tuple{Int, Int, Int}},
         ref_buses::Vector{Int},
-        timestamps::StepRange{ZonedDateTime,T}
+        timestamps::Union{StepRange{ZonedDateTime,T}, Nothing}
     ) where {N,L,T<:Period,S}
+    
+    if N > 1
+        @assert step(timestamps) == T(L)
+        @assert length(timestamps) == N
+    else
+        @assert N==1
+    end
 
-    @assert step(timestamps) == T(L)
-    @assert length(timestamps) == N
-
-    new{N,L,T,S}(
-        buses, loads, branches, shunts, generators, storages, generatorstorages, arcs_from, arcs_to, arcs, ref_buses, timestamps)
+    new{N,L,T,S}(buses, loads, branches, shunts, generators, storages, generatorstorages, arcs_from, arcs_to, arcs, ref_buses, timestamps)
     end
 
 end

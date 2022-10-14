@@ -8,6 +8,32 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
         Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
     end
 
+    #plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
+    plc = build_sol_values(var(pm, :plc))
+
+    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
+        for i in field(system, Loads, :keys)
+            if haskey(plc, i) == false
+                get!(plc, i, field(system, Loads, :pd)[i,t])
+            end
+            field(pm.topology, :plc)[i,t] = plc[i]
+        end
+    else
+        println("not solved, t=$(t), status=$(JuMP.termination_status(pm.model))")        
+    end
+
+end
+
+""
+function build_results!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
+
+    result_count = 1
+    try
+        result_count = JuMP.result_count(pm.model)
+    catch
+        Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
+    end
+
     if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED || JuMP.termination_status(pm.model) == JuMP.OPTIMAL
         status = 1
     elseif JuMP.termination_status(pm.model) == JuMP.INFEASIBLE || JuMP.termination_status(pm.model) == JuMP.LOCALLY_INFEASIBLE
@@ -26,7 +52,8 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
         end
     end
 
-    plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
+    #plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
+    plc = build_sol_values(pm.var[:plc])
 
     if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
         for i in field(system, Loads, :keys)
@@ -34,10 +61,14 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
                 get!(plc, i, field(system, Loads, :pd)[i,t])
             end
         end
-    else
-        for i in field(system, Loads, :keys)
-            get!(plc, i, Float16(0.0))
-        end        
+    #else
+        #for i in field(system, Loads, :keys)
+        #    get!(plc, i, Float16(0.0))
+        #end        
+    end
+
+    for r in field(system, Loads, :keys)
+        pm.topology.plc[r,t] = CompositeAdequacy.sol(pm, :plc)[r]
     end
 
 end

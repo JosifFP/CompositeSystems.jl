@@ -14,7 +14,7 @@ function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{
             end
         end
     else
-        if asset == Loads || asset == Generators
+        if asset == Loads || asset == Generators || asset == Branches
             error("file $asset.xlsx not found in $ReliabilityDataDir/ directory")
         end
     end
@@ -72,8 +72,64 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, S::Int, N::
 end
 
 "Creates AbstractAsset - Generators"
-function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}, dict_core::Dict{<:Any}, 
-    dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container( network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::Int, N::Int, L::Int, T::Type{<:Period})
+
+    tmp = [[i, 
+        Int(comp["gen_bus"]),
+        Float16(comp["pg"]),
+        Float16(comp["qg"]),
+        Float32(comp["vg"]),
+        Float16(comp["pmax"]),
+        Float16(comp["pmin"]),
+        Float16(comp["qmax"]),
+        Float16(comp["qmin"]),
+        Int(comp["mbase"]),
+        Bool(comp["gen_status"]),
+        Float16.(comp["cost"])] for (i,comp) in sort(network[:gen])]
+
+    tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:gen])]]
+
+    container_data = Dict{Symbol, Any}(
+        :keys => Int.(reduce(vcat, tmp')[:,1]),
+        :buses => Int.(reduce(vcat, tmp')[:,2]),
+        :pg => Float16.(reduce(vcat, tmp')[:,3]),
+        :qg => Float16.(reduce(vcat, tmp')[:,4]),
+        :vg => Float32.(reduce(vcat, tmp')[:,5]),
+        :pmax => Float16.(reduce(vcat, tmp')[:,6]),
+        :pmin => Float16.(reduce(vcat, tmp')[:,7]),
+        :qmax => Float16.(reduce(vcat, tmp')[:,8]),
+        :qmin => Float16.(reduce(vcat, tmp')[:,9]),
+        :source_id => String.(reduce(vcat, tmp_string)),
+        :mbase => Int.(reduce(vcat, tmp')[:,10]),
+        :status => Bool.(reduce(vcat, tmp')[:,11]),
+        :cost => (reduce(vcat, tmp')[:,12])
+    )
+
+    key_order_core = sortperm(container_data[:keys])
+    nassets = Base.length(container_data[:keys])
+
+    return asset{N,L,T,S}(
+        container_data[:keys][key_order_core],
+        container_data[:buses][key_order_core],
+        container_data[:pg][key_order_core],
+        container_data[:qg][key_order_core],
+        container_data[:vg][key_order_core],
+        container_data[:pmax][key_order_core],
+        container_data[:pmin][key_order_core],
+        container_data[:qmax][key_order_core],
+        container_data[:qmin][key_order_core],
+        container_data[:source_id][key_order_core],
+        container_data[:mbase][key_order_core],
+        container_data[:status][key_order_core],
+        container_data[:cost][key_order_core],
+        zeros(Float64, nassets), zeros(Float64, nassets))
+end
+
+"Creates AbstractAsset - Generators with time-series data"
+function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::Int, N::Int, L::Int, T::Type{<:Period})
+
+    container_key = [i for i in keys(dict_timeseries)]
+    key_order_series = sortperm(container_key)
 
     tmp = [[i, 
         Int(comp["gen_bus"]),
@@ -151,8 +207,49 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
 end
 
 "Creates AbstractAsset - Loads"
-function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}, dict_core::Dict{<:Any}, 
-    dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::Int, L::Int, T::Type{<:Period})
+
+    for (i,load) in network[:load]
+        get!(load, "cost", Float16(0.0))
+    end
+
+    tmp = [[i, 
+        Int(comp["load_bus"]),
+        Float16(comp["pd"]),
+        Float16(comp["qd"]),
+        Bool(comp["status"]),
+        Float16(comp["cost"])] for (i,comp) in sort(network[:load])]
+
+    tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:load])]]
+
+    container_data = Dict{Symbol, Any}(
+        :keys => Int.(reduce(vcat, tmp')[:,1]),
+        :buses => Int.(reduce(vcat, tmp')[:,2]),
+        :pd => Float16.(reduce(vcat, tmp')[:,3]),
+        :qd => Float16.(reduce(vcat, tmp')[:,4]),
+        :source_id => String.(reduce(vcat, tmp_string)),
+        :status => Bool.(reduce(vcat, tmp')[:,5]),
+        :cost => Float16.(reduce(vcat, tmp')[:,6])
+    )
+
+    key_order_core = sortperm(container_data[:keys])
+
+    return asset{N,L,T,S}(
+        container_data[:keys][key_order_core],
+        container_data[:buses][key_order_core],    
+        container_data[:pd][key_order_core],
+        container_data[:qd][key_order_core],
+        container_data[:source_id][key_order_core],
+        container_data[:status][key_order_core],
+        container_data[:cost][key_order_core])
+
+end
+
+"Creates AbstractAsset - Loads with time-series data"
+function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::Int, L::Int, T::Type{<:Period})
+
+    container_key = [i for i in keys(dict_timeseries)]
+    key_order_series = sortperm(container_key)
 
     tmp_cost = Dict(Int(dict_core[:key][i]) => Float16(dict_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dict_core[:key]))
     for (i,load) in network[:load]
@@ -180,8 +277,6 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
 
     key_order_core = sortperm(container_data[:keys])
     if isempty(dict_timeseries) error("Load data must be provided") end
-    #dict_timeseries_qd = Dict{Int, Any}()
-    #powerfactor = Float32.(container_data[:pd]/container_data[:qd])
 
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
@@ -196,7 +291,6 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
     end
 
     container_timeseries = [Float16.(dict_timeseries[i]/S) for i in keys(dict_timeseries)]
-    nloads = length(container_data[:keys])
 
     return asset{N,L,T,S}(
         container_data[:keys][key_order_core],
@@ -210,6 +304,78 @@ function container(container_key::Vector{<:Any}, key_order_series::Vector{<:Any}
 end
 
 "Creates AbstractAsset - Branches"
+function container(network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, N::Int, L::Int, T::Type{<:Period})
+
+    tmp = [[i, 
+        Int(comp["f_bus"]),
+        Int(comp["t_bus"]),
+        Float16(comp["rate_a"]),
+        Float16(comp["rate_b"]),
+        Float16(comp["rate_c"]),
+        Float16(comp["br_r"]),
+        Float16(comp["br_x"]),
+        Float16(comp["b_fr"]),
+        Float16(comp["b_to"]),
+        Float16(comp["g_fr"]),
+        Float16(comp["g_to"]),
+        Float16(comp["shift"]),
+        Float16(comp["angmin"]),
+        Float16(comp["angmax"]),
+        Bool(comp["transformer"]),
+        Float16(comp["tap"]),
+        Bool(comp["br_status"])] for (i,comp) in sort(network[:branch])]
+
+    tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:branch])]]
+
+    container_data = Dict{Symbol, Any}(
+        :keys => Int.(reduce(vcat, tmp')[:,1]),
+        :f_bus => Int.(reduce(vcat, tmp')[:,2]),
+        :t_bus => Int.(reduce(vcat, tmp')[:,3]),
+        :rate_a => Float16.(reduce(vcat, tmp')[:,4]),
+        :rate_b => Float16.(reduce(vcat, tmp')[:,5]),
+        :rate_c => Float16.(reduce(vcat, tmp')[:,6]),
+        :r => Float16.(reduce(vcat, tmp')[:,7]),
+        :x => Float16.(reduce(vcat, tmp')[:,8]),
+        :b_fr => Float16.(reduce(vcat, tmp')[:,9]),
+        :b_to => Float16.(reduce(vcat, tmp')[:,10]),
+        :g_fr => Float16.(reduce(vcat, tmp')[:,11]),
+        :g_to => Float16.(reduce(vcat, tmp')[:,12]),
+        :shift => Float16.(reduce(vcat, tmp')[:,13]),
+        :angmin => Float16.(reduce(vcat, tmp')[:,14]),
+        :angmax => Float16.(reduce(vcat, tmp')[:,15]),
+        :transformer => Bool.(reduce(vcat, tmp')[:,16]),
+        :tap => Float16.(reduce(vcat, tmp')[:,17]),
+        :source_id => String.(reduce(vcat, tmp_string)),
+        :status => Bool.(reduce(vcat, tmp')[:,18])
+    )
+
+    key_order_core = sortperm(container_data[:keys])
+    nassets = Base.length(container_data[:keys])
+
+    return asset{N,L,T,S}(
+        container_data[:keys][key_order_core],
+        container_data[:f_bus][key_order_core],
+        container_data[:t_bus][key_order_core],
+        container_data[:rate_a][key_order_core],
+        container_data[:rate_b][key_order_core],
+        container_data[:rate_c][key_order_core],
+        container_data[:r][key_order_core],
+        container_data[:x][key_order_core],
+        container_data[:b_fr][key_order_core],
+        container_data[:b_to][key_order_core],
+        container_data[:g_fr][key_order_core],
+        container_data[:g_to][key_order_core],
+        container_data[:shift][key_order_core],
+        container_data[:angmin][key_order_core],
+        container_data[:angmax][key_order_core],
+        container_data[:transformer][key_order_core],
+        container_data[:tap][key_order_core],
+        container_data[:source_id][key_order_core],
+        container_data[:status][key_order_core],
+        zeros(Float64, nassets), zeros(Float64, nassets))
+end
+
+"Creates AbstractAsset - Branches with time-series data"
 function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
