@@ -35,6 +35,7 @@ TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 
 [compat]
+Arpack = "0.5"
 BenchmarkTools = "1"
 CSV = "0.10"
 DataFrames = "1"
