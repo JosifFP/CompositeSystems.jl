@@ -25,7 +25,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
     optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 
 
@@ -37,7 +37,7 @@ function assess(
 
     if method.threaded
         for _ in 1:threads
-            @spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
+            @spawn assess(deepcopy(system), optimizer, method, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, optimizer, method, sampleseeds, results, resultspecs...)
@@ -62,7 +62,6 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    local pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), Topology(system))
     #JuMP.Model(optimizer; add_bridges = false) #JuMP.direct_model(optimizer)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
@@ -70,19 +69,20 @@ function assess(
 
     for s in sampleseeds
         println("s=$(s)")
+        pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false) , Topology(system))
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
         for t in 1:N
-            update!(pm.topology, systemstate, system, t)
             if field(systemstate, :condition)[t] ≠ true
                 println("t=$(t)")
+                update!(pm.topology, systemstate, system, t)
                 solve!(pm, systemstate, system, t)
-                foreach(recorder -> record!(recorder, system, pm, s, t), recorders)
                 empty_model!(pm)
             end
+            #foreach(recorder -> record!(recorder, system, pm, s, t), recorders)
         end
-
+        foreach(recorder -> record!(recorder, system, pm, s), recorders)
         foreach(recorder -> reset!(recorder, s), recorders)
     end
 
@@ -111,7 +111,8 @@ end
 ""
 function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
 
-    all(field(state, :branches)[:,t]) == true ? type = Transportation : type = DCOPF
+    #all(field(state, :branches)[:,t]) == true ? type = Transportation : type = DCOPF
+    type = DCOPF
     build_method!(pm, system, t, type)
     JuMP.optimize!(pm.model)
     build_result!(pm, system, t)
@@ -158,7 +159,6 @@ function empty_model!(pm::AbstractPowerModel)
     empty!(pm.var[:pg])
     empty!(pm.var[:p])
     empty!(pm.var[:plc])
-    empty!(pm.sol[:plc])
     return
 end
 

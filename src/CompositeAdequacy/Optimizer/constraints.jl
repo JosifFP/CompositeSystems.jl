@@ -95,8 +95,8 @@ end
 function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, f_bus, t_bus, angmin, angmax)
     
     #va_fr = var(pm, :va, f_bus) va_to = var(pm, :va, t_bus)
-    JuMP.@constraint(pm.model, angmin <= var(pm, :va, f_bus) - var(pm, :va, t_bus) <= angmax)
-
+    JuMP.@constraint(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus) <= angmax)
+    JuMP.@constraint(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus) >= angmin)
 end
 
 """

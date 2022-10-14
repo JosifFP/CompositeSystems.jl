@@ -19,7 +19,9 @@ struct Topology
     bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Dict{String, Real}}
 
-    function Topology(system::SystemModel)
+    plc::Matrix{Float16}
+
+    function Topology(system::SystemModel{N}) where {N}
 
         nbuses = length(system.buses)
 
@@ -62,9 +64,11 @@ struct Topology
 
         buspairs = calc_buspair_parameters(field(system, :buses), field(system, :branches), key_branches)
 
+        plc = zeros(Float16,length(system.loads), N)
+
         return new(
         buses_idxs, loads_idxs, branches_idxs, shunts_idxs, generators_idxs, storages_idxs, generatorstorages_idxs, 
-        bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, bus_arcs, buspairs)
+        bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, bus_arcs, buspairs, plc)
     end
 
 end
@@ -82,7 +86,8 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.bus_storages == y.bus_storages &&
     x.bus_generatorstorages == y.bus_generatorstorages &&
     x.bus_arcs == y.bus_arcs &&
-    x.buspairs == y.buspairs
+    x.buspairs == y.buspairs &&
+    x.plc == y.plc
 #
 
 
@@ -107,7 +112,6 @@ CompositeAdequacy.@def pm_fields begin
     model::JuMP.AbstractModel
     topology:: Topology
     var::Dict{Symbol,<:Any}
-    sol::Dict{Symbol,<:Any}
 
 end
 
@@ -134,15 +138,11 @@ function PowerFlowProblem(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.Ab
         #:qg => Dict{Int, JuMP.VariableRef}(),
         :p => Dict{Tuple{Int, Int, Int}, Any}(),
         #:q => Dict{Tuple{Int, Int, Int}, Any}(),
-        :plc => Dict{Int, JuMP.VariableRef}(),
+        :plc => Dict{Int, JuMP.VariableRef}()
         #:qlc => Dict{Int, JuMP.VariableRef}()
     )
 
-    sol = Dict{Symbol, Any}(
-        :plc => Dict{Int, Float16}()
-    )
-
-    return PowerModel(model, topology, var, sol)
+    return PowerModel(model, topology, var)
 
 end
 
