@@ -119,6 +119,59 @@ function record!(
 
 end
 
+
+function record!(
+    acc::SMCShortfallAccumulator,
+    sys::SystemModel{N,L,T,S},
+    pm::AbstractPowerModel,
+    sampleid::Int
+) where {N,L,T,S}
+
+    totalshortfall = 0
+    nloads = length(sys.loads.keys)
+    isshortfall = zeros(Bool, nloads)
+
+    for t in 1:N
+
+        totalshortfall = 0
+        isshortfall = false
+        busshortfalls = pm.topology.plc[:,t]
+
+        for r in nloads
+
+            busshortfall = busshortfalls[r]
+            isbusshortfall = busshortfall > 0
+    
+            fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
+            fit!(acc.unservedload_busperiod[r,t], busshortfall)
+        
+            if isbusshortfall
+    
+                isshortfall = true
+                totalshortfall += busshortfall
+    
+                acc.periodsdropped_bus_currentsim[r] += 1
+                acc.unservedload_bus_currentsim[r] += busshortfall
+    
+            end
+        
+        end
+    
+        if isshortfall
+            acc.periodsdropped_total_currentsim += 1
+            acc.unservedload_total_currentsim += totalshortfall
+        end
+    
+        fit!(acc.periodsdropped_period[t], isshortfall)
+        fit!(acc.unservedload_period[t], totalshortfall)
+
+    end
+
+    return
+
+end
+
+
 function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
 
     # Store busal / total sums for current simulation

@@ -73,7 +73,7 @@ struct Generators{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    pg::Matrix{Float16}  # Active power in per unit
+    pg::Union{Vector{Float16}, Matrix{Float16}}  # Active power in per unit
     qg::Vector{Float16}  # Active power in per unit
     vg::Vector{Float32}
     pmax::Vector{Float16}
@@ -89,7 +89,7 @@ struct Generators{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
 
     function Generators{N,L,T,S}(
         keys::Vector{Int}, buses::Vector{Int}, 
-        pg::Matrix{Float16}, qg::Vector{Float16},
+        pg::Union{Vector{Float16}, Matrix{Float16}}, qg::Vector{Float16},
         vg::Vector{Float32},  
         pmax::Vector{Float16}, pmin::Vector{Float16},
         qmax::Vector{Float16}, qmin::Vector{Float16},
@@ -100,7 +100,7 @@ struct Generators{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
 
         ngens = length(keys)
         @assert allunique(keys)
-        @assert size(pg) == (ngens, N)
+        @assert size(pg, 2) == N
         @assert length(qg) == (ngens)
         @assert all(pg .>= 0)
         @assert length(vg) == (ngens)
@@ -202,7 +202,7 @@ struct Loads{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    pd::Matrix{Float16} # Active power in per unit
+    pd::Union{Vector{Float16}, Matrix{Float16}} # Active power in per unit
     qd::Vector{Float16} # Reactive power in per unit
     source_id::Vector{String}
     status::BitVector
@@ -210,14 +210,14 @@ struct Loads{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
 
     function Loads{N,L,T,S}(
         keys::Vector{Int}, buses::Vector{Int}, 
-        pd::Matrix{Float16}, qd::Vector{Float16}, 
+        pd::Union{Vector{Float16}, Matrix{Float16}}, qd::Vector{Float16}, 
         source_id::Vector{String}, status::BitVector, cost::Vector{Float16}
         ) where {N,L,T,S}
 
         nloads = length(keys)
         @assert length(buses) == nloads
         @assert allunique(keys)
-        @assert size(pd) == (nloads, N)
+        @assert size(pd, 2) == N
         @assert length(qd) == (nloads)
         @assert all(pd .>= 0)
         @assert length(source_id) == (nloads)
@@ -343,6 +343,15 @@ struct GeneratorStorages{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
     discharge_rating::Vector{Float16}
     charge_efficiency::Vector{Float16}
     discharge_efficiency::Vector{Float16}
+
+    status::BitVector
+    inflow::Matrix{Float16}
+    gridwithdrawal_rating::Matrix{Float16}
+    gridinjection_rating::Matrix{Float16}
+
+    λ::Vector{Float64} #Failure rate in failures per year
+    μ::Vector{Float64} #Repair rate in hours per year
+
     #carryover_efficiency::Vector{Float16}
     #thermal_rating::Vector{Float16}
     #qmax::Vector{Float16}
@@ -351,13 +360,6 @@ struct GeneratorStorages{N,L,T<:Period,S} <: AbstractAssets{N,L,T,S}
     #x::Vector{Float16}
     #ploss::Vector{Float16}
     #qloss::Vector{Float16}
-    status::BitVector
-    inflow::Matrix{Float16}
-    gridwithdrawal_rating::Matrix{Float16}
-    gridinjection_rating::Matrix{Float16}
-
-    λ::Vector{Float64} #Failure rate in failures per year
-    μ::Vector{Float64} #Repair rate in hours per year
 
     function GeneratorStorages{N,L,T,S}(
         keys::Vector{Int}, buses::Vector{Int},
