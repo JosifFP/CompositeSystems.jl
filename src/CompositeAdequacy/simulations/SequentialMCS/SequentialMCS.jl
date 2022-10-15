@@ -1,14 +1,14 @@
 include("SystemState.jl")
 include("utils.jl")
 
-struct SequentialMonteCarlo <: SimulationSpec
+struct SequentialMCS <: SimulationSpec
 
     nsamples::Int
     seed::UInt64
     verbose::Bool
     threaded::Bool
 
-    function SequentialMonteCarlo(;
+    function SequentialMCS(;
         samples::Int=1_000, seed::Int=rand(UInt64),
         verbose::Bool=false, threaded::Bool=true
     )
@@ -21,12 +21,12 @@ end
 
 function assess(
     system::SystemModel{N},
-    method::SequentialMonteCarlo,
+    method::SequentialMCS,
     resultspecs::ResultSpec...
 ) where {N}
 
-    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 
 
     threads = Base.Threads.nthreads()
@@ -37,7 +37,7 @@ function assess(
 
     if method.threaded
         for _ in 1:threads
-            @spawn assess(deepcopy(system), optimizer, method, sampleseeds, results, resultspecs...)
+            @spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, optimizer, method, sampleseeds, results, resultspecs...)
@@ -56,26 +56,25 @@ function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
 end
 
 function assess(
-    system::SystemModel{N}, optimizer, method::SequentialMonteCarlo,
+    system::SystemModel{N}, optimizer, method::SequentialMCS,
     sampleseeds::Channel{Int},
-    results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMonteCarlo}}}},
+    results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}},
     resultspecs::ResultSpec...
 ) where {N}
 
-    #JuMP.Model(optimizer; add_bridges = false) #JuMP.direct_model(optimizer)
+    #Model(optimizer; add_bridges = false) #direct_model(optimizer)
     systemstate = SystemState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
         println("s=$(s)")
-        pm = PowerFlowProblem(AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false) , Topology(system))
+        pm = PowerFlowProblem(AbstractOPF, Model(optimizer; add_bridges = false) , Topology(system))
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
 
         for t in 1:N
             if field(systemstate, :condition)[t] ≠ true
-                println("t=$(t)")
                 update!(pm.topology, systemstate, system, t)
                 solve!(pm, systemstate, system, t)
                 empty_model!(pm)
@@ -114,7 +113,7 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel,
     #all(field(state, :branches)[:,t]) == true ? type = Transportation : type = DCOPF
     type = DCOPF
     build_method!(pm, system, t, type)
-    JuMP.optimize!(pm.model)
+    optimize!(pm.model)
     build_result!(pm, system, t)
 end
 
@@ -153,8 +152,8 @@ end
 ""
 function empty_model!(pm::AbstractPowerModel)
 
-    #if JuMP.isempty(pm.model)==false JuMP.empty!(pm.model) end
-    JuMP.empty!(pm.model)
+    #if isempty(pm.model)==false empty!(pm.model) end
+    empty!(pm.model)
     empty!(pm.var[:va])
     empty!(pm.var[:pg])
     empty!(pm.var[:p])

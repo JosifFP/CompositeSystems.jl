@@ -90,7 +90,6 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.plc == y.plc
 #
 
-
 """
 The `def` macro is used to build other macros that can insert the same block of
 julia code into different parts of a program.
@@ -105,46 +104,42 @@ end
 
 "root of the power model formulation type hierarchy"
 abstract type AbstractPowerModel end
+abstract type AbstractDCPowerModel <: AbstractPowerModel end
+abstract type AbstractACPowerModel <: AbstractPowerModel end
 
 "a macro for adding the standard AbstractPowerModel fields to a type definition"
-CompositeAdequacy.@def pm_fields begin
+CompositeAdequacy.@def ca_fields begin
     
-    model::JuMP.AbstractModel
+    model::AbstractModel
     topology:: Topology
     var::Dict{Symbol,<:Any}
 
 end
 
-struct AbstractDCPowerModel <: AbstractPowerModel @pm_fields end
-struct AbstractACPowerModel <: AbstractPowerModel @pm_fields end
-#AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
-#AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
-#AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
-#struct ACPowerModel <: AbstractACPowerModel @pm_fields end
-#struct DCPowerModel <: AbstractDCPowerModel @pm_fields end
-
-"Types of optimization"
-abstract type DCOPF <: AbstractPowerModel end
-abstract type Transportation <: AbstractPowerModel end
-LCDCMethod = Union{DCOPF, Transportation}
-
 "Constructor for an AbstractPowerModel modeling object"
-function PowerFlowProblem(PowerModel::Type{<:AbstractPowerModel}, model::JuMP.AbstractModel, topology:: Topology)
+function PowerFlowProblem(PowerModel::Type{<:AbstractPowerModel}, model::AbstractModel, topology:: Topology)
+
+    @assert PowerModel <: AbstractPowerModel
 
     var = Dict{Symbol, Any}(
-        :va => Array{Int, JuMP.VariableRef}[],
-        #:vm => Dict{Int, JuMP.VariableRef}(),
-        :pg => Dict{Int, JuMP.VariableRef}(),
-        #:qg => Dict{Int, JuMP.VariableRef}(),
+        :va => Array{Int, VariableRef}[],
+        #:vm => Dict{Int, VariableRef}(),
+        :pg => Dict{Int, VariableRef}(),
+        #:qg => Dict{Int, VariableRef}(),
         :p => Dict{Tuple{Int, Int, Int}, Any}(),
         #:q => Dict{Tuple{Int, Int, Int}, Any}(),
-        :plc => Dict{Int, JuMP.VariableRef}()
-        #:qlc => Dict{Int, JuMP.VariableRef}()
+        :plc => Dict{Int, VariableRef}()
+        #:qlc => Dict{Int, VariableRef}()
     )
 
     return PowerModel(model, topology, var)
 
 end
+
+"Types of optimization"
+struct AbstractOPF <: AbstractDCPowerModel @ca_fields end
+abstract type  DCOPF <: AbstractPowerModel end
+abstract type  Transportation <: AbstractPowerModel end
 
 var(pm::AbstractPowerModel) = pm.var
 var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
@@ -165,3 +160,7 @@ function _sol(sol::Dict, args...)
     return sol
 end
 
+
+#AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
+#AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
+#AbstractWModels = Union{AbstractWRModels, AbstractBFModel}

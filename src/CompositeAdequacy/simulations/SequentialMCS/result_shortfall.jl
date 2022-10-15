@@ -1,6 +1,6 @@
 # Shortfall
 
-mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMonteCarlo,Shortfall}
+mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMCS,Shortfall}
 
     # Cross-simulation LOL period count mean/variances
     periodsdropped_total::MeanVariance
@@ -42,10 +42,10 @@ function merge!(
 
 end
 
-accumulatortype(::SequentialMonteCarlo, ::Shortfall) = SMCShortfallAccumulator
+accumulatortype(::SequentialMCS, ::Shortfall) = SMCShortfallAccumulator
 
 function accumulator(
-    sys::SystemModel{N}, ::SequentialMonteCarlo, ::Shortfall
+    sys::SystemModel{N}, ::SequentialMCS, ::Shortfall
 ) where {N}
 
     nloads = length(sys.loads.keys)
@@ -237,7 +237,7 @@ end
 # ShortfallSamples
 
 struct SMCShortfallSamplesAccumulator <:
-    ResultAccumulator{SequentialMonteCarlo,ShortfallSamples}
+    ResultAccumulator{SequentialMCS,ShortfallSamples}
 
     shortfall::Array{Float16,3}
 
@@ -252,10 +252,10 @@ function merge!(
 
 end
 
-accumulatortype(::SequentialMonteCarlo, ::ShortfallSamples) = SMCShortfallSamplesAccumulator
+accumulatortype(::SequentialMCS, ::ShortfallSamples) = SMCShortfallSamplesAccumulator
 
 function accumulator(
-    sys::SystemModel{N}, simspec::SequentialMonteCarlo, ::ShortfallSamples
+    sys::SystemModel{N}, simspec::SequentialMCS, ::ShortfallSamples
 ) where {N}
 
     nloads = length(sys.loads.keys)

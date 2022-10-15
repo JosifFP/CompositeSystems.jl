@@ -1,17 +1,9 @@
 ""
 function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
 
-    result_count = 1
-    try
-        result_count = JuMP.result_count(pm.model)
-    catch
-        Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
-    end
-
-    #plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
     plc = build_sol_values(var(pm, :plc))
 
-    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
+    if termination_status(pm.model) == LOCALLY_SOLVED
         for i in field(system, Loads, :keys)
             if haskey(plc, i) == false
                 get!(plc, i, field(system, Loads, :pd)[i,t])
@@ -19,43 +11,20 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
             field(pm.topology, :plc)[i,t] = plc[i]
         end
     else
-        println("not solved, t=$(t), status=$(JuMP.termination_status(pm.model))")        
+        println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
+
+    if sum(field(pm.topology, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm.topology, :plc)[:,t]))") end
 
 end
 
 ""
 function build_results!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
 
-    result_count = 1
-    try
-        result_count = JuMP.result_count(pm.model)
-    catch
-        Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
-    end
-
-    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED || JuMP.termination_status(pm.model) == JuMP.OPTIMAL
-        status = 1
-    elseif JuMP.termination_status(pm.model) == JuMP.INFEASIBLE || JuMP.termination_status(pm.model) == JuMP.LOCALLY_INFEASIBLE
-        status = 2
-    elseif JuMP.termination_status(pm.model) == JuMP.ITERATION_LIMIT || JuMP.termination_status(pm.model) == JuMP.TIME_LIMIT
-        status = 3
-    elseif JuMP.termination_status(pm.model) == JuMP.OPTIMIZE_NOT_CALLED
-        status = 4
-    else
-        if result_count <= 0 
-            status = 5
-        elseif JuMP.isempty(pm.model) == true 
-            status = 6
-        else 
-            status = 7 
-        end
-    end
-
     #plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
-    plc = build_sol_values(pm.var[:plc])
+    plc = build_sol_values(var(pm, :plc))
 
-    if JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED
+    if termination_status(pm.model) == LOCALLY_SOLVED
         for i in field(system, Loads, :keys)
             if haskey(plc, i) == false
                 get!(plc, i, field(system, Loads, :pd)[i,t])
@@ -73,6 +42,101 @@ function build_results!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
 
 end
 
+""
+function term_status(model::Model, status::JuMP.MathOptInterface.TerminationStatusCode)
+
+    if status == LOCALLY_SOLVED || status == OPTIMAL
+        status = 1
+    elseif status == INFEASIBLE || status == LOCALLY_INFEASIBLE
+        status = 2
+    elseif status == ITERATION_LIMIT || status == TIME_LIMIT
+        status = 3
+    elseif status == OPTIMIZE_NOT_CALLED
+        status = 4
+    else
+        #if result_count <= 0 
+        #    status = 5
+        if isempty(pm.model) == true 
+            status = 5
+        else 
+            status = 6 
+        end
+    end
+end
+
+function result_counts(model::Model)
+    result_count = 1
+    try
+        result_count = result_count(model)
+    catch
+        Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
+    end
+end
+
+""
+function build_sol_values(var::Dict)
+
+    sol = Dict{Int, Float16}()
+
+    for (key, val) in var
+        val_r = abs(build_sol_values(val))
+        if val_r > 1e-4
+            sol[key] = Float16(val_r)
+        else
+            sol[key] = Float16(0.0)
+        end
+    end
+
+    return sol
+end
+
+""
+function build_sol_values(var::Array{<:Any,1})
+    return [build_sol_values(val) for val in var]
+end
+
+""
+function build_sol_values(var::Array{<:Any,2})
+    return [build_sol_values(var[i, j]) for i in 1:size(var, 1), j in 1:size(var, 2)]
+end
+
+""
+function build_sol_values(var::Number)
+    return var
+end
+
+""
+function build_sol_values(var::VariableRef)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::GenericAffExpr)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::GenericQuadExpr)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::NonlinearExpression)
+    return JuMP.value(var)
+end
+
+""
+function build_sol_values(var::ConstraintRef)
+    return dual(var)
+end
+
+""
+function build_sol_values(var::Any)
+    Memento.warn(_LOGGER, "build_solution_values found unknown type $(typeof(var))")
+    return var
+end
+
+
 # ""
 # function get_loads_sol!(curt_loads::Dict{Int,<:Any}, pm::AbstractDCPModel, type::Type)
 #     return get_loads_sol!(curt_loads, pm, type)
@@ -84,7 +148,7 @@ end
 
 #     for (i, bus) in pm.ref[:bus]
 #         if bus["bus_type"] ≠ 4
-#             get!(tmp, i, Dict("va"=>Float16(JuMP.value(pm.model[:va][bus["index"]]))))
+#             get!(tmp, i, Dict("va"=>Float16(value(pm.model[:va][bus["index"]]))))
 #         end
 #     end
 #     return tmp
@@ -95,7 +159,7 @@ end
 
 #     for (i, gen) in pm.ref[:gen]
 #         if gen["gen_status"] ≠ 0
-#             get!(tmp, i, Dict("qg"=>0.0, "pg"=>Float16(JuMP.value(pm.model[:pg][gen["index"]]))))
+#             get!(tmp, i, Dict("qg"=>0.0, "pg"=>Float16(value(pm.model[:pg][gen["index"]]))))
 #         end
 #     end
 #     return tmp
@@ -107,8 +171,8 @@ end
 #     for (i, branch) in pm.ref[:branch]
 #         if branch["br_status"]≠ 0  
 #             get!(tmp, i, Dict("qf"=>0.0, "qt"=>0.0,        
-#             "pt" => float(-JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
-#             "pf" => float(JuMP.value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
+#             "pt" => float(-value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])),
+#             "pf" => float(value(pm.model[:p][(branch["index"],branch["f_bus"],branch["t_bus"])])))
 #             )
 #         end
 #     end
@@ -161,66 +225,3 @@ end
 #     #pm.solution["solution_details"] => JuMP.solution_summary(pm.model, verbose=false)
     
 # end
-
-""
-function build_sol_values(var::Dict)
-
-    sol = Dict{Int, Float16}()
-
-    for (key, val) in var
-        val_r = abs(CompositeAdequacy.build_sol_values(val))
-        if val_r > 1e-4
-            sol[key] = Float16(val_r)
-        else
-            sol[key] = Float16(0.0)
-        end
-    end
-
-    return sol
-end
-
-""
-function build_sol_values(var::Array{<:Any,1})
-    return [build_sol_values(val) for val in var]
-end
-
-""
-function build_sol_values(var::Array{<:Any,2})
-    return [build_sol_values(var[i, j]) for i in 1:size(var, 1), j in 1:size(var, 2)]
-end
-
-""
-function build_sol_values(var::Number)
-    return var
-end
-
-""
-function build_sol_values(var::JuMP.VariableRef)
-    return JuMP.value(var)
-end
-
-""
-function build_sol_values(var::JuMP.GenericAffExpr)
-    return JuMP.value(var)
-end
-
-""
-function build_sol_values(var::JuMP.GenericQuadExpr)
-    return JuMP.value(var)
-end
-
-""
-function build_sol_values(var::JuMP.NonlinearExpression)
-    return JuMP.value(var)
-end
-
-""
-function build_sol_values(var::JuMP.ConstraintRef)
-    return JuMP.dual(var)
-end
-
-""
-function build_sol_values(var::Any)
-    Memento.warn(_LOGGER, "build_solution_values found unknown type $(typeof(var))")
-    return var
-end

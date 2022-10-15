@@ -2,10 +2,10 @@
 
 using ..PRATSBase
 import Base: -, broadcastable, getindex, merge!
-import Base.Threads: nthreads, @spawn
+import Base.Threads: Base.Threads.nthreads, @spawn
 import Dates: DateTime, Period
 import Decimals: Decimal, decimal
-import Distributions: DiscreteNonParametric, probs, support, Exponential
+#import Distributions: DiscreteNonParametric, probs, support, Exponential
 import OnlineStatsBase: EqualWeight, fit!, Mean, value, Variance
 import OnlineStats: Series
 import Printf: @sprintf
@@ -13,10 +13,17 @@ import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
-import PowerModels, JuMP, Ipopt, Juniper, HiGHS
+import Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr, pinv
-import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
-optimize!, Model, LOCALLY_SOLVED
+import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
+    optimize!, Model, direct_model, optimizer_with_attributes, result_count, 
+    termination_status, isempty, empty!, AbstractModel, VariableRef, 
+    GenericAffExpr, GenericQuadExpr, NonlinearExpression, ConstraintRef, 
+    dual, UpperBoundRef, LowerBoundRef, upper_bound, lower_bound, 
+    has_upper_bound, has_lower_bound, set_lower_bound, set_upper_bound,
+    LOCALLY_SOLVED, OPTIMAL, INFEASIBLE, LOCALLY_INFEASIBLE, ITERATION_LIMIT, 
+    TIME_LIMIT, OPTIMIZE_NOT_CALLED
+
 import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
 
 "Suppresses information and warning messages output"
@@ -30,11 +37,11 @@ end
 
 export
     # CompositeAdequacy submoduleexport
-    assess,
+    assess, @def,
     # Metrics
     ReliabilityMetric, LOLE, EUE, val, stderror,
     # Simulation specifications
-    SequentialMonteCarlo,
+    Topology, SequentialMCS, NonSequentialMCS,
 
     SystemState, accumulator,
 
@@ -44,6 +51,7 @@ export
     # Convenience re-exports
     ZonedDateTime, @tz_str
 #
+
 abstract type ReliabilityMetric end
 abstract type SimulationSpec end
 abstract type ResultSpec end
@@ -56,16 +64,17 @@ abstract type Result{
 
 MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
 
-include("Optimizer/base.jl")
+
+include("base.jl")
+include("metrics.jl")
+include("results/results.jl")
+include("simulations/simulations.jl")
+include("utils.jl")
+
 include("Optimizer/utils.jl")
 include("Optimizer/variables.jl")
 include("Optimizer/constraints.jl")
 include("Optimizer/Optimizer.jl")
 include("Optimizer/solution.jl")
-
-include("metrics.jl")
-include("results/results.jl")
-include("simulations/simulations.jl")
-include("utils.jl")
 
 end

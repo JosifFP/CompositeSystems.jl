@@ -45,7 +45,7 @@
     threenode2.generators.capacity[1, :] .+= 5
 
     conv = NoContingencies(threaded=false)
-    smc = SequentialMonteCarlo(samples=100_000, threaded=false)
+    smc = SequentialMCS(samples=100_000, threaded=false)
 
     @testset "EFC" begin
 

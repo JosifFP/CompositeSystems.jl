@@ -1,7 +1,7 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractDCPowerModel, i::Int)
-    JuMP.@constraint(pm.model, var(pm, :va)[i] == 0, container = Array)
-    #JuMP.fix(var(pm, :va)[i], 0, force = true)
+    @constraint(pm.model, var(pm, :va)[i] == 0, container = Array)
+    #fix(var(pm, :va)[i], 0, force = true)
 end
 
 "Nodal power balance constraints"
@@ -31,7 +31,7 @@ function _constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, 
     #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
     #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
-    JuMP.@constraint(pm.model,
+    @constraint(pm.model,
         sum(pg[g] for g in bus_gens)
         + sum(plc[m] for m in bus_loads)
         - sum(p[a] for a in bus_arcs)
@@ -58,7 +58,7 @@ function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int,
     #g_to = field(system, Branches, :g_to)[i]
     #b_to = field(system, Branches, :b_to)[i]
 
-    va_fr_to = JuMP.@expression(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus))
+    va_fr_to = @expression(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus))
 
     _constraint_ohms_yt_from(pm, i, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
     _constraint_ohms_yt_to(pm, i, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
@@ -71,8 +71,8 @@ function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i, f_bus, t_bus, g, 
     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
     x = -b / (g^2 + b^2)
     #ta = atan(ti, tr)
-    JuMP.@constraint(pm.model, var(pm, :p, (i, f_bus, t_bus)) == (va_fr_to - atan(ti, tr))/(x*tm))
-    #JuMP.@constraint(pm.model, var(pm, :p, (i, f_bus, t_bus)) == -b*(va_fr_to))
+    @constraint(pm.model, var(pm, :p, (i, f_bus, t_bus)) == (va_fr_to - atan(ti, tr))/(x*tm))
+    #@constraint(pm.model, var(pm, :p, (i, f_bus, t_bus)) == -b*(va_fr_to))
 
 end
 
@@ -95,8 +95,8 @@ end
 function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, f_bus, t_bus, angmin, angmax)
     
     #va_fr = var(pm, :va, f_bus) va_to = var(pm, :va, t_bus)
-    JuMP.@constraint(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus) <= angmax)
-    JuMP.@constraint(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus) >= angmin)
+    @constraint(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus) <= angmax)
+    @constraint(pm.model, var(pm, :va, f_bus) - var(pm, :va, t_bus) >= angmin)
 end
 
 """
@@ -124,17 +124,17 @@ Generic thermal limit constraint
 """
 function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, f_idx, p_fr, rate_a)
 
-    if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
+    if isa(p_fr, VariableRef) && has_lower_bound(p_fr)
         
-        JuMP.LowerBoundRef(p_fr)
-        JuMP.lower_bound(p_fr) < -rate_a && JuMP.set_lower_bound(p_fr, -rate_a)
+        LowerBoundRef(p_fr)
+        lower_bound(p_fr) < -rate_a && set_lower_bound(p_fr, -rate_a)
 
-        if JuMP.has_upper_bound(p_fr)
-            JuMP.upper_bound(p_fr) > rate_a && JuMP.set_upper_bound(p_fr, rate_a)
+        if has_upper_bound(p_fr)
+            upper_bound(p_fr) > rate_a && set_upper_bound(p_fr, rate_a)
         end
 
     else
-        JuMP.@constraint(pm.model, p_fr <= rate_a)
+        @constraint(pm.model, p_fr <= rate_a)
     end
 
 end
@@ -142,11 +142,11 @@ end
 "`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
 function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, t_idx, p_fr, rate_a)
     
-    if isa(p_fr, JuMP.VariableRef) && JuMP.has_upper_bound(p_fr)
-        JuMP.UpperBoundRef(p_fr)
+    if isa(p_fr, VariableRef) && has_upper_bound(p_fr)
+        UpperBoundRef(p_fr)
     else
         #p_to = var(pm, :p, t_idx)
-        JuMP.@constraint(pm.model, var(pm, :p, t_idx) <= rate_a)
+        @constraint(pm.model, var(pm, :p, t_idx) <= rate_a)
     end
 end
 
@@ -161,78 +161,78 @@ end
 #"***************************************************************************************************************************"
 #"Needs to be fixed/updated"
 
-"DC LINES "
-function constraint_dcline_power_losses(pm::AbstractDCPowerModel, i::Int)
-    dcline = ref(pm, :dcline, i)
-    f_bus = dcline["f_bus"]
-    t_bus = dcline["t_bus"]
-    f_idx = (i, f_bus, t_bus)
-    t_idx = (i, t_bus, f_bus)
-    loss0 = dcline["loss0"]
-    loss1 = dcline["loss1"]
+#"DC LINES "
+# function constraint_dcline_power_losses(pm::AbstractDCPowerModel, i::Int)
+#     dcline = ref(pm, :dcline, i)
+#     f_bus = dcline["f_bus"]
+#     t_bus = dcline["t_bus"]
+#     f_idx = (i, f_bus, t_bus)
+#     t_idx = (i, t_bus, f_bus)
+#     loss0 = dcline["loss0"]
+#     loss1 = dcline["loss1"]
 
-    _constraint_dcline_power_losses(pm, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
-end
+#     _constraint_dcline_power_losses(pm, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
+# end
 
-"""
-Creates Line Flow constraint for DC Lines (Matpower Formulation)
+# """
+# Creates Line Flow constraint for DC Lines (Matpower Formulation)
 
-```
-p_fr + p_to == loss0 + p_fr * loss1
-```
-"""
-function _constraint_dcline_power_losses(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
-    p_fr = var(pm, :p_dc, f_idx)
-    p_to = var(pm, :p_dc, t_idx)
+# ```
+# p_fr + p_to == loss0 + p_fr * loss1
+# ```
+# """
+# function _constraint_dcline_power_losses(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
+#     p_fr = var(pm, :p_dc, f_idx)
+#     p_to = var(pm, :p_dc, t_idx)
 
-    JuMP.@constraint(pm.model, (1-loss1) * p_fr + (p_to - loss0) == 0)
-end
+#     @constraint(pm.model, (1-loss1) * p_fr + (p_to - loss0) == 0)
+# end
 
-"Fixed Power Factor"
-function constraint_power_factor(pm::AbstractACPowerModel)
+# "Fixed Power Factor"
+# function constraint_power_factor(pm::AbstractACPowerModel)
 
-    z_demand = var(pm, :z_demand)
-    plc = var(pm, :plc)
-    q_lc = var(pm, :q_lc)
+#     z_demand = var(pm, :z_demand)
+#     plc = var(pm, :plc)
+#     q_lc = var(pm, :q_lc)
     
-    for (l,_) in ref(pm, :load)
-        JuMP.@constraint(pm.model, z_demand[i]*plc[i] - q_lc[i] == 0.0)      
-    end
-end
+#     for (l,_) in ref(pm, :load)
+#         @constraint(pm.model, z_demand[i]*plc[i] - q_lc[i] == 0.0)      
+#     end
+# end
 
-""
-function constraint_voltage_magnitude_diff(pm::AbstractDCPowerModel, i::Int)
+# ""
+# function constraint_voltage_magnitude_diff(pm::AbstractDCPowerModel, i::Int)
 
-    branch = ref(pm, :branch, i)
-    f_bus = branch["f_bus"]
-    t_bus = branch["t_bus"]
-    f_idx = (i, f_bus, t_bus)
-    t_idx = (i, t_bus, f_bus)
+#     branch = ref(pm, :branch, i)
+#     f_bus = branch["f_bus"]
+#     t_bus = branch["t_bus"]
+#     f_idx = (i, f_bus, t_bus)
+#     t_idx = (i, t_bus, f_bus)
 
-    r = branch["br_r"]
-    x = branch["br_x"]
-    g_sh_fr = branch["g_fr"]
-    b_sh_fr = branch["b_fr"]
-    tm = branch["tap"]
+#     r = branch["br_r"]
+#     x = branch["br_x"]
+#     g_sh_fr = branch["g_fr"]
+#     b_sh_fr = branch["b_fr"]
+#     tm = branch["tap"]
 
-    _constraint_voltage_magnitude_difference(pm, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
-end
+#     _constraint_voltage_magnitude_difference(pm, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
+# end
 
-"""
-Defines voltage drop over a branch, linking from and to side voltage magnitude
-"""
-function _constraint_voltage_magnitude_difference(pm::AbstractDCPowerModel, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
-    p_fr = var(pm, :p, f_idx)
-    #q_fr = var(pm, n, :q, f_idx)
-    q_fr = 0
-    w_fr = var(pm, :w, f_bus)
-    w_to = var(pm, :w, t_bus)
-    ccm =  var(pm, :ccm, i)
+# """
+# Defines voltage drop over a branch, linking from and to side voltage magnitude
+# """
+# function _constraint_voltage_magnitude_difference(pm::AbstractDCPowerModel, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
+#     p_fr = var(pm, :p, f_idx)
+#     #q_fr = var(pm, n, :q, f_idx)
+#     q_fr = 0
+#     w_fr = var(pm, :w, f_bus)
+#     w_to = var(pm, :w, t_bus)
+#     ccm =  var(pm, :ccm, i)
 
-    ym_sh_sqr = g_sh_fr^2 + b_sh_fr^2
+#     ym_sh_sqr = g_sh_fr^2 + b_sh_fr^2
 
-    JuMP.@constraint(pm.model, (1+2*(r*g_sh_fr - x*b_sh_fr))*(w_fr/tm^2) - w_to ==  2*(r*p_fr + x*q_fr) - (r^2 + x^2)*(ccm + ym_sh_sqr*(w_fr/tm^2) - 2*(g_sh_fr*p_fr - b_sh_fr*q_fr)))
-end
+#     @constraint(pm.model, (1+2*(r*g_sh_fr - x*b_sh_fr))*(w_fr/tm^2) - w_to ==  2*(r*p_fr + x*q_fr) - (r^2 + x^2)*(ccm + ym_sh_sqr*(w_fr/tm^2) - 2*(g_sh_fr*p_fr - b_sh_fr*q_fr)))
+# end
 
 ""
 function calc_branch_y(branches::Branches, i::Int)

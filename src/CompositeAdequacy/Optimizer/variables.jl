@@ -12,8 +12,8 @@ end
 ""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
 
-    var(pm)[:va] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], container = Array)
-    #va = var(pm)[:va] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="va", start = comp_start_value(ref(pm, :bus, i), "va_start"))
+    var(pm)[:va] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], container = Array)
+    #va = var(pm)[:va] = @variable(pm.model, [i in ids(pm, :bus)], base_name="va", start = comp_start_value(ref(pm, :bus, i), "va_start"))
 
 end
 
@@ -25,12 +25,12 @@ end
 "variable: `v[i]` for `i` in `bus`es"
 function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
 
-    vm = var(pm)[:vm] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], container = Array, start =1.0)
-    #vm = var(pm)[:vm] = JuMP.@variable(pm.model, [i in ids(pm, :bus)], base_name="vm", start = comp_start_value(ref(pm, :bus, i), "vm_start", 1.0))
+    vm = var(pm)[:vm] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], container = Array, start =1.0)
+    #vm = var(pm)[:vm] = @variable(pm.model, [i in ids(pm, :bus)], base_name="vm", start = comp_start_value(ref(pm, :bus, i), "vm_start", 1.0))
     if bounded
         for i in assetgrouplist(field(pm, Topology, :buses_idxs))
-            JuMP.set_lower_bound(vm[i], field(system, Buses, :vmin)[i])
-            JuMP.set_upper_bound(vm[i], field(system, Buses, :vmax)[i])
+            set_lower_bound(vm[i], field(system, Buses, :vmin)[i])
+            set_upper_bound(vm[i], field(system, Buses, :vmax)[i])
         end
     end
 
@@ -45,13 +45,13 @@ end
 ""
 function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true)
     
-    pg = var(pm)[:pg] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))], container = Dict{Int, JuMP.VariableRef})
-    #JuMP.@variable(pm.model, qg[i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
+    pg = var(pm)[:pg] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))], container = Dict{Int, VariableRef})
+    #@variable(pm.model, qg[i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
 
     if bounded
         for l in assetgrouplist(field(pm, Topology, :generators_idxs))
-            JuMP.set_upper_bound(pg[l], field(system, Generators, :pmax)[l])
-            JuMP.set_lower_bound(pg[l], 0.0)
+            set_upper_bound(pg[l], field(system, Generators, :pmax)[l])
+            set_lower_bound(pg[l], 0.0)
         end
     end
 
@@ -65,13 +65,13 @@ end
 ""
 function var_gen_power_imaginary(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
 
-    qg = var(pm)[:qg] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))], container = Dict{Int, JuMP.VariableRef})
-    #qg = var(pm)[:qg] = JuMP.@variable(pm.model, [i in ids(pm, :gen)], base_name="qg", start = comp_start_value(ref(pm, :gen, i), "qg_start"))
+    qg = var(pm)[:qg] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))], container = Dict{Int, VariableRef})
+    #qg = var(pm)[:qg] = @variable(pm.model, [i in ids(pm, :gen)], base_name="qg", start = comp_start_value(ref(pm, :gen, i), "qg_start"))
 
     if bounded
         for l in assetgrouplist(field(pm, Topology, :generators_idxs))
-            JuMP.set_upper_bound(qg[l], field(system, Generators, :qmax)[l])
-            JuMP.set_lower_bound(qg[l], 0.0)
+            set_upper_bound(qg[l], field(system, Generators, :qmax)[l])
+            set_lower_bound(qg[l], 0.0)
         end
     end
     #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), qg)
@@ -88,13 +88,13 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, t:
 
     arcs_from = [(l,i,j) for (l,i,j) in field(system, :arcs_from) if l in assetgrouplist(field(pm, Topology, :branches_idxs))]
     arcs = [(l,i,j) for (l,i,j) in field(system, :arcs) if l in assetgrouplist(field(pm, Topology, :branches_idxs))]
-    p = JuMP.@variable(pm.model, [arcs], container = Dict{Tuple{Int, Int, Int}, Any})
-    #p = var(pm)[:p] = JuMP.@variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
+    p = @variable(pm.model, [arcs], container = Dict{Tuple{Int, Int, Int}, Any})
+    #p = var(pm)[:p] = @variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
 
     if bounded
         for (l,i,j) in arcs
-            JuMP.set_lower_bound(p[(l,i,j)], max(-Inf, -field(system, Branches, :rate_a)[l]))
-            JuMP.set_upper_bound(p[(l,i,j)], min(Inf,  field(system, Branches, :rate_a)[l]))
+            set_lower_bound(p[(l,i,j)], max(-Inf, -field(system, Branches, :rate_a)[l]))
+            set_upper_bound(p[(l,i,j)], min(Inf,  field(system, Branches, :rate_a)[l]))
         end
     end
 
@@ -118,11 +118,11 @@ end
 ""
 function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=true)
 
-    plc = var(pm)[:plc] = JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))], container = Dict{Int, JuMP.VariableRef})
+    plc = var(pm)[:plc] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))], container = Dict{Int, VariableRef})
 
     for l in assetgrouplist(field(pm, Topology, :loads_idxs))
-        JuMP.set_upper_bound(plc[l], field(system, Loads, :pd)[l,t])
-        JuMP.set_lower_bound(plc[l],0.0)
+        set_upper_bound(plc[l], field(system, Loads, :pd)[l,t])
+        set_lower_bound(plc[l],0.0)
     end
     #report && sol_component_value(pm, :plc, assetgrouplist(field(pm, Topology, :loads_idxs)), plc)
 end
@@ -134,11 +134,11 @@ end
 ""
 function var_load_curtailment_imaginary(pm::AbstractACPowerModel, system::SystemModel, t::Int; bounded::Bool=true, report::Bool=false)
     
-    qlc = var(pm)[:qlc] =JuMP.@variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))], container=Array, container = Dict{Int, JuMP.VariableRef})
+    qlc = var(pm)[:qlc] =@variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))], container=Array, container = Dict{Int, VariableRef})
 
     for l in assetgrouplist(field(pm, Topology, :loads_idxs))
-        JuMP.set_upper_bound(qlc[l], field(system, Loads, :qd)[l])
-        JuMP.set_lower_bound(qlc[l],0.0)
+        set_upper_bound(qlc[l], field(system, Loads, :qd)[l])
+        set_lower_bound(qlc[l],0.0)
     end
 
 end

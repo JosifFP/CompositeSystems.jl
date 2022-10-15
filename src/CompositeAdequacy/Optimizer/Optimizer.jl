@@ -62,14 +62,14 @@ end
 ""
 function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel)
 
-    return JuMP.@objective(pm.model, Min,
+    return @objective(pm.model, Min,
         sum(field(system, Loads, :cost)[i]*var(pm, :plc)[i] for i in assetgrouplist(field(pm, Topology, :loads_idxs)))
     )
 end
 
 # index representing which side the HVDC line is starting
 #from_idx = Dict(arc[1] => arc for arc in ref[:arcs_from_dc])
-#lc = JuMP.@expression(pm.model, #sum(gen["cost"][1]*model[:pg][i]^2 + gen["cost"][2]*model[:pg][i] + gen["cost"][3] for (i,gen) in ref[:gen]) +
+#lc = @expression(pm.model, #sum(gen["cost"][1]*model[:pg][i]^2 + gen["cost"][2]*model[:pg][i] + gen["cost"][3] for (i,gen) in ref[:gen]) +
 #sum(dcline["cost"][1]*model[:p_dc][from_idx[i]]^2 + dcline["cost"][2]*model[:p_dc][from_idx[i]] + dcline["cost"][3] for (i,dcline) in ref[:dcline]) +
 #sum(ref[:load][i]["cost"]*model[:plc][i] for i in keys(ref[:load]))
 #sum(pm.ref[:load][i]["cost"]*pm.model[:plc][i] for i in keys(pm.ref[:load])))

@@ -1,14 +1,14 @@
 
 @testset "test 4 Split situations RBTS system" begin
 
-    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 
     RawFile = "test/data/RBTS.m"
     system = PRATSBase.SystemModel(RawFile)
     CompositeAdequacy.field(system, Loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 
-    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
+    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractOPF, Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
     t=1
     
     @testset "L5 and L8 on outage" begin
@@ -88,7 +88,7 @@ end
     system = PRATSBase.SystemModel(RawFile)
     CompositeAdequacy.field(system, Loads, :cost)[:] = [6240; 4890; 5300; 5620; 6110; 5500; 5410; 5400; 2300; 4140; 5390; 3410; 3010; 3540; 3750; 2290; 3640]
 
-    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
+    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractOPF, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
     t=1
     
     @testset "Outages of L12, L13" begin
