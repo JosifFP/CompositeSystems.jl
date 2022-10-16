@@ -1,5 +1,4 @@
 @reexport module PRATSBase
-    import Base.Broadcast: broadcastable
     import XLSX
     import Dates: @dateformat_str, AbstractDateTime, DateTime, Time,
         Period, Minute, Hour, Day, Year, Date, hour, now

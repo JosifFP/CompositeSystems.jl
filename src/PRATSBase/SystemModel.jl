@@ -56,6 +56,6 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.ref_buses == y.ref_buses &&
     x.timestamps == y.timestamps
 
-broadcastable(x::SystemModel) = Ref(x)
+Base.broadcastable(x::SystemModel) = Ref(x)
 
 unitsymbol(::SystemModel{N,L,T,S}) where {N,L,T<:Period,S} = unitsymbol(S), unitsymbol(T)

@@ -56,7 +56,7 @@ function term_status(model::Model, status::JuMP.MathOptInterface.TerminationStat
     else
         #if result_count <= 0 
         #    status = 5
-        if isempty(pm.model) == true 
+        if isempty(model) == true 
             status = 5
         else 
             status = 6 

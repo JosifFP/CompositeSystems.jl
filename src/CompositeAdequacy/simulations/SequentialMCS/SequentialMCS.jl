@@ -33,11 +33,11 @@ function assess(
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
     
-    @spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+    Base.Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     if method.threaded
         for _ in 1:threads
-            @spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
+            Base.Threads.@spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, optimizer, method, sampleseeds, results, resultspecs...)

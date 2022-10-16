@@ -1,5 +1,5 @@
-broadcastable(x::ResultSpec) = Ref(x)
-broadcastable(x::Result) = Ref(x)
+Base.broadcastable(x::ResultSpec) = Ref(x)
+Base.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 

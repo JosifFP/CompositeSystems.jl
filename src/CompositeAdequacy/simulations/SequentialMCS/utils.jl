@@ -220,62 +220,62 @@ end
 
 
 # ----------------------------------------------------------------------------------------------------------
-function available_capacity(
-    availability::Vector{Bool},
-    branches::Branches,
-    idxs::UnitRange{Int}, t::Int
-)
+# function available_capacity(
+#     availability::Vector{Bool},
+#     branches::Branches,
+#     idxs::UnitRange{Int}, t::Int
+# )
 
-    avcap_forward = 0
-    avcap_backward = 0
+#     avcap_forward = 0
+#     avcap_backward = 0
 
-    for i in idxs
-        if availability[i]
-            avcap_forward += branches.forward_capacity[i, t]
-            avcap_backward += branches.backward_capacity[i, t]
-        end
-    end
+#     for i in idxs
+#         if availability[i]
+#             avcap_forward += branches.forward_capacity[i, t]
+#             avcap_backward += branches.backward_capacity[i, t]
+#         end
+#     end
 
-    return avcap_forward, avcap_backward
+#     return avcap_forward, avcap_backward
 
-end
+# end
 
-function available_capacity(
-    availability::Vector{Bool},
-    gens::Generators,
-    idxs::UnitRange{Int}, t::Int
-)
+# function available_capacity(
+#     availability::Vector{Bool},
+#     gens::Generators,
+#     idxs::UnitRange{Int}, t::Int
+# )
 
-    caps = gens.capacity
-    avcap = 0
+#     caps = gens.capacity
+#     avcap = 0
 
-    for i in idxs
-        availability[i] && (avcap += caps[i, t])
-    end
+#     for i in idxs
+#         availability[i] && (avcap += caps[i, t])
+#     end
 
-    return avcap
+#     return avcap
 
-end
+# end
 
-function update_energy!(
-    stors_energy::Vector{Int},
-    stors::AbstractAssets,
-    t::Int
-)
+# function update_energy!(
+#     stors_energy::Vector{Int},
+#     stors::AbstractAssets,
+#     t::Int
+# )
 
-    for i in 1:length(stors_energy)
+#     for i in 1:length(stors_energy)
 
-        soc = stors_energy[i]
-        #efficiency = stors.carryover_efficiency[i,t]
-        efficiency = 1.0
-        maxenergy = stors.energy_capacity[i,t]
+#         soc = stors_energy[i]
+#         #efficiency = stors.carryover_efficiency[i,t]
+#         efficiency = 1.0
+#         maxenergy = stors.energy_capacity[i,t]
 
-        # Decay SoC
-        soc = round(Int, soc * efficiency)
+#         # Decay SoC
+#         soc = round(Int, soc * efficiency)
 
-        # Shed SoC above current energy limit
-        stors_energy[i] = min(soc, maxenergy)
+#         # Shed SoC above current energy limit
+#         stors_energy[i] = min(soc, maxenergy)
 
-    end
+#     end
 
-end
+# end

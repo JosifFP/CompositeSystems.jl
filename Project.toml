@@ -1,7 +1,7 @@
 name = "PRATS"
-uuid = "7a45a295-363c-483a-b9f8-681ff3b81924"
-authors = ["Josif Figueroa <josif.figueroa@unb.ca"]
-version = "0.1.0"
+uuid = "64e92a15-fd00-4c58-8d47-2b397e2d7e52"
+version = "1.0.0"
+authors = "Josif Figueroa <josif.figueroa@unb.ca>"
 
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
@@ -42,6 +42,7 @@ DataFrames = "1"
 Decimals = "0.4"
 Distributions = "0.25"
 HDF5 = "0.16"
+HiGHS = "1"
 InfrastructureModels = "0.7"
 Ipopt = "1"
 Memento = "1"
@@ -57,9 +58,3 @@ StatsBase = "0.33"
 TimeZones = "1"
 XLSX = "0.7, 0.8"
 julia = "1"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
