@@ -58,7 +58,7 @@ function update!(system::SystemModel{N}) where {N}
             f_bus = field(system, Branches, :f_bus)[k]
             t_bus = field(system, Branches, :t_bus)[k]
             if field(system, Buses, :bus_type)[f_bus] == 4 || field(system, Buses, :bus_type)[t_bus] == 4
-                Memento.info(_LOGGER, "deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
+                #@info("deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
                 field(system, Branches, :status)[k] = 0
             end
         end
@@ -80,24 +80,24 @@ function update!(system::SystemModel{N}) where {N}
 
 end
 
-"Update Asset states"
-function update_states!(system::SystemModel, state::SystemState, t::Int)
+"Update Asset statess"
+function update_statess!(system::SystemModel, states::SystemStates, t::Int)
 
-    field(system, Loads, :status)[:] = field(state, :loads)[:,t]
-    field(system, Branches, :status)[:] = field(state, :branches)[:,t]
-    field(system, Shunts, :status)[:] = field(state, :shunts)[:,t]
-    field(system, Generators, :status)[:] = field(state, :generators)[:,t]
-    field(system, Storages, :status)[:] = field(state, :storages)[:,t]
-    field(system, GeneratorStorages, :status)[:] = field(state, :generatorstorages)[:,t]
+    field(system, Loads, :status)[:] = field(states, :loads)[:,t]
+    field(system, Branches, :status)[:] = field(states, :branches)[:,t]
+    field(system, Shunts, :status)[:] = field(states, :shunts)[:,t]
+    field(system, Generators, :status)[:] = field(states, :generators)[:,t]
+    field(system, Storages, :status)[:] = field(states, :storages)[:,t]
+    field(system, GeneratorStorages, :status)[:] = field(states, :generatorstorages)[:,t]
 
 end
 
 "Update loads_idxs and bus_loads"
-function update_asset_idxs!(topology::Topology, asset::Loads, asset_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+function update_asset_idxs!(topology::Topology, asset::Loads, asset_statess::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
     
-    if isempty(field(topology, :loads_idxs)) ≠ true && ((t > 1 && asset_states[:,t] ≠ asset_states[:,t-1] && all(asset_states[:,t]) ≠ true) || t==1)
+    if isempty(field(topology, :loads_idxs)) ≠ true && ((t > 1 && asset_statess[:,t] ≠ asset_statess[:,t-1] && all(asset_statess[:,t]) ≠ true) || t==1)
         
-        key_assets = [i for i in field(asset, :keys) if asset_states[i,t] == 1]
+        key_assets = [i for i in field(asset, :keys) if asset_statess[i,t] == 1]
 
         field(topology, :loads_idxs)[:] = makeidxlist(key_assets, length(asset))
 
@@ -108,11 +108,11 @@ function update_asset_idxs!(topology::Topology, asset::Loads, asset_states::Matr
 end
 
 "Update shunts_idxs and bus_shunts"
-function update_asset_idxs!(topology::Topology, asset::Shunts, asset_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+function update_asset_idxs!(topology::Topology, asset::Shunts, asset_statess::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
     
-    if isempty(field(topology, :shunts_idxs)) ≠ true && ((t > 1 && asset_states[:,t] ≠ asset_states[:,t-1] && all(asset_states[:,t]) ≠ true) || t==1)
+    if isempty(field(topology, :shunts_idxs)) ≠ true && ((t > 1 && asset_statess[:,t] ≠ asset_statess[:,t-1] && all(asset_statess[:,t]) ≠ true) || t==1)
         
-        key_assets = [i for i in field(asset, :keys) if asset_states[i,t] == 1]
+        key_assets = [i for i in field(asset, :keys) if asset_statess[i,t] == 1]
 
         field(topology, :shunts_idxs)[:] = makeidxlist(key_assets, length(asset))
 
@@ -123,11 +123,11 @@ function update_asset_idxs!(topology::Topology, asset::Shunts, asset_states::Mat
 end
 
 "Update generators_idxs and bus_generators"
-function update_asset_idxs!(topology::Topology, asset::Generators, asset_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+function update_asset_idxs!(topology::Topology, asset::Generators, asset_statess::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
     
-    if isempty(field(topology, :generators_idxs)) ≠ true && ((t > 1 && asset_states[:,t] ≠ asset_states[:,t-1] && all(asset_states[:,t]) ≠ true) || t==1)
+    if isempty(field(topology, :generators_idxs)) ≠ true && ((t > 1 && asset_statess[:,t] ≠ asset_statess[:,t-1] && all(asset_statess[:,t]) ≠ true) || t==1)
         
-        key_assets = [i for i in field(asset, :keys) if asset_states[i,t] == 1]
+        key_assets = [i for i in field(asset, :keys) if asset_statess[i,t] == 1]
         
         field(topology, :generators_idxs)[:] = makeidxlist(key_assets, length(asset))
 
@@ -138,11 +138,11 @@ function update_asset_idxs!(topology::Topology, asset::Generators, asset_states:
 end
 
 "Update storages_idxs and bus_storages"
-function update_asset_idxs!(topology::Topology, asset::Storages, asset_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+function update_asset_idxs!(topology::Topology, asset::Storages, asset_statess::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
     
-    if isempty(field(topology, :storages_idxs)) ≠ true && ((t > 1 && asset_states[:,t] ≠ asset_states[:,t-1] && all(asset_states[:,t]) ≠ true) || t==1)
+    if isempty(field(topology, :storages_idxs)) ≠ true && ((t > 1 && asset_statess[:,t] ≠ asset_statess[:,t-1] && all(asset_statess[:,t]) ≠ true) || t==1)
         
-        key_assets = [i for i in field(asset, :keys) if asset_states[i,t] == 1]
+        key_assets = [i for i in field(asset, :keys) if asset_statess[i,t] == 1]
         
         field(topology, :storages_idxs)[:] = makeidxlist(key_assets, length(asset))
 
@@ -153,11 +153,11 @@ function update_asset_idxs!(topology::Topology, asset::Storages, asset_states::M
 end
 
 "Update generatorstorages_idxs and bus_generatorstorages"
-function update_asset_idxs!(topology::Topology, asset::GeneratorStorages, asset_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+function update_asset_idxs!(topology::Topology, asset::GeneratorStorages, asset_statess::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
     
-    if isempty(field(topology, :generatorstorages_idxs)) ≠ true && ((t > 1 && asset_states[:,t] ≠ asset_states[:,t-1] && all(asset_states[:,t]) ≠ true) || t==1)
+    if isempty(field(topology, :generatorstorages_idxs)) ≠ true && ((t > 1 && asset_statess[:,t] ≠ asset_statess[:,t-1] && all(asset_statess[:,t]) ≠ true) || t==1)
         
-        key_assets = [i for i in field(asset, :keys) if asset_states[i,t] == 1]
+        key_assets = [i for i in field(asset, :keys) if asset_statess[i,t] == 1]
         
         field(topology, :generatorstorages_idxs)[:] = makeidxlist(key_assets, length(asset))
 
@@ -170,9 +170,7 @@ end
 ""
 function update_bus_assets!(bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int}, key_buses::Vector{Int}, key_assets::Vector{Int})
 
-    for i in key_buses
-        bus_assets[i] = Int[]
-    end
+    for v=values(bus_assets) empty!(v) end
     
     for k in key_assets
         push!(bus_assets[buses[k]], k)
@@ -181,30 +179,30 @@ end
 
 ""
 function update_bus_assets!(
-    bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}}, key_buses::Vector{Int}, branch_state::Vector{Bool})
+    bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}}, key_buses::Vector{Int}, branch_states::Vector{Bool})
 
     for i in key_buses
         bus_arcs[i] = Tuple{Int,Int,Int}[]
     end
     
     for (l,i,j) in arcs
-        if branch_state[l] ≠ 0
+        if branch_states[l] ≠ 0
             push!(bus_arcs[i], (l,i,j))
         end
     end
 end
 
 ""
-function update_branch_idxs!(topology::Topology, system::SystemModel, branch_states::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
+function update_branch_idxs!(topology::Topology, system::SystemModel, branch_statess::Matrix{Bool}, key_buses::Vector{Int}, t::Int)
 
-    if isempty(field(topology, :branches_idxs)) ≠ true && ((t > 1 && branch_states[:,t] ≠ branch_states[:,t-1] && all(branch_states[:,t]) ≠ true) || t==1)
+    if isempty(field(topology, :branches_idxs)) ≠ true && ((t > 1 && branch_statess[:,t] ≠ branch_statess[:,t-1] && all(branch_statess[:,t]) ≠ true) || t==1)
 
         branches = field(system, :branches)
-        key_branches = [i for i in field(branches, :keys) if branch_states[i,t] == 1]
+        key_branches = [i for i in field(branches, :keys) if branch_statess[i,t] == 1]
 
         field(topology, :branches_idxs)[:] = makeidxlist(key_branches, length(branches))
 
-        update_bus_assets!(field(topology, :bus_arcs), field(system, :arcs), key_buses, branch_states[:,t])
+        update_bus_assets!(field(topology, :bus_arcs), field(system, :arcs), key_buses, branch_statess[:,t])
 
         tmp_buspairs = calc_buspair_parameters(field(system, :buses), branches, key_branches)
             

@@ -127,19 +127,17 @@ function record!(
     sampleid::Int
 ) where {N,L,T,S}
 
-    totalshortfall = 0
-    nloads = length(sys.loads.keys)
-    isshortfall = zeros(Bool, nloads)
+    nloads = length(CompositeAdequacy.field(pm, Topology, :loads_idxs))
+    #isshortfall = zeros(Bool, nloads)
 
     for t in 1:N
 
         totalshortfall = 0
         isshortfall = false
-        busshortfalls = pm.topology.plc[:,t]
 
         for r in nloads
 
-            busshortfall = busshortfalls[r]
+            busshortfall = field(pm, Topology, :plc)[r,t]
             isbusshortfall = busshortfall > 0
     
             fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
@@ -217,7 +215,7 @@ function finalize(
 
     return ShortfallResult{N,L,T,E}(
         nsamples, 
-        system.loads.keys, 
+        length(ep_bus_mean), 
         system.timestamps,
         ep_total_mean, 
         ep_total_std, 

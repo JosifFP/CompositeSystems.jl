@@ -1,23 +1,5 @@
-include("SystemState.jl")
 include("utils.jl")
-
-struct SequentialMCS <: SimulationSpec
-
-    nsamples::Int
-    seed::UInt64
-    verbose::Bool
-    threaded::Bool
-
-    function SequentialMCS(;
-        samples::Int=1_000, seed::Int=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=true
-    )
-        samples <= 0 && throw(DomainError("Sample count must be positive"))
-        seed < 0 && throw(DomainError("Random seed must be non-negative"))
-        new(samples, UInt64(seed), verbose, threaded)
-    end
-
-end
+include("systemstates.jl")
 
 function assess(
     system::SystemModel{N},
@@ -25,58 +7,48 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2, "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-    optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
-
-
     threads = Base.Threads.nthreads()
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
     
-    Base.Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     if method.threaded
         for _ in 1:threads
-            Base.Threads.@spawn assess(system, optimizer, method, sampleseeds, results, resultspecs...)
+            Threads.@spawn assess(deepcopy(system), method, sampleseeds, results, resultspecs...)
         end
     else
-        assess(system, optimizer, method, sampleseeds, results, resultspecs...)
+        assess(system, method, sampleseeds, results, resultspecs...)
     end
 
     return finalize(results, system, method.threaded ? threads : 1)
     
 end
 
-"It generates a sequence of seeds from a given number of samples"
-function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
-    for s in 1:nsamples
-        put!(sampleseeds, s)
-    end
-    close(sampleseeds)
-end
-
+""
 function assess(
-    system::SystemModel{N}, optimizer, method::SequentialMCS,
+    system::SystemModel{N}, 
+    method::SequentialMCS,
     sampleseeds::Channel{Int},
     results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}},
     resultspecs::ResultSpec...
 ) where {N}
 
-    #Model(optimizer; add_bridges = false) #direct_model(optimizer)
-    systemstate = SystemState(system)
+    systemstates = SystemStates(system, method)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
 
+    system::SystemModel{N}, 
     for s in sampleseeds
         println("s=$(s)")
-        pm = PowerFlowProblem(AbstractOPF, Model(optimizer; add_bridges = false) , Topology(system))
+        pm = PowerFlowProblem(AbstractDCOPF, Model(method.optimizer; add_bridges = false) , Topology(system))
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        initialize!(rng, systemstate, system) #creates the up/down sequence for each device.
+        initialize!(rng, systemstates, system) #creates the up/down sequence for each device.
 
         for t in 1:N
-            if field(systemstate, :condition)[t] ≠ true
-                update!(pm.topology, systemstate, system, t)
-                solve!(pm, systemstate, system, t)
+            if field(systemstates, :condition)[t] ≠ true
+                update!(field(pm, :topology), systemstates, system, t)
+                solve!(pm, systemstates, system, t)
                 empty_model!(pm)
             end
             #foreach(recorder -> record!(recorder, system, pm, s, t), recorders)
@@ -90,16 +62,16 @@ function assess(
 end
 
 ""
-function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N}) where N
+function initialize!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
 
-    initialize_availability!(rng, field(state, :branches), field(system, :branches), N)
-    initialize_availability!(rng, field(state, :generators), field(system, :generators), N)
-    initialize_availability!(rng, field(state, :storages), field(system, :storages), N)
-    initialize_availability!(rng, field(state, :generatorstorages), field(system, :generatorstorages), N)
+    initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
+    initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
+    initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
+    initialize_availability!(rng, field(states, :generatorstorages), field(system, :generatorstorages), N)
     
     for t in 1:N
-        if all([field(state, :branches)[:,t]; field(state, :generators)[:,t]; field(state, :storages)[:,t]; field(state, :generatorstorages)[:,t]]) ≠ true
-            field(state, :condition)[t] = 0 
+        if all([field(states, :branches)[:,t]; field(states, :generators)[:,t]; field(states, :storages)[:,t]; field(states, :generatorstorages)[:,t]]) ≠ true
+            field(states, :condition)[t] = 0 
         end
     end
 
@@ -108,9 +80,9 @@ function initialize!(rng::AbstractRNG, state::SystemState, system::SystemModel{N
 end
 
 ""
-function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel, t::Int)
+function solve!(pm::AbstractPowerModel, states::SystemStates, system::SystemModel, t::Int)
 
-    #all(field(state, :branches)[:,t]) == true ? type = Transportation : type = DCOPF
+    #all(field(states, :branches)[:,t]) == true ? type = Transportation : type = DCOPF
     type = DCOPF
     build_method!(pm, system, t, type)
     optimize!(pm.model)
@@ -118,30 +90,30 @@ function solve!(pm::AbstractPowerModel, state::SystemState, system::SystemModel,
 end
 
 ""
-function update!(topology::Topology, state::SystemState, system::SystemModel, t::Int)
+function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
 
-    #update_states!(system, state, t)
-    if field(state, :condition)[t] ≠ true
+    #update_statess!(system, states, t)
+    if field(states, :condition)[t] ≠ true
         
         key_buses = field(system, Buses, :keys)
 
         update_asset_idxs!(
-            topology, field(system, :loads), field(state, :loads), key_buses, t)
+            topology, field(system, :loads), field(states, :loads), key_buses, t)
 
         update_asset_idxs!(
-            topology, field(system, :shunts), field(state, :shunts), key_buses, t)
+            topology, field(system, :shunts), field(states, :shunts), key_buses, t)
 
         update_asset_idxs!(
-            topology, field(system, :generators), field(state, :generators), key_buses, t)
+            topology, field(system, :generators), field(states, :generators), key_buses, t)
 
         update_asset_idxs!(
-            topology, field(system, :storages), field(state, :storages), key_buses, t)
+            topology, field(system, :storages), field(states, :storages), key_buses, t)
 
         update_asset_idxs!(
-            topology, field(system, :generatorstorages), field(state, :generatorstorages), key_buses, t)
+            topology, field(system, :generatorstorages), field(states, :generatorstorages), key_buses, t)
 
         update_branch_idxs!(
-            topology, system, field(state, :branches), key_buses, t)
+            topology, system, field(states, :branches), key_buses, t)
 
     end
 
@@ -161,8 +133,8 @@ function empty_model!(pm::AbstractPowerModel)
     return
 end
 
-#update_energy!(state.stors_energy, system.storages, t)
-#update_energy!(state.genstors_energy, system.generatorstorages, t)
+#update_energy!(states.stors_energy, system.storages, t)
+#update_energy!(states.genstors_energy, system.generatorstorages, t)
 
 #include("result_report.jl")
 include("result_shortfall.jl")

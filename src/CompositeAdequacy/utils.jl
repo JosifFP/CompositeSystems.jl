@@ -1,4 +1,44 @@
-meanvariance() = Series(Mean(), Variance())
+field(system::SystemModel, field::Symbol) = getfield(system, field)
+field(system::SystemModel, buses::Type{Buses}, subfield::Symbol) = getfield(getfield(system, :buses), subfield)
+field(system::SystemModel, loads::Type{Loads}, subfield::Symbol) = getfield(getfield(system, :loads), subfield)
+field(system::SystemModel, branches::Type{Branches}, subfield::Symbol) = getfield(getfield(system, :branches), subfield)
+field(system::SystemModel, shunts::Type{Shunts}, subfield::Symbol) = getfield(getfield(system, :shunts), subfield)
+field(system::SystemModel, generators::Type{Generators}, subfield::Symbol) = getfield(getfield(system, :generators), subfield)
+field(system::SystemModel, storages::Type{Storages}, subfield::Symbol) = getfield(getfield(system, :storages), subfield)
+field(system::SystemModel, generatorstorages::Type{GeneratorStorages}, subfield::Symbol) = getfield(getfield(system, :generatorstorages), subfield)
+
+field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
+field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
+field(branches::Branches, subfield::Symbol) = getfield(branches, subfield)
+field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
+field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
+field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
+field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
+
+field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
+field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
+field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
+
+field(states::SystemStates, field::Symbol) = getfield(states, field)
+
+var(pm::AbstractPowerModel) = pm.var
+var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
+var(pm::AbstractPowerModel, key::Symbol, idx) = pm.var[key][idx]
+sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
+sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
+
+Available(states::SystemStates, t::Int) = (
+    field(states, :loads)[:,t], field(states, :branches)[:,t], field(states, :shunts)[:,t], 
+    field(states, :generators)[:,t], field(states, :storages)[:,t], field(states, :generatorstorages)[:,t]
+)
+
+"It generates a sequence of seeds from a given number of samples"
+function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
+    for s in 1:nsamples
+        put!(sampleseeds, s)
+    end
+    close(sampleseeds)
+end
 
 function mean_std(x::MeanVariance)
     m, v = value(x)
@@ -99,36 +139,15 @@ function colsum(x::Matrix{T}, col::Integer) where {T}
     return result
 end
 
-field(system::SystemModel, field::Symbol) = getfield(system, field)
-field(system::SystemModel, buses::Type{Buses}, subfield::Symbol) = getfield(getfield(system, :buses), subfield)
-field(system::SystemModel, loads::Type{Loads}, subfield::Symbol) = getfield(getfield(system, :loads), subfield)
-field(system::SystemModel, branches::Type{Branches}, subfield::Symbol) = getfield(getfield(system, :branches), subfield)
-field(system::SystemModel, shunts::Type{Shunts}, subfield::Symbol) = getfield(getfield(system, :shunts), subfield)
-field(system::SystemModel, generators::Type{Generators}, subfield::Symbol) = getfield(getfield(system, :generators), subfield)
-field(system::SystemModel, storages::Type{Storages}, subfield::Symbol) = getfield(getfield(system, :storages), subfield)
-field(system::SystemModel, generatorstorages::Type{GeneratorStorages}, subfield::Symbol) = getfield(getfield(system, :generatorstorages), subfield)
+""
+function _sol(sol::Dict, args...)
+    for arg in args
+        if haskey(sol, arg)
+            sol = sol[arg]
+        else
+            sol = sol[arg] = Dict()
+        end
+    end
 
-field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
-field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
-field(branches::Branches, subfield::Symbol) = getfield(branches, subfield)
-field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
-field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
-field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
-field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
-
-field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
-field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
-field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
-
-field(state::SystemState, field::Symbol) = getfield(state, field)
-
-
-Available(state::SystemModel) = (
-    field(state, Loads, :status), field(state, Loads, :status), field(state, Loads, :status), 
-    field(state, Loads, :status), field(state, Loads, :status), field(state, Loads, :status)
-)
-
-Available(state::SystemState, t::Int) = (
-    field(state, :loads)[:,t], field(state, :branches)[:,t], field(state, :shunts)[:,t], 
-    field(state, :generators)[:,t], field(state, :storages)[:,t], field(state, :generatorstorages)[:,t]
-)
+    return sol
+end

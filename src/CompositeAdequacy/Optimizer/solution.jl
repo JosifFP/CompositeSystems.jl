@@ -8,13 +8,13 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
             if haskey(plc, i) == false
                 get!(plc, i, field(system, Loads, :pd)[i,t])
             end
-            field(pm.topology, :plc)[i,t] = plc[i]
+            field(pm, Topology, :plc)[i,t] = plc[i]
         end
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
 
-    if sum(field(pm.topology, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm.topology, :plc)[:,t]))") end
+    if sum(field(pm, Topology, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm, Topology, :plc)[:,t]))") end
 
 end
 
@@ -37,7 +37,7 @@ function build_results!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
     end
 
     for r in field(system, Loads, :keys)
-        pm.topology.plc[r,t] = CompositeAdequacy.sol(pm, :plc)[r]
+        field(pm, Topology, :plc)[r,t] = CompositeAdequacy.sol(pm, :plc)[r]
     end
 
 end
@@ -64,14 +64,14 @@ function term_status(model::Model, status::JuMP.MathOptInterface.TerminationStat
     end
 end
 
-function result_counts(model::Model)
-    result_count = 1
-    try
-        result_count = result_count(model)
-    catch
-        Memento.warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
-    end
-end
+# function result_counts(model::Model)
+#     result_count = 1
+#     try
+#         result_count = result_count(model)
+#     catch
+#         @warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
+#     end
+# end
 
 ""
 function build_sol_values(var::Dict)
@@ -132,7 +132,7 @@ end
 
 ""
 function build_sol_values(var::Any)
-    Memento.warn(_LOGGER, "build_solution_values found unknown type $(typeof(var))")
+    @warn("build_solution_values found unknown type $(typeof(var))")
     return var
 end
 

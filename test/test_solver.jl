@@ -8,16 +8,16 @@
     system = PRATSBase.SystemModel(RawFile)
     CompositeAdequacy.field(system, Loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 
-    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractOPF, Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
+    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCOPF, Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
     t=1
     
     @testset "L5 and L8 on outage" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[5,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[8,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[5,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[8,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
         @test isapprox(values(pm.topology.plc)[1,t], 0; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[2,t], 0; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[3,t], 0; atol = 1e-3)
@@ -27,13 +27,13 @@
     end
 
     @testset "L3, L4 and L8 on outage" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[3,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[4,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[8,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[3,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[4,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[8,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
         @test isapprox(values(pm.topology.plc)[1,t], 0; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[2,t], 0.1503; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[3,t], 0; atol = 1e-3)
@@ -43,14 +43,14 @@
     end
 
     @testset "G3, 7, 8 and 11 on outage" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :generators)[3] = 0
-        CompositeAdequacy.field(systemstate, :generators)[7] = 0
-        CompositeAdequacy.field(systemstate, :generators)[8] = 0
-        CompositeAdequacy.field(systemstate, :generators)[11] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :generators)[3] = 0
+        CompositeAdequacy.field(systemstates, :generators)[7] = 0
+        CompositeAdequacy.field(systemstates, :generators)[8] = 0
+        CompositeAdequacy.field(systemstates, :generators)[11] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
         @test isapprox(values(pm.topology.plc)[1,t], 0; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[2,t], 0.35; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[3,t], 0; atol = 1e-3)
@@ -60,15 +60,15 @@
     end
 
     @testset "L2 and L7 on outage, generation reduced" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[2,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[7,t] = 0
-        CompositeAdequacy.field(systemstate, :generators)[1,t] = 0
-        CompositeAdequacy.field(systemstate, :generators)[2,t] = 0
-        CompositeAdequacy.field(systemstate, :generators)[3,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[2,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[7,t] = 0
+        CompositeAdequacy.field(systemstates, :generators)[1,t] = 0
+        CompositeAdequacy.field(systemstates, :generators)[2,t] = 0
+        CompositeAdequacy.field(systemstates, :generators)[3,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
         @test isapprox(values(pm.topology.plc)[1,t], 0; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[2,t], 0.7046; atol = 1e-3)
         @test isapprox(values(pm.topology.plc)[3,t], 0; atol = 1e-3)
@@ -88,16 +88,16 @@ end
     system = PRATSBase.SystemModel(RawFile)
     CompositeAdequacy.field(system, Loads, :cost)[:] = [6240; 4890; 5300; 5620; 6110; 5500; 5410; 5400; 2300; 4140; 5390; 3410; 3010; 3540; 3750; 2290; 3640]
 
-    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractOPF, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
+    pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCOPF, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
     t=1
     
     @testset "Outages of L12, L13" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[12,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[13,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[12,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[13,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 0; atol = 1e-3)
 
@@ -122,13 +122,13 @@ end
     end
 
     @testset "Outages of L1, L4, L10" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[1,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[4,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[10,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[1,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[4,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[10,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 0.4111; atol = 1e-3)
 
@@ -153,13 +153,13 @@ end
     end
 
     @testset "Outages of L1, L8, L10" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[1,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[8,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[10,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[1,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[8,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[10,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 1.151; atol = 1e-3)
 
@@ -184,13 +184,13 @@ end
     end
 
     @testset "Outages of L7, L19, L29" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[7,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[19,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[29,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[7,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[19,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[29,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 0; atol = 1e-3)
 
@@ -215,13 +215,13 @@ end
     end
 
     @testset "Outages of L7, L23, L29" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[7,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[23,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[29,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[7,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[23,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[29,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 1.653; atol = 1e-3)
 
@@ -246,13 +246,13 @@ end
     end
 
     @testset "Outages of L25, L26, L28" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[25,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[26,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[28,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[25,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[26,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[28,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 2.125; atol = 1e-3)
 
@@ -277,13 +277,13 @@ end
     end
 
     @testset "Outages of L29, L36, L37" begin
-        systemstate = CompositeAdequacy.SystemState(system)
-        CompositeAdequacy.field(systemstate, :branches)[29,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[36,t] = 0
-        CompositeAdequacy.field(systemstate, :branches)[37,t] = 0
-        CompositeAdequacy.field(systemstate, :condition)[t] = 0
-        CompositeAdequacy.update!(pm.topology, systemstate, system, t)
-        CompositeAdequacy.solve!(pm, systemstate, system, t)
+        systemstates = CompositeAdequacy.SystemStates(system)
+        CompositeAdequacy.field(systemstates, :branches)[29,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[36,t] = 0
+        CompositeAdequacy.field(systemstates, :branches)[37,t] = 0
+        CompositeAdequacy.field(systemstates, :condition)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, systemstates, system, t)
 
         @test isapprox(sum(values(pm.topology.plc)[:,t]), 3.09; atol = 1e-3)
 

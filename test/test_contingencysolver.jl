@@ -12,15 +12,15 @@ optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_so
 
 CompositeAdequacy.empty_model!(pm)
 pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
-systemstate = CompositeAdequacy.SystemState(system)
+systemstates = CompositeAdequacy.SystemStates(system)
 t=1
 
-CompositeAdequacy.field(systemstate, :branches)[7,t] = 0
-CompositeAdequacy.field(systemstate, :branches)[23,t] = 0
-CompositeAdequacy.field(systemstate, :branches)[29,t] = 0
-#CompositeAdequacy.field(systemstate, :generators)[1,t] = 0
-CompositeAdequacy.field(systemstate, :condition)[t] = 0
-CompositeAdequacy.update!(pm.topology, systemstate, system, t)
+CompositeAdequacy.field(systemstates, :branches)[7,t] = 0
+CompositeAdequacy.field(systemstates, :branches)[23,t] = 0
+CompositeAdequacy.field(systemstates, :branches)[29,t] = 0
+#CompositeAdequacy.field(systemstates, :generators)[1,t] = 0
+CompositeAdequacy.field(systemstates, :condition)[t] = 0
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 
 
 
@@ -48,7 +48,7 @@ end
 CompositeAdequacy.objective_min_load_curtailment(pm, system)
 JuMP.optimize!(pm.model)
 CompositeAdequacy.build_result!(pm, system, t)
-#CompositeAdequacy.solve!(pm, systemstate, system, t)
+#CompositeAdequacy.solve!(pm, systemstates, system, t)
 values(pm.topology.plc)[:,t]
 sum(values(pm.topology.plc)[:,t])
 
@@ -120,7 +120,7 @@ for i in system.buses.keys
     if system.buses.bus_type != 4
         if length(pm.topology.bus_arcs[i]) > 0
             println(i)
-            incident_branch_count = sum([0; [CompositeAdequacy.field(systemstate, :branches)[l,t] for (l,i,j) in pm.topology.bus_arcs[i]]])
+            incident_branch_count = sum([0; [CompositeAdequacy.field(systemstates, :branches)[l,t] for (l,i,j) in pm.topology.bus_arcs[i]]])
             incident_active_edge = incident_branch_count
         end
 

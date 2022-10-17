@@ -11,7 +11,7 @@ function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i
     bus_gens = field(pm, Topology, :bus_generators)[i]
     bus_loads = field(pm, Topology, :bus_loads)[i]
     bus_shunts = field(pm, Topology, :bus_shunts)[i]
-    #bus_storage = assetgrouplist(field(pm.topology, :bus_storage))[i]
+    #bus_storage = assetgrouplist(field(pm, Topology, :bus_storage))[i]
 
 #    bus_pd = Float16.([field(system, Loads, :pd)[k,t] for k in bus_loads])
 #    bus_qd = Float16.([field(system, Loads, :qd)[k] for k in bus_loads])
@@ -85,7 +85,7 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
 
     f_bus = field(system, Branches, :f_bus)[i]
     t_bus = field(system, Branches, :t_bus)[i]
-    buspair = field(pm.topology, :buspairs)[(f_bus, t_bus)]
+    buspair = field(pm, Topology, :buspairs)[(f_bus, t_bus)]
     
     _constraint_voltage_angle_diff(pm, f_bus, t_bus, buspair["angmin"], buspair["angmax"])
 

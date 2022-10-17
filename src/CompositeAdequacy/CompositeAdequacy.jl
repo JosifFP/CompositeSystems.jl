@@ -15,6 +15,8 @@ import StatsBase: mean, std, stderror
 import TimeZones: ZonedDateTime, @tz_str
 import Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr, pinv
+import MathOptInterface
+import Memento
 import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
     optimize!, Model, direct_model, optimizer_with_attributes, result_count, 
     termination_status, isempty, empty!, AbstractModel, VariableRef, 
@@ -24,15 +26,11 @@ import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix,
     LOCALLY_SOLVED, OPTIMAL, INFEASIBLE, LOCALLY_INFEASIBLE, ITERATION_LIMIT, 
     TIME_LIMIT, OPTIMIZE_NOT_CALLED
 
-import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
-
 "Suppresses information and warning messages output"
 function silence()
-    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-    Memento.setlevel!(_LOGGER, "error")
     Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
+    Memento.setlevel!(Memento.getlogger(Juniper), "error", recursive=false)
     Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
-    #Memento.setlevel!(Memento.getlogger(CompositeAdequacy), "error", recursive=false)
 end
 
 export
@@ -43,7 +41,7 @@ export
     # Simulation specifications
     Topology, SequentialMCS, NonSequentialMCS,
 
-    SystemState, accumulator,
+    SystemStates, accumulator,
 
     # Result specifications
     Shortfall, ShortfallSamples,
@@ -52,29 +50,12 @@ export
     ZonedDateTime, @tz_str
 #
 
-abstract type ReliabilityMetric end
-abstract type SimulationSpec end
-abstract type ResultSpec end
-abstract type ResultAccumulator{S<:SimulationSpec,R<:ResultSpec} end
-abstract type Result{
-    N, # Number of timesteps simulated
-    L, # Length of each simulation timestep
-    T <: Period, # Units of each simulation timestep
-} end
-
-MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
-
-
-include("base.jl")
+include("topology.jl")
+include("types.jl")
+include("PowerFlowProblem.jl")
 include("metrics.jl")
 include("results/results.jl")
 include("simulations/simulations.jl")
 include("utils.jl")
-
-include("Optimizer/utils.jl")
-include("Optimizer/variables.jl")
-include("Optimizer/constraints.jl")
-include("Optimizer/Optimizer.jl")
-include("Optimizer/solution.jl")
 
 end

@@ -74,7 +74,7 @@ function check_status(system::SystemModel)
             f_bus = field(system, Branches, :f_bus)[k]
             t_bus = field(system, Branches, :t_bus)[k]
             if field(system, Buses, :bus_type)[f_bus] == 4 || field(system, Buses, :bus_type)[t_bus] == 4
-                #Memento.info(_LOGGER, "deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
+                #@info("deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
                 field(system, Branches, :status)[k] = 0
             end
         end
@@ -182,7 +182,7 @@ function ref_add!(ref::Dict{Symbol,Any})
     ref[:ref_buses] = ref_buses
 
     if length(ref_buses) > 1
-        Memento.warn(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
+        @warn("multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
     end
 
     ref[:buspairs] = calc_buspair_parameters(ref[:bus], ref[:branch])
