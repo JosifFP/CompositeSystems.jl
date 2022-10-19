@@ -1,13 +1,13 @@
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var, check_status,
-VariableType, assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, SUCCESSFUL, FAILED
+VariableType, assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, SUCCESSFUL, FAILED, build_sol_values
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 using ProfileView, Profile
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
-RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RBTS.m"
+RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 PRATSBase.silence()
 #InputData = ["Loads", "Generators", "Branches"]
 #PRATSBase.FileGenerator(RawFile, InputData)
@@ -16,42 +16,57 @@ system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N
 #topology = Topology(system)
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeAdequacy.Settings()
-method = PRATS.SequentialMCS(samples=1, seed=321, threaded=false)
+method = PRATS.SequentialMCS(samples=8, seed=321, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, resultspecs...)
 
-PRATS.LOLE.(shortfall, system.loads.keys)
-PRATS.EUE.(shortfall, system.loads.keys)
-PRATS.LOLE.(shortfall)
-PRATS.EUE.(shortfall)
-
-
-systemstates = SystemStates(system, method)
-
-view(pm.topology.bus_loads_idxs)
-view(getfield(states, field), :, t)
+#PRATS.LOLE.(shortfall, system.loads.keys)
+#PRATS.EUE.(shortfall, system.loads.keys)
+#PRATS.LOLE.(shortfall)
+#PRATS.EUE.(shortfall)
 
 
 
+
+
+
+system = PRATSBase.SystemModel(RawFile)
 systemstates = SystemStates(system, method)
 topology = CompositeAdequacy.Topology(system)
 pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings), topology)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
-@btime CompositeAdequacy.initialize!(rng, systemstates, system)
-
-sum(systemstates.system)
+CompositeAdequacy.initialize!(rng, systemstates, system)
 
 t=1
 field(systemstates, :branches)[5,t] = 0
 field(systemstates, :branches)[8,t] = 0
-field(systemstates, :system)[t] = 1
-@btime CompositeAdequacy.update!(pm.topology, systemstates, system, t)
-#7.425 μs (253 allocations: 22.11 KiB)
-
-
+field(systemstates, :system)[t] = 0
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 CompositeAdequacy.build_method!(pm, system, t)
 CompositeAdequacy.optimize!(pm.model)
 CompositeAdequacy.build_result!(pm, system, t)
-pm.topology.plc
+sum(pm.topology.plc)
+
+system.branches.keys
+assetgrouplist(pm.topology.buses_idxs)
+assetgrouplist(pm.topology.loads_idxs)
+assetgrouplist(pm.topology.branches_idxs)
+assetgrouplist(pm.topology.shunts_idxs)
+assetgrouplist(pm.topology.generators_idxs)
+assetgrouplist(pm.topology.storages_idxs)
+assetgrouplist(pm.topology.generatorstorages_idxs)
+
+pm.topology.bus_loads
+pm.topology.bus_shunts
+pm.topology.bus_generators
+pm.topology.bus_storages
+pm.topology.bus_generatorstorages
+pm.topology.bus_arcs
+pm.topology.buspairs
+
+
+termination_status(pm.model)
+
+plc = build_sol_values(var(pm, :plc, 1))
 
 
 t=2

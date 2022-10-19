@@ -87,7 +87,7 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; t:
 
     arcs_from = [(l,i,j) for (l,i,j) in field(system, :arcs_from) if l in assetgrouplist(field(pm, Topology, :branches_idxs))]
     arcs = [(l,i,j) for (l,i,j) in field(system, :arcs) if l in assetgrouplist(field(pm, Topology, :branches_idxs))]
-    p = @variable(pm.model, [arcs], container = Dict{Tuple{Int, Int, Int}, Any})
+    p = @variable(pm.model, [arcs])
     #p = var(pm)[:p] = @variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
 
     if bounded

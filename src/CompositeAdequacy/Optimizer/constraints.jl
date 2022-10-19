@@ -1,6 +1,6 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractPowerModel, i::Int; t::Int=0)
-    @constraint(pm.model, var(pm, :va, t)[i] == 0)
+    @constraint(pm.model, var(pm, :va, t)[i] == 0, container = Array)
     #fix(var(pm, :va)[i], 0, force = true)
 end
 
@@ -81,7 +81,7 @@ end
 "DC Line Flow Constraints"
 function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, t::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
-    @constraint(pm.model, var(pm, t, :p)[i, f_bus, t_bus] == -b*(va_fr_to))
+    @constraint(pm.model, var(pm, :p, t)[i, f_bus, t_bus] == -b*(va_fr_to))
 
 end
 

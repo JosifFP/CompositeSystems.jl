@@ -179,8 +179,8 @@ function update_bus_assets!(bus_assets::Dict{Int, Vector{Int}}, buses::Vector{In
 end
 
 ""
-function update_bus_assets!(
-    bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}}, key_buses::Vector{Int}, branch_states::Vector{Bool})
+function update_bus_assets!(bus_arcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, 
+    arcs::Vector{Tuple{Int, Int, Int}}, key_buses::Vector{Int}, branch_states::SubArray)
 
     for i in key_buses
         bus_arcs[i] = Tuple{Int,Int,Int}[]

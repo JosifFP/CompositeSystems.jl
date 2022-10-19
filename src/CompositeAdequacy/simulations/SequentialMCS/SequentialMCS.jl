@@ -104,7 +104,7 @@ function update!(topology::Topology, states::SystemStates, system::SystemModel, 
 
         update_branch_idxs!(
             topology, system, field(states, :branches, t), key_buses, t, 
-            check_status(field(states, :generatorstorages, t)))
+            check_status(field(states, :branches, t)))
 
     end
 
