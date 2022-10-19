@@ -33,20 +33,19 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    systemstates = SystemStates(system, method)
-    #topology = Topology(system)
-    pm = PowerFlowProblem(system, method, field(method, :settings), Topology(system))    #DON'T MOVE THIS LINE
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
     for s in sampleseeds
         println("s=$(s)")
+        systemstates = SystemStates(system, method)
+        pm = PowerFlowProblem(system, method, field(method, :settings), Topology(system))
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstates, system) #creates the up/down sequence for each device.
 
         for t in 1:N
             if field(systemstates, :system)[t] ≠ true
-                #println("t=$(t)")
+                println("t=$(t)")
                 update!(field(pm, :topology), systemstates, system, t)
                 solve!(pm, system, t)
                 empty_model!(pm)
@@ -68,9 +67,7 @@ function initialize!(rng::AbstractRNG, states::SystemStates, system::SystemModel
     initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
     initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
     initialize_availability!(rng, field(states, :generatorstorages), field(system, :generatorstorages), N)
-    initialize_availability!(
-        field(states, :branches), field(states, :generators), field(states, :storages),
-        field(states, :generatorstorages), field(states, :system), N)
+    initialize_availability!(states, field(states, :system), N)
 
     return
 
@@ -79,28 +76,35 @@ end
 ""
 function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
 
-    #update_statess!(system, states, t)
-    if field(states, :system)[t] ≠ true
+    state = check_status(field(field(states, :system), t))
+
+    if (t>1 && state == check_status(field(field(states, :system), t-1))) || t==1 && state == FAILED
         
         key_buses = field(system, Buses, :keys)
 
         update_asset_idxs!(
-            topology, field(system, :loads), field(states, :loads), key_buses, t)
+            topology, field(system, :loads), field(states, :loads, t), key_buses, t, 
+            check_status(field(states, :loads, t)))
 
         update_asset_idxs!(
-            topology, field(system, :shunts), field(states, :shunts), key_buses, t)
+            topology, field(system, :shunts), field(states, :shunts, t), key_buses, t, 
+            check_status(field(states, :shunts, t)))
 
         update_asset_idxs!(
-            topology, field(system, :generators), field(states, :generators), key_buses, t)
+            topology, field(system, :generators), field(states, :generators, t), key_buses, t, 
+            check_status(field(states, :generators, t)))
 
         update_asset_idxs!(
-            topology, field(system, :storages), field(states, :storages), key_buses, t)
+            topology, field(system, :storages), field(states, :storages, t), key_buses, t, 
+            check_status(field(states, :storages, t)))
 
         update_asset_idxs!(
-            topology, field(system, :generatorstorages), field(states, :generatorstorages), key_buses, t)
+            topology, field(system, :generatorstorages), field(states, :generatorstorages, t), 
+            key_buses, t, check_status(field(states, :generatorstorages, t)))
 
         update_branch_idxs!(
-            topology, system, field(states, :branches), key_buses, t)
+            topology, system, field(states, :branches, t), key_buses, t, 
+            check_status(field(states, :generatorstorages, t)))
 
     end
 

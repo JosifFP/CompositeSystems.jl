@@ -15,17 +15,15 @@ field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
 field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
 field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
 
-field(states::AbstractState, field::Symbol) = getfield(states, field)
+field(states::SystemStates, field::Symbol) = getfield(states, field)
+field(states::SystemStates, field::Symbol, t::Int) = view(getfield(states, field), :, t)
+field(field::Matrix{Bool}, t::Int) = view(field, :, t)
+field(field::Union{BitVector, Vector{Bool}}, t::Int) = view(field, t)
+
 field(settings::Settings, field::Symbol) = getfield(settings, field)
 
 field(method::SimulationSpec, field::Symbol) = getfield(method, field)
 field(method::SimulationSpec, settings::Type{Settings}, subfield::Symbol) = getfield(getfield(method, :settings), subfield)
-
-SystemAvailable(states::AbstractState, t::Int) = all([
-    field(states, :loads)[:,t]; field(states, :branches)[:,t]; 
-    field(states, :shunts)[:,t]; field(states, :generators)[:,t]; 
-    field(states, :storages)[:,t]; field(states, :generatorstorages)[:,t]]
-)
 
 field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
 field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
@@ -38,6 +36,20 @@ var(powermodel::AbstractPowerModel, subfield::Symbol, nw::Int) = getindex(getfie
 sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
 sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 
+
+""
+function check_status(a::Vector{Bool})
+    i_idx = @inbounds findfirst(isequal(0), a)
+    if i_idx === nothing i_idx=SUCCESSFUL else i_idx=FAILED end
+    return i_idx
+end
+
+""
+function check_status(a::SubArray)
+    i_idx = findfirst(isequal(0), a)
+    if i_idx === nothing i_idx=SUCCESSFUL else i_idx=FAILED end
+    return i_idx
+end
 
 ""
 function findfirstunique_directional(a::AbstractVector{<:Pair}, i::Pair)

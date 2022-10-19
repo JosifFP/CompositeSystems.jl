@@ -181,9 +181,11 @@ CompositeAdequacy.@def ca_fields begin
 
 end
 
+
 struct DCPPowerModel <: AbstractDCPModel @ca_fields end
 struct DCMPPowerModel <: AbstractDCMPPModel @ca_fields end
 struct NFAPowerModel <: AbstractNFAModel @ca_fields end
+
 
 "Constructor for an AbstractPowerModel modeling object"
 function PowerFlowProblem(system::SystemModel{N}, method::SimulationSpec, settings::Settings, topology::OptimizationContainer) where {N}
@@ -197,7 +199,7 @@ function PowerFlowProblem(system::SystemModel{N}, method::SimulationSpec, settin
         PowerModel = NFAPowerModel
     end
 
-    model = set_jumpmodel(field(settings, :modelmode), field(settings, :optimizer))
+    model = set_jumpmodel(field(settings, :modelmode), set_optimizer_default())
     var = VariableContainer(system, method)
 
     return PowerModel(model, topology, var)

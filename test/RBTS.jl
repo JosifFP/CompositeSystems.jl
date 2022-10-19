@@ -1,6 +1,7 @@
 using PRATS
 import PRATS.PRATSBase
-import PRATS.CompositeAdequacy: CompositeAdequacy, field, var, VariableType, assetgrouplist
+import PRATS.CompositeAdequacy: CompositeAdequacy, field, var, check_status,
+VariableType, assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, SUCCESSFUL, FAILED
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 using ProfileView, Profile
@@ -15,12 +16,19 @@ system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N
 #topology = Topology(system)
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeAdequacy.Settings()
-method = PRATS.SequentialMCS(samples=50, seed=321, threaded=true)
+method = PRATS.SequentialMCS(samples=1, seed=321, threaded=false)
 @time shortfall,report = PRATS.assess(system, method, resultspecs...)
+
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)
+
+
+systemstates = SystemStates(system, method)
+
+view(pm.topology.bus_loads_idxs)
+view(getfield(states, field), :, t)
 
 
 
@@ -28,13 +36,18 @@ systemstates = SystemStates(system, method)
 topology = CompositeAdequacy.Topology(system)
 pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings), topology)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
-CompositeAdequacy.initialize!(rng, systemstates, system)
+@btime CompositeAdequacy.initialize!(rng, systemstates, system)
+
+sum(systemstates.system)
 
 t=1
 field(systemstates, :branches)[5,t] = 0
 field(systemstates, :branches)[8,t] = 0
-field(systemstates, :system)[t] = 0
-CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+field(systemstates, :system)[t] = 1
+@btime CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+#7.425 μs (253 allocations: 22.11 KiB)
+
+
 CompositeAdequacy.build_method!(pm, system, t)
 CompositeAdequacy.optimize!(pm.model)
 CompositeAdequacy.build_result!(pm, system, t)
@@ -80,37 +93,9 @@ CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 CompositeAdequacy.var_bus_voltage(pm, system, t=1)
 CompositeAdequacy.var_gen_power(pm, system, t=1)
 
-pm.var[1].va
-
-var(pm, t)
-
-getfield(var(pm, t), :va)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Dict{Int, VariableType}(0 => Dict{Int, VariableType}())
-
-CompositeAdequacy.var(pm, :pg, 1)
-CompositeAdequacy.var(pm, :pg, 2)
-
-
-@btime VarContainer = CompositeAdequacy.VariableContainer(CompositeAdequacy.DCMPPowerModel, method, 8736)
-
-@btime CompositeAdequacy.var(VarContainer, :p, 1)
 
 
 
@@ -194,30 +179,6 @@ Status(S{false})
 CompositeAdequacy.field(system, Loads, :status)
 @btime all(CompositeAdequacy.field(system, Loads, :status))
 @btime Status(S{all(CompositeAdequacy.field(system, Loads, :status))})
-
-CompositeAdequacy.field(system, Loads, :status)
-
-BitVector()
-
-systemstates.loads
-BitArray(undef, 5, 8760)
-
-struct statx
-    a::Matrix{Bool}
-    function statx(N::Int)
-        a = ones(Bool, 2, N)
-        return new(a)
-    end
-end
-
-ones(Bool, length(system.loads))
-
-abstract type VariableType end
-abstract type ConstraintType end
-abstract type ExpressionType end
-abstract type AuxVariableType end
-abstract type ParameterType end
-abstract type InitialConditionType end
 
 variables::Dict{VariableKey, AbstractArray}
 
