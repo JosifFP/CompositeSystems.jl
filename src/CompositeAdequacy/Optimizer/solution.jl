@@ -1,7 +1,7 @@
 ""
 function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
 
-    plc = build_sol_values(var(pm, :plc))
+    plc = build_sol_values(var(pm, :plc, t))
 
     if termination_status(pm.model) == LOCALLY_SOLVED
         for i in field(system, Loads, :keys)
@@ -14,31 +14,8 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
 
-    if sum(field(pm, Topology, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm, Topology, :plc)[:,t]))") end
-
-end
-
-""
-function build_results!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
-
-    #plc = sol(pm)[:plc] = build_sol_values(pm.var[:plc])
-    plc = build_sol_values(var(pm, :plc))
-
-    if termination_status(pm.model) == LOCALLY_SOLVED
-        for i in field(system, Loads, :keys)
-            if haskey(plc, i) == false
-                get!(plc, i, field(system, Loads, :pd)[i,t])
-            end
-        end
-    #else
-        #for i in field(system, Loads, :keys)
-        #    get!(plc, i, Float16(0.0))
-        #end        
-    end
-
-    for r in field(system, Loads, :keys)
-        field(pm, Topology, :plc)[r,t] = CompositeAdequacy.sol(pm, :plc)[r]
-    end
+    #if sum(field(pm, Topology, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm, Topology, :plc)[:,t]))") end
+    if sum(field(pm, Topology, :plc)[:,t]) > 0 println("t=$(t)") end
 
 end
 
@@ -72,6 +49,23 @@ end
 #         @warn(_LOGGER, "the given optimizer does not provide the ResultCount() attribute, assuming the solver returned a solution which may be incorrect.");
 #     end
 # end
+
+""
+function build_sol_values(var::DenseAxisArray)
+
+    sol = Dict{Int, Float16}()
+
+    for key in axes(var)[1]
+        val_r = abs(build_sol_values(var[key]))
+        if val_r > 1e-4
+            sol[key] = Float16(val_r)
+        else
+            sol[key] = Float16(0.0)
+        end
+    end
+
+    return sol
+end
 
 ""
 function build_sol_values(var::Dict)

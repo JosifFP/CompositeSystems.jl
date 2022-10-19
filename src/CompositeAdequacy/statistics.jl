@@ -1,3 +1,37 @@
+abstract type ReliabilityMetric end
+
+MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
+meanvariance() = Series(Mean(), Variance())
+
+"It generates a sequence of seeds from a given number of samples"
+function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
+    for s in 1:nsamples
+        put!(sampleseeds, s)
+    end
+    close(sampleseeds)
+end
+
+function mean_std(x::MeanVariance)
+    m, v = value(x)
+    return m, sqrt(v)
+end
+
+""
+function mean_std(x::AbstractArray{<:MeanVariance})
+
+    means = similar(x, Float64)
+    vars = similar(means)
+
+    for i in eachindex(x)
+        m, v = mean_std(x[i])
+        means[i] = m
+        vars[i] = v
+    end
+
+    return means, vars
+
+end
+
 struct MeanEstimate
 
     estimate::Float64

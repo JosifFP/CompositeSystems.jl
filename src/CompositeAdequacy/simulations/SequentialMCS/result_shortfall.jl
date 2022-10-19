@@ -127,7 +127,7 @@ function record!(
     sampleid::Int
 ) where {N,L,T,S}
 
-    nloads = length(CompositeAdequacy.field(pm, Topology, :loads_idxs))
+    nloads = length(field(pm, Topology, :loads_idxs))
     #isshortfall = zeros(Bool, nloads)
 
     for t in 1:N
@@ -215,7 +215,7 @@ function finalize(
 
     return ShortfallResult{N,L,T,E}(
         nsamples, 
-        length(ep_bus_mean), 
+        system.loads.keys, 
         system.timestamps,
         ep_total_mean, 
         ep_total_std, 

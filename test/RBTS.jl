@@ -1,6 +1,6 @@
 using PRATS
 import PRATS.PRATSBase
-import PRATS.CompositeAdequacy
+import PRATS.CompositeAdequacy: CompositeAdequacy, field, var, VariableType, assetgrouplist
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 using ProfileView, Profile
@@ -10,60 +10,114 @@ RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RBTS.m"
 PRATSBase.silence()
 #InputData = ["Loads", "Generators", "Branches"]
 #PRATSBase.FileGenerator(RawFile, InputData)
+
 system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N=8736)
+#topology = Topology(system)
+resultspecs = (Shortfall(), Shortfall())
+settings = CompositeAdequacy.Settings()
+method = PRATS.SequentialMCS(samples=50, seed=321, threaded=true)
+@time shortfall,report = PRATS.assess(system, method, resultspecs...)
+PRATS.LOLE.(shortfall, system.loads.keys)
+PRATS.EUE.(shortfall, system.loads.keys)
+PRATS.LOLE.(shortfall)
+PRATS.EUE.(shortfall)
+
+
 
 systemstates = SystemStates(system, method)
+topology = CompositeAdequacy.Topology(system)
+pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings), topology)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
+CompositeAdequacy.initialize!(rng, systemstates, system)
 
-resultspecs = (Shortfall(), Shortfall())
-method = PRATS.SequentialMCS(samples=1, seed=1, verbose=false, threaded=false)
-@time shortfall,report = PRATS.assess(system, method, resultspecs...)
-
-
-@time pm = CompositeAdequacy.PowerFlowProblem(
-    CompositeAdequacy.AbstractDCOPF, JuMP.Model(method.optimizer; add_bridges = false), CompositeAdequacy.Topology(system)
-)
-
-@btime systemstates = CompositeAdequacy.SystemStates(system)
-#10.300 μs (15 allocations: 316.48 KiB)
-
-
-struct S{Bool} end
-struct FAILED <: S end
-struct SUCCESSFUL <: S end
-Status(::Type{S{false}}) = FAILED
-Status(::Type{S{true}}) = SUCCESSFUL
+t=1
+field(systemstates, :branches)[5,t] = 0
+field(systemstates, :branches)[8,t] = 0
+field(systemstates, :system)[t] = 0
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+CompositeAdequacy.build_method!(pm, system, t)
+CompositeAdequacy.optimize!(pm.model)
+CompositeAdequacy.build_result!(pm, system, t)
+pm.topology.plc
 
 
-
-tmp = Array{Bool, 2}(undef, 6, 8736)
-        
-@btime for t in 1:8736
-    for r in 1:6
-        if anys(CompositeAdequacy.Available(systemstates, t)[r]) 
-            tmp[r,t] = true
-        else 
-            tmp[r,t] = false
-        end
-    end
-end
-
-tmp
+t=2
+field(systemstates, :branches)[5,t] = 0
+field(systemstates, :branches)[8,t] = 0
+field(systemstates, :system)[t] = 0
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+CompositeAdequacy.build_method!(pm, system, t)
+CompositeAdequacy.optimize!(pm.model)
+CompositeAdequacy.build_result!(pm, system, t)
+pm.topology.plc
+pm.var.va
 
 
-function anys(B::Vector{Bool})
-    @inbounds begin
-        for i in eachindex(B)
-            B[i] == 1 || return false
-        end
-    end
-    return true
-end
 
-function foo()
-    fill!(Matrix{Bool}(undef, 6, 8736), 1)
-end
 
-@btime foo()
+
+
+
+#systemstates = SystemStates(system, method)
+#rng = CompositeAdequacy.Philox4x((0, 0), 10)
+#CompositeAdequacy.initialize!(rng, systemstates, system)
+
+nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+
+RawFile = "test/data/RBTS.m"
+system = PRATSBase.SystemModel(RawFile)
+field(system, CompositeAdequacy.Loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
+method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
+topology = CompositeAdequacy.Topology(system)
+pm = CompositeAdequacy.PowerFlowProblem(method, field(method, :settings), topology, 1)
+t=1
+systemstates = CompositeAdequacy.SystemStates(system, CompositeAdequacy.Tests)
+field(systemstates, :branches)[5,t] = 0
+field(systemstates, :branches)[8,t] = 0
+field(systemstates, :system)[t] = 0
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+CompositeAdequacy.var_bus_voltage(pm, system, t=1)
+CompositeAdequacy.var_gen_power(pm, system, t=1)
+
+pm.var[1].va
+
+var(pm, t)
+
+getfield(var(pm, t), :va)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dict{Int, VariableType}(0 => Dict{Int, VariableType}())
+
+CompositeAdequacy.var(pm, :pg, 1)
+CompositeAdequacy.var(pm, :pg, 2)
+
+
+@btime VarContainer = CompositeAdequacy.VariableContainer(CompositeAdequacy.DCMPPowerModel, method, 8736)
+
+@btime CompositeAdequacy.var(VarContainer, :p, 1)
+
+
+
+
+
+
+
 
 Profile.clear()
 @profile shortfall,report = PRATS.assess(system, method, resultspecs...)

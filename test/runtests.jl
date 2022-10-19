@@ -1,6 +1,6 @@
-using PRATS
-using PRATS.PRATSBase
-using PRATS.CompositeAdequacy
+import PRATS
+import PRATS.PRATSBase
+import PRATS.CompositeAdequacy: CompositeAdequacy, field, Topology, SystemStates
 using PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 using Test
 

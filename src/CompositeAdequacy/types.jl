@@ -1,8 +1,6 @@
-MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
-meanvariance() = Series(Mean(), Variance())
-
-abstract type ReliabilityMetric end
 abstract type SimulationSpec end
+abstract type Tests <: SimulationSpec end
+abstract type OptimizationContainer end
 abstract type ResultSpec end
 abstract type ResultAccumulator{S<:SimulationSpec,R<:ResultSpec} end
 abstract type Result{
@@ -11,6 +9,60 @@ abstract type Result{
     T <: Period, # Units of each simulation timestep
 } end
 
+
+"Types of optimization"
+abstract type AbstractPowerModel end
+abstract type AbstractDCPowerModel <: AbstractPowerModel end
+abstract type AbstractACPowerModel <: AbstractPowerModel end
+abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
+abstract type AbstractDCPModel <: AbstractDCPowerModel end
+abstract type AbstractNFAModel <: AbstractDCPowerModel end
+#AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
+#AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
+#AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
+
+
+""
+function set_optimizer_default()
+    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "acceptable_tol"=>1e-3, "print_level"=>0)
+    optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])
+    return optimizer
+end
+
+""
+function set_jumpmodel(modelmode::JuMP.ModelMode, optimizer)
+    if modelmode == JuMP.AUTOMATIC
+        jumpmodel = Model(optimizer; add_bridges = false)
+    elseif modelmode == JuMP.DIRECT
+        @warn("Direct Mode is unsafe")
+        jumpmodel = direct_model(optimizer)
+    else
+        @warn("Manual Mode not supported")
+    end
+
+    return jumpmodel
+end
+
+""
+struct Settings <: SimulationSpec
+
+    powermodel::Type{<:AbstractPowerModel}
+    modelmode::JuMP.ModelMode
+    optimizer::MathOptInterface.OptimizerWithAttributes
+
+    function Settings(;
+        powermodel::Type{<:AbstractPowerModel}=AbstractDCMPPModel,
+        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
+        optimizer=set_optimizer_default()
+        )
+
+        @assert powermodel <: AbstractPowerModel
+
+        new(powermodel, modelmode, optimizer)
+    end
+
+end
+
 "Definition of SequentialMCS method"
 struct SequentialMCS <: SimulationSpec
 
@@ -18,23 +70,19 @@ struct SequentialMCS <: SimulationSpec
     seed::UInt64
     verbose::Bool
     threaded::Bool
-    optimizer::Union{Nothing, MathOptInterface.OptimizerWithAttributes}
+    settings::Settings
 
     function SequentialMCS(;
-        samples::Int=1_000, seed::Int=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=true, optimizer=nothing
+        samples::Int=1_000,
+        seed::Int=rand(UInt64),
+        verbose::Bool=false,
+        threaded::Bool=true,
+        settings=Settings()
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
 
-        if optimizer === nothing
-            nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2, 
-                "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-            optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
-            #Model(optimizer; add_bridges = false) #direct_model(optimizer)
-        end
-
-        new(samples, UInt64(seed), verbose, threaded, optimizer)
+        new(samples, UInt64(seed), verbose, threaded, settings)
 
     end
 
@@ -47,70 +95,38 @@ struct NonSequentialMCS <: SimulationSpec
     seed::UInt64
     verbose::Bool
     threaded::Bool
-    optimizer::Union{Nothing, MathOptInterface.OptimizerWithAttributes}
+    settings::Settings
 
     function NonSequentialMCS(;
-        samples::Int=1_000, seed::Int=rand(UInt64),
-        verbose::Bool=false, threaded::Bool=true, optimizer=nothing
+        samples::Int=1_000,
+        seed::Int=rand(UInt64),
+        verbose::Bool=false,
+        threaded::Bool=true,
+        settings=Settings()
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
 
-        if optimizer === nothing
-            nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2, 
-                "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-            optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
-            #Model(optimizer; add_bridges = false) #direct_model(optimizer)
-        end
-
-        new(samples, UInt64(seed), verbose, threaded, optimizer)
+        new(samples, UInt64(seed), verbose, threaded, settings)
 
     end
 
 end
 
-"root of the power model formulation type hierarchy"
-abstract type AbstractPowerModel end
-abstract type AbstractDCPowerModel <: AbstractPowerModel end
-abstract type AbstractACPowerModel <: AbstractPowerModel end
-#AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
-#AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
-#AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
-abstract type  DCOPF <: AbstractDCPowerModel end
-abstract type  Transportation <: AbstractDCPowerModel end
+"Definition of Pre-Contingencies simulation method"
+struct PreContingencies <: SimulationSpec
+    
+    verbose::Bool
+    threaded::Bool
+    settings::Settings
 
-"Definition of States"
-abstract type AbstractState end
+    function PreContingencies(;
+        verbose::Bool=false,
+        threaded::Bool=true,
+        settings=Settings()
+    )
+        new(verbose, threaded, settings)
 
-struct GroupStates <: AbstractState
-    system::Vector{Bool}
-    loads::Union{Nothing, Vector{Bool}}
-    branches::Union{Nothing, Vector{Bool}}
-    shunts::Union{Nothing, Vector{Bool}}
-    generators::Union{Nothing, Vector{Bool}}
-    storages::Union{Nothing, Vector{Bool}}
-    generatorstorages::Union{Nothing, Vector{Bool}}
-end
-
-struct SystemStates <: AbstractState
-
-    loads::Array{Bool}
-    branches::Array{Bool}
-    shunts::Array{Bool}
-    generators::Array{Bool}
-    storages::Array{Bool}
-    generatorstorages::Array{Bool}
-
-    loads_nexttransition::Union{Nothing, Vector{Int}}
-    branches_nexttransition::Union{Nothing, Vector{Int}}
-    shunts_nexttransition::Union{Nothing, Vector{Int}}
-    generators_nexttransition::Union{Nothing, Vector{Int}}
-    storages_nexttransition::Union{Nothing, Vector{Int}}
-    generatorstorages_nexttransition::Union{Nothing, Vector{Int}}
-
-    storages_energy::Array{Float16}
-    generatorstorages_energy::Array{Float16}
-
-    groupstates::GroupStates
+    end
 
 end

@@ -15,51 +15,29 @@ field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
 field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
 field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
 
+field(states::AbstractState, field::Symbol) = getfield(states, field)
+field(settings::Settings, field::Symbol) = getfield(settings, field)
+
+field(method::SimulationSpec, field::Symbol) = getfield(method, field)
+field(method::SimulationSpec, settings::Type{Settings}, subfield::Symbol) = getfield(getfield(method, :settings), subfield)
+
+SystemAvailable(states::AbstractState, t::Int) = all([
+    field(states, :loads)[:,t]; field(states, :branches)[:,t]; 
+    field(states, :shunts)[:,t]; field(states, :generators)[:,t]; 
+    field(states, :storages)[:,t]; field(states, :generatorstorages)[:,t]]
+)
+
 field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
 field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
 field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
 
-field(states::SystemStates, field::Symbol) = getfield(states, field)
+var(powermodel::AbstractPowerModel) = getfield(powermodel, :var)
+var(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(getfield(powermodel, :var), subfield)
+var(powermodel::AbstractPowerModel, subfield::Symbol, nw::Int) = getindex(getfield(getfield(powermodel, :var), subfield), nw)
 
-var(pm::AbstractPowerModel) = pm.var
-var(pm::AbstractPowerModel, key::Symbol) = pm.var[key]
-var(pm::AbstractPowerModel, key::Symbol, idx) = pm.var[key][idx]
 sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
 sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 
-Available(states::SystemStates, t::Int) = (
-    field(states, :loads)[:,t], field(states, :branches)[:,t], field(states, :shunts)[:,t], 
-    field(states, :generators)[:,t], field(states, :storages)[:,t], field(states, :generatorstorages)[:,t]
-)
-
-"It generates a sequence of seeds from a given number of samples"
-function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
-    for s in 1:nsamples
-        put!(sampleseeds, s)
-    end
-    close(sampleseeds)
-end
-
-function mean_std(x::MeanVariance)
-    m, v = value(x)
-    return m, sqrt(v)
-end
-
-""
-function mean_std(x::AbstractArray{<:MeanVariance})
-
-    means = similar(x, Float64)
-    vars = similar(means)
-
-    for i in eachindex(x)
-        m, v = mean_std(x[i])
-        means[i] = m
-        vars[i] = v
-    end
-
-    return means, vars
-
-end
 
 ""
 function findfirstunique_directional(a::AbstractVector{<:Pair}, i::Pair)

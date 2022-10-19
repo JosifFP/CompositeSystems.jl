@@ -26,6 +26,8 @@ import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix,
     LOCALLY_SOLVED, OPTIMAL, INFEASIBLE, LOCALLY_INFEASIBLE, ITERATION_LIMIT, 
     TIME_LIMIT, OPTIMIZE_NOT_CALLED
 
+import JuMP.Containers: DenseAxisArray
+
 "Suppresses information and warning messages output"
 function silence()
     Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
@@ -36,11 +38,19 @@ end
 export
     # CompositeAdequacy submoduleexport
     assess, @def,
+    
     # Metrics
     ReliabilityMetric, LOLE, EUE, val, stderror,
-    # Simulation specifications
-    Topology, SequentialMCS, NonSequentialMCS,
 
+    #Abstract PowerModel Formulations
+    AbstractPowerModel, AbstractDCPowerModel, AbstractACPowerModel,
+    AbstractDCPModel, AbstractDCMPPModel, AbstractNFAModel,
+
+    #optimizationcontainers
+    OptimizationContainer, Topology, VariableContainer, VariableType,
+
+    # Simulation specification
+    SequentialMCS, NonSequentialMCS, PreContingencies, Settings,
     SystemStates, accumulator,
 
     # Result specifications
@@ -50,10 +60,10 @@ export
     ZonedDateTime, @tz_str
 #
 
-include("topology.jl")
+include("statistics.jl")
 include("types.jl")
-include("PowerFlowProblem.jl")
-include("metrics.jl")
+include("optimizationcontainers.jl")
+include("systemstates.jl")
 include("results/results.jl")
 include("simulations/simulations.jl")
 include("utils.jl")

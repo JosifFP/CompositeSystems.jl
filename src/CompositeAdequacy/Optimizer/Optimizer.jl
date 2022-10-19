@@ -4,66 +4,66 @@ Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data
 """
 
 "Transportation"
-function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{Transportation})
+function build_method!(pm::AbstractNFAModel, system::SystemModel, nw::Int)
  
-    var_gen_power(pm, system, t)
-    var_branch_power(pm, system, t)
-    var_load_curtailment(pm, system, t)
+    var_gen_power(pm, system, t=nw)
+    var_branch_power(pm, system, t=nw)
+    var_load_curtailment(pm, system, t=nw)
 
     # Add Constraints
     # ---------------
     for i in assetgrouplist(field(pm, Topology, :buses_idxs))
-        constraint_power_balance(pm, system, i, t)
+        constraint_power_balance(pm, system, i, t=nw)
     end
 
     #for i in assetgrouplist(field(pm, Topology, :branches_idxs))
     #    constraint_thermal_limits(pm, system, i, t)
     #end
 
-    objective_min_load_curtailment(pm, system)
+    objective_min_load_curtailment(pm, system, t=nw)
     return
 
 end
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, type::Type{DCOPF})
+function build_method!(pm::AbstractDCMPPModel, system::SystemModel, nw::Int)
     # Add Optimization and State Variables
-    var_bus_voltage(pm, system, t)
-    var_gen_power(pm, system, t)
-    var_branch_power(pm, system, t)
-    var_load_curtailment(pm, system, t)
+    var_bus_voltage(pm, system, t=nw)
+    var_gen_power(pm, system, t=nw)
+    var_branch_power(pm, system, t=nw)
+    var_load_curtailment(pm, system, t=nw)
     #variable_storage_power_mi(pm)
     #var_dcline_power(pm)
 
     # Add Constraints
     # ---------------
     for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i)
+        constraint_theta_ref(pm, i, t=nw)
     end
 
     for i in assetgrouplist(field(pm, Topology, :buses_idxs))
-        constraint_power_balance(pm, system, i, t)
+        constraint_power_balance(pm, system, i, t=nw)
     end
 
     for i in assetgrouplist(field(pm, Topology, :branches_idxs))
-        constraint_ohms_yt(pm, system, i, t)
-        constraint_voltage_angle_diff(pm, system, i, t)
+        constraint_ohms_yt(pm, system, i, t=nw)
+        constraint_voltage_angle_diff(pm, system, i, t=nw)
         #constraint_thermal_limits(pm, system, i, t)
     end
 
     # for i in ids(pm, :dcline)
     #     constraint_dcline_power_losses(pm, i)
     # end
-    objective_min_load_curtailment(pm, system)
+    objective_min_load_curtailment(pm, system, t=nw)
     return
 
 end
 
 ""
-function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel)
+function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; t::Int=0)
 
     return @objective(pm.model, Min,
-        sum(field(system, Loads, :cost)[i]*var(pm, :plc)[i] for i in assetgrouplist(field(pm, Topology, :loads_idxs)))
+        sum(field(system, Loads, :cost)[i]*var(pm, :plc, t)[i] for i in assetgrouplist(field(pm, Topology, :loads_idxs)))
     )
 end
 

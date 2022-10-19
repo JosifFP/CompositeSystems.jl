@@ -1,5 +1,87 @@
+"""
+The `def` macro is used to build other macros that can insert the same block of
+julia code into different parts of a program.
+"""
+macro def(name, definition)
+    return quote
+        macro $(esc(name))()
+            esc($(Expr(:quote, definition)))
+        end
+    end
+end
+
 ""
-struct Topology
+abstract type VariableType end
+
+struct VariableContainer <: OptimizationContainer 
+
+    va::DenseAxisArray
+    vm::DenseAxisArray
+    pg::DenseAxisArray
+    qg::DenseAxisArray
+    plc::DenseAxisArray
+    qlc::DenseAxisArray
+    p::DenseAxisArray
+    q::DenseAxisArray
+
+end
+
+""
+function VariableContainer(system::SystemModel{N}, method::SimulationSpec) where {N}
+    
+    va = add_variable_container!(field(system, Buses, :keys), N, method)
+    vm = add_variable_container!(field(system, Buses, :keys), N, method)
+    pg = add_variable_container!(field(system, Generators, :keys), N, method)
+    qg = add_variable_container!(field(system, Generators, :keys), N, method)
+    plc = add_variable_container!(field(system, Loads, :keys), N, method)
+    qlc = add_variable_container!(field(system, Loads, :keys), N, method)
+    p = add_variable_container_dict!(field(system, :arcs), N, method)
+    q = add_variable_container_dict!(field(system, :arcs), N, method)
+    
+
+    return VariableContainer(va, vm, pg, qg, plc, qlc, p, q)
+end
+
+""
+function add_variable_container!(vkeys, N::Int, method::SequentialMCS)
+
+    conts = DenseAxisArray{DenseAxisArray}(undef, [i for i in 1:N]) #Initiate empty 2-D DenseAxisArray container
+    s_container = container_spec(VariableRef, vkeys)
+    return fill!(conts, s_container)
+end
+
+""
+function add_variable_container!(vkeys, N::Int, method::NonSequentialMCS)
+
+    s_container = container_spec(VariableRef, vkeys)
+    return fill!(DenseAxisArray{DenseAxisArray}(undef, [0]), s_container)
+end
+
+""
+function add_variable_container_dict!(vkeys, N::Int, method::SequentialMCS)
+
+    conts = DenseAxisArray{Dict}(undef, [i for i in 1:N]) #Initiate empty 2-D DenseAxisArray container
+    s_container = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in vkeys)
+    return fill!(conts, s_container)
+end
+
+""
+function add_variable_container_dict!(vkeys, N::Int, method::NonSequentialMCS)
+
+    s_container = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in vkeys)
+    return fill!(DenseAxisArray{DenseAxisArray}(undef, [0]), s_container)
+end
+
+"""
+Returns the correct container specification for the selected type of JuMP Model
+"""
+function container_spec(::Type{T}, axs...) where {T <: Any}
+    return DenseAxisArray{T}(undef, axs...)
+end
+
+
+"Topology Container"
+struct Topology <: OptimizationContainer
 
     #::Union{UnitRange{Int}, Vector{UnitRange{Int}}}
     buses_idxs::Vector{UnitRange{Int}}
@@ -89,3 +171,41 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.buspairs == y.buspairs &&
     x.plc == y.plc
 #
+
+"a macro for adding the standard AbstractPowerModel fields to a type definition"
+CompositeAdequacy.@def ca_fields begin
+    
+    model::AbstractModel
+    topology::OptimizationContainer
+    var::VariableContainer
+
+end
+
+struct DCPPowerModel <: AbstractDCPModel @ca_fields end
+struct DCMPPowerModel <: AbstractDCMPPModel @ca_fields end
+struct NFAPowerModel <: AbstractNFAModel @ca_fields end
+
+"Constructor for an AbstractPowerModel modeling object"
+function PowerFlowProblem(system::SystemModel{N}, method::SimulationSpec, settings::Settings, topology::OptimizationContainer) where {N}
+
+    PowerModel = field(settings, :powermodel)
+    @assert PowerModel<:AbstractPowerModel
+
+    if PowerModel <: AbstractDCMPPModel 
+        PowerModel = DCMPPowerModel
+    elseif PowerModel <: AbstractNFAModel 
+        PowerModel = NFAPowerModel
+    end
+
+    model = set_jumpmodel(field(settings, :modelmode), field(settings, :optimizer))
+    var = VariableContainer(system, method)
+
+    return PowerModel(model, topology, var)
+
+end
+
+include("Optimizer/utils.jl")
+include("Optimizer/variables.jl")
+include("Optimizer/constraints.jl")
+include("Optimizer/Optimizer.jl")
+include("Optimizer/solution.jl")

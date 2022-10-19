@@ -12,14 +12,14 @@ optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_so
 
 CompositeAdequacy.empty_model!(pm)
 pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
-systemstates = CompositeAdequacy.SystemStates(system)
+systemstates = CompositeAdequacy.SystemStates(system, CompositeAdequacy.Tests)
 t=1
 
 CompositeAdequacy.field(systemstates, :branches)[7,t] = 0
 CompositeAdequacy.field(systemstates, :branches)[23,t] = 0
 CompositeAdequacy.field(systemstates, :branches)[29,t] = 0
 #CompositeAdequacy.field(systemstates, :generators)[1,t] = 0
-CompositeAdequacy.field(systemstates, :condition)[t] = 0
+CompositeAdequacy.field(systemstates, :system)[t] = 0
 CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 
 
@@ -49,8 +49,8 @@ CompositeAdequacy.objective_min_load_curtailment(pm, system)
 JuMP.optimize!(pm.model)
 CompositeAdequacy.build_result!(pm, system, t)
 #CompositeAdequacy.solve!(pm, systemstates, system, t)
-values(pm.topology.plc)[:,t]
-sum(values(pm.topology.plc)[:,t])
+values(CompositeAdequacy.field(pm, Topology, :plc))[:,t]
+sum(values(CompositeAdequacy.field(pm, Topology, :plc))[:,t])
 
 
 

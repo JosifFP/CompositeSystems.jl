@@ -1,3 +1,22 @@
+""
+function initialize_availability!(
+    branches::Matrix{Bool}, 
+    generators::Matrix{Bool},
+    storages::Matrix{Bool},
+    generatorstorages::Matrix{Bool}, 
+    system::Vector{Bool}, 
+    N::Int)
+        
+    for t in 1:N
+        if all(vcat(branches[:,t], generators[:,t], storages[:,t], generatorstorages[:,t])) == false
+            system[t] = false
+        else
+            system[t] = true
+        end
+    end
+end
+
+""
 function initialize_availability!(
     rng::AbstractRNG,
     availability::Matrix{Bool},
@@ -81,7 +100,7 @@ function update!(system::SystemModel{N}) where {N}
 end
 
 "Update Asset statess"
-function update_statess!(system::SystemModel, states::SystemStates, t::Int)
+function update_states!(system::SystemModel, states::SystemStates, t::Int)
 
     field(system, Loads, :status)[:] = field(states, :loads)[:,t]
     field(system, Branches, :status)[:] = field(states, :branches)[:,t]
