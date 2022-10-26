@@ -7,16 +7,16 @@ using Test
 using ProfileView, Profile
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
-RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RBTS.m"
+RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 PRATSBase.silence()
 #InputData = ["Loads", "Generators", "Branches"]
 #PRATSBase.FileGenerator(RawFile, InputData)
 
 system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N=8736)
-#topology = Topology(system)
-resultspecs = (Shortfall(), Shortfall())
+resultspecs = (Shortfall(), Shortfall()).
+
 settings = CompositeAdequacy.Settings()
-method = PRATS.SequentialMCS(samples=50, seed=66, threaded=true)
+method = PRATS.SequentialMCS(samples=200, seed=1, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, resultspecs...)
 
 PRATS.LOLE.(shortfall, system.loads.keys)

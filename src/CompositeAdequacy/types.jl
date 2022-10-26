@@ -37,7 +37,7 @@ function set_optimizer_default()
     optimizer = optimizer_with_attributes(
         Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[], "processors"=>1)
 
-    return optimizer
+    return nl_solver
 end
 
 ""
