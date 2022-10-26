@@ -13,7 +13,7 @@ PRATSBase.silence()
 #PRATSBase.FileGenerator(RawFile, InputData)
 
 system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N=8736)
-resultspecs = (Shortfall(), Shortfall()).
+resultspecs = (Shortfall(), Shortfall())
 
 settings = CompositeAdequacy.Settings()
 method = PRATS.SequentialMCS(samples=200, seed=1, threaded=true)
