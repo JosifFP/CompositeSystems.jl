@@ -10,7 +10,7 @@ system = PRATSBase.SystemModel(RawFile)
 nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
 optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 
-CompositeAdequacy.empty_model!(pm)
+CompositeAdequacy.empty_model!(pm,t)
 pm = CompositeAdequacy.PowerFlowProblem(CompositeAdequacy.AbstractDCPowerModel, JuMP.Model(optimizer; add_bridges = false), CompositeAdequacy.Topology(system))
 systemstates = CompositeAdequacy.SystemStates(system, CompositeAdequacy.Tests)
 t=1
@@ -65,11 +65,11 @@ sum(values(CompositeAdequacy.field(pm, Topology, :plc))[:,t])
 
 
 
-pm.topology.bus_loads
-pm.topology.bus_shunts
-pm.topology.bus_generators
-pm.topology.bus_storages
-pm.topology.bus_generatorstorages
+pm.topology.loads_nodes
+pm.topology.shunts_nodes
+pm.topology.generators_nodes
+pm.topology.storages_nodes
+pm.topology.generatorstorages_nodes
 pm.topology.bus_arcs
 
 
@@ -124,7 +124,7 @@ for i in system.buses.keys
             incident_active_edge = incident_branch_count
         end
 
-        if incident_active_edge == 1 && length(pm.topology.bus_loads[i]) == 0 && length(pm.topology.bus_loads[i]) == 0 && 
+        if incident_active_edge == 1 && length(pm.topology.loads_nodes[i]) == 0 && length(pm.topology.loads_nodes[i]) == 0 && 
             println("deactivating bus $(i) due to dangling bus without generation, load or storage")
         end
     end

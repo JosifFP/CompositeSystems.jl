@@ -1,55 +1,56 @@
 "Fix the voltage angle to zero at the reference bus"
-function constraint_theta_ref(pm::AbstractPowerModel, i::Int; t::Int=0)
-    @constraint(pm.model, var(pm, :va, t)[i] == 0, container = Array)
+function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=0)
+    @constraint(pm.model, var(pm, :va, nw)[i] == 0, container = Array)
     #fix(var(pm, :va)[i], 0, force = true)
 end
 
 "nothing to do, no voltage angle variables"
-function constraint_theta_ref(pm::AbstractNFAModel, i::Int; t::Int=0)
+function constraint_theta_ref(pm::AbstractNFAModel, i::Int; nw::Int=0)
 end
 
 "Nodal power balance constraints"
-function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int; t::Int=0)
+function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=0)
 
-    bus_arcs = field(pm, Topology, :bus_arcs)[i]
-    bus_gens = field(pm, Topology, :bus_generators)[i]
-    bus_loads = field(pm, Topology, :bus_loads)[i]
-    bus_shunts = field(pm, Topology, :bus_shunts)[i]
+    #arcs = field(pm.topology, :arcs, :values)[i,:]
+    bus_arcs = filter(!ismissing, skipmissing(field(pm.topology, :arcs, :busarcs)[i,:]))
+    bus_gens = field(pm, Topology, :generators_nodes)[i]
+    loads_nodes = field(pm, Topology, :loads_nodes)[i]
+    shunts_nodes = field(pm, Topology, :shunts_nodes)[i]
     #bus_storage = assetgrouplist(field(pm, Topology, :bus_storage))[i]
 
-#    bus_pd = Float16.([field(system, Loads, :pd)[k,t] for k in bus_loads])
-#    bus_qd = Float16.([field(system, Loads, :qd)[k] for k in bus_loads])
-#    bus_gs = Float16.([field(system, Shunts, :gs)[k] for k in bus_shunts])
-#    bus_bs = Float16.([field(system, Shunts, :bs)[k] for k in bus_shunts])
+#    bus_pd = Float16.([field(system, Loads, :pd)[k,t] for k in loads_nodes])
+#    bus_qd = Float16.([field(system, Loads, :qd)[k] for k in loads_nodes])
+#    bus_gs = Float16.([field(system, Shunts, :gs)[k] for k in shunts_nodes])
+#    bus_bs = Float16.([field(system, Shunts, :bs)[k] for k in shunts_nodes])
 
-    _constraint_power_balance(pm, system, t, bus_arcs, bus_gens, bus_loads, bus_shunts)
+    _constraint_power_balance(pm, system, t, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 end
 
 ""
-function _constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, t::Int, bus_arcs, bus_gens, bus_loads, bus_shunts)
+function _constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 
-    p    = var(pm, :p, t)
-    pg   = var(pm, :pg, t)
-    plc   = var(pm, :plc, t)
+    p    = var(pm, :p, nw)
+    pg   = var(pm, :pg, nw)
+    plc   = var(pm, :plc, nw)
     #ps   = get(var(pm), :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
     #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
     #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
     @constraint(pm.model,
         sum(pg[g] for g in bus_gens)
-        + sum(plc[m] for m in bus_loads)
+        + sum(plc[m] for m in loads_nodes)
         - sum(p[a] for a in bus_arcs)
         #- sum(ps[s] for s in bus_storage)
         #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
         #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
-        sum(pd for pd in Float16.([field(system, Loads, :pd)[k,t] for k in bus_loads]))
-        + sum(gs for gs in Float16.([field(system, Shunts, :gs)[k] for k in bus_shunts]))*1.0^2
+        sum(pd for pd in Float16.([field(system, Loads, :pd)[k,t] for k in loads_nodes]))
+        + sum(gs for gs in Float16.([field(system, Shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
     )
 end
 
 "Branch - Ohm's Law Constraints"
-function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; t::Int=0)
+function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=0)
     
     f_bus = field(system, Branches, :f_bus)[i]
     t_bus = field(system, Branches, :t_bus)[i]
@@ -62,71 +63,71 @@ function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int;
     #g_to = field(system, Branches, :g_to)[i]
     #b_to = field(system, Branches, :b_to)[i]
 
-    va_fr_to = @expression(pm.model, var(pm, :va, t)[f_bus] - var(pm, :va, t)[t_bus])
+    va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
 
-    _constraint_ohms_yt_from(pm, i, t, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
-    _constraint_ohms_yt_to(pm, i, t, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+    _constraint_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+    _constraint_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
 
 end
 
 "DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, t::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
-    x = -b / (g^2 + b^2)
-    @constraint(pm.model, var(pm, :p, t)[i, f_bus, t_bus] == (va_fr_to - atan(ti, tr))/(x*tm))
+    #x = -b / (g^2 + b^2)
+    @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == (va_fr_to - atan(ti, tr))/((-b / (g^2 + b^2))*tm))
 
 end
 
 "DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, t::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
-    @constraint(pm.model, var(pm, :p, t)[i, f_bus, t_bus] == -b*(va_fr_to))
+    @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == -b*(va_fr_to))
 
 end
 
 "nothing to do, this model is symetric"
-function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i::Int, t::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 end
 
 "Branch - Phase Angle Difference Constraints "
-function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemModel, i::Int; t::Int=0)
+function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=0)
 
     f_bus = field(system, Branches, :f_bus)[i]
     t_bus = field(system, Branches, :t_bus)[i]
-    buspair = field(pm, Topology, :buspairs)[(f_bus, t_bus)]
+    buspair = field(pm.topology, :arcs, :buspairs)[(f_bus, t_bus)]
     
-    _constraint_voltage_angle_diff(pm, t, f_bus, t_bus, buspair["angmin"], buspair["angmax"])
+    _constraint_voltage_angle_diff(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
 
 end
 
 "nothing to do, no voltage angle variables"
-function constraint_voltage_angle_difference(pm::AbstractNFAModel, t::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+function _constraint_voltage_angle_diff(pm::AbstractNFAModel, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
 end
 
 "Polar Form"
-function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, t::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
     
     #va_fr = var(pm, :va, f_bus) va_to = var(pm, :va, t_bus)
-    @constraint(pm.model, var(pm, :va, t)[f_bus] - var(pm, :va, t)[t_bus] <= angmax)
-    @constraint(pm.model, var(pm, :va, t)[f_bus] - var(pm, :va, t)[t_bus] >= angmin)
+    @constraint(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus] <= angmax)
+    @constraint(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus] >= angmin)
 end
 
 """
 constraint_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
 Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel.
 """
-function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; t::Int=0)
+function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=0)
 
     f_bus = field(system, Branches, :f_bus)[i] 
     t_bus = field(system, Branches, :t_bus)[i]
     f_idx = (i, f_bus, t_bus)
     t_idx = (i, t_bus, f_bus)
-    p_fr = var(pm, :p, t)[f_idx]
+    p_fr = var(pm, :p, nw)[f_idx]
 
     if hasfield(Branches, :rate_a)
-        _constraint_thermal_limit_from(pm, t, f_idx, p_fr, field(system, Branches, :rate_a)[i])
-        _constraint_thermal_limit_to(pm, t, t_idx, p_fr, field(system, Branches, :rate_a)[i])
+        _constraint_thermal_limit_from(pm, nw, f_idx, p_fr, field(system, Branches, :rate_a)[i])
+        _constraint_thermal_limit_to(pm, nw, t_idx, p_fr, field(system, Branches, :rate_a)[i])
     end
 
 end
@@ -135,7 +136,7 @@ end
 Generic thermal limit constraint
 `p[f_idx]^2 + q[f_idx]^2 <= rate_a^2`
 """
-function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, t::Int, f_idx, p_fr, rate_a)
+function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, nw::Int, f_idx, p_fr, rate_a)
 
     if isa(p_fr, VariableRef) && has_lower_bound(p_fr)
         
@@ -153,13 +154,13 @@ function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, t::Int, f_idx,
 end
 
 "`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
-function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, t::Int, t_idx, p_fr, rate_a)
+function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, nw::Int, t_idx, p_fr, rate_a)
     
     if isa(p_fr, VariableRef) && has_upper_bound(p_fr)
         UpperBoundRef(p_fr)
     else
         #p_to = var(pm, :p, t_idx)
-        @constraint(pm.model, var(pm, :p, t)[t_idx] <= rate_a)
+        @constraint(pm.model, var(pm, :p, nw)[t_idx] <= rate_a)
     end
 end
 

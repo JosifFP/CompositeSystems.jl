@@ -25,7 +25,7 @@ function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{
 end
 
 "Creates AbstractAsset - Buses"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["zone"]),
@@ -56,7 +56,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, S::Int, N::
 
     key_order_core = sortperm(container_data[:keys])
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:zone][key_order_core],
         container_data[:bus_type][key_order_core],
@@ -72,7 +72,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Buses}, S::Int, N::
 end
 
 "Creates AbstractAsset - Generators"
-function container( network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Generators}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["gen_bus"]),
@@ -106,9 +106,9 @@ function container( network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::In
     )
 
     key_order_core = sortperm(container_data[:keys])
-    nassets = Base.length(container_data[:keys])
+    D = length(container_data[:keys])
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],
         container_data[:pg][key_order_core],
@@ -122,11 +122,11 @@ function container( network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::In
         container_data[:mbase][key_order_core],
         container_data[:status][key_order_core],
         container_data[:cost][key_order_core],
-        zeros(Float64, nassets), zeros(Float64, nassets))
+        zeros(Float64, D), zeros(Float64, D))
 end
 
 "Creates AbstractAsset - Generators with time-series data"
-function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     container_key = [i for i in keys(dict_timeseries)]
     key_order_series = sortperm(container_key)
@@ -167,7 +167,7 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
             if in(container_key).(i) == false
-                setindex!(dict_timeseries, [container_data[:pg][i] for k in 1:N]*S, i)
+                setindex!(dict_timeseries, [container_data[:pg][i] for k in 1:N]*B, i)
             end
         end
         container_key = [i for i in keys(dict_timeseries)]
@@ -175,7 +175,7 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
         @assert length(container_key) == length(container_data[:keys])
     end
 
-    container_timeseries = [Float16.(dict_timeseries[i]/S) for i in keys(dict_timeseries)]
+    container_timeseries = [Float16.(dict_timeseries[i]/B) for i in keys(dict_timeseries)]
 
     container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
     container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
@@ -188,7 +188,7 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
         end
     end
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],
         reduce(vcat,transpose.(container_timeseries[key_order_series])),
@@ -207,7 +207,7 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
 end
 
 "Creates AbstractAsset - Loads"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Loads}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     for (i,load) in network[:load]
         get!(load, "cost", Float16(0.0))
@@ -234,7 +234,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::
 
     key_order_core = sortperm(container_data[:keys])
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],    
         container_data[:pd][key_order_core],
@@ -246,7 +246,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::
 end
 
 "Creates AbstractAsset - Loads with time-series data"
-function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     container_key = [i for i in keys(dict_timeseries)]
     key_order_series = sortperm(container_key)
@@ -281,7 +281,7 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
     if length(container_key) ≠ length(container_data[:keys])
         for i in container_data[:keys]
             if in(container_key).(i) == false
-                setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*S, i)
+                setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*B, i)
             end
             #get!(dict_timeseries_qd, i, Float16.(dict_timeseries_pd[i]*powerfactor))
         end
@@ -290,9 +290,9 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
         @assert length(container_key) == length(container_data[:keys])
     end
 
-    container_timeseries = [Float16.(dict_timeseries[i]/S) for i in keys(dict_timeseries)]
+    container_timeseries = [Float16.(dict_timeseries[i]/B) for i in keys(dict_timeseries)]
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],    
         reduce(vcat,transpose.(container_timeseries[key_order_series])),
@@ -304,7 +304,7 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
 end
 
 "Creates AbstractAsset - Branches"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Branches}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["f_bus"]),
@@ -350,9 +350,9 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, 
     )
 
     key_order_core = sortperm(container_data[:keys])
-    nassets = Base.length(container_data[:keys])
+    D = length(container_data[:keys])
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:f_bus][key_order_core],
         container_data[:t_bus][key_order_core],
@@ -372,11 +372,11 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, 
         container_data[:tap][key_order_core],
         container_data[:source_id][key_order_core],
         container_data[:status][key_order_core],
-        zeros(Float64, nassets), zeros(Float64, nassets))
+        zeros(Float64, D), zeros(Float64, D))
 end
 
 "Creates AbstractAsset - Branches with time-series data"
-function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [[i, 
         Int(comp["f_bus"]),
@@ -434,7 +434,7 @@ function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::
         end
     end
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:f_bus][key_order_core],
         container_data[:t_bus][key_order_core],
@@ -459,7 +459,7 @@ function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::
 end
 
 "Creates AbstractAsset - Shunts"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, S::Int, N::Int, L::Int, T::Type{<:Period})
+function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, B::Int, N::Int, L::Int, T::Type{<:Period})
 
     tmp = [
         [i, 
@@ -481,7 +481,7 @@ function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts}, S::Int, N:
 
     key_order_core = sortperm(container_data[:keys])
 
-    return asset{N,L,T,S}(
+    return asset{N,L,T,B}(
         container_data[:keys][key_order_core],
         container_data[:buses][key_order_core],
         container_data[:bs][key_order_core],
@@ -630,4 +630,81 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
         # end
     end
 
+end
+
+""
+function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
+ 
+    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+    
+    for l in branch_lookup
+        i = branches.f_bus[l]
+        j = branches.t_bus[l]
+        bp_angmin[(i,j)] = Float16(max(bp_angmin[(i,j)], branches.angmin[l]))
+        bp_angmax[(i,j)] = Float16(min(bp_angmax[(i,j)], branches.angmax[l]))
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    end
+    
+    buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
+        #"tap"=>Float16(branches.tap[bp_branch[(i,j)]]),
+        #"vm_fr_min"=>Float16(field(buses, :vmin)[i]),
+        #"vm_fr_max"=>Float16(field(buses, :vmax)[i]),
+        #"vm_to_min"=>Float16(field(buses, :vmin)[j]),
+        #"vm_to_max"=>Float16(field(buses, :vmax)[j]),
+    
+    # add optional parameters
+    #for bp in buspair_indexes
+    #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
+    #end
+    
+    return buspairs
+
+end
+
+"compute bus pair level data, can be run on data or ref data structures"
+function calc_buspair_parameters(buses, branches)
+
+    bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
+    branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 && 
+        haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
+    buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+
+    for (l,branch) in branch_lookup
+        i = branch["f_bus"]
+        j = branch["t_bus"]
+        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
+        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    end
+
+    buspairs = Dict((i,j) => Dict(
+        "branch"=>bp_branch[(i,j)],
+        "angmin"=>bp_angmin[(i,j)],
+        "angmax"=>bp_angmax[(i,j)],
+        "tap"=>branch_lookup[bp_branch[(i,j)]]["tap"],
+        #"vm_fr_min"=>bus_lookup[i]["vmin"],
+        #"vm_fr_max"=>bus_lookup[i]["vmax"],
+        #"vm_to_min"=>bus_lookup[j]["vmin"],
+        #"vm_to_max"=>bus_lookup[j]["vmax"]
+        ) for (i,j) in buspair_indexes
+    )
+
+    # add optional parameters
+    for bp in buspair_indexes
+        branch = branch_lookup[bp_branch[bp]]
+        if haskey(branch, "rate_a")
+            buspairs[bp]["rate_a"] = branch["rate_a"]
+        end
+        if haskey(branch, "c_rating_a")
+            buspairs[bp]["c_rating_a"] = branch["c_rating_a"]
+        end
+    end
+
+    return buspairs
 end

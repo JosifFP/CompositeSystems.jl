@@ -7,10 +7,10 @@ function get_bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, lo
     bus_arcs = tmp
 
     tmp = Dict((i, Int[]) for i in field(buses, :keys))
-    bus_loads = bus_asset!(tmp, field(loads, :keys), field(loads, :buses))
+    loads_nodes = bus_asset!(tmp, field(loads, :keys), field(loads, :buses))
     
     tmp = Dict((i, Int[]) for i in field(buses, :keys))
-    bus_shunts = bus_asset!(tmp, field(shunts, :keys), field(shunts, :buses))
+    shunts_nodes = bus_asset!(tmp, field(shunts, :keys), field(shunts, :buses))
 
     tmp = Dict((i, Int[]) for i in field(buses, :keys))
     bus_gens = bus_asset!(tmp, field(generators, :keys), field(generators, :buses))
@@ -18,7 +18,7 @@ function get_bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, lo
     tmp = Dict((i, Int[]) for i in field(buses, :keys))
     bus_storage = bus_asset!(tmp, field(storages, :keys), field(storages, :buses))
 
-    return (bus_arcs, bus_loads, bus_shunts, bus_gens, bus_storage)
+    return (bus_arcs, loads_nodes, shunts_nodes, bus_gens, bus_storage)
 
 end
 
@@ -28,43 +28,6 @@ function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_as
         push!(tmp[bus_assets[k]], k)
     end
     return tmp
-end
-
-"compute bus pair level data, can be run on data or ref data structures"
-function calc_buspair_parameters(buses::Buses, branches::Branches, branch_lookup::Vector{Int})
- 
-    buspair_indexes = Set((field(branches, :f_bus)[i], field(branches, :t_bus)[i]) for i in branch_lookup)
-    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
-    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
-    
-    for l in branch_lookup
-        i = field(branches, :f_bus)[l]
-        j = field(branches, :t_bus)[l]
-        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], field(branches, :angmin)[l])
-        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], field(branches, :angmax)[l])
-        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
-    end
-    
-    buspairs = Dict((i,j) => Dict(
-        "branch"=>Int(bp_branch[(i,j)]),
-        "angmin"=>Float16(bp_angmin[(i,j)]),
-        "angmax"=>Float16(bp_angmax[(i,j)]),
-        "tap"=>Float16(field(branches, :tap)[bp_branch[(i,j)]]),
-        "vm_fr_min"=>Float16(field(buses, :vmin)[i]),
-        "vm_fr_max"=>Float16(field(buses, :vmax)[i]),
-        "vm_to_min"=>Float16(field(buses, :vmin)[j]),
-        "vm_to_max"=>Float16(field(buses, :vmax)[j]),
-        ) for (i,j) in buspair_indexes
-    )
-    
-    # add optional parameters
-    for bp in buspair_indexes
-        buspairs[bp]["rate_a"] = field(branches, :rate_a)[bp_branch[bp]]
-    end
-    
-    return buspairs
-
 end
 
 ""
@@ -133,13 +96,13 @@ function ref_add!(ref::Dict{Symbol,Any})
     for (i, load) in ref[:load]
         push!(tmp[load["load_bus"]], i)
     end
-    ref[:bus_loads] = tmp
+    ref[:loads_nodes] = tmp
 
     tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
     for (i,shunt) in ref[:shunt]
         push!(tmp[shunt["shunt_bus"]], i)
     end
-    ref[:bus_shunts] = tmp
+    ref[:shunts_nodes] = tmp
 
     tmp = Dict((i, Int[]) for (i,bus) in ref[:bus])
     for (i,gen) in ref[:gen]
@@ -205,48 +168,4 @@ function filter_inactive_components!(ref::Dict{Symbol,Any})
     ref[:dcline] = Dict(x for x in ref[:dcline] if (x.second["br_status"] ≠ 0 && x.second["f_bus"] in keys(ref[:bus]) && x.second["t_bus"] in keys(ref[:bus])))
     return ref
 
-end
-
-"compute bus pair level data, can be run on data or ref data structures"
-function calc_buspair_parameters(buses, branches)
-
-    bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
-    branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 && haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
-    buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
-    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
-    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
-
-    for (l,branch) in branch_lookup
-        i = branch["f_bus"]
-        j = branch["t_bus"]
-        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
-        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
-        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
-    end
-
-    buspairs = Dict((i,j) => Dict(
-        "branch"=>bp_branch[(i,j)],
-        "angmin"=>bp_angmin[(i,j)],
-        "angmax"=>bp_angmax[(i,j)],
-        "tap"=>branch_lookup[bp_branch[(i,j)]]["tap"],
-        "vm_fr_min"=>bus_lookup[i]["vmin"],
-        "vm_fr_max"=>bus_lookup[i]["vmax"],
-        "vm_to_min"=>bus_lookup[j]["vmin"],
-        "vm_to_max"=>bus_lookup[j]["vmax"]
-        ) for (i,j) in buspair_indexes
-    )
-
-    # add optional parameters
-    for bp in buspair_indexes
-        branch = branch_lookup[bp_branch[bp]]
-        if haskey(branch, "rate_a")
-            buspairs[bp]["rate_a"] = branch["rate_a"]
-        end
-        if haskey(branch, "c_rating_a")
-            buspairs[bp]["c_rating_a"] = branch["c_rating_a"]
-        end
-    end
-
-    return buspairs
 end

@@ -1,6 +1,5 @@
 abstract type SimulationSpec end
 abstract type Tests <: SimulationSpec end
-abstract type OptimizationContainer end
 abstract type ResultSpec end
 abstract type ResultAccumulator{S<:SimulationSpec,R<:ResultSpec} end
 abstract type Result{
@@ -9,6 +8,7 @@ abstract type Result{
     T <: Period, # Units of each simulation timestep
 } end
 
+abstract type OptimizationContainer end
 
 "Types of optimization"
 abstract type AbstractPowerModel end
@@ -24,15 +24,27 @@ abstract type AbstractNFAModel <: AbstractDCPowerModel end
 
 ""
 function set_optimizer_default()
-    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "acceptable_tol"=>1e-3, "print_level"=>0)
-    optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[])
+
+    nl_solver = optimizer_with_attributes(
+        Ipopt.Optimizer, 
+        "tol"=>1e-3, 
+        "acceptable_tol"=>1e-2, 
+        "max_cpu_time"=>1e+2,
+        "constr_viol_tol"=>0.01, 
+        "print_level"=>0
+    )
+
+    optimizer = optimizer_with_attributes(
+        Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[], "processors"=>1)
+
     return optimizer
 end
 
 ""
-function set_jumpmodel(modelmode::JuMP.ModelMode, optimizer)
+function JumpModel(modelmode::JuMP.ModelMode, optimizer)
     if modelmode == JuMP.AUTOMATIC
         jumpmodel = Model(optimizer; add_bridges = false)
+        JuMP.set_silent(jumpmodel)
     elseif modelmode == JuMP.DIRECT
         @warn("Direct Mode is unsafe")
         jumpmodel = direct_model(optimizer)

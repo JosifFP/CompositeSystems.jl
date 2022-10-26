@@ -8,7 +8,7 @@ function SystemModel(RawFile::String; ReliabilityDataDir::String="", N::Int=1)
     L = 1 #timestep_length
     T = timeunits["h"] #timestep_unit
     network = BuildNetwork(RawFile)
-    S = Int(network[:baseMVA]) #base MVA
+    B = Int(network[:baseMVA]) #base MVA
 
     if network[:per_unit] == false Memento.error(_LOGGER,"Network data must be in per unit format") end
     has_buses = haskey(network, :bus) && isempty(network[:bus]) == false
@@ -36,49 +36,49 @@ function SystemModel(RawFile::String; ReliabilityDataDir::String="", N::Int=1)
     end
 
     if has_buses
-        buses = container(network, Buses, S, N, L, T)
+        buses = container(network, Buses, B, N, L, T)
     end
 
     if has_shunts
-        shunts = container(network, Shunts, S, N, L, T)
+        shunts = container(network, Shunts, B, N, L, T)
     else
-        shunts = Shunts{N,L,T,S}(Int[], Int[], Float16[], Float16[], String[], BitVector())
+        shunts = Shunts{N,L,T,B}(Int[], Int[], Float16[], Float16[], String[], BitVector())
     end
 
     if has_generators && N > 1
 
         dict_timeseries, dict_core = extract(ReliabilityDataDir, files, Generators, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
-        generators = container(dict_core, dict_timeseries, network, Generators, S, N, L, T)
+        generators = container(dict_core, dict_timeseries, network, Generators, B, N, L, T)
         empty!(dict_timeseries)
         empty!(dict_core)
     
     elseif has_generators && N ==1
-        generators = container(network, Generators, S, N, L, T)
+        generators = container(network, Generators, B, N, L, T)
     end
     
     if has_loads && N > 1
 
         dict_timeseries, dict_core = extract(ReliabilityDataDir, files, Loads, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
-        loads = container(dict_core, dict_timeseries, network, Loads, S, N, L, T)
+        loads = container(dict_core, dict_timeseries, network, Loads, B, N, L, T)
         empty!(dict_timeseries)
         empty!(dict_core)
 
     elseif has_loads && N ==1
-        loads = container(network, Loads, S, N, L, T)
+        loads = container(network, Loads, B, N, L, T)
     end
 
     if has_branches && N > 1
 
         _, dict_core = extract(ReliabilityDataDir, files, Branches, [Vector{Symbol}(), Vector{Int}()], [Vector{Symbol}(), Vector{Any}()])
-        branches = container(dict_core, network, Branches, S, N, L, T)
+        branches = container(dict_core, network, Branches, B, N, L, T)
     
     elseif has_branches && N ==1
-        branches = container(network, Branches, S, N, L, T)
+        branches = container(network, Branches, B, N, L, T)
     end
 
     if has_storages
     else
-        storages = Storages{N,L,T,S}(
+        storages = Storages{N,L,T,B}(
             Int[], Int[], Float16[], Float16[], 
             Float16[], Float16[], Float16[], Float16[], 
             Float16[], Float16[], Float16[], Float16[], 
@@ -96,7 +96,7 @@ function SystemModel(RawFile::String; ReliabilityDataDir::String="", N::Int=1)
         #
     end
     
-    generatorstorages = GeneratorStorages{N,L,T,S}(
+    generatorstorages = GeneratorStorages{N,L,T,B}(
         Int[], Int[], Float16[], Float16[], 
         Float16[], Float16[], Float16[], Float16[], 
         Float16[], Float16[], BitVector(), 
@@ -109,9 +109,7 @@ function SystemModel(RawFile::String; ReliabilityDataDir::String="", N::Int=1)
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
     _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
-    arcs_from = [(l,branches.f_bus[l],branches.t_bus[l]) for l in branches.keys]
-    arcs_to = [(l,branches.t_bus[l],branches.f_bus[l]) for l in branches.keys]
-    arcs = [arcs_from; arcs_to]
+    arcs = Arcs(branches, buses.keys, length(buses), length(branches))
 
     ref_buses = Int[]
     for i in buses.keys
@@ -124,9 +122,10 @@ function SystemModel(RawFile::String; ReliabilityDataDir::String="", N::Int=1)
         Memento.error(_LOGGER, "multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
     end
 
-    return SystemModel(
+
+    return SystemModel{N,L,T,B}(
         buses, loads, branches, shunts, generators, storages, generatorstorages, 
-        arcs_from, arcs_to, arcs, ref_buses, timestamps_tz)
+        arcs, ref_buses, timestamps_tz)
 
 end
 

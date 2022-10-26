@@ -5,6 +5,7 @@
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
     import LinearAlgebra
+    import Missings: allowmissing
     import SparseArrays: SparseMatrixCSC, sparse, nonzeros
     import PowerModels, InfrastructureModels
     import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
@@ -20,7 +21,7 @@
 
     export
         # System assets
-        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages,
+        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, Arcs,
         # Units
         Period, Minute, Hour, Day, Year,
         PowerUnit, kW, MW, GW, TW,
@@ -31,11 +32,12 @@
         SystemModel
     #
 
+    include("SystemModel/units.jl")
+    include("SystemModel/assets.jl")
+    include("SystemModel/utils.jl")
+
     include("BuildNetwork/utils.jl")
     include("BuildNetwork/FileGenerator.jl")
-    include("units.jl")
-    include("assets.jl")
-    include("utils.jl")
     include("SystemModel.jl")
     include("read.jl")
 

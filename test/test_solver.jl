@@ -1,16 +1,35 @@
 
-@testset "test 4 Split situations RBTS system" begin
-
-    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-    optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+@testset "test 5 Split situations RBTS system" begin
 
     RawFile = "test/data/RBTS.m"
+    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+    
     system = PRATSBase.SystemModel(RawFile)
     field(system, CompositeAdequacy.Loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
-    method = PRATS.SequentialMCS(samples=8, seed=123, threaded=true)
-    topology = CompositeAdequacy.Topology(system)
-    pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings), topology)
+    method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
+    pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings))
     t=1
+
+    @testset "G3, G7, G8 and G9 on outage" begin
+        systemstates = CompositeAdequacy.SystemStates(system, CompositeAdequacy.Tests)
+        field(systemstates, :generators)[3,t] = 0
+        field(systemstates, :generators)[7,t] = 0
+        field(systemstates, :generators)[8,t] = 0
+        field(systemstates, :generators)[9,t] = 0
+        field(systemstates, :system)[t] = 0
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+        CompositeAdequacy.solve!(pm, system, t)
+        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.35; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.35; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
+        pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
+        @test isapprox(pg, 1.5; atol = 1e-3)
+        CompositeAdequacy.empty_model!(pm,t)
+    end
     
     @testset "L5 and L8 on outage" begin
         systemstates = CompositeAdequacy.SystemStates(system, CompositeAdequacy.Tests)
@@ -19,12 +38,13 @@
         field(systemstates, :system)[t] = 0
         CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
+        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.4; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[2,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[4,t], 0.2; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[5,t], 0.2; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "L3, L4 and L8 on outage" begin
@@ -35,15 +55,18 @@
         field(systemstates, :system)[t] = 0
         CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
+        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.1503; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.1503; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
+        @test isapprox(pg, 1.699; atol = 1e-3)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
-    @testset "G3, 7, 8 and 11 on outage" begin
+    @testset "G3, G7, G8 and G11 on outage" begin
         systemstates = CompositeAdequacy.SystemStates(system, CompositeAdequacy.Tests)
         field(systemstates, :generators)[3,t] = 0
         field(systemstates, :generators)[7,t] = 0
@@ -52,12 +75,13 @@
         field(systemstates, :system)[t] = 0
         CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
+        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.35; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.35; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "L2 and L7 on outage, generation reduced" begin
@@ -70,27 +94,27 @@
         field(systemstates, :system)[t] = 0
         CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
+        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.7046; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.7046; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.65; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        @test isapprox(values(field(pm, Topology, :plc))[5,t], 0.0542; atol = 1e-3)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
 end
 
-@testset "test 4 Split situations RTS system" begin
+@testset "test 7 Split situations IEEE-RTS system" begin
 
-    nl_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
-    optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
+    optimizer = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-3, "acceptable_tol"=>1e-2, "max_cpu_time"=>1e+2,"constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0)
+    #optimizer = JuMP.optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[])
 
     RawFile = "test/data/RTS.m"
     system = PRATSBase.SystemModel(RawFile)
     field(system, CompositeAdequacy.Loads, :cost)[:] = [6240; 4890; 5300; 5620; 6110; 5500; 5410; 5400; 2300; 4140; 5390; 3410; 3010; 3540; 3750; 2290; 3640]
     method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
-    topology = CompositeAdequacy.Topology(system)
-    pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings), topology)
+    pm = CompositeAdequacy.PowerFlowProblem(system, method, field(method, :settings))
     t=1
     
     @testset "Outages of L12, L13" begin
@@ -120,7 +144,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "Outages of L1, L4, L10" begin
@@ -151,7 +175,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "Outages of L1, L8, L10" begin
@@ -166,11 +190,11 @@ end
         @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 1.151; atol = 1e-3)
 
         @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.97; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.411; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[4,t], 0.74; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[6,t], 0.1812; atol = 1e-3)
+        @test isapprox(values(field(pm, Topology, :plc))[6,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[7,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[8,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[9,t], 0; atol = 1e-3)
@@ -182,7 +206,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "Outages of L7, L19, L29" begin
@@ -213,7 +237,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "Outages of L7, L23, L29" begin
@@ -244,7 +268,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 1.653; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "Outages of L25, L26, L28" begin
@@ -275,7 +299,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 1.81; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
     @testset "Outages of L29, L36, L37" begin
@@ -306,7 +330,7 @@ end
         @test isapprox(values(field(pm, Topology, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[16,t], 1.81; atol = 1e-3)
         @test isapprox(values(field(pm, Topology, :plc))[17,t], 1.28; atol = 1e-3)
-        CompositeAdequacy.empty_model!(pm)
+        CompositeAdequacy.empty_model!(pm,t)
     end
 
 end

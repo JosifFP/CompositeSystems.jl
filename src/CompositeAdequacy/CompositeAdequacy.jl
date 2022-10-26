@@ -12,6 +12,7 @@ import Printf: @sprintf
 import Random: AbstractRNG, rand, seed!
 import Random123: Philox4x
 import StatsBase: mean, std, stderror
+import StaticArrays: StaticArrays, SVector, SMatrix, SArray
 import TimeZones: ZonedDateTime, @tz_str
 import Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr, pinv
@@ -24,7 +25,7 @@ import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix,
     dual, UpperBoundRef, LowerBoundRef, upper_bound, lower_bound, 
     has_upper_bound, has_lower_bound, set_lower_bound, set_upper_bound,
     LOCALLY_SOLVED, OPTIMAL, INFEASIBLE, LOCALLY_INFEASIBLE, ITERATION_LIMIT, 
-    TIME_LIMIT, OPTIMIZE_NOT_CALLED
+    TIME_LIMIT, OPTIMIZE_NOT_CALLED, set_silent, set_time_limit_sec
 
 import JuMP.Containers: DenseAxisArray
 
@@ -47,7 +48,7 @@ export
     AbstractDCPModel, AbstractDCMPPModel, AbstractNFAModel,
 
     #optimizationcontainers
-    OptimizationContainer, Topology, VariableContainer, VariableType,
+    OptimizationContainer, Topology, Variables,
 
     # Simulation specification
     SequentialMCS, NonSequentialMCS, PreContingencies, Settings,

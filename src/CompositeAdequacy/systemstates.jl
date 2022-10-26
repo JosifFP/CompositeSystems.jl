@@ -2,9 +2,9 @@
 abstract type AbstractState end
 abstract type FAILED <: AbstractState end
 abstract type SUCCESSFUL <: AbstractState end
-struct S{Bool} end
-Status(::Type{S{false}}) = FAILED
-Status(::Type{S{true}}) = SUCCESSFUL
+struct St{Bool} end
+Status(::Type{St{false}}) = FAILED
+Status(::Type{St{true}}) = SUCCESSFUL
 
 struct SystemStates <: AbstractState
 

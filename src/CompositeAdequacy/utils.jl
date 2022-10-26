@@ -14,6 +14,7 @@ field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
 field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
 field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
 field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
+field(arcs::Arcs, subfield::Symbol) = getfield(arcs, subfield)
 
 field(states::SystemStates, field::Symbol) = getfield(states, field)
 field(states::SystemStates, field::Symbol, t::Int) = view(getfield(states, field), :, t)
@@ -27,7 +28,8 @@ field(method::SimulationSpec, settings::Type{Settings}, subfield::Symbol) = getf
 
 field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
 field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
-field(topology::Topology, subfield::Symbol) = getfield(topology, subfield)
+field(topology::Topology, field::Symbol) = getfield(topology, field)
+field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
 
 var(powermodel::AbstractPowerModel) = getfield(powermodel, :var)
 var(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(getfield(powermodel, :var), subfield)
@@ -36,17 +38,21 @@ var(powermodel::AbstractPowerModel, subfield::Symbol, nw::Int) = getindex(getfie
 sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
 sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 
+function Base.map!(f, dict::Dict)
 
-""
-function check_status(a::Vector{Bool})
-    i_idx = @inbounds findfirst(isequal(0), a)
-    if i_idx === nothing i_idx=SUCCESSFUL else i_idx=FAILED end
-    return i_idx
+    vals = dict.vals
+    # @inbounds is here so that it gets propagated to isslotfilled
+    @inbounds for i = dict.idxfloor:lastindex(vals)
+        if Base.isslotfilled(dict, i)
+            vals[i] = f(vals[i])
+        end
+    end
+    return
 end
 
 ""
 function check_status(a::SubArray)
-    i_idx = findfirst(isequal(0), a)
+    i_idx = @inbounds findfirst(isequal(0), a)
     if i_idx === nothing i_idx=SUCCESSFUL else i_idx=FAILED end
     return i_idx
 end

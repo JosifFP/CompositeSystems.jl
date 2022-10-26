@@ -39,16 +39,16 @@ function assess(
     for s in sampleseeds
         println("s=$(s)")
         systemstates = SystemStates(system, method)
-        pm = PowerFlowProblem(system, method, field(method, :settings), Topology(system))
+        pm = PowerFlowProblem(system, method, field(method, :settings))
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstates, system) #creates the up/down sequence for each device.
 
         for t in 1:N
             if field(systemstates, :system)[t] ≠ true
-                println("t=$(t)")
+                #println("t=$(t)")
                 update!(field(pm, :topology), systemstates, system, t)
                 solve!(pm, system, t)
-                empty_model!(pm)
+                empty_model!(pm, t)
             end
             #foreach(recorder -> record!(recorder, system, pm, s, t), recorders)
         end
@@ -76,37 +76,28 @@ end
 ""
 function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
 
-    state = check_status(field(field(states, :system), t))
+    update_idxs!(
+        filter(i->field(states, :loads, t)[i], field(system, Loads, :keys)), 
+        field(topology, :loads_idxs), field(topology, :loads_nodes), field(system, Loads, :buses))
 
-    if (t>1 && state == check_status(field(field(states, :system), t-1))) || t==1 && state == FAILED
+    update_idxs!(
+        filter(i->field(states, :shunts, t)[i], field(system, Shunts, :keys)), 
+        field(topology, :shunts_idxs), field(topology, :shunts_nodes), field(system, Shunts, :buses))    
+
+    update_idxs!(
+        filter(i->field(states, :generators, t)[i], field(system, Generators, :keys)), 
+        field(topology, :generators_idxs), field(topology, :generators_nodes), field(system, Generators, :buses))
+
+    update_idxs!(
+        filter(i->field(states, :storages, t)[i], field(system, Storages, :keys)),
+        field(topology, :storages_idxs), field(topology, :storages_nodes), field(system, Storages, :buses))
+
+    update_idxs!(
+        filter(i->field(system, :generatorstorages)[i], field(system, GeneratorStorages, :keys)), 
+        field(topology, :generatorstorages_idxs), field(topology, :generatorstorages_nodes), field(system, GeneratorStorages, :buses))    
         
-        key_buses = field(system, Buses, :keys)
-
-        update_asset_idxs!(
-            topology, field(system, :loads), field(states, :loads, t), key_buses, t, 
-            check_status(field(states, :loads, t)))
-
-        update_asset_idxs!(
-            topology, field(system, :shunts), field(states, :shunts, t), key_buses, t, 
-            check_status(field(states, :shunts, t)))
-
-        update_asset_idxs!(
-            topology, field(system, :generators), field(states, :generators, t), key_buses, t, 
-            check_status(field(states, :generators, t)))
-
-        update_asset_idxs!(
-            topology, field(system, :storages), field(states, :storages, t), key_buses, t, 
-            check_status(field(states, :storages, t)))
-
-        update_asset_idxs!(
-            topology, field(system, :generatorstorages), field(states, :generatorstorages, t), 
-            key_buses, t, check_status(field(states, :generatorstorages, t)))
-
-        update_branch_idxs!(
-            topology, system, field(states, :branches, t), key_buses, t, 
-            check_status(field(states, :branches, t)))
-
-    end
+    update_branch_idxs!(
+        field(system, :branches), field(topology, :branches_idxs), field(topology, :arcs), field(system, :arcs), field(states, :branches), t)
 
     return
 
@@ -121,10 +112,12 @@ function solve!(pm::AbstractPowerModel, system::SystemModel, t::Int)
 end
 
 ""
-function empty_model!(pm::AbstractPowerModel)
+function empty_model!(pm::AbstractPowerModel, t)
 
     #if isempty(pm.model)==false empty!(pm.model) end
     empty!(pm.model)
+    reset_variables!(field(pm, :var), field(pm, :var_cache))
+
     return
 end
 

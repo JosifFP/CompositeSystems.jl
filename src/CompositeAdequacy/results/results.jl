@@ -17,9 +17,9 @@ merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}} =
 
 function finalize(
     results::Channel{<:Tuple{Vararg{ResultAccumulator}}},
-    system::SystemModel{N,L,T,S},
+    system::SystemModel{N,L,T},
     threads::Int
-) where {N,L,T,S}
+) where {N,L,T}
 
     total_result = take!(results)
 

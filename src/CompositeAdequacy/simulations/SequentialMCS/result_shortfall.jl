@@ -78,10 +78,10 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    sys::SystemModel{N,L,T,S},
+    sys::SystemModel{N,L,T,B},
     pm::AbstractPowerModel,
     sampleid::Int, t::Int
-) where {N,L,T,S}
+) where {N,L,T,B}
 
     totalshortfall = 0
     isshortfall = false
@@ -122,20 +122,19 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    sys::SystemModel{N,L,T,S},
+    sys::SystemModel{N,L,T,B},
     pm::AbstractPowerModel,
     sampleid::Int
-) where {N,L,T,S}
+) where {N,L,T,B}
 
-    nloads = length(field(pm, Topology, :loads_idxs))
-    #isshortfall = zeros(Bool, nloads)
+    loads = field(sys, Loads, :keys)
 
     for t in 1:N
 
         totalshortfall = 0
         isshortfall = false
 
-        for r in nloads
+        for r in loads
 
             busshortfall = field(pm, Topology, :plc)[r,t]
             isbusshortfall = busshortfall > 0
@@ -193,8 +192,8 @@ end
 
 function finalize(
     acc::SMCShortfallAccumulator,
-    system::SystemModel{N,L,T,S},
-) where {N,L,T,S}
+    system::SystemModel{N,L,T,B},
+) where {N,L,T,B}
 
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
@@ -211,7 +210,7 @@ function finalize(
     nsamples = first(acc.unservedload_total.stats).n
     P = PRATSBase.powerunits["MW"]
     E = PRATSBase.energyunits["MWh"]
-    p2e = conversionfactor(S,L,T,P,E)
+    p2e = conversionfactor(L,T,P,E,B)
 
     return ShortfallResult{N,L,T,E}(
         nsamples, 
@@ -265,9 +264,9 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,S},
+    system::SystemModel{N,L,T,B},
     sampleid::Int, t::Int
-) where {N,L,T,S}
+) where {N,L,T,B}
 
     for r in field(system, Loads, :keys)
         acc.shortfall[r,t,sampleid] = field(system, Loads, :plc)[r]
@@ -280,12 +279,12 @@ reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,S},
-) where {N,L,T,S}
+    system::SystemModel{N,L,T,B},
+) where {N,L,T,B}
 
     P = PRATSBase.powerunits["MW"]
     E = PRATSBase.energyunits["MWh"]
-    p2e = conversionfactor(S,L,T,P,E)
+    p2e = conversionfactor(L,T,P,E,B)
     return ShortfallSamplesResult{N,L,T,P,E}(
         system.loads.keys, system.timestamps, p2e*acc.shortfall)
 
