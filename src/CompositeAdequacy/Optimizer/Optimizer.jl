@@ -12,11 +12,11 @@ function build_method!(pm::AbstractNFAModel, system::SystemModel, t::Int; nw::In
 
     # Add Constraints
     # ---------------
-    for i in assetgrouplist(field(pm, Topology, :buses_idxs))
+    for i in assetgrouplist(topology(pm, :buses_idxs))
         constraint_power_balance(pm, system, i, t, nw=nw)
     end
 
-    #for i in assetgrouplist(field(pm, Topology, :branches_idxs))
+    #for i in assetgrouplist(topology(pm, :branches_idxs))
     #    constraint_thermal_limits(pm, system, i, t)
     #end
 
@@ -41,11 +41,11 @@ function build_method!(pm::AbstractDCMPPModel, system::SystemModel, t::Int; nw::
         constraint_theta_ref(pm, i, nw=nw)
     end
 
-    for i in assetgrouplist(field(pm, Topology, :buses_idxs))
+    for i in assetgrouplist(topology(pm, :buses_idxs))
         constraint_power_balance(pm, system, i, t, nw=nw)
     end
 
-    for i in assetgrouplist(field(pm, Topology, :branches_idxs))
+    for i in assetgrouplist(topology(pm, :branches_idxs))
         constraint_ohms_yt(pm, system, i, nw=nw)
         constraint_voltage_angle_diff(pm, system, i, nw=nw)
         #constraint_thermal_limits(pm, system, i, t)
@@ -63,7 +63,7 @@ end
 function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=0)
 
     return @objective(pm.model, Min,
-        sum(field(system, Loads, :cost)[i]*var(pm, :plc, nw)[i] for i in assetgrouplist(field(pm, Topology, :loads_idxs))))
+        sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in assetgrouplist(topology(pm, :loads_idxs))))
 end
 
 # index representing which side the HVDC line is starting

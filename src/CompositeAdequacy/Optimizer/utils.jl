@@ -32,24 +32,24 @@ end
 
 ""
 function check_status(system::SystemModel)
-    for k in field(system, Branches, :keys)
-        if field(system, Branches, :status)[k] ≠ 0
-            f_bus = field(system, Branches, :f_bus)[k]
-            t_bus = field(system, Branches, :t_bus)[k]
-            if field(system, Buses, :bus_type)[f_bus] == 4 || field(system, Buses, :bus_type)[t_bus] == 4
+    for k in field(system, :branches, :keys)
+        if field(system, :branches, :status)[k] ≠ 0
+            f_bus = field(system, :branches, :f_bus)[k]
+            t_bus = field(system, :branches, :t_bus)[k]
+            if field(system, :buses, :bus_type)[f_bus] == 4 || field(system, :buses, :bus_type)[t_bus] == 4
                 #@info("deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
-                field(system, Branches, :status)[k] = 0
+                field(system, :branches, :status)[k] = 0
             end
         end
     end
     
-    for k in field(system, Buses, :keys)
-        if field(system, Buses, :bus_type)[k] == 4
-            if field(system, Loads, :status)[k] ≠ 0 field(system, Loads, :status)[k] = 0 end
-            if field(system, Shunts, :status)[k] ≠ 0 field(system, Shunts, :status)[k] = 0 end
-            if field(system, Generators, :status)[k] ≠ 0 field(system, Generators, :status)[k] = 0 end
-            if field(system, Storages, :status)[k] ≠ 0 field(system, Storages, :status)[k] = 0 end
-            if field(system, GeneratorStorages, :status)[k] ≠ 0 field(system, GeneratorStorages, :status)[k] = 0 end
+    for k in field(system, :buses, :keys)
+        if field(system, :buses, :bus_type)[k] == 4
+            if field(system, :loads, :status)[k] ≠ 0 field(system, :loads, :status)[k] = 0 end
+            if field(system, :shunts, :status)[k] ≠ 0 field(system, :shunts, :status)[k] = 0 end
+            if field(system, :generators, :status)[k] ≠ 0 field(system, :generators, :status)[k] = 0 end
+            if field(system, :storages, :status)[k] ≠ 0 field(system, :storages, :status)[k] = 0 end
+            if field(system, :generatorstorages, :status)[k] ≠ 0 field(system, :generatorstorages, :status)[k] = 0 end
         end
     end
 end

@@ -87,41 +87,26 @@ function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vect
 end
 
 ""
-function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, updated_arcs::Arcs, arcs::Arcs, asset_states::Matrix{Bool}, t)
+function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t)
 
-    assets_idxs .= makeidxlist(filter(i->field(asset_states, t)[i], field(branches, :keys)), length(assets_idxs))
-    update_arcs_nodes!(updated_arcs, arcs, field(asset_states, t))
+    assets_idxs = makeidxlist(filter(i->view(asset_states, i, t), field(branches, :keys)), length(assets_idxs))
+
+    @inbounds for i in eachindex(view(asset_states, :, t))
+        if !view(asset_states, i, t)
+            view(field(topology_arcs, :busarcs),:,i) .= field(initial_arcs, :empty)
+            view(field(topology_arcs, :arcs_from),i) .= missing
+            view(field(topology_arcs, :arcs_to),i) .= missing
+            view(field(topology_arcs, :arcs),i) .= missing
+        else
+            view(field(topology_arcs, :busarcs),:,i) .= view(field(initial_arcs, :busarcs),:,i)
+            view(field(topology_arcs, :arcs_from),i) .= view(field(initial_arcs, :arcs_from),i)
+            view(field(topology_arcs, :arcs_to),i) .= view(field(initial_arcs, :arcs_to),i)
+            view(field(topology_arcs, :arcs),i) .= view(field(initial_arcs, :arcs),i)
+        end
+    end
     
 end
 
-function update_arcs_nodes!(Actual::Arcs, Initial::Arcs, v::SubArray)
-
-    @inbounds for i in eachindex(v)
-        if !v[i]
-            @inbounds view(field(Actual, :busarcs),:,i) .= field(Actual, :empty)
-            @inbounds view(field(Actual, :arcs_from),i) .= missing
-            @inbounds view(field(Actual, :arcs_to),i) .= missing
-            @inbounds view(field(Actual, :arcs),i) .= missing
-        else
-            @inbounds view(field(Actual, :busarcs),:,i) .= view(field(Initial, :busarcs),:,i)
-            @inbounds view(field(Actual, :arcs_from),i) .= view(field(Initial, :arcs_from),i)
-            @inbounds view(field(Actual, :arcs_to),i) .= view(field(Initial, :arcs_to),i)
-            @inbounds view(field(Actual, :arcs),i) .= view(field(Initial, :arcs),i)
-        end
-    end
-
-end
-
-# idxs(topology::Topology, ::Loads) = field(topology, :loads_idxs)
-# idxs(topology::Topology, ::Shunts) = field(topology, :shunts_idxs)
-# idxs(topology::Topology, ::Generators) = field(topology, :generators_idxs)
-# idxs(topology::Topology, ::Storages) = field(topology, :storages_idxs)
-# idxs(topology::Topology, ::GeneratorStorages) = field(topology, :generatorstorages_idxs)
-# bus_idxs(topology::Topology, ::Loads) = field(topology, :loads_nodes)
-# bus_idxs(topology::Topology, ::Shunts) = field(topology, :generators_nodes)
-# bus_idxs(topology::Topology, ::Generators) = field(topology, :generators_nodes)
-# bus_idxs(topology::Topology, ::Storages) = field(topology, :storages_nodes)
-# bus_idxs(topology::Topology, ::GeneratorStorages) = field(topology, :generatorstorages_nodes)
 
 # ----------------------------------------------------------------------------------------------------------
 # function available_capacity(

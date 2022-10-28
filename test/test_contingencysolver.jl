@@ -49,8 +49,8 @@ CompositeAdequacy.objective_min_load_curtailment(pm, system)
 JuMP.optimize!(pm.model)
 CompositeAdequacy.build_result!(pm, system, t)
 #CompositeAdequacy.solve!(pm, systemstates, system, t)
-values(CompositeAdequacy.field(pm, Topology, :plc))[:,t]
-sum(values(CompositeAdequacy.field(pm, Topology, :plc))[:,t])
+values(CompositeAdequacy.field(pm, :plc))[:,t]
+sum(values(CompositeAdequacy.field(pm, :plc))[:,t])
 
 
 

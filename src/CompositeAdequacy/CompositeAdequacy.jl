@@ -14,12 +14,12 @@ import Random123: Philox4x
 import StatsBase: mean, std, stderror
 import StaticArrays: StaticArrays, SVector, SMatrix, SArray
 import TimeZones: ZonedDateTime, @tz_str
-import Ipopt, Juniper, HiGHS
 import LinearAlgebra: qr, pinv
 import MathOptInterface
+import Ipopt, Juniper, HiGHS
 import Memento
 import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
-    optimize!, Model, direct_model, optimizer_with_attributes, result_count, 
+    optimize!, Model, direct_model, result_count, optimizer_with_attributes,
     termination_status, isempty, empty!, AbstractModel, VariableRef, 
     GenericAffExpr, GenericQuadExpr, NonlinearExpression, ConstraintRef, 
     dual, UpperBoundRef, LowerBoundRef, upper_bound, lower_bound, 

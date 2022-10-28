@@ -1,7 +1,7 @@
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
-VariableType, assetgrouplist, St, Status, findfirstunique, 
+assetgrouplist, St, Status, findfirstunique, 
 SUCCESSFUL, FAILED, build_sol_values, optimizer_with_attributes
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 import Missings

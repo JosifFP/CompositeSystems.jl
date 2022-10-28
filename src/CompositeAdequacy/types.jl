@@ -22,22 +22,86 @@ abstract type AbstractNFAModel <: AbstractDCPowerModel end
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
 
 
-""
-function set_optimizer_default()
+"Definition of SequentialMCS method"
+struct SequentialMCS <: SimulationSpec
 
-    nl_solver = optimizer_with_attributes(
-        Ipopt.Optimizer, 
-        "tol"=>1e-3, 
-        "acceptable_tol"=>1e-2, 
-        "max_cpu_time"=>1e+2,
-        "constr_viol_tol"=>0.01, 
-        "print_level"=>0
+    nsamples::Int
+    seed::UInt64
+    verbose::Bool
+    threaded::Bool
+
+    function SequentialMCS(;
+        samples::Int=1_000,
+        seed::Int=rand(UInt64),
+        verbose::Bool=false,
+        threaded::Bool=true,
     )
+        samples <= 0 && throw(DomainError("Sample count must be positive"))
+        seed < 0 && throw(DomainError("Random seed must be non-negative"))
 
-    optimizer = optimizer_with_attributes(
-        Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-3, "log_levels"=>[], "processors"=>1)
+        new(samples, UInt64(seed), verbose, threaded)
 
-    return nl_solver
+    end
+
+end
+
+"Definition of NonSequentialMCS method"
+struct NonSequentialMCS <: SimulationSpec
+
+    nsamples::Int
+    seed::UInt64
+    verbose::Bool
+    threaded::Bool
+
+    function NonSequentialMCS(;
+        samples::Int=1_000,
+        seed::Int=rand(UInt64),
+        verbose::Bool=false,
+        threaded::Bool=true
+    )
+        samples <= 0 && throw(DomainError("Sample count must be positive"))
+        seed < 0 && throw(DomainError("Random seed must be non-negative"))
+
+        new(samples, UInt64(seed), verbose, threaded)
+
+    end
+
+end
+
+"Definition of Pre-Contingencies simulation method"
+struct PreContingencies <: SimulationSpec
+    
+    verbose::Bool
+    threaded::Bool
+
+    function PreContingencies(;
+        verbose::Bool=false,
+        threaded::Bool=false
+    )
+        new(verbose, threaded)
+
+    end
+
+end
+
+""
+struct Settings <: SimulationSpec
+
+    optimizer::MathOptInterface.OptimizerWithAttributes
+    modelmode::JuMP.ModelMode
+    powermodel::Type{<:AbstractPowerModel}
+
+    function Settings(
+        optimizer::MathOptInterface.OptimizerWithAttributes;
+        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
+        powermodel::Type{<:AbstractPowerModel}=AbstractDCMPPModel
+        )
+
+        @assert powermodel <: AbstractPowerModel
+
+        new(optimizer, modelmode, powermodel)
+    end
+
 end
 
 ""
@@ -53,92 +117,4 @@ function JumpModel(modelmode::JuMP.ModelMode, optimizer)
     end
 
     return jumpmodel
-end
-
-""
-struct Settings <: SimulationSpec
-
-    powermodel::Type{<:AbstractPowerModel}
-    modelmode::JuMP.ModelMode
-    optimizer::MathOptInterface.OptimizerWithAttributes
-
-    function Settings(;
-        powermodel::Type{<:AbstractPowerModel}=AbstractDCMPPModel,
-        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-        optimizer=set_optimizer_default()
-        )
-
-        @assert powermodel <: AbstractPowerModel
-
-        new(powermodel, modelmode, optimizer)
-    end
-
-end
-
-"Definition of SequentialMCS method"
-struct SequentialMCS <: SimulationSpec
-
-    nsamples::Int
-    seed::UInt64
-    verbose::Bool
-    threaded::Bool
-    settings::Settings
-
-    function SequentialMCS(;
-        samples::Int=1_000,
-        seed::Int=rand(UInt64),
-        verbose::Bool=false,
-        threaded::Bool=true,
-        settings=Settings()
-    )
-        samples <= 0 && throw(DomainError("Sample count must be positive"))
-        seed < 0 && throw(DomainError("Random seed must be non-negative"))
-
-        new(samples, UInt64(seed), verbose, threaded, settings)
-
-    end
-
-end
-
-"Definition of NonSequentialMCS method"
-struct NonSequentialMCS <: SimulationSpec
-
-    nsamples::Int
-    seed::UInt64
-    verbose::Bool
-    threaded::Bool
-    settings::Settings
-
-    function NonSequentialMCS(;
-        samples::Int=1_000,
-        seed::Int=rand(UInt64),
-        verbose::Bool=false,
-        threaded::Bool=true,
-        settings=Settings()
-    )
-        samples <= 0 && throw(DomainError("Sample count must be positive"))
-        seed < 0 && throw(DomainError("Random seed must be non-negative"))
-
-        new(samples, UInt64(seed), verbose, threaded, settings)
-
-    end
-
-end
-
-"Definition of Pre-Contingencies simulation method"
-struct PreContingencies <: SimulationSpec
-    
-    verbose::Bool
-    threaded::Bool
-    settings::Settings
-
-    function PreContingencies(;
-        verbose::Bool=false,
-        threaded::Bool=true,
-        settings=Settings()
-    )
-        new(verbose, threaded, settings)
-
-    end
-
 end

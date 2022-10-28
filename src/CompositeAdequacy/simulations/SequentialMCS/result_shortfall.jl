@@ -136,7 +136,7 @@ function record!(
 
         for r in loads
 
-            busshortfall = field(pm, Topology, :plc)[r,t]
+            busshortfall = sol(pm, :plc, r, t)
             isbusshortfall = busshortfall > 0
     
             fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
@@ -268,8 +268,8 @@ function record!(
     sampleid::Int, t::Int
 ) where {N,L,T,B}
 
-    for r in field(system, Loads, :keys)
-        acc.shortfall[r,t,sampleid] = field(system, Loads, :plc)[r]
+    for r in field(system, :loads, :keys)
+        acc.shortfall[r,t,sampleid] = field(system, :loads, :plc)[r]
     end
     return
 

@@ -1,11 +1,7 @@
+
+"Extract a field from a composite value by name or position."
 field(system::SystemModel, field::Symbol) = getfield(system, field)
-field(system::SystemModel, buses::Type{Buses}, subfield::Symbol) = getfield(getfield(system, :buses), subfield)
-field(system::SystemModel, loads::Type{Loads}, subfield::Symbol) = getfield(getfield(system, :loads), subfield)
-field(system::SystemModel, branches::Type{Branches}, subfield::Symbol) = getfield(getfield(system, :branches), subfield)
-field(system::SystemModel, shunts::Type{Shunts}, subfield::Symbol) = getfield(getfield(system, :shunts), subfield)
-field(system::SystemModel, generators::Type{Generators}, subfield::Symbol) = getfield(getfield(system, :generators), subfield)
-field(system::SystemModel, storages::Type{Storages}, subfield::Symbol) = getfield(getfield(system, :storages), subfield)
-field(system::SystemModel, generatorstorages::Type{GeneratorStorages}, subfield::Symbol) = getfield(getfield(system, :generatorstorages), subfield)
+field(system::SystemModel, field::Symbol, subfield::Symbol) = getfield(getfield(system, field), subfield)
 
 field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
 field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
@@ -17,26 +13,31 @@ field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generat
 field(arcs::Arcs, subfield::Symbol) = getfield(arcs, subfield)
 
 field(states::SystemStates, field::Symbol) = getfield(states, field)
-field(states::SystemStates, field::Symbol, t::Int) = view(getfield(states, field), :, t)
-field(field::Matrix{Bool}, t::Int) = view(field, :, t)
-field(field::Union{BitVector, Vector{Bool}}, t::Int) = view(field, t)
+#field(states::SystemStates, field::Symbol, t::Int) = getfield(states, field)[:,t]
+Base.view(states::SystemStates, field::Symbol, t::Int) = view(getfield(states, field), :, t)
+Base.view(states::SystemStates, field::Symbol, i::Int, t::Int) = view(getfield(states, field), i, t)
 
 field(settings::Settings, field::Symbol) = getfield(settings, field)
-
 field(method::SimulationSpec, field::Symbol) = getfield(method, field)
-field(method::SimulationSpec, settings::Type{Settings}, subfield::Symbol) = getfield(getfield(method, :settings), subfield)
 
-field(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(powermodel, subfield)
-field(powermodel::AbstractPowerModel, topology::Type{Topology}, subfield::Symbol) = getfield(getfield(powermodel, :topology), subfield)
+topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
+topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]
+topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol) = getfield(getfield(getfield(pm, :topology), field), subfield)
+topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol, nw::Int) = getindex(getfield(getfield(getfield(pm, :topology), field), subfield), nw)
+
 field(topology::Topology, field::Symbol) = getfield(topology, field)
 field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
 
-var(powermodel::AbstractPowerModel) = getfield(powermodel, :var)
-var(powermodel::AbstractPowerModel, subfield::Symbol) = getfield(getfield(powermodel, :var), subfield)
-var(powermodel::AbstractPowerModel, subfield::Symbol, nw::Int) = getindex(getfield(getfield(powermodel, :var), subfield), nw)
+var(pm::AbstractPowerModel) = getfield(pm, :var)
+var(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :var), subfield)
+var(pm::AbstractPowerModel, subfield::Symbol, nw::Int) = getindex(getfield(getfield(pm, :var), subfield), nw)
 
-sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
-sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
+sol(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :sol), field)
+sol(pm::AbstractPowerModel, field::Symbol, t::Int) = view(getfield(getfield(pm, :sol), field), :, t)
+sol(pm::AbstractPowerModel, field::Symbol, i::Int, t::Int) = view(getfield(getfield(pm, :sol), field), i, t)
+
+#sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
+#sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 
 function Base.map!(f, dict::Dict)
 

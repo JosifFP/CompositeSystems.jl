@@ -4,19 +4,19 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
     plc = build_sol_values(var(pm, :plc, nw))
 
     if termination_status(pm.model) == LOCALLY_SOLVED
-        for i in field(system, Loads, :keys)
+        for i in field(system, :loads, :keys)
             if haskey(plc, i) == false
-                get!(plc, i, field(system, Loads, :pd)[i,t])
+                get!(plc, i, field(system, :loads, :pd)[i,t])
             end
-            view(field(pm, Topology, :plc),i,t) .= plc[i]
+            view(field(pm, :plc),i,t) .= plc[i]
         end
     else
-        view(field(pm, Topology, :plc),:,t) .= view(field(system, Loads, :pd),:,t)
+        sol(pm, :plc, t) .= view(field(system, :loads, :pd),:,t)
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
 
-    if sum(field(pm, Topology, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm, Topology, :plc)[:,t]))") end
-    #if sum(field(pm, Topology, :plc)[:,t]) > 0 println("t=$(t)") end
+    if sum(sol(pm, :plc, t)) > 0 println("t=$(t), total_curtailed_load=$(sum(field(pm, :plc)[:,t]))") end
+    #if sum(sol(pm, :plc, t)) > 0 println("t=$(t)") end
 
 end
 

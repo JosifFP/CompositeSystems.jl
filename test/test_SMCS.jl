@@ -1,7 +1,9 @@
+include("solvers.jl")
+
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
-VariableType, assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, SUCCESSFUL, FAILED, build_sol_values
+assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, SUCCESSFUL, FAILED, build_sol_values
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 using ProfileView, Profile
@@ -9,15 +11,20 @@ import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
 PRATSBase.silence()
-#InputData = ["Loads", "Generators", "Branches"]
-#PRATSBase.FileGenerator(RawFile, InputData)
 
 system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N=8736)
 resultspecs = (Shortfall(), Shortfall())
 
-settings = CompositeAdequacy.Settings()
-method = PRATS.SequentialMCS(samples=200, seed=1, threaded=true)
-@time shortfall,report = PRATS.assess(system, method, resultspecs...)
+settings = PRATS.Settings(
+    ipopt_optimizer_3, 
+    modelmode = JuMP.AUTOMATIC,
+    powermodel = AbstractDCMPPModel
+)
+
+method = PRATS.SequentialMCS(samples=1, seed=1, threaded=true)
+pm = CompositeAdequacy.PowerFlowProblem(system, method, settings)
+
+@time shortfall,report = PRATS.assess(system, pm, method, resultspecs...)
 
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
@@ -35,8 +42,6 @@ Profile.clear()
 Profile.print()
 ProfileView.view()
 
-
-VariableType
 
 
 PRATS.LOLE.(shortfall, system.loads.keys)

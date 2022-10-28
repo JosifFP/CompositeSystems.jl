@@ -12,8 +12,8 @@ end
 ""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
-    var(pm, :va)[nw] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))])
-    #var(pm)[:va] = @variable(pm.model, [i in field(system, Buses, :keys);  field(system, Buses, :bus_type)[i] != 4], container = Array)
+    var(pm, :va)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
+    #var(pm)[:va] = @variable(pm.model, [i in field(system, :buses, :keys);  field(system, :buses, :bus_type)[i] != 4], container = Array)
     #va = var(pm)[:va] = @variable(pm.model, [i in ids(pm, :bus)], base_name="va", start = comp_start_value(ref(pm, :bus, i), "va_start"))
 
 end
@@ -25,12 +25,12 @@ end
 "variable: `v[i]` for `i` in `bus`es"
 function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
-    var(pm, :vm)[nw] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :buses_idxs))], start =1.0)
+    var(pm, :vm)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))], start =1.0)
     #vm = var(pm)[:vm] = @variable(pm.model, [i in ids(pm, :bus)], base_name="vm", start = comp_start_value(ref(pm, :bus, i), "vm_start", 1.0))
     if bounded
-        for i in assetgrouplist(field(pm, Topology, :buses_idxs))
-            set_lower_bound(var(pm, :vm, nw)[i], field(system, Buses, :vmin)[i])
-            set_upper_bound(var(pm, :vm, nw)[i], field(system, Buses, :vmax)[i])
+        for i in assetgrouplist(topology(pm, :buses_idxs))
+            set_lower_bound(var(pm, :vm, nw)[i], field(system, :buses, :vmin)[i])
+            set_upper_bound(var(pm, :vm, nw)[i], field(system, :buses, :vmax)[i])
         end
     end
 
@@ -45,12 +45,12 @@ end
 ""
 function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
     
-    var(pm, :pg)[nw] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))])
-    #@variable(pm.model, qg[i in field(system, Generators, :keys); field(system, Generators, :status)[i] ≠ 0])
+    var(pm, :pg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
+    #@variable(pm.model, qg[i in field(system, :generators, :keys); field(system, :generators, :status)[i] ≠ 0])
 
     if bounded
-        for l in assetgrouplist(field(pm, Topology, :generators_idxs))
-            set_upper_bound(var(pm, :pg, nw)[l], field(system, Generators, :pmax)[l])
+        for l in assetgrouplist(topology(pm, :generators_idxs))
+            set_upper_bound(var(pm, :pg, nw)[l], field(system, :generators, :pmax)[l])
             set_lower_bound(var(pm, :pg, nw)[l], 0.0)
         end
     end
@@ -64,13 +64,13 @@ end
 ""
 function var_gen_power_imaginary(pm::AbstractACPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
-    var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :generators_idxs))])
+    var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
     #qg = var(pm)[:qg] = @variable(pm.model, [i in ids(pm, :gen)], base_name="qg", start = comp_start_value(ref(pm, :gen, i), "qg_start"))
 
     if bounded
-        for l in assetgrouplist(field(pm, Topology, :generators_idxs))
-            set_upper_bound(var(pm, :qg, t)[l], field(system, Generators, :qmax)[l])
-            set_lower_bound(var(pm, :qg, t)[l], 0.0)
+        for l in assetgrouplist(topology(pm, :generators_idxs))
+            set_upper_bound(var(pm, :qg, nw)[l], field(system, :generators, :qmax)[l])
+            set_lower_bound(var(pm, :qg, nw)[l], 0.0)
         end
     end
     #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), qg)
@@ -85,15 +85,15 @@ end
 ""
 function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
-    arcs_from = filter(!ismissing, skipmissing(field(pm.topology, :arcs, :arcs_from)))
-    arcs = filter(!ismissing, skipmissing(field(pm.topology, :arcs, :arcs)))
+    arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs, :arcs_from)))
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs, :arcs)))
     p = @variable(pm.model, [arcs])
     #p = var(pm)[:p] = @variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
 
     if bounded
         for (l,i,j) in arcs
-            set_lower_bound(p[(l,i,j)], max(-Inf, -field(system, Branches, :rate_a)[l]))
-            set_upper_bound(p[(l,i,j)], min(Inf,  field(system, Branches, :rate_a)[l]))
+            set_lower_bound(p[(l,i,j)], max(-Inf, -field(system, :branches, :rate_a)[l]))
+            set_upper_bound(p[(l,i,j)], min(Inf,  field(system, :branches, :rate_a)[l]))
         end
     end
 
@@ -117,13 +117,13 @@ end
 ""
 function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
-    var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))])
+    var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))])
 
-    for l in assetgrouplist(field(pm, Topology, :loads_idxs))
-        set_upper_bound(var(pm, :plc, nw)[l], field(system, Loads, :pd)[l,t])
+    for l in assetgrouplist(topology(pm, :loads_idxs))
+        set_upper_bound(var(pm, :plc, nw)[l], field(system, :loads, :pd)[l,t])
         set_lower_bound(var(pm, :plc, nw)[l],0.0)
     end
-    #report && sol_component_value(pm, :plc, assetgrouplist(field(pm, Topology, :loads_idxs)), plc)
+    #report && sol_component_value(pm, :plc, assetgrouplist(topology(pm, :loads_idxs)), plc)
 end
 
 ""
@@ -133,10 +133,10 @@ end
 ""
 function var_load_curtailment_imaginary(pm::AbstractACPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
     
-    var(pm, :qlc)[nw] =@variable(pm.model, [assetgrouplist(field(pm, Topology, :loads_idxs))])
+    var(pm, :qlc)[nw] =@variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))])
 
-    for l in assetgrouplist(field(pm, Topology, :loads_idxs))
-        set_upper_bound(var(pm, :qlc, nw)[l], field(system, Loads, :qd)[l])
+    for l in assetgrouplist(topology(pm, :loads_idxs))
+        set_upper_bound(var(pm, :qlc, nw)[l], field(system, :loads, :qd)[l])
         set_lower_bound(var(pm, :qlc, nw)[l],0.0)
     end
 

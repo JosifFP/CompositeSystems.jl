@@ -1,7 +1,7 @@
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
-VariableType, assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, 
+assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, 
 SUCCESSFUL, FAILED, build_sol_values, optimizer_with_attributes
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
@@ -66,12 +66,12 @@ JuMP.empty!(pm.model)
         field(systemstates, :system)[t] = 0
         CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
-        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.1503; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.1503; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
+        @test isapprox(sum(values(field(pm, :plc))[:]), 0.1503; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[1,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[2,t], 0.1503; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[3,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[4,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
         @test isapprox(pg, 1.699; atol = 1e-3)
         JuMP.empty!(pm.model)
@@ -86,12 +86,12 @@ JuMP.empty!(pm.model)
         field(systemstates, :system)[t] = 0
         CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
-        @test isapprox(sum(values(field(pm, Topology, :plc))[:]), 0.35; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[1,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[2,t], 0.35; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[3,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[4,t], 0; atol = 1e-3)
-        @test isapprox(values(field(pm, Topology, :plc))[5,t], 0; atol = 1e-3)
+        @test isapprox(sum(values(field(pm, :plc))[:]), 0.35; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[1,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[2,t], 0.35; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[3,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[4,t], 0; atol = 1e-3)
+        @test isapprox(values(field(pm, :plc))[5,t], 0; atol = 1e-3)
         #pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
         @test isapprox(pg, 1.5; atol = 1e-3)
         JuMP.empty!(pm.model)
