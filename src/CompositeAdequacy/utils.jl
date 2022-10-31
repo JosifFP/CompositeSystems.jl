@@ -13,28 +13,27 @@ field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generat
 field(arcs::Arcs, subfield::Symbol) = getfield(arcs, subfield)
 
 field(states::SystemStates, field::Symbol) = getfield(states, field)
-#field(states::SystemStates, field::Symbol, t::Int) = getfield(states, field)[:,t]
-Base.view(states::SystemStates, field::Symbol, t::Int) = view(getfield(states, field), :, t)
-Base.view(states::SystemStates, field::Symbol, i::Int, t::Int) = view(getfield(states, field), i, t)
-
+field(states::SystemStates, field::Symbol, t::Int) = getfield(states, field)[:,t]
 field(settings::Settings, field::Symbol) = getfield(settings, field)
 field(method::SimulationSpec, field::Symbol) = getfield(method, field)
+
+field(topology::Topology, field::Symbol) = getfield(topology, field)
+field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
 
 topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
 topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]
 topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol) = getfield(getfield(getfield(pm, :topology), field), subfield)
 topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol, nw::Int) = getindex(getfield(getfield(getfield(pm, :topology), field), subfield), nw)
 
-field(topology::Topology, field::Symbol) = getfield(topology, field)
-field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
-
 var(pm::AbstractPowerModel) = getfield(pm, :var)
-var(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :var), subfield)
-var(pm::AbstractPowerModel, subfield::Symbol, nw::Int) = getindex(getfield(getfield(pm, :var), subfield), nw)
+var(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :var), field)
+var(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getfield(getfield(pm, :var), field), nw)
 
-sol(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :sol), field)
-sol(pm::AbstractPowerModel, field::Symbol, t::Int) = view(getfield(getfield(pm, :sol), field), :, t)
-sol(pm::AbstractPowerModel, field::Symbol, i::Int, t::Int) = view(getfield(getfield(pm, :sol), field), i, t)
+sol(pm::AbstractPowerModel, field::Symbol) = getfield(pm, :sol)
+#sol(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :sol), field)
+
+cache(pm::AbstractPowerModel) = getfield(pm, :cache)
+cache(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :cache), field)
 
 #sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
 #sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
@@ -52,7 +51,7 @@ function Base.map!(f, dict::Dict)
 end
 
 ""
-function check_status(a::SubArray)
+function check_status(a::SubArray{Bool, 1, Matrix{Bool}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true})
     i_idx = @inbounds findfirst(isequal(0), a)
     if i_idx === nothing i_idx=SUCCESSFUL else i_idx=FAILED end
     return i_idx

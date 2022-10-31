@@ -86,7 +86,7 @@ function FileGenerator(RawFile::String, InputData::Vector{String})
 
             XLSX.addsheet!(xf,"time series MW")
             sheet = xf[2]
-            sheet["A1"] = "Keep worksheet blank if no timeseries data is available"
+            sheet["A1"] = "Keep worksheet blank if no multiperiod data is available"
         end
     end
 

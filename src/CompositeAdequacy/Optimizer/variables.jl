@@ -117,7 +117,7 @@ end
 ""
 function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
-    var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))])
+    var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
     for l in assetgrouplist(topology(pm, :loads_idxs))
         set_upper_bound(var(pm, :plc, nw)[l], field(system, :loads, :pd)[l,t])
@@ -133,7 +133,7 @@ end
 ""
 function var_load_curtailment_imaginary(pm::AbstractACPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
     
-    var(pm, :qlc)[nw] =@variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))])
+    var(pm, :qlc)[nw] =@variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
     for l in assetgrouplist(topology(pm, :loads_idxs))
         set_upper_bound(var(pm, :qlc, nw)[l], field(system, :loads, :qd)[l])

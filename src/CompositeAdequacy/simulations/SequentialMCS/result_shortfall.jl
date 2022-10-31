@@ -85,7 +85,7 @@ function record!(
 
     totalshortfall = 0
     isshortfall = false
-    busshortfalls = sol(pm)[:plc]
+    busshortfalls = sol(pm, :plc)
 
     for r in sys.loads.keys
 
@@ -127,16 +127,14 @@ function record!(
     sampleid::Int
 ) where {N,L,T,B}
 
-    loads = field(sys, Loads, :keys)
-
     for t in 1:N
 
         totalshortfall = 0
         isshortfall = false
 
-        for r in loads
+        @inbounds for r in eachindex(field(sys, :loads, :keys))
 
-            busshortfall = sol(pm, :plc, r, t)
+            busshortfall = sol(pm, :plc)[r,t]
             isbusshortfall = busshortfall > 0
     
             fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
@@ -214,8 +212,8 @@ function finalize(
 
     return ShortfallResult{N,L,T,E}(
         nsamples, 
-        system.loads.keys, 
-        system.timestamps,
+        field(system, :loads, :keys), 
+        field(system, :timestamps),
         ep_total_mean, 
         ep_total_std, 
         ep_bus_mean, 

@@ -48,7 +48,7 @@ export
     AbstractDCPModel, AbstractDCMPPModel, AbstractNFAModel,
 
     #optimizationcontainers
-    OptimizationContainer, Topology, Variables,
+    OptimizationContainer, Topology, Variables, Cache,
 
     # Simulation specification
     SequentialMCS, NonSequentialMCS, PreContingencies, Settings,

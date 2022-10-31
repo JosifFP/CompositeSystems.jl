@@ -122,8 +122,6 @@ mpc.gencost = [
 	2	 1500.0	 0.0	 3	   0.004895	  11.849500	 665.109400;
 ];
 
-"check limit on branch 7-8 , 175 rate a and angles"
-"3	 9 changed from 175"
 %% branch data
 %	fbus	tbus	r	x	b		rateA	rateB	rateC	ratio	angle	status	angmin	angmax
 mpc.branch = [

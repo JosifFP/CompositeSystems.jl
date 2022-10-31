@@ -1,28 +1,10 @@
 ""
 function initialize_availability!(
-    states::SystemStates,
-    system::Vector{Bool}, 
-    N::Int)
-
-    v = vcat(field(states, :branches), field(states, :generators),  field(states, :storages), field(states, :generatorstorages)
-)
-
-    @inbounds for t in 1:N
-        if check_status(field(v, t)) == FAILED
-            system[t] = false
-        else
-            system[t] = true
-        end
-    end
-end
-
-""
-function initialize_availability!(
     rng::AbstractRNG,
     availability::Matrix{Bool},
     asset::AbstractAssets, N::Int)
     
-    ndevices = Base.length(asset)
+    ndevices = length(asset)
 
     for i in 1:ndevices
         if field(asset, :status) ≠ false
@@ -38,6 +20,24 @@ function initialize_availability!(
     
 end
 
+""
+function initialize_availability!(
+    states::SystemStates,
+    system::Vector{Bool}, 
+    N::Int)
+
+    v = vcat(field(states, :branches), field(states, :generators),  field(states, :storages), field(states, :generatorstorages))
+
+    @inbounds for t in 1:N
+        if check_status(view(v, :, t)) == FAILED
+            system[t] = false
+        else
+            system[t] = true
+        end
+    end
+end
+
+""
 function cycles!(
     rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
@@ -89,22 +89,27 @@ end
 ""
 function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t)
 
-    assets_idxs = makeidxlist(filter(i->view(asset_states, i, t), field(branches, :keys)), length(assets_idxs))
+    assets_idxs .= makeidxlist(filter(i->asset_states[i,t]==1, field(branches, :keys)), length(assets_idxs))
+    update_arcs!(topology_arcs, initial_arcs, view(asset_states,:,t))
+    
+end
 
-    @inbounds for i in eachindex(view(asset_states, :, t))
-        if !view(asset_states, i, t)
-            view(field(topology_arcs, :busarcs),:,i) .= field(initial_arcs, :empty)
-            view(field(topology_arcs, :arcs_from),i) .= missing
-            view(field(topology_arcs, :arcs_to),i) .= missing
-            view(field(topology_arcs, :arcs),i) .= missing
+""
+function update_arcs!(topology_arcs::Arcs, initial_arcs::Arcs, asset_state::SubArray{Bool, 1, Matrix{Bool}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true})
+    
+    @inbounds for i in eachindex(asset_state)
+        if !asset_state[i]
+            field(topology_arcs, :busarcs)[:,i] = field(topology_arcs, :empty)
+            field(topology_arcs, :arcs_from)[i] = missing
+            field(topology_arcs, :arcs_to)[i] = missing
         else
-            view(field(topology_arcs, :busarcs),:,i) .= view(field(initial_arcs, :busarcs),:,i)
-            view(field(topology_arcs, :arcs_from),i) .= view(field(initial_arcs, :arcs_from),i)
-            view(field(topology_arcs, :arcs_to),i) .= view(field(initial_arcs, :arcs_to),i)
-            view(field(topology_arcs, :arcs),i) .= view(field(initial_arcs, :arcs),i)
+            field(topology_arcs, :busarcs)[:,i] = view(field(initial_arcs, :busarcs),:,i)
+            field(topology_arcs, :arcs_from)[i] = view(field(initial_arcs, :arcs_from),i)[1]
+            field(topology_arcs, :arcs_to)[i] = view(field(initial_arcs, :arcs_to),i)[1]
         end
     end
-    
+    field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
+
 end
 
 

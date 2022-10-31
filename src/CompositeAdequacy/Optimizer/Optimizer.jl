@@ -26,7 +26,7 @@ function build_method!(pm::AbstractNFAModel, system::SystemModel, t::Int; nw::In
 end
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::AbstractDCMPPModel, system::SystemModel, t::Int; nw::Int=0)
+function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t::Int; nw::Int=0)
     # Add Optimization and State Variables
     var_bus_voltage(pm, system, nw=nw)
     var_gen_power(pm, system, nw=nw)

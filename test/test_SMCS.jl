@@ -1,35 +1,53 @@
 include("solvers.jl")
-
 using PRATS
 import PRATS.PRATSBase
-import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
-assetgrouplist, update_asset_idxs!, S, Status, findfirstunique, SUCCESSFUL, FAILED, build_sol_values
+import PRATS.CompositeAdequacy: CompositeAdequacy, field, var, topology, makeidxlist, sol,
+    assetgrouplist, Status, findfirstunique, SUCCESSFUL, FAILED, build_sol_values
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 using ProfileView, Profile
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
-RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RTS.m"
+RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RBTS.m"
 PRATSBase.silence()
 
 system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N=8736)
 resultspecs = (Shortfall(), Shortfall())
 
+ipopt_optimizer_3 = JuMP.optimizer_with_attributes(
+    Ipopt.Optimizer, 
+    "tol"=>1e-3, 
+    #"acceptable_tol"=>1e-2, 
+    "max_cpu_time"=>5.0,
+    "print_level"=>0
+)
+
 settings = PRATS.Settings(
-    ipopt_optimizer_3, 
+
+    juniper_optimizer_2, 
     modelmode = JuMP.AUTOMATIC,
     powermodel = AbstractDCMPPModel
 )
 
-method = PRATS.SequentialMCS(samples=1, seed=1, threaded=true)
-pm = CompositeAdequacy.PowerFlowProblem(system, method, settings)
+method = PRATS.SequentialMCS(samples=4, seed=99, threaded=true)
+@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
 
-@time shortfall,report = PRATS.assess(system, pm, method, resultspecs...)
 
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)
+
+
+
+filter(i->asset_states[i,t]==1, field(branches, :pmax)
+
+
+
+
+
+
+
 
 
 
@@ -43,12 +61,6 @@ Profile.print()
 ProfileView.view()
 
 
-
-PRATS.LOLE.(shortfall, system.loads.keys)
-PRATS.EUE.(shortfall, system.loads.keys)
-PRATS.LOLE.(shortfall)
-PRATS.EUE.(shortfall)
-shortfall.shortfall_bus_std
 
 shortfall.nsamples
 shortfall.loads

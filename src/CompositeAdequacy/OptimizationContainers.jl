@@ -86,7 +86,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
 Variables: A mutable OptimizationContainer for AbstractACPowerModel variables that are mutated by JuMP.
 An alternate solution could be specifying a contaner within JuMP macros (container=Array, DenseAxisArray, Dict, etc.).
 However, the latter generates more allocations and slow down simulations.
-Argument "timeseries" allows to store variables for longer periods of time, thus, optimize multiperiod formulations.
+Argument "multiperiod" allows to store variables for longer periods of time, thus, optimize multiperiod formulations.
 """
 mutable struct Variables <: OptimizationContainer
     va::DenseAxisArray{DenseAxisArray}
@@ -98,22 +98,22 @@ mutable struct Variables <: OptimizationContainer
     p::DenseAxisArray{Dict}
     q::DenseAxisArray{Dict}
 
-    function Variables(system::SystemModel{N}; timeseries::Bool=false) where {N}
-        va = VarContainerArray(field(system, :buses, :keys), N; timeseries=timeseries)
-        vm = VarContainerArray(field(system, :buses, :keys), N; timeseries=timeseries)
-        pg = VarContainerArray(field(system, :generators, :keys), N; timeseries=timeseries)
-        qg = VarContainerArray(field(system, :generators, :keys), N; timeseries=timeseries)
-        plc = VarContainerArray(field(system, :loads, :keys), N; timeseries=timeseries)
-        qlc = VarContainerArray(field(system, :loads, :keys), N; timeseries=timeseries)
-        p = VarContainerDict(field(system, :arcs), N; timeseries=timeseries)
-        q = VarContainerDict(field(system, :arcs), N; timeseries=timeseries)
+    function Variables(system::SystemModel{N}; multiperiod::Bool=false) where {N}
+        va = VarContainerArray(field(system, :buses, :keys), N; multiperiod=multiperiod)
+        vm = VarContainerArray(field(system, :buses, :keys), N; multiperiod=multiperiod)
+        pg = VarContainerArray(field(system, :generators, :keys), N; multiperiod=multiperiod)
+        qg = VarContainerArray(field(system, :generators, :keys), N; multiperiod=multiperiod)
+        plc = VarContainerArray(field(system, :loads, :keys), N; multiperiod=multiperiod)
+        qlc = VarContainerArray(field(system, :loads, :keys), N; multiperiod=multiperiod)
+        p = VarContainerDict(field(system, :arcs), N; multiperiod=multiperiod)
+        q = VarContainerDict(field(system, :arcs), N; multiperiod=multiperiod)
         return new(va, vm, pg, qg, plc, qlc, p, q)
     end
 end
 
 ""
-function VarContainerArray(vkeys::Vector{Int}, N::Int; timeseries::Bool=false)
-    if timeseries
+function VarContainerArray(vkeys::Vector{Int}, N::Int; multiperiod::Bool=false)
+    if multiperiod
         conts = DenseAxisArray{DenseAxisArray}(undef, [i for i in 1:N]) #Initiate empty 2-D DenseAxisArray container
         s_container = container_spec(VariableRef, vkeys)
         varcont = fill!(conts, s_container)
@@ -125,9 +125,9 @@ function VarContainerArray(vkeys::Vector{Int}, N::Int; timeseries::Bool=false)
 end
 
 ""
-function VarContainerDict(container::Arcs, N::Int; timeseries::Bool=false)
+function VarContainerDict(container::Arcs, N::Int; multiperiod::Bool=false)
 
-    if timeseries
+    if multiperiod
         conts = DenseAxisArray{Dict}(undef, [i for i in 1:N]) #Initiate empty 2-D DenseAxisArray container
         s_container = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in container.arcs)
         varcont = fill!(conts, s_container)
@@ -147,25 +147,28 @@ end
 
 
 """
-Solution: a OptimizationContainer structure that stores results in mutable containers.
-Optionally, it can store data for one (as a vector) or more (matrix) periods.
+Cache: a OptimizationContainer structure that stores variables and results in mutable containers.
 """
-struct Solution <: OptimizationContainer
+struct Cache <: OptimizationContainer
 
     plc::Array{Float16}
     qlc::Array{Float16}
+    vars::Variables
 
-    function Solution(system::SystemModel{N}; timeseries::Bool=true) where {N}
+    function Cache(system::SystemModel{N}, method::SimulationSpec; multiperiod::Bool=false) where {N}
 
-        if timeseries
+        if typeof(method) == SequentialMCS
             plc = zeros(Float16,length(system.loads), N)
             qlc = zeros(Float16,length(system.loads), N)
-        else
+        elseif typeof(method) == NonSequentialMCS
             plc = zeros(Float16,length(system.loads))
             qlc = zeros(Float16,length(system.loads))
         end
 
-        return new(plc, qlc)
+        vars = Variables(system, multiperiod=multiperiod)
+
+        return new(plc, qlc, vars)
+
     end
 end
 
@@ -187,8 +190,7 @@ CompositeAdequacy.@def ca_fields begin
     model::AbstractModel
     topology::Topology
     var::Variables
-    sol::Solution
-    var_cache::Variables
+    sol::Array{Float16}
 
 end
 
@@ -199,46 +201,49 @@ struct NFAPowerModel <: AbstractNFAModel @ca_fields end
 
 
 "Constructor for an AbstractPowerModel modeling object"
-function PowerFlowProblem(system::SystemModel{N}, method::SimulationSpec, settings::Settings; kwargs...) where {N}
+function PowerFlowProblem(system::SystemModel, method::SimulationSpec, settings::Settings, cache::Cache)
 
+    isassigned(cache.vars.va[0].data) !=false && error("code corrupted. Check Cache-vars.")
+    iszero(cache.plc) !=true && error("code corrupted. Check Cache-plc")
+    
     PowerModel = field(settings, :powermodel)
 
-    if PowerModel <: AbstractDCMPPModel 
+    if PowerModel <: AbstractDCPModel 
+        PowerModel = DCPPowerModel
+    elseif PowerModel <: AbstractDCMPPModel 
         PowerModel = DCMPPowerModel
     elseif PowerModel <: AbstractNFAModel 
         PowerModel = NFAPowerModel
     end
 
-    var = Variables(system, timeseries=false)
-    var_cache = deepcopy(var)
+    model = JumpModel(field(settings, :modelmode), field(settings, :optimizer))
+    topology = Topology(system)
+    var =  cache.vars
+    sol = cache.plc
 
     return PowerModel(
-        JumpModel(field(settings, :modelmode), field(settings, :optimizer)),
-        Topology(system),
-        var,
-        Solution(system, timeseries=true),
-        var_cache
+        model::AbstractModel,
+        topology::Topology,
+        var::Variables,
+        sol::Array{Float16}
     )
 end
 
 ""
-function empty_optcontainers!(pm::AbstractPowerModel, t)
+function empty!(pm::AbstractDCPowerModel, vars_cache::Variables)
 
     empty!(pm.model)
-    reset_variables!(pm, nw=t)
+    reset_dc_variables!(var(pm), vars_cache)
 
     return
 end
 
-
 ""
-function reset_variables!(pm::AbstractDCMPPModel; nw::Int=0)
-    var(pm, :va)[nw] .= topology(pm, :var_cache, :va, nw)
-    var(pm, :vm)[nw] .= topology(pm, :var_cache, :vm, nw)
-    var(pm, :pg)[nw] .= topology(pm, :var_cache, :pg, nw)
-    var(pm, :qg)[nw] .= topology(pm, :var_cache, :qg, nw)
-    var(pm, :plc)[nw] .= topology(pm, :var_cache, :plc, nw)
-    var(pm, :p)[nw] .= topology(pm, :var_cache, :p, nw)
+function reset_dc_variables!(var::Variables, cache::Variables; nw::Int=0)
+    getfield(var, :va)[nw] = getindex(getfield(cache, :va), nw)
+    getfield(var, :pg)[nw] = getindex(getfield(cache, :pg), nw)
+    getfield(var, :plc)[nw] = getindex(getfield(cache, :plc), nw)
+    getfield(var, :p)[nw] = getindex(getfield(cache, :p), nw)
 end
 
 

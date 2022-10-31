@@ -11,8 +11,7 @@ end
 "Nodal power balance constraints"
 function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=0)
 
-    #arcs = field(pm.topology, :arcs, :values)[i,:]
-    bus_arcs = filter(!ismissing, skipmissing(field(pm.topology, :arcs, :busarcs)[i,:]))
+    bus_arcs = filter(!ismissing, skipmissing(topology(pm, :arcs, :busarcs)[i,:]))
     bus_gens = topology(pm, :generators_nodes)[i]
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
@@ -50,41 +49,49 @@ function _constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel
 end
 
 "Branch - Ohm's Law Constraints"
-function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=0)
+function constraint_ohms_yt(pm::AbstractDCMPPModel, system::SystemModel, i::Int; nw::Int=0)
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
-    #f_idx = (i, f_bus, t_bus) #t_idx = (i, t_bus, f_bus)
     g, b = calc_branch_y(field(system, :branches), i)
     tr, ti = calc_branch_t(field(system, :branches), i)
     tm = field(system, :branches, :tap)[i]
-    #g_fr = field(system, :branches, :g_fr)[i]
-    #b_fr = field(system, :branches, :b_fr)[i]
-    #g_to = field(system, :branches, :g_to)[i]
-    #b_to = field(system, :branches, :b_to)[i]
-
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    x = -b / (g^2 + b^2)
+    ta = atan(ti, tr)
     va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
 
-    _constraint_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
-    _constraint_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+    @constraint(pm.model, p_fr == (va_fr_to - ta)/(x*tm))
 
 end
 
-"DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=0)
+    
+    f_bus = field(system, :branches, :f_bus)[i]
+    t_bus = field(system, :branches, :t_bus)[i]
+    g, b = calc_branch_y(field(system, :branches), i)
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
 
-    # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
-    #x = -b / (g^2 + b^2)
-    @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == (va_fr_to - atan(ti, tr))/((-b / (g^2 + b^2))*tm))
-
-end
-
-"DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
-
-    @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == -b*(va_fr_to))
+    @constraint(pm.model, p_fr == -b*(va_fr_to))
 
 end
+
+# "DC Line Flow Constraints"
+# function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+
+#     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
+#     #x = -b / (g^2 + b^2)
+#     @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == (va_fr_to - atan(ti, tr))/((-b / (g^2 + b^2))*tm))
+
+# end
+
+# "DC Line Flow Constraints"
+# function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+
+#     @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == -b*(va_fr_to))
+
+# end
 
 "nothing to do, this model is symetric"
 function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
@@ -95,7 +102,7 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
 
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
-    buspair = field(pm.topology, :arcs, :buspairs)[(f_bus, t_bus)]
+    buspair = topology(pm, :arcs, :buspairs)[(f_bus, t_bus)]
     
     _constraint_voltage_angle_diff(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
 
