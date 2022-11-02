@@ -18,7 +18,8 @@ import LinearAlgebra: qr, pinv
 import MathOptInterface
 import Ipopt, Juniper, HiGHS
 import Memento
-import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
+import PowerModels
+import JuMP: @variable, @constraint, @objective, @expression, @NLobjective, JuMP, fix, 
     optimize!, Model, direct_model, result_count, optimizer_with_attributes,
     termination_status, isempty, empty!, AbstractModel, VariableRef, 
     GenericAffExpr, GenericQuadExpr, NonlinearExpression, ConstraintRef, 

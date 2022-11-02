@@ -8,14 +8,18 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
             if haskey(plc, i) == false
                 get!(plc, i, field(system, :loads, :pd)[i,t])
             end
-            sol(pm, :plc)[i,t] = plc[i]
+            sol(pm, :plc)[i,t] = deepcopy(getindex(plc, i))
         end
     else
         sol(pm, :plc)[:,t] .= view(field(system, :loads, :pd),:,t)
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
 
-    if sum(sol(pm, :plc)[:,t]) > 0 println("t=$(t), total_curtailed_load=$(sum(sol(pm, :plc)[:,t]))") end
+    if sum(sol(pm, :plc)[:,t]) > 0 
+        println("t=$(t), total_curtailed_load=$(sol(pm, :plc)[:,t]), $(assetgrouplist(topology(pm, :branches_idxs)))") 
+    #else
+        #println("t=$(t), $(assetgrouplist(topology(pm, :branches_idxs)))") 
+    end
     #if sum(sol(pm, :plc, t)) > 0 println("t=$(t)") end
 
 end
@@ -58,11 +62,7 @@ function build_sol_values(var::DenseAxisArray)
 
     for key in axes(var)[1]
         val_r = abs(build_sol_values(var[key]))
-        if val_r > 1e-4
-            sol[key] = Float16(val_r)
-        else
-            sol[key] = Float16(0.0)
-        end
+        sol[key] = Float16(val_r)
     end
 
     return sol
@@ -75,11 +75,7 @@ function build_sol_values(var::Dict)
 
     for (key, val) in var
         val_r = abs(build_sol_values(val))
-        if val_r > 1e-4
-            sol[key] = Float16(val_r)
-        else
-            sol[key] = Float16(0.0)
-        end
+        sol[key] = Float16(val_r)
     end
 
     return sol

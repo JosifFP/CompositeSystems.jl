@@ -86,12 +86,11 @@ end
 function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=0, bounded::Bool=true, report::Bool=false)
 
     arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs, :arcs_from)))
-    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs, :arcs)))
-    p = @variable(pm.model, [arcs])
+    p = @variable(pm.model, [arcs_from])
     #p = var(pm)[:p] = @variable(pm.model, [(l,i,j) in ref(pm, :arcs)], base_name="p", start = comp_start_value(ref(pm, :branch, l), "p_start"))
 
     if bounded
-        for (l,i,j) in arcs
+        for (l,i,j) in arcs_from
             set_lower_bound(p[(l,i,j)], max(-Inf, -field(system, :branches, :rate_a)[l]))
             set_upper_bound(p[(l,i,j)], min(Inf,  field(system, :branches, :rate_a)[l]))
         end

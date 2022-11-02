@@ -26,7 +26,7 @@ function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel,
 end
 
 ""
-function _constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -48,50 +48,60 @@ function _constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel
     )
 end
 
+""
+function _constraint_power_balance(pm::PM_AbstractDCPModel, system::SystemModel, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+
+    p    = var(pm, :p, nw)
+    pg   = var(pm, :pg, nw)
+    #ps   = get(var(pm), :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
+    #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
+    #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
+
+    @constraint(pm.model,
+        sum(pg[g] for g in bus_gens)
+        - sum(p[a] for a in bus_arcs)
+        #- sum(ps[s] for s in bus_storage)
+        #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
+        #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
+        ==
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
+        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
+    )
+end
+
 "Branch - Ohm's Law Constraints"
-function constraint_ohms_yt(pm::AbstractDCMPPModel, system::SystemModel, i::Int; nw::Int=0)
+function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=0)
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
     g, b = calc_branch_y(field(system, :branches), i)
     tr, ti = calc_branch_t(field(system, :branches), i)
     tm = field(system, :branches, :tap)[i]
+    va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
+
+    _constraint_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+    _constraint_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+
+end
+
+"DC Line Flow Constraints"
+function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+
+    # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
-    va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
-
     @constraint(pm.model, p_fr == (va_fr_to - ta)/(x*tm))
 
 end
 
-function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=0)
-    
-    f_bus = field(system, :branches, :f_bus)[i]
-    t_bus = field(system, :branches, :t_bus)[i]
-    g, b = calc_branch_y(field(system, :branches), i)
-    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
-    va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
+"DC Line Flow Constraints"
+function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     @constraint(pm.model, p_fr == -b*(va_fr_to))
 
 end
-
-# "DC Line Flow Constraints"
-# function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
-
-#     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
-#     #x = -b / (g^2 + b^2)
-#     @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == (va_fr_to - atan(ti, tr))/((-b / (g^2 + b^2))*tm))
-
-# end
-
-# "DC Line Flow Constraints"
-# function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
-
-#     @constraint(pm.model, var(pm, :p, nw)[i, f_bus, t_bus] == -b*(va_fr_to))
-
-# end
 
 "nothing to do, this model is symetric"
 function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
@@ -104,7 +114,9 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
     t_bus = field(system, :branches, :t_bus)[i]
     buspair = topology(pm, :arcs, :buspairs)[(f_bus, t_bus)]
     
-    _constraint_voltage_angle_diff(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
+    if !ismissing(buspair) && Int(buspair[1]) == i
+        _constraint_voltage_angle_diff(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
+    end
 
 end
 
@@ -115,9 +127,11 @@ end
 "Polar Form"
 function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
     
-    #va_fr = var(pm, :va, f_bus) va_to = var(pm, :va, t_bus)
-    @constraint(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus] <= angmax)
-    @constraint(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus] >= angmin)
+    va_fr = var(pm, :va, nw)[f_bus]
+    va_to = var(pm, :va, nw)[t_bus]
+    @constraint(pm.model, va_fr - va_to <= angmax)
+    @constraint(pm.model, va_fr - va_to >= angmin)
+
 end
 
 """

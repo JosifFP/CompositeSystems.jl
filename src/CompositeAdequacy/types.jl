@@ -17,6 +17,9 @@ abstract type AbstractACPowerModel <: AbstractPowerModel end
 abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
 abstract type AbstractDCPModel <: AbstractDCPowerModel end
 abstract type AbstractNFAModel <: AbstractDCPowerModel end
+abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
+LoadCurtailment =  Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel}
+
 #AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
 #AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
@@ -88,18 +91,20 @@ end
 struct Settings <: SimulationSpec
 
     optimizer::MathOptInterface.OptimizerWithAttributes
+    file::String
     modelmode::JuMP.ModelMode
     powermodel::Type{<:AbstractPowerModel}
 
     function Settings(
-        optimizer::MathOptInterface.OptimizerWithAttributes;
+        optimizer::MathOptInterface.OptimizerWithAttributes,
+        file::String;
         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-        powermodel::Type{<:AbstractPowerModel}=AbstractDCMPPModel
+        powermodel::String="AbstractDCMPPModel"
         )
 
-        @assert powermodel <: AbstractPowerModel
+        abstractpm = type(powermodel)
 
-        new(optimizer, modelmode, powermodel)
+        new(optimizer, file, modelmode, abstractpm)
     end
 
 end

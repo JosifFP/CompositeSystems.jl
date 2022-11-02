@@ -12,10 +12,10 @@ ipopt_optimizer_2 = JuMP.optimizer_with_attributes(
 
 ipopt_optimizer_3 = JuMP.optimizer_with_attributes(
     Ipopt.Optimizer, 
-    "tol"=>1e-3, 
-    "acceptable_tol"=>1e-2, 
+    "tol"=>1e-4, 
+    #"acceptable_tol"=>1e-2, 
     "max_cpu_time"=>5.0,
-    "constr_viol_tol"=>0.01, 
+    #"constr_viol_tol"=>0.01, 
     "print_level"=>0
 )
 

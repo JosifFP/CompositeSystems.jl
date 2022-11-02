@@ -2,54 +2,32 @@ include("solvers.jl")
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var, topology, makeidxlist, sol,
-    assetgrouplist, Status, findfirstunique, SUCCESSFUL, FAILED, build_sol_values
+    assetgrouplist, findfirstunique, build_sol_values
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
+import JuMP: termination_status
 using Test
 using ProfileView, Profile
 import BenchmarkTools: @btime
 ReliabilityDataDir = "C:/Users/jfiguero/Desktop/PRATS Input Data/Reliability Data"
 RawFile = "C:/Users/jfiguero/Desktop/PRATS Input Data/RBTS.m"
 PRATSBase.silence()
+system = PRATSBase.SystemModel(RawFile, ReliabilityDataDir=ReliabilityDataDir, N=8736)
 
-system = PRATSBase.SystemModel(RawFile; ReliabilityDataDir=ReliabilityDataDir, N=8736)
 resultspecs = (Shortfall(), Shortfall())
-
-ipopt_optimizer_3 = JuMP.optimizer_with_attributes(
-    Ipopt.Optimizer, 
-    "tol"=>1e-3, 
-    #"acceptable_tol"=>1e-2, 
-    "max_cpu_time"=>5.0,
-    "print_level"=>0
-)
-
 settings = PRATS.Settings(
 
-    juniper_optimizer_2, 
+    ipopt_optimizer_3, 
     modelmode = JuMP.AUTOMATIC,
-    powermodel = AbstractDCMPPModel
+    powermodel = AbstractDCPModel
 )
 
-method = PRATS.SequentialMCS(samples=4, seed=99, threaded=true)
+method = PRATS.SequentialMCS(samples=8, seed=1234, threaded=false)
+
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
-
-
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)
-
-
-
-filter(i->asset_states[i,t]==1, field(branches, :pmax)
-
-
-
-
-
-
-
-
-
 
 
 

@@ -76,56 +76,55 @@ function accumulator(
 
 end
 
+# function record!(
+#     acc::SMCShortfallAccumulator,
+#     sys::SystemModel{N,L,T},
+#     #pm::AbstractPowerModel,
+#     sampleid::Int, t::Int
+# ) where {N,L,T}
+
+#     totalshortfall = 0
+#     isshortfall = false
+#     busshortfalls = 0#sol(pm, :plc)
+
+#     for r in sys.loads.keys
+
+#         busshortfall = busshortfalls[r]
+#         isbusshortfall = busshortfall > 0
+
+#         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
+#         fit!(acc.unservedload_busperiod[r,t], busshortfall)
+    
+#         if isbusshortfall
+
+#             isshortfall = true
+#             totalshortfall += busshortfall
+
+#             acc.periodsdropped_bus_currentsim[r] += 1
+#             acc.unservedload_bus_currentsim[r] += busshortfall
+
+#         end
+    
+#     end
+
+#     if isshortfall
+#         acc.periodsdropped_total_currentsim += 1
+#         acc.unservedload_total_currentsim += totalshortfall
+#     end
+
+#     fit!(acc.periodsdropped_period[t], isshortfall)
+#     fit!(acc.unservedload_period[t], totalshortfall)
+
+#     return
+
+# end
+
 function record!(
     acc::SMCShortfallAccumulator,
-    sys::SystemModel{N,L,T,B},
-    pm::AbstractPowerModel,
-    sampleid::Int, t::Int
-) where {N,L,T,B}
-
-    totalshortfall = 0
-    isshortfall = false
-    busshortfalls = sol(pm, :plc)
-
-    for r in sys.loads.keys
-
-        busshortfall = busshortfalls[r]
-        isbusshortfall = busshortfall > 0
-
-        fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
-        fit!(acc.unservedload_busperiod[r,t], busshortfall)
-    
-        if isbusshortfall
-
-            isshortfall = true
-            totalshortfall += busshortfall
-
-            acc.periodsdropped_bus_currentsim[r] += 1
-            acc.unservedload_bus_currentsim[r] += busshortfall
-
-        end
-    
-    end
-
-    if isshortfall
-        acc.periodsdropped_total_currentsim += 1
-        acc.unservedload_total_currentsim += totalshortfall
-    end
-
-    fit!(acc.periodsdropped_period[t], isshortfall)
-    fit!(acc.unservedload_period[t], totalshortfall)
-
-    return
-
-end
-
-
-function record!(
-    acc::SMCShortfallAccumulator,
-    sys::SystemModel{N,L,T,B},
+    sys::SystemModel{N},
     pm::AbstractPowerModel,
     sampleid::Int
-) where {N,L,T,B}
+) where {N}
 
     for t in 1:N
 
@@ -190,8 +189,8 @@ end
 
 function finalize(
     acc::SMCShortfallAccumulator,
-    system::SystemModel{N,L,T,B},
-) where {N,L,T,B}
+    system::SystemModel{N,L,T},
+) where {N,L,T}
 
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
@@ -208,7 +207,7 @@ function finalize(
     nsamples = first(acc.unservedload_total.stats).n
     P = PRATSBase.powerunits["MW"]
     E = PRATSBase.energyunits["MWh"]
-    p2e = conversionfactor(L,T,P,E,B)
+    p2e = conversionfactor(L,T,P,E,system.baseMVA)
 
     return ShortfallResult{N,L,T,E}(
         nsamples, 
@@ -262,9 +261,9 @@ end
 
 function record!(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,B},
+    system::SystemModel{N,L,T},
     sampleid::Int, t::Int
-) where {N,L,T,B}
+) where {N,L,T}
 
     for r in field(system, :loads, :keys)
         acc.shortfall[r,t,sampleid] = field(system, :loads, :plc)[r]
@@ -277,8 +276,8 @@ reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 function finalize(
     acc::SMCShortfallSamplesAccumulator,
-    system::SystemModel{N,L,T,B},
-) where {N,L,T,B}
+    system::SystemModel{N,L,T},
+) where {N,L,T}
 
     P = PRATSBase.powerunits["MW"]
     E = PRATSBase.energyunits["MWh"]

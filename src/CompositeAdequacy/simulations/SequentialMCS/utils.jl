@@ -4,7 +4,7 @@ function initialize_availability!(
     availability::Matrix{Bool},
     asset::AbstractAssets, N::Int)
     
-    ndevices = length(asset)
+    ndevices = Base.length(asset)
 
     for i in 1:ndevices
         if field(asset, :status) ≠ false
@@ -21,21 +21,18 @@ function initialize_availability!(
 end
 
 ""
-function initialize_availability!(
-    states::SystemStates,
-    system::Vector{Bool}, 
-    N::Int)
+function initialize_availability!(states::SystemStates, N::Int)
 
-    v = vcat(field(states, :branches), field(states, :generators),  field(states, :storages), field(states, :generatorstorages))
+    v = vcat(field(states, :branches), field(states, :generators), field(states, :loads))
 
     @inbounds for t in 1:N
-        if check_status(view(v, :, t)) == FAILED
-            system[t] = false
-        else
-            system[t] = true
+        B = filter(i -> states.buses[i]==4, states.buses)
+        if check_status(view(v, :, t)) == false ||  length(B) > 0
+            states.system[t] = false
         end
     end
 end
+
 
 ""
 function cycles!(
@@ -69,13 +66,19 @@ function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
     return ttf,ttr
 end
 
-"Update asset_idxs and asset_loads"
-function update_idxs!(
-    key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
+"Update asset_idxs and asset_nodes"
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
     
     assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
     map!(x -> Int[], bus_assets)
     update_asset_nodes!(key_assets, bus_assets, buses)
+
+end
+
+""
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
+    
+    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
 
 end
 
@@ -87,31 +90,72 @@ function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vect
 end
 
 ""
-function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t)
-
+function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
     assets_idxs .= makeidxlist(filter(i->asset_states[i,t]==1, field(branches, :keys)), length(assets_idxs))
-    update_arcs!(topology_arcs, initial_arcs, view(asset_states,:,t))
-    
+    update_arcs!(branches, topology_arcs, initial_arcs, asset_states, t)
 end
 
 ""
-function update_arcs!(topology_arcs::Arcs, initial_arcs::Arcs, asset_state::SubArray{Bool, 1, Matrix{Bool}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true})
+function update_arcs!(branches::Branches, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
     
-    @inbounds for i in eachindex(asset_state)
-        if !asset_state[i]
-            field(topology_arcs, :busarcs)[:,i] = field(topology_arcs, :empty)
+    state = asset_states[:,t]
+    @inbounds for i in eachindex(state)
+
+        f_bus = field(branches, :f_bus)[i]
+        t_bus = field(branches, :t_bus)[i]
+
+        if !state[i]
+            field(topology_arcs, :busarcs)[:,i] = deepcopy(field(topology_arcs, :empty))
             field(topology_arcs, :arcs_from)[i] = missing
-            field(topology_arcs, :arcs_to)[i] = missing
+            #field(topology_arcs, :arcs_to)[i] = missing
+            field(topology_arcs, :buspairs)[(f_bus, t_bus)] = missing
         else
-            field(topology_arcs, :busarcs)[:,i] = view(field(initial_arcs, :busarcs),:,i)
-            field(topology_arcs, :arcs_from)[i] = view(field(initial_arcs, :arcs_from),i)[1]
-            field(topology_arcs, :arcs_to)[i] = view(field(initial_arcs, :arcs_to),i)[1]
+            field(topology_arcs, :busarcs)[:,i] = deepcopy(view(field(initial_arcs, :busarcs),:,i))
+            field(topology_arcs, :arcs_from)[i] = deepcopy(view(field(initial_arcs, :arcs_from),i)[1])
+            #field(topology_arcs, :arcs_to)[i] = deepcopy(view(field(initial_arcs, :arcs_to),i)[1])
+            field(topology_arcs, :buspairs)[(f_bus, t_bus)] = deepcopy(field(initial_arcs, :buspairs)[(f_bus, t_bus)])
         end
     end
-    field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
+    
+    #field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
 
 end
 
+
+function initialize_bus_types(buses_states::Matrix{Int}, branches_states::Matrix{Bool}, branches::Branches, settings::Settings, N::Int)
+
+    for t in 1:N
+
+        pm_data = PowerModels.parse_file(field(settings, :file))
+        branch_states = branches_states[:,t]
+        bus_types = buses_states[:,t]
+
+        for i in branches.keys
+            if !branch_states[i]
+                pm_data["branch"][string(i)]["br_status"] = 0
+            end
+        end
+
+        PowerModels.simplify_network!(pm_data)
+        PowerModels.select_largest_component!(pm_data)
+        PowerModels.simplify_network!(pm_data)
+
+        for (k,v) in pm_data["bus"]
+            i = parse(Int, k)
+            bus_types[i] = Int(v["bus_type"])
+        end
+
+        for (k,v) in pm_data["branch"]
+            i = parse(Int, k)
+            branch_states[i] = Bool(v["br_status"])
+        end
+
+
+    end
+
+    return buses_states, branches_states
+
+end
 
 # ----------------------------------------------------------------------------------------------------------
 # function available_capacity(

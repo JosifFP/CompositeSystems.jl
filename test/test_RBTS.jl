@@ -2,8 +2,8 @@ include("solvers.jl")
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
-assetgrouplist, Status, findfirstunique, topology, sol, cache, makeidxlist,
-SUCCESSFUL, FAILED, build_sol_values, optimizer_with_attributes
+assetgrouplist, findfirstunique, topology, sol, cache, makeidxlist,
+build_sol_values, optimizer_with_attributes
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 using Test
 using ProfileView, Profile
@@ -40,7 +40,7 @@ sum(systemstates.system)
 field(systemstates, :branches)[3,t] = 0
 field(systemstates, :branches)[4,t] = 0
 field(systemstates, :branches)[8,t] = 0
-field(systemstates, :system)[t] = 0
+systemstates.system[t] = 0
 CompositeAdequacy.update!(pm, systemstates, system, t)
 CompositeAdequacy.solve!(pm, system, t)
 
@@ -66,7 +66,7 @@ systemstates = CompositeAdequacy.SystemStates(system, method)
 field(systemstates, :branches)[3,t] = 0
 field(systemstates, :branches)[4,t] = 0
 field(systemstates, :branches)[8,t] = 0
-field(systemstates, :system)[t] = 0
+systemstates.system[t] = 0
 CompositeAdequacy.update!(pm, systemstates, system, t)
 CompositeAdequacy.solve!(pm, system, t)
 JuMP.termination_status(pm.model)
@@ -94,7 +94,7 @@ JuMP.empty!(pm.model)
         field(systemstates, :branches)[3,t] = 0
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[8,t] = 0
-        field(systemstates, :system)[t] = 0
+        systemstates.system[t] = 0
         CompositeAdequacy.update!(pm, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.1503; atol = 1e-3)
@@ -114,7 +114,7 @@ JuMP.empty!(pm.model)
         field(systemstates, :generators)[7,t] = 0
         field(systemstates, :generators)[8,t] = 0
         field(systemstates, :generators)[9,t] = 0
-        field(systemstates, :system)[t] = 0
+        systemstates.system[t] = 0
         CompositeAdequacy.update!(pm, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.35; atol = 1e-3)
@@ -188,7 +188,7 @@ plc = build_sol_values(var(pm, :plc, 1))
 t=2
 field(systemstates, :branches)[5,t] = 0
 field(systemstates, :branches)[8,t] = 0
-field(systemstates, :system)[t] = 0
+systemstates.system[t] = 0
 CompositeAdequacy.update!(pm, systemstates, system, t)
 CompositeAdequacy.build_method!(pm, system, t)
 CompositeAdequacy.optimize!(pm.model)

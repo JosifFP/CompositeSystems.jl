@@ -6,6 +6,6 @@ using Test
 
 @testset "Contingency Solver: split network situations" begin
     PRATS.silence()
-          PRATSBase.silence()
     include("test_solver.jl")
+    #include("test_solver2.jl")
 end;

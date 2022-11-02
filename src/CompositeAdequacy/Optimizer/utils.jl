@@ -1,26 +1,60 @@
-function get_bus_components(arcs::Vector{Tuple{Int, Int, Int}}, buses::Buses, loads::Loads, shunts::Shunts, generators::Generators, storages::Storages)
+"maps component types to status parameters"
+const pm_component_status = Dict(
+    "bus" => "bus_type",
+    "load" => "status",
+    "shunt" => "status",
+    "gen" => "gen_status",
+    "storage" => "status",
+    "switch" => "status",
+    "branch" => "br_status",
+    "dcline" => "br_status",
+)
 
-    tmp = Dict((i, Tuple{Int,Int,Int}[]) for i in field(buses, :keys))
-    for (l,i,j) in arcs
-        push!(tmp[i], (l,i,j))
+"maps component types to inactive status values"
+const pm_component_status_inactive = Dict(
+    "bus" => 4,
+    "load" => 0,
+    "shunt" => 0,
+    "gen" => 0,
+    "storage" => 0,
+    "switch" => 0,
+    "branch" => 0,
+    "dcline" => 0,
+)
+
+"""
+computes the connected components of the network graph
+returns a set of sets of bus ids, each set is a connected component
+"""
+function calc_connected_components(pm::AbstractPowerModel, branches::Branches)
+
+    active_bus_ids = assetgrouplist(topology(pm, :buses_idxs))
+    active_branches_ids = assetgrouplist(topology(pm, :branches_idxs))
+    neighbors = Dict(i => Int[] for i in active_bus_ids)
+
+    for i in active_branches_ids
+        edge_f_bus = field(branches, :f_bus)[i]
+        edge_t_bus = field(branches, :t_bus)[i]
+        if edge_f_bus in active_bus_ids && edge_t_bus in active_bus_ids
+            push!(neighbors[edge_f_bus], edge_t_bus)
+            push!(neighbors[edge_t_bus], edge_f_bus)
+        end
     end
-    bus_arcs = tmp
 
-    tmp = Dict((i, Int[]) for i in field(buses, :keys))
-    loads_nodes = bus_asset!(tmp, field(loads, :keys), field(loads, :buses))
+    component_lookup = Dict(i => Set{Int}([i]) for i in active_bus_ids)
+    touched = Set{Int}()
+
+    for i in active_bus_ids
+        if !(i in touched)
+            PowerModels._cc_dfs(i, neighbors, component_lookup, touched)
+        end
+    end
+
+    ccs = Set(values(component_lookup))
+    return ccs
     
-    tmp = Dict((i, Int[]) for i in field(buses, :keys))
-    shunts_nodes = bus_asset!(tmp, field(shunts, :keys), field(shunts, :buses))
-
-    tmp = Dict((i, Int[]) for i in field(buses, :keys))
-    bus_gens = bus_asset!(tmp, field(generators, :keys), field(generators, :buses))
-
-    tmp = Dict((i, Int[]) for i in field(buses, :keys))
-    bus_storage = bus_asset!(tmp, field(storages, :keys), field(storages, :buses))
-
-    return (bus_arcs, loads_nodes, shunts_nodes, bus_gens, bus_storage)
-
 end
+
 
 ""
 function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_assets::Vector{Int})
@@ -30,30 +64,11 @@ function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_as
     return tmp
 end
 
-""
-function check_status(system::SystemModel)
-    for k in field(system, :branches, :keys)
-        if field(system, :branches, :status)[k] ≠ 0
-            f_bus = field(system, :branches, :f_bus)[k]
-            t_bus = field(system, :branches, :t_bus)[k]
-            if field(system, :buses, :bus_type)[f_bus] == 4 || field(system, :buses, :bus_type)[t_bus] == 4
-                #@info("deactivating branch $(k):($(f_bus),$(t_bus)) due to connecting bus status")
-                field(system, :branches, :status)[k] = 0
-            end
-        end
-    end
-    
-    for k in field(system, :buses, :keys)
-        if field(system, :buses, :bus_type)[k] == 4
-            if field(system, :loads, :status)[k] ≠ 0 field(system, :loads, :status)[k] = 0 end
-            if field(system, :shunts, :status)[k] ≠ 0 field(system, :shunts, :status)[k] = 0 end
-            if field(system, :generators, :status)[k] ≠ 0 field(system, :generators, :status)[k] = 0 end
-            if field(system, :storages, :status)[k] ≠ 0 field(system, :storages, :status)[k] = 0 end
-            if field(system, :generatorstorages, :status)[k] ≠ 0 field(system, :generatorstorages, :status)[k] = 0 end
-        end
-    end
-end
 
+
+
+
+#"garbage-----------------------------------------------------------------------------------------------------------------"
 "computes flow bounds on branches from ref data"
 function ref_calc_branch_flow_bounds(branches::Branches)
     flow_lb = Dict() 

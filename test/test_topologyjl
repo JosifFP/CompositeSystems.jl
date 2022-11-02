@@ -1,8 +1,8 @@
 using PRATS
 import PRATS.PRATSBase
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
-assetgrouplist, St, Status, findfirstunique, 
-SUCCESSFUL, FAILED, build_sol_values, optimizer_with_attributes
+assetgrouplist, findfirstunique, 
+build_sol_values, optimizer_with_attributes
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
 import Missings
 using Test
@@ -30,7 +30,7 @@ field(systemstates, :generators)[7,t] = 0
 field(systemstates, :generators)[8,t] = 0
 field(systemstates, :generators)[9,t] = 0
 field(systemstates, :branches)[1,t] = 0
-field(systemstates, :system)[t] = 0
+systemstates.system[t] = 0
 CompositeAdequacy.update!(pm, systemstates, system, t)
 CompositeAdequacy.solve!(pm, system, t)
 
@@ -67,7 +67,7 @@ CompositeAdequacy.solve!(pm, system, t)
     field(systemstates, :generators)[7,t] = 0
     field(systemstates, :generators)[8,t] = 0
     field(systemstates, :generators)[11,t] = 0
-    field(systemstates, :system)[t] = 0
+    systemstates.system[t] = 0
     CompositeAdequacy.update!(pm, systemstates, system, t)
 
     t=1

@@ -1,13 +1,14 @@
 "Definition of States"
 abstract type AbstractState end
-abstract type FAILED <: AbstractState end
-abstract type SUCCESSFUL <: AbstractState end
-struct St{Bool} end
-Status(::Type{St{false}}) = FAILED
-Status(::Type{St{true}}) = SUCCESSFUL
+#abstract type FAILED <: AbstractState end
+# type SUCCESSFUL <: AbstractState end
+#struct St{Bool} end
+#Status(::Type{St{false}}) = FAILED
+#Status(::Type{St{true}}) = SUCCESSFUL
 
 struct SystemStates <: AbstractState
 
+    buses::Array{Int}
     loads::Array{Bool}
     branches::Array{Bool}
     shunts::Array{Bool}
@@ -25,12 +26,14 @@ struct SystemStates <: AbstractState
     storages_energy::Array{Float16}
     generatorstorages_energy::Array{Float16}
 
-    system::Union{Nothing, Array{Bool}}
+    system::Array{Bool}
 
 end
 
 "SystemStates structure for Sequential MCS"
 function SystemStates(system::SystemModel{N}, method::SequentialMCS) where {N}
+
+    @inbounds buses = hcat([field(system, :buses, :bus_type) for k in 1:N]...)
 
     @inbounds loads = ones(Bool, length(system.loads), N)
     loads_nexttransition = nothing
@@ -53,17 +56,19 @@ function SystemStates(system::SystemModel{N}, method::SequentialMCS) where {N}
     @inbounds storages_energy = zeros(Float16, Base.length(system.storages), N)
     @inbounds generatorstorages_energy = zeros(Float16, Base.length(system.generatorstorages), N)
     
-    @inbounds system = Array{Bool, 1}(undef, N)
+    @inbounds sys = ones(Bool, N)
 
     return SystemStates(
-        loads, branches, shunts, generators, storages, generatorstorages,
+        buses, loads, branches, shunts, generators, storages, generatorstorages,
         loads_nexttransition, branches_nexttransition, shunts_nexttransition, 
         generators_nexttransition, storages_nexttransition, generatorstorages_nexttransition,
-        storages_energy, generatorstorages_energy, system)
+        storages_energy, generatorstorages_energy, sys)
 end
 
 "SystemStates structure for NonSequential MCS"
 function SystemStates(system::SystemModel{N}, method::NonSequentialMCS) where {N}
+
+    @inbounds buses = field(system, :buses, :bus_type)
 
     @inbounds loads = Array{Bool, 1}(undef, length(system.loads))
     @inbounds loads_nexttransition = Array{Int, 1}(undef, length(system.loads))
@@ -86,18 +91,20 @@ function SystemStates(system::SystemModel{N}, method::NonSequentialMCS) where {N
     @inbounds storages_energy = Array{Float16, 1}(undef, length(system.storages))
     @inbounds generatorstorages_energy = Array{Float16, 1}(undef, length(system.generatorstorages))
     
-    @inbounds system = [true]
+    @inbounds sys = [true]
 
     return SystemStates(
-        loads, branches, shunts, generators, storages, generatorstorages,
+        buses, loads, branches, shunts, generators, storages, generatorstorages,
         loads_nexttransition, branches_nexttransition, shunts_nexttransition, 
         generators_nexttransition, storages_nexttransition, generatorstorages_nexttransition,
-        storages_energy, generatorstorages_energy, system)
+        storages_energy, generatorstorages_energy, sys)
 end
 
 
 "SystemStates structure for Tests"
 function SystemStates(system::SystemModel{N}, method::Type{Tests}) where {N}
+
+    @inbounds buses = field(system, :buses, :bus_type)
 
     @inbounds loads = ones(Bool, length(system.loads), N)
     loads_nexttransition = nothing
@@ -123,7 +130,7 @@ function SystemStates(system::SystemModel{N}, method::Type{Tests}) where {N}
     @inbounds system = ones(Bool, N)
 
     return SystemStates(
-        loads, branches, shunts, generators, storages, generatorstorages,
+        buses, loads, branches, shunts, generators, storages, generatorstorages,
         loads_nexttransition, branches_nexttransition, shunts_nexttransition, 
         generators_nexttransition, storages_nexttransition, generatorstorages_nexttransition,
         storages_energy, generatorstorages_energy, system)

@@ -24,7 +24,6 @@ struct Topology <: OptimizationContainer
         key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
         buses_idxs = makeidxlist(key_buses, length(system.buses))
 
-        #nodes = Dict((i, Int[]) for i in key_buses)
         key_loads = filter(i->field(system, :loads, :status)[i], field(system, :loads, :keys))
         loads_idxs = makeidxlist(key_loads, length(system.loads))
         tmp = Dict((i, Int[]) for i in key_buses)
@@ -151,23 +150,23 @@ Cache: a OptimizationContainer structure that stores variables and results in mu
 """
 struct Cache <: OptimizationContainer
 
-    plc::Array{Float16}
-    qlc::Array{Float16}
+    #plc::Array{Float16}
+    #qlc::Array{Float16}
     vars::Variables
 
     function Cache(system::SystemModel{N}, method::SimulationSpec; multiperiod::Bool=false) where {N}
 
-        if typeof(method) == SequentialMCS
-            plc = zeros(Float16,length(system.loads), N)
-            qlc = zeros(Float16,length(system.loads), N)
-        elseif typeof(method) == NonSequentialMCS
-            plc = zeros(Float16,length(system.loads))
-            qlc = zeros(Float16,length(system.loads))
-        end
+        # if typeof(method) == SequentialMCS
+        #     plc = zeros(Float16,length(system.loads), N)
+        #     qlc = zeros(Float16,length(system.loads), N)
+        # elseif typeof(method) == NonSequentialMCS
+        #     plc = zeros(Float16,length(system.loads))
+        #     qlc = zeros(Float16,length(system.loads))
+        # end
 
         vars = Variables(system, multiperiod=multiperiod)
 
-        return new(plc, qlc, vars)
+        return new(vars)
 
     end
 end
@@ -198,30 +197,23 @@ end
 struct DCPPowerModel <: AbstractDCPModel @ca_fields end
 struct DCMPPowerModel <: AbstractDCMPPModel @ca_fields end
 struct NFAPowerModel <: AbstractNFAModel @ca_fields end
+struct PM_DCPPowerModel <: PM_AbstractDCPModel @ca_fields end
 
 
 "Constructor for an AbstractPowerModel modeling object"
-function PowerFlowProblem(system::SystemModel, method::SimulationSpec, settings::Settings, cache::Cache)
-
-    isassigned(cache.vars.va[0].data) !=false && error("code corrupted. Check Cache-vars.")
-    iszero(cache.plc) !=true && error("code corrupted. Check Cache-plc")
+function PowerFlowProblem(system::SystemModel{N}, PM::Type{<:AbstractPowerModel}, method::SimulationSpec, cache::Cache, settings::Settings) where {N}
     
-    PowerModel = field(settings, :powermodel)
-
-    if PowerModel <: AbstractDCPModel 
-        PowerModel = DCPPowerModel
-    elseif PowerModel <: AbstractDCMPPModel 
-        PowerModel = DCMPPowerModel
-    elseif PowerModel <: AbstractNFAModel 
-        PowerModel = NFAPowerModel
-    end
-
     model = JumpModel(field(settings, :modelmode), field(settings, :optimizer))
     topology = Topology(system)
-    var =  cache.vars
-    sol = cache.plc
+    var =  deepcopy(cache.vars)
 
-    return PowerModel(
+    if typeof(method) == SequentialMCS
+        sol = zeros(Float16,length(system.loads), N)
+    elseif typeof(method) == NonSequentialMCS
+        sol = zeros(Float16,length(system.loads))
+    end
+
+    return PM(
         model::AbstractModel,
         topology::Topology,
         var::Variables,
@@ -230,16 +222,34 @@ function PowerFlowProblem(system::SystemModel, method::SimulationSpec, settings:
 end
 
 ""
-function empty!(pm::AbstractDCPowerModel, vars_cache::Variables)
+function type(pmodel::String)
+
+    if pmodel == "AbstractDCPModel"
+        apm = DCPPowerModel
+    elseif pmodel == "AbstractDCMPPModel" 
+        apm = DCMPPowerModel
+    elseif pmodel == "AbstractNFAModel" 
+        apm = NFAPowerModel
+    elseif pmodel == "PM_AbstractDCPModel"
+        apm = PM_DCPPowerModel
+    else
+        error("AbstractPowerModel = $(pmodel) not supported, DCPPowerModel has been selected")
+        apm = DCPPowerModel
+    end
+    return apm
+end
+
+""
+function empty_method!(pm::AbstractDCPowerModel, cache::Cache)
 
     empty!(pm.model)
-    reset_dc_variables!(var(pm), vars_cache)
+    empty_vars!(pm.var, cache.vars)
 
     return
 end
 
 ""
-function reset_dc_variables!(var::Variables, cache::Variables; nw::Int=0)
+function empty_vars!(var::Variables, cache::Variables; nw::Int=0)
     getfield(var, :va)[nw] = getindex(getfield(cache, :va), nw)
     getfield(var, :pg)[nw] = getindex(getfield(cache, :pg), nw)
     getfield(var, :plc)[nw] = getindex(getfield(cache, :plc), nw)

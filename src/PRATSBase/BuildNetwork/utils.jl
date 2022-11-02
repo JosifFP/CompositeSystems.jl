@@ -23,9 +23,9 @@ const component_status_inactive = Dict(
 )
 
 ""
-function BuildNetwork(file::String)
+function BuildNetwork(io::IO, filetype::SubString{String})
     
-    pm_data = parse_model(file)
+    pm_data = parse_model(io, filetype)
     PowerModels.make_per_unit!(pm_data)
     network = _BuildNetwork!(pm_data)
 
@@ -33,19 +33,26 @@ function BuildNetwork(file::String)
 
 end
 
+""
+function BuildNetwork(RawFile::String)
+    network = open(RawFile) do io
+        network = Dict{Symbol, Any}(BuildNetwork(io, split(lowercase(RawFile), '.')[end]))
+    end
+    return network
+end
+
 "Parses a Matpower .m `file` or PTI (PSS(R)E-v33) .raw `file` into a
 PowerModels data structure. All fields from PTI files will be imported if
 `import_all` is true (Default: false)."
 
-function parse_model(file::String)
+function parse_model(io::IO, filetype::SubString{String})
     
-    filetype = split(lowercase(file), '.')[end]
     if filetype == "m"
-        pm_data = PowerModels.parse_matpower(file, validate=true)
+        pm_data = PowerModels.parse_matpower(io, validate=true)
     elseif filetype == "raw"
-        pm_data = PowerModels.parse_psse(file; import_all=false, validate=true)
+        pm_data = PowerModels.parse_psse(io; import_all=false, validate=true)
     else
-        Memento.error(_LOGGER, "Unrecognized filetype: \".$file\", Supported extensions are \".raw\" and \".m\"")
+        Memento.error(_LOGGER, "Unrecognized filetype: \".$filetype\", Supported extensions are \".raw\" and \".m\"")
     end
 
     return pm_data
@@ -60,7 +67,7 @@ function _BuildNetwork!(pm_data::Dict{String,<:Any})
     delete!(pm_data,"name")
     calc_thermal_limits!(pm_data)
     SimplifyNetwork!(pm_data)
-    s_cost_terms!(pm_data, order=2)
+    s_cost_terms!(pm_data, order=1)
     return ref_initialize!(pm_data)
 
 end

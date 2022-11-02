@@ -12,8 +12,9 @@ field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
 field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
 field(arcs::Arcs, subfield::Symbol) = getfield(arcs, subfield)
 
-field(states::SystemStates, field::Symbol) = getfield(states, field)
-field(states::SystemStates, field::Symbol, t::Int) = getfield(states, field)[:,t]
+field(states::SystemStates, field::Symbol) = getfield(states, field)::Matrix{Bool}
+field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
+field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
 field(settings::Settings, field::Symbol) = getfield(settings, field)
 field(method::SimulationSpec, field::Symbol) = getfield(method, field)
 
@@ -53,7 +54,14 @@ end
 ""
 function check_status(a::SubArray{Bool, 1, Matrix{Bool}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true})
     i_idx = @inbounds findfirst(isequal(0), a)
-    if i_idx === nothing i_idx=SUCCESSFUL else i_idx=FAILED end
+    if i_idx === nothing i_idx=true else i_idx=false end
+    return i_idx
+end
+
+""
+function check_status(a::Vector{Bool})
+    i_idx = @inbounds findfirst(isequal(0), a)
+    if i_idx === nothing i_idx=true else i_idx=false end
     return i_idx
 end
 
