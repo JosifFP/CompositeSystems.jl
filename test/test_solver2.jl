@@ -20,7 +20,7 @@ settings = PRATS.Settings(
     method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
     cache = CompositeAdequacy.Cache(system, method, multiperiod=false)
     pm = CompositeAdequacy.PowerFlowProblem(system, method, cache, settings)
-    systemstates = CompositeAdequacy.SystemStates(system, method)
+    systemstates = SystemStates(system, method)
 
     @testset "G3, G7, G8 and G9 on outage" begin
         t=1

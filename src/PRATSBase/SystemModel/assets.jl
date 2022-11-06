@@ -18,7 +18,7 @@ struct Buses <: AbstractAssets
     keys::Vector{Int}
     zone::Vector{Int}
     bus_type::Vector{Int}
-    index::Vector{Int}
+    bus_i::Vector{Int}
     vmax::Vector{Float16}
     vmin::Vector{Float16}
     base_kv::Vector{Float16}
@@ -27,7 +27,7 @@ struct Buses <: AbstractAssets
 
     function Buses(
         keys::Vector{Int}, zone::Vector{Int}, bus_type::Vector{Int},
-        index::Vector{Int}, vmax::Vector{Float16}, vmin::Vector{Float16}, 
+        bus_i::Vector{Int}, vmax::Vector{Float16}, vmin::Vector{Float16}, 
         base_kv::Vector{Float16}, va::Vector{Float32}, vm::Vector{Float32}
     )
 
@@ -36,7 +36,7 @@ struct Buses <: AbstractAssets
         @assert length(keys) == (nbuses)
         @assert length(zone) == (nbuses)
         @assert length(bus_type) == (nbuses)
-        @assert length(index) == (nbuses)
+        @assert length(bus_i) == (nbuses)
         @assert length(vmax) == (nbuses)
         @assert length(vmin) == (nbuses)
         @assert length(base_kv) == (nbuses)
@@ -45,7 +45,7 @@ struct Buses <: AbstractAssets
         @assert all(vm .> 0)
         @assert all(base_kv .> 0)
 
-        new(keys, Int.(zone), Int.(bus_type), Int.(index), Float16.(vmax), Float16.(vmin), Float16.(base_kv), Float32.(va), Float32.(vm))
+        new(keys, Int.(zone), Int.(bus_type), Int.(bus_i), Float16.(vmax), Float16.(vmin), Float16.(base_kv), Float32.(va), Float32.(vm))
     end
 end
 
@@ -53,7 +53,7 @@ Base.:(==)(x::T, y::T) where {T <: Buses} =
     x.keys == y.keys &&
     x.zone == y.zone &&
     x.bus_type == y.bus_type &&
-    x.index == y.index &&
+    x.bus_i == y.bus_i &&
     x.vmax == y.vmax &&
     x.vmin == y.vmin &&
     x.base_kv == y.base_kv &&
@@ -63,7 +63,7 @@ Base.:(==)(x::T, y::T) where {T <: Buses} =
 
 Base.getindex(b::B, idxs::AbstractVector{Int}) where {B <: Buses} =
     B(b.keys[idxs], b.zone[idxs], b.bus_type[idxs],
-    b.index[idxs], b.vmax[idxs],
+    b.bus_i[idxs], b.vmax[idxs],
     b.vmin[idxs], b.base_kv[idxs],
     b.va[idxs], b.vm[idxs])
 
@@ -84,13 +84,13 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     cost::Vector{<:Any}
     λ::Vector{Float64} #Failure rate in failures per year
     μ::Vector{Float64} #Repair rate in hours per year
-    status::BitVector
+    status::Vector{Bool}
 
     function Generators{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int}, pg::Array{Float16}, qg::Vector{Float16}, 
         vg::Vector{Float16}, pmax::Vector{Float16}, pmin::Vector{Float16}, 
         qmax::Vector{Float16}, qmin::Vector{Float16}, mbase::Vector{Int}, 
-        cost::Vector{<:Any}, λ::Vector{Float64}, μ::Vector{Float64}, status::BitVector
+        cost::Vector{<:Any}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
     ) where {N,L,T}
 
         ngens = length(keys)
@@ -197,11 +197,11 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     pd::Array{Float16} # Active power in per unit
     qd::Vector{Float16} # Reactive power in per unit
     cost::Vector{Float16}
-    status::BitVector
+    status::Vector{Bool}
 
     function Loads{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int}, pd::Array{Float16}, 
-        qd::Vector{Float16}, cost::Vector{Float16}, status::BitVector
+        qd::Vector{Float16}, cost::Vector{Float16}, status::Vector{Bool}
         ) where {N,L,T}
 
         nloads = length(keys)
@@ -250,14 +250,14 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     qloss::Vector{Float16}
     λ::Vector{Float64} #Failure rate in failures per year
     μ::Vector{Float64} #Repair rate in hours per year
-    status::BitVector
+    status::Vector{Bool}
 
     function Storages{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int}, ps::Vector{Float16}, qs::Vector{Float16},
         energy::Vector{Float16}, energy_rating::Vector{Float16}, charge_rating::Vector{Float16}, 
         discharge_rating::Vector{Float16}, charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16}, 
         thermal_rating::Vector{Float16}, qmax::Vector{Float16}, qmin::Vector{Float16}, r::Vector{Float16}, 
-        x::Vector{Float16}, ploss::Vector{Float16}, qloss::Vector{Float16}, λ::Vector{Float64}, μ::Vector{Float64}, status::BitVector
+        x::Vector{Float16}, ploss::Vector{Float16}, qloss::Vector{Float16}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
     ) where {N,L,T}
 
         nstors = length(keys)
@@ -337,7 +337,7 @@ struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     λ::Vector{Float64} #Failure rate in failures per year
     μ::Vector{Float64} #Repair rate in hours per year
-    status::BitVector
+    status::Vector{Bool}
     #carryover_efficiency::Vector{Float16}
     #thermal_rating::Vector{Float16}
     #qmax::Vector{Float16}
@@ -355,7 +355,7 @@ struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16},
         inflow::Matrix{Float16}, gridwithdrawal_rating::Matrix{Float16}, 
         gridinjection_rating::Matrix{Float16}, λ::Vector{Float64}, 
-        μ::Vector{Float64}, status::BitVector
+        μ::Vector{Float64}, status::Vector{Bool}
     ) where {N,L,T}
 
         nstors = length(keys)
@@ -421,18 +421,18 @@ struct Branches <: AbstractAssets
     shift::Vector{Float16} #angle_shift
     angmin::Vector{Float16}
     angmax::Vector{Float16}
-    transformer::BitVector
+    transformer::Vector{Bool}
     tap::Vector{Float16} #tap_ratio
     λ::Vector{Float64} #Failure rate in failures per year
     μ::Vector{Float64} #Repair rate in hours per year
-    status::BitVector
+    status::Vector{Bool}
 
     function Branches(
         keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, rate_a::Vector{Float16}, 
         rate_b::Vector{Float16}, r::Vector{Float16}, x::Vector{Float16}, 
         b_fr::Vector{Float16}, b_to::Vector{Float16}, g_fr::Vector{Float16}, g_to::Vector{Float16}, 
-        shift::Vector{Float16}, angmin::Vector{Float16}, angmax::Vector{Float16}, transformer::BitVector, 
-        tap::Vector{Float16}, λ::Vector{Float64}, μ::Vector{Float64}, status::BitVector
+        shift::Vector{Float16}, angmin::Vector{Float16}, angmax::Vector{Float16}, transformer::Vector{Bool}, 
+        tap::Vector{Float16}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
     )
 
         nbranches = length(keys)
@@ -498,11 +498,11 @@ struct Shunts <: AbstractAssets
     buses::Vector{Int}
     bs::Vector{Float16} #susceptance
     gs::Vector{Float16}
-    status::BitVector
+    status::Vector{Bool}
 
     function Shunts(
         keys::Vector{Int}, buses::Vector{Int}, bs::Vector{Float16}, 
-        gs::Vector{Float16}, status::BitVector
+        gs::Vector{Float16}, status::Vector{Bool}
     )
 
         nshunts = length(keys)

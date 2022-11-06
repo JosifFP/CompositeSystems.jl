@@ -1,6 +1,6 @@
 # Augment time units
 
-export timeunits, intunits, powerunits, energyunits, voltageunits
+export timeunits, powerunits, energyunits, voltageunits
 
 unitsymbol(T::Type{<:Period}) = string(T)
 unitsymbol(::Type{Minute}) = "min"
@@ -22,11 +22,6 @@ conversionfactor(::Type{Day}, ::Type{Hour}) = 24
 timeunits = Dict(
     unitsymbol(T) => T
     for T in [Minute, Hour, Day, Year])
-
-intunits = Dict(
-    T => T
-    for T in [1, 8736, 8760])
-
 
 # Define power units
 

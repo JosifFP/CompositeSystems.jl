@@ -91,20 +91,18 @@ end
 struct Settings <: SimulationSpec
 
     optimizer::MathOptInterface.OptimizerWithAttributes
-    file::String
     modelmode::JuMP.ModelMode
     powermodel::Type{<:AbstractPowerModel}
 
     function Settings(
-        optimizer::MathOptInterface.OptimizerWithAttributes,
-        file::String;
+        optimizer::MathOptInterface.OptimizerWithAttributes;
         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
         powermodel::String="AbstractDCMPPModel"
         )
 
         abstractpm = type(powermodel)
 
-        new(optimizer, file, modelmode, abstractpm)
+        new(optimizer, modelmode, abstractpm)
     end
 
 end
@@ -113,13 +111,36 @@ end
 function JumpModel(modelmode::JuMP.ModelMode, optimizer)
     if modelmode == JuMP.AUTOMATIC
         jumpmodel = Model(optimizer; add_bridges = false)
-        JuMP.set_silent(jumpmodel)
     elseif modelmode == JuMP.DIRECT
         @warn("Direct Mode is unsafe")
         jumpmodel = direct_model(optimizer)
     else
         @warn("Manual Mode not supported")
     end
-
+    JuMP.set_string_names_on_creation(jumpmodel, false)
+    JuMP.set_silent(jumpmodel)
+    GC.gc()
     return jumpmodel
 end
+
+# ""
+# struct Settings <: SimulationSpec
+
+#     optimizer::MathOptInterface.OptimizerWithAttributes
+#     file::String
+#     modelmode::JuMP.ModelMode
+#     powermodel::Type{<:AbstractPowerModel}
+
+#     function Settings(
+#         optimizer::MathOptInterface.OptimizerWithAttributes;
+#         file::String="",
+#         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
+#         powermodel::String="AbstractDCMPPModel"
+#         )
+
+#         abstractpm = type(powermodel)
+
+#         new(optimizer, file, modelmode, abstractpm)
+#     end
+
+# end

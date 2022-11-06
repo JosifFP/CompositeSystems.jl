@@ -21,26 +21,14 @@ function initialize_availability!(
 end
 
 ""
-function initialize_availability!(states::SystemStates, N::Int)
-
-    v = vcat(field(states, :branches), field(states, :generators), field(states, :loads))
-
-    @inbounds for t in 1:N
-        B = filter(i -> states.buses[i]==4, states.buses)
-        if check_status(view(v, :, t)) == false ||  length(B) > 0
-            states.system[t] = false
-        end
-    end
-end
-
-
-""
 function cycles!(
     rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
-    sequence = Base.ones(true, N)
-    i=Int(1)
+    sequence = Array{Bool, 1}(undef, N)
+    fill!(sequence, 1)
     (ttf,ttr) = T(rng,λ,μ)
+    i=Int(1)
+
     if i + ttf > N - ttr && i + ttf < N ttr = N - ttf - i end
 
     @inbounds while i + ttf + ttr  <= N
@@ -53,17 +41,44 @@ function cycles!(
 
 end
 
+""
 function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
     
     ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
     ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
 
-    while ttf == 0.0
+    while ttf == 0.0 || ttr == 0.0
         ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
         ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
     end
 
     return ttf,ttr
+end
+
+""
+function initialize_availability_system!(states::SystemStates, N::Int)
+
+    v = vcat(field(states, :branches), field(states, :generators), field(states, :loads))
+
+    @inbounds for t in 1:N
+        B = filter(i -> states.buses[i]==4, states.buses)
+        if check_status(view(v, :, t)) == false ||  length(B) > 0
+            states.system[t] = false
+        end
+    end
+end
+
+""
+function initialize_availability!(states::SystemStates, N::Int)
+
+    v = vcat(field(states, :branches), field(states, :generators))
+    #filter(field(states, :generators), field(states, :generators))
+
+    @inbounds for t in 1:N
+        if check_status(view(v, :, t)) == false
+            states.system[t] = false
+        end
+    end
 end
 
 "Update asset_idxs and asset_nodes"
@@ -104,20 +119,20 @@ function update_arcs!(branches::Branches, topology_arcs::Arcs, initial_arcs::Arc
         f_bus = field(branches, :f_bus)[i]
         t_bus = field(branches, :t_bus)[i]
 
-        if !state[i]
-            field(topology_arcs, :busarcs)[:,i] = deepcopy(field(topology_arcs, :empty))
+        if state[i] == false
+            field(topology_arcs, :busarcs)[:,i] = field(topology_arcs, :empty)
             field(topology_arcs, :arcs_from)[i] = missing
-            #field(topology_arcs, :arcs_to)[i] = missing
+            field(topology_arcs, :arcs_to)[i] = missing
             field(topology_arcs, :buspairs)[(f_bus, t_bus)] = missing
         else
-            field(topology_arcs, :busarcs)[:,i] = deepcopy(view(field(initial_arcs, :busarcs),:,i))
-            field(topology_arcs, :arcs_from)[i] = deepcopy(view(field(initial_arcs, :arcs_from),i)[1])
-            #field(topology_arcs, :arcs_to)[i] = deepcopy(view(field(initial_arcs, :arcs_to),i)[1])
-            field(topology_arcs, :buspairs)[(f_bus, t_bus)] = deepcopy(field(initial_arcs, :buspairs)[(f_bus, t_bus)])
+            field(topology_arcs, :busarcs)[:,i] = field(initial_arcs, :busarcs)[:,i]
+            field(topology_arcs, :arcs_from)[i] = field(initial_arcs, :arcs_from)[i]
+            field(topology_arcs, :arcs_to)[i] = field(initial_arcs, :arcs_to)[i]
+            field(topology_arcs, :buspairs)[(f_bus, t_bus)] = field(initial_arcs, :buspairs)[(f_bus, t_bus)]
         end
     end
     
-    #field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
+    field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
 
 end
 
@@ -131,7 +146,7 @@ function initialize_bus_types(buses_states::Matrix{Int}, branches_states::Matrix
         bus_types = buses_states[:,t]
 
         for i in branches.keys
-            if !branch_states[i]
+            if branch_states[i] == false
                 pm_data["branch"][string(i)]["br_status"] = 0
             end
         end
@@ -154,6 +169,62 @@ function initialize_bus_types(buses_states::Matrix{Int}, branches_states::Matrix
     end
 
     return buses_states, branches_states
+
+end
+
+
+""
+function propagate_outages!(states::SystemStates, branches::Branches, settings::Settings, N::Int)
+
+    for t in 1:N
+        states = _propagate_outages!(states::SystemStates, branches::Branches, settings::Settings, t)
+    end
+
+    return states
+
+end
+
+""
+function _propagate_outages!(states::SystemStates, branches::Branches, settings::Settings, t::Int)
+
+    pm_data = PowerModels.parse_file(field(settings, :file))
+    branch_states = states.branches[:,t]
+    bus_types = states.buses[:,t]
+    load_states = states.loads[:,t]
+    gen_states = states.generators[:,t]
+
+    for i in branches.keys
+        if branch_states[i] == false
+            pm_data["branch"][string(i)]["br_status"] = 0
+        end
+    end
+
+    PowerModels.simplify_network!(pm_data)
+    PowerModels.select_largest_component!(pm_data)
+    PowerModels.simplify_network!(pm_data)
+
+    for (k,v) in pm_data["bus"]
+        i = parse(Int, k)
+        bus_types[i] = v["bus_type"]
+    end
+
+    for (k,v) in pm_data["branch"]
+        i = parse(Int, k)
+        branch_states[i] = v["br_status"]
+    end
+
+    for (k,v) in pm_data["load"]
+        i = parse(Int, k)
+        load_states[i] = v["status"]
+    end
+
+    for (k,v) in pm_data["gen"]
+        i = parse(Int, k)
+        gen_states[i] = v["gen_status"]
+    end
+
+
+    return states
 
 end
 

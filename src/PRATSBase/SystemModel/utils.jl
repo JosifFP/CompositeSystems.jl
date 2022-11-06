@@ -1,103 +1,318 @@
-"Extracts data from excel file"
-function extract(ReliabilityDataDir::String, files::Vector{String}, asset::Type{<:AbstractAssets}, container_1::Vector{Vector}, container_2::Vector{Vector{Any}})
+"""
+This structure ensures that the type instability of parametrics N and L are out of SystemModel structure and functions.
+To be improved/enhanced.
+"""
+struct StaticParameters{N,L,T}
+    timestamps::StepRange{ZonedDateTime,T}
+    function StaticParameters{N,L,T}(start_timestamp::Union{Nothing, DateTime}=nothing, timezone::Union{Nothing, String}=nothing) where {N,L,T<:Period}
 
-    if in(files).("$asset"*".xlsx") == true
-        XLSX.openxlsx(ReliabilityDataDir*"/"*"$asset"*".xlsx", enable_cache=false) do io
-            for i in 1:XLSX.sheetcount(io)
-                if XLSX.sheetnames(io)[i] == "time series MW" 
-                    dtable =  XLSX.readtable("$asset"*".xlsx", XLSX.sheetnames(io)[i])
-                    container_1[2], container_1[1] = dtable.data, dtable.column_labels
-                elseif XLSX.sheetnames(io)[i] == "core"
-                    dtable =  XLSX.readtable("$asset"*".xlsx",XLSX.sheetnames(io)[i])
-                    container_2[2], container_2[1] = dtable.data, dtable.column_labels
-                end
-            end
+        if isnothing(start_timestamp) && isnothing(timezone)
+            @warn "No time zone data provided - defaulting to UTC. To specify a " *
+            "time zone for the system timestamps, provide a range of " *
+            "`ZonedDateTime` instead of `DateTime`."
+            start_timestamp = DateTime(Date(2022,1,1), Time(0,0,0))
+            timezone = "UTC"
         end
-    else
-        if asset == Loads || asset == Generators || asset == Branches
-            error("file $asset.xlsx not found in $ReliabilityDataDir/ directory")
+
+        timestamps = range(start_timestamp, length=N, step=T(L))
+        tz = TimeZone(timezone)
+        time_start = ZonedDateTime(first(timestamps), tz)
+        time_end = ZonedDateTime(last(timestamps), tz)
+        timestamps_tz = time_start:step(timestamps):time_end
+
+        return new{N,L,T}(timestamps_tz)
+    end
+end
+
+bus_fields = [
+    ("index", Int),
+    ("zone", Int),
+    ("bus_type", Int),
+    ("bus_i", Int),
+    ("vmax", Float16),
+    ("vmin", Float16),
+    ("base_kv", Float16),
+    ("va", Float32),
+    ("vm", Float32)
+]
+
+const gen_fields = [
+    ("index", Int),
+    ("gen_bus", Int),
+    ("pg", Float16), 
+    ("qg", Float16),
+    ("vg", Float16),
+    ("pmax", Float16), 
+    ("pmin", Float16),
+    ("qmax", Float16), 
+    ("qmin", Float16),
+    ("mbase", Int),
+    ("cost", Vector{Any}),
+    ("λ", Float64),
+    ("μ", Float64),
+    ("gen_status", Bool)
+]
+
+const branch_fields = [
+    ("index", Int),
+    ("f_bus", Int),
+    ("t_bus", Int),
+    ("rate_a", Float16),
+    ("rate_b", Float16),
+    ("br_r", Float16), 
+    ("br_x", Float16),
+    ("b_fr", Float16), 
+    ("b_to", Float16),
+    ("g_fr", Float16), 
+    ("g_to", Float16),
+    ("shift", Float16),
+    ("angmin", Float16), 
+    ("angmax", Float16),
+    ("transformer", Bool),
+    ("tap", Float16),
+    ("λ", Float64),
+    ("μ", Float64),
+    ("br_status", Bool)
+]
+
+const shunt_fields = [
+    ("index", Int),
+    ("shunt_bus", Int),
+    ("bs", Float16),
+    ("gs", Float16),
+    ("status", Bool)
+]
+
+const load_fields = [
+    ("index", Int),
+    ("load_bus", Int),
+    ("pd", Float16),
+    ("qd", Float16),
+    ("cost", Float16),
+    ("status", Bool)
+]
+
+
+const prats_fields = [
+    ("λ", Float64),
+    ("μ", Float64),
+    ("cost", Float16)
+]
+
+const r_gen = [
+    ("bus", Int),
+    ("pmax", Float16),
+    ("λ", Float64),
+    ("mttr", Float64),
+    ("μ", Float64),
+    ("index", Int)
+]
+
+const r_branch = [
+    ("f_bus", Int),
+    ("t_bus", Int),
+    ("λ", Float64),
+    ("mttr", Float64),
+    ("μ", Float64),
+    ("index", Int)
+]
+
+const loadcost = [
+    ("bus_i", Int),
+    ("cost", Float16),
+    ("index", Int)
+]
+
+""
+function container(dict::Dict{Int, <:Any}, type::Vector{Tuple{String, DataType}})
+
+    dict =  deepcopy(dict)
+    for (_,v) in dict
+        for i in eachindex(type)
+            if haskey(v, type[i][1]) == true
+                v[type[i][1]] = type[i][2](v[type[i][1]])
+            elseif type[i] in prats_fields
+                get!(v, type[i][1], type[i][2](0))
+            end
         end
     end
 
-    dict_timeseries = Dict{Int, Any}(parse(Int, String(container_1[1][i])) => Float16.(container_1[2][i]) for i in 2:length(container_1[1]))
-    dict_core = Dict{Any, Any}(container_2[1][i] => container_2[2][i] for i in 1:length(container_2[1]))
+    tmp = Dict{String, Vector{<:Any}}(type[k][1] => [dict[i][type[k][1]] for i in eachindex(dict)] for k in 1:length(type))
+    key_order::Vector{Int} = sortperm(tmp["index"])
 
-    return dict_timeseries, dict_core
+    for (k,v) in tmp
+        tmp[k] = v[key_order]
+    end
 
-end
-
-"Creates AbstractAsset - Buses"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Buses})
-
-    tmp = sort([[i, 
-        Int(comp["zone"]),
-        Int(comp["bus_type"]),
-        Int(comp["index"]),
-        Float16(comp["vmax"]),
-        Float16(comp["vmin"]),
-        Float16(comp["base_kv"]),
-        Float32(comp["va"]),
-        Float32(comp["vm"])] for (i,comp) in network[:bus]])
-    #tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:bus])]]
-
-    keys = Int.(reduce(vcat, tmp')[:,1])
-    key_order_core = sortperm(keys)
-
-    container_data = Dict{Symbol, Any}(
-        :keys => keys[key_order_core],
-        :zone => Int.(reduce(vcat, tmp')[:,2])[key_order_core],
-        :bus_type => Int.(reduce(vcat, tmp')[:,3])[key_order_core],
-        :index => Int.(reduce(vcat, tmp')[:,4])[key_order_core],
-        :vmax => Float16.(reduce(vcat, tmp')[:,5])[key_order_core],
-        :vmin => Float16.(reduce(vcat, tmp')[:,6])[key_order_core],
-        :base_kv => Float16.(reduce(vcat, tmp')[:,7])[key_order_core],
-        :va => Float32.(reduce(vcat, tmp')[:,8])[key_order_core],
-        :vm => Float32.(reduce(vcat, tmp')[:,9])[key_order_core]
-    )
-
-    return container_data
+    return tmp
+    #return NamedTuple{Tuple(Symbol.(keys(tmp)))}(values(tmp))
 
 end
 
-"Creates AbstractAsset - Generators"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Generators})
+""
+function parse_reliability_data(file::String)
 
-    tmp = sort([[i, 
-        Int(comp["gen_bus"]),
-        Float16(comp["pg"]),
-        Float16(comp["qg"]),
-        Float32(comp["vg"]),
-        Float16(comp["pmax"]),
-        Float16(comp["pmin"]),
-        Float16(comp["qmax"]),
-        Float16(comp["qmin"]),
-        Int(comp["mbase"]),
-        Float16.(comp["cost"]),
-        Bool(comp["gen_status"])] for (i,comp) in network[:gen]])
-    #tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:gen])]]
+    reliability_data = open(file) do io
+        matlab_data = InfrastructureModels.parse_matlab_string(read(io, String))
+        reliability_data = _parse_reliability_data(matlab_data)
+    end
 
-    keys = Int.(reduce(vcat, tmp')[:,1])
-    key_order_core = sortperm(keys)
-
-    container_data = Dict{Symbol, Any}(
-        :keys => keys[key_order_core],
-        :buses => Int.(reduce(vcat, tmp')[:,2])[key_order_core],
-        :pg => Float16.(reduce(vcat, tmp')[:,3])[key_order_core],
-        :qg => Float16.(reduce(vcat, tmp')[:,4])[key_order_core],
-        :vg => Float16.(reduce(vcat, tmp')[:,5])[key_order_core],
-        :pmax => Float16.(reduce(vcat, tmp')[:,6])[key_order_core],
-        :pmin => Float16.(reduce(vcat, tmp')[:,7])[key_order_core],
-        :qmax => Float16.(reduce(vcat, tmp')[:,8])[key_order_core],
-        :qmin => Float16.(reduce(vcat, tmp')[:,9])[key_order_core],
-        :mbase => Int.(reduce(vcat, tmp')[:,10])[key_order_core],
-        :cost => (reduce(vcat, tmp')[:,11])[key_order_core],
-        :λ => zeros(Float64, length(keys)),
-        :μ => zeros(Float64, length(keys)),
-        :status => Bool.(reduce(vcat, tmp')[:,12])[key_order_core]
-    )
-
-    return container_data
+    return Dict{String, Any}(reliability_data)
     
+end
+
+""
+function _parse_reliability_data(matlab_data::Dict{String, Any})
+
+    case = Dict{String,Any}()
+
+    if haskey(matlab_data, "mpc.reliability_gen")
+        gens = []
+        for (i, gen_row) in enumerate(matlab_data["mpc.reliability_gen"])
+            gen_data = InfrastructureModels.row_to_typed_dict(gen_row, r_gen)
+            gen_data["index"] = i
+            push!(gens, gen_data)
+        end
+        case["reliability_gen"] = gens
+    else
+        @error(string("no reliability_gen data found in matpower file.  The file seems to be missing \"mpc.reliability_gen = [...];\""))
+    end
+
+    if haskey(matlab_data, "mpc.reliability_branch")
+        branches = []
+        for (i, branch_row) in enumerate(matlab_data["mpc.reliability_branch"])
+            branch_data = InfrastructureModels.row_to_typed_dict(branch_row, r_branch)
+            branch_data["index"] = i
+            push!(branches, branch_data)
+        end
+        case["reliability_branch"] = branches
+    else
+        @error(string("no branch table found in matpower file.  The file seems to be missing \"mpc.branch = [...];\""))
+    end
+
+    
+    if haskey(matlab_data, "mpc.load_cost")
+        load_cost = []
+        for (i, loadcost_row) in enumerate(matlab_data["mpc.load_cost"])
+            loadcost_data = InfrastructureModels.row_to_typed_dict(loadcost_row, loadcost)
+            loadcost_data["index"] = i
+            push!(load_cost, loadcost_data)
+        end
+        case["load_cost"] = load_cost
+
+    end
+
+    for (k,v) in case
+        if isa(v, Array) && length(v) > 0 && isa(v[1], Dict)
+            dict = Dict{String,Any}()
+            for (i,item) in enumerate(v)
+                if haskey(item, "index")
+                    key = string(item["index"])
+                end
+                if !(haskey(dict, key))
+                    dict[key] = item
+                end
+            end
+            case[k] = dict
+        end
+    end
+
+    return Dict{String, Any}(case)
+
+end
+
+
+"Returns network data container with reliability_data and timeseries_data merged"
+function merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float16}}, SP::StaticParameters{N}) where {N}
+
+    get!(network, :timeseries_load, timeseries_data)
+
+    for (k,v) in network[:gen]
+        i = string(k)
+        if haskey(reliability_data["reliability_gen"], i) && v["gen_bus"] == reliability_data["reliability_gen"][i]["bus"] && v["pmax"]*v["mbase"] == reliability_data["reliability_gen"][i]["pmax"]
+            get!(v, "λ", reliability_data["reliability_gen"][i]["λ"])
+            if reliability_data["reliability_gen"][i]["mttr"] ≠ 0.0
+                get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
+            else
+                get!(v, "μ", 0)
+            end
+        end
+    end
+    
+    for (k,v) in network[:branch]
+        i = string(k)
+        if haskey(reliability_data["reliability_branch"], i) && v["f_bus"] == reliability_data["reliability_branch"][i]["f_bus"] && v["t_bus"] == reliability_data["reliability_branch"][i]["t_bus"]
+            get!(v, "λ", reliability_data["reliability_branch"][i]["λ"])
+            if reliability_data["reliability_branch"][i]["mttr"] ≠ 0.0
+                get!(v, "μ", Float64.(N/reliability_data["reliability_branch"][i]["mttr"]))
+            else
+                get!(v, "μ", 0)
+            end
+        end
+    end
+    
+    for (k,v) in network[:load]
+        i = string(k)
+        if haskey(reliability_data["load_cost"], i) && v["load_bus"] == reliability_data["load_cost"][i]["bus_i"]
+            get!(v, "cost", reliability_data["load_cost"][i]["cost"])
+        end
+    end
+
+    return network
+end
+
+"Extracts time-series load data from excel file"
+function extract_timeseriesload(file::String)
+
+    dict_timeseries = Dict{Int, Vector{Float16}}()
+    dict_core = Dict{Symbol, Any}()
+    
+    XLSX.openxlsx(file, enable_cache=false) do io
+        for i in 1:XLSX.sheetcount(io)
+            if XLSX.sheetnames(io)[i] == "core"
+    
+                dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
+                for i in eachindex(dtable.column_labels)
+                    get!(dict_core, dtable.column_labels[i], dtable.data[i])
+                end
+    
+            elseif XLSX.sheetnames(io)[i] == "load" 
+    
+                dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
+                for i in eachindex(dtable.column_labels)
+                    if i > 1
+                        get!(dict_timeseries, parse(Int, String(dtable.column_labels[i])), Float16.(dtable.data[i]))
+                    end
+                end
+            end
+        end
+    end
+
+    T::Type{<:Period} = timeunits[dict_core[:timestep_unit][1]]
+    N::Int = dict_core[:timestep_count][1]
+    L::Int = dict_core[:timestep_length][1]
+    start_timestamp::DateTime = dict_core[:start_timestamp][1]
+    timezone::String = dict_core[:timezone][1]
+    SP = StaticParameters{N,L,T}(start_timestamp, timezone)
+
+    return dict_timeseries, SP
+
+end
+
+""
+function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vector{Float16}}, baseMVA::Float16)
+
+    if length(index_keys) != length(collect(keys(timeseries_load)))
+        @error("Time-series Load data file does not match length of load in network data file")
+    end
+
+    key_order_series = sortperm(collect(keys(timeseries_load)))
+
+    container_timeseries = [Float16.(timeseries_load[i]/baseMVA) for i in keys(timeseries_load)]
+    array::Array{Float16} = reduce(vcat,transpose.(container_timeseries[key_order_series]))
+
+    return array
+
 end
 
 "Creates AbstractAsset - Generators with time-series data"
@@ -142,36 +357,6 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
 
 end
 
-"Creates AbstractAsset - Loads"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Loads})
-
-    for (i,load) in network[:load]
-        get!(load, "cost", Float16(0.0))
-    end
-
-    tmp = sort([[i, 
-        Int(comp["load_bus"]),
-        Float16(comp["pd"]),
-        Float16(comp["qd"]),
-        Float16(comp["cost"]),
-        Bool(comp["status"])] for (i,comp) in network[:load]])
-    #tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:load])]]
-
-    keys = Int.(reduce(vcat, tmp')[:,1])
-    key_order_core = sortperm(keys)
-
-    container_data = Dict{Symbol, Any}(
-        :keys => keys[key_order_core],
-        :buses => Int.(reduce(vcat, tmp')[:,2])[key_order_core],
-        :pd => Float16.(reduce(vcat, tmp')[:,3])[key_order_core],
-        :qd => Float16.(reduce(vcat, tmp')[:,4])[key_order_core],
-        :cost => Float16.(reduce(vcat, tmp')[:,5])[key_order_core],
-        :status => Bool.(reduce(vcat, tmp')[:,6])[key_order_core]
-    )
-
-    return container_data
-
-end
 
 "Creates AbstractAsset - Loads with time-series data"
 function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, N, baseMVA)
@@ -210,56 +395,6 @@ function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network
 
 end
 
-"Creates AbstractAsset - Branches"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Branches})
-
-    tmp = sort([[i, 
-        Int(comp["f_bus"]),
-        Int(comp["t_bus"]),
-        Float16(comp["rate_a"]),
-        Float16(comp["rate_b"]),
-        Float16(comp["br_r"]),
-        Float16(comp["br_x"]),
-        Float16(comp["b_fr"]),
-        Float16(comp["b_to"]),
-        Float16(comp["g_fr"]),
-        Float16(comp["g_to"]),
-        Float16(comp["shift"]),
-        Float16(comp["angmin"]),
-        Float16(comp["angmax"]),
-        Bool(comp["transformer"]),
-        Float16(comp["tap"]),
-        Bool(comp["br_status"])] for (i,comp) in network[:branch]])
-    #tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:branch])]]
-
-    keys = Int.(reduce(vcat, tmp')[:,1])
-    key_order_core = sortperm(keys)
-
-    container_data = Dict{Symbol, Any}(
-        :keys => keys[key_order_core],
-        :f_bus => Int.(reduce(vcat, tmp')[:,2])[key_order_core],
-        :t_bus => Int.(reduce(vcat, tmp')[:,3])[key_order_core],
-        :rate_a => Float16.(reduce(vcat, tmp')[:,4])[key_order_core],
-        :rate_b => Float16.(reduce(vcat, tmp')[:,5])[key_order_core],
-        :r => Float16.(reduce(vcat, tmp')[:,6])[key_order_core],
-        :x => Float16.(reduce(vcat, tmp')[:,7])[key_order_core],
-        :b_fr => Float16.(reduce(vcat, tmp')[:,8])[key_order_core],
-        :b_to => Float16.(reduce(vcat, tmp')[:,9])[key_order_core],
-        :g_fr => Float16.(reduce(vcat, tmp')[:,10])[key_order_core],
-        :g_to => Float16.(reduce(vcat, tmp')[:,11])[key_order_core],
-        :shift => Float16.(reduce(vcat, tmp')[:,12])[key_order_core],
-        :angmin => Float16.(reduce(vcat, tmp')[:,13])[key_order_core],
-        :angmax => Float16.(reduce(vcat, tmp')[:,14])[key_order_core],
-        :transformer => Bool.(reduce(vcat, tmp')[:,15])[key_order_core],
-        :tap => Float16.(reduce(vcat, tmp')[:,16])[key_order_core],
-        :λ => zeros(Float64, length(keys)),
-        :μ => zeros(Float64, length(keys)),
-        :status => Bool.(reduce(vcat, tmp')[:,17])[key_order_core]
-    )
-
-    return container_data
-
-end
 
 "Creates AbstractAsset - Branches with time-series data"
 function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, N, B)
@@ -285,39 +420,14 @@ function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::
 
 end
 
-"Creates AbstractAsset - Shunts"
-function container(network::Dict{Symbol, <:Any}, asset::Type{Shunts})
 
-    tmp = [
-        [i, 
-        Int(comp["shunt_bus"]),
-        Float16(comp["bs"]),
-        Float16(comp["gs"]),
-        Bool(comp["status"])] for (i,comp) in sort(network[:shunt])]
-    #tmp_string = [[join(comp["source_id"]) for (i,comp) in sort(network[:shunt])]]
-
-    keys = Int.(reduce(vcat, tmp')[:,1])
-    key_order_core = sortperm(keys)
-
-    container_data = Dict{Symbol, Any}(
-        :keys => keys[key_order_core],
-        :buses => Int.(reduce(vcat, tmp')[:,2])[key_order_core],
-        :bs => Float16.(reduce(vcat, tmp')[:,3])[key_order_core],
-        :gs => Float16.(reduce(vcat, tmp')[:,4])[key_order_core],
-        :status => Bool.(reduce(vcat, tmp')[:,5])[key_order_core]
-    )
-
-    return container_data
-
-end
 
 "Checks for inconsistencies between AbstractAsset and Power Model Network"
 function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
     for k in buses.keys
         @assert haskey(ref[:bus],k) === true
-        @assert Int.(ref[:bus][k]["index"]) == buses.keys[k]
-        @assert Int.(ref[:bus][k]["index"]) == buses.index[k]
+        @assert Int.(ref[:bus][k]["bus_i"]) == buses.bus_i[k]
         @assert Int.(ref[:bus][k]["bus_type"]) == buses.bus_type[k]
         @assert Float16.(ref[:bus][k]["vmax"]) == buses.vmax[k]
         @assert Float16.(ref[:bus][k]["vmin"]) == buses.vmin[k]

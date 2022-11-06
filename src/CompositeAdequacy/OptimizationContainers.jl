@@ -150,23 +150,23 @@ Cache: a OptimizationContainer structure that stores variables and results in mu
 """
 struct Cache <: OptimizationContainer
 
-    #plc::Array{Float16}
+    plc::Array{Float16}
     #qlc::Array{Float16}
     vars::Variables
 
     function Cache(system::SystemModel{N}, method::SimulationSpec; multiperiod::Bool=false) where {N}
 
-        # if typeof(method) == SequentialMCS
-        #     plc = zeros(Float16,length(system.loads), N)
-        #     qlc = zeros(Float16,length(system.loads), N)
-        # elseif typeof(method) == NonSequentialMCS
-        #     plc = zeros(Float16,length(system.loads))
-        #     qlc = zeros(Float16,length(system.loads))
-        # end
+        if typeof(method) == SequentialMCS
+            plc = zeros(Float16,length(system.loads), N)
+            #qlc = zeros(Float16,length(system.loads), N)
+        elseif typeof(method) == NonSequentialMCS
+            plc = zeros(Float16,length(system.loads))
+            #qlc = zeros(Float16,length(system.loads))
+        end
 
         vars = Variables(system, multiperiod=multiperiod)
 
-        return new(vars)
+        return new(plc, vars)
 
     end
 end
@@ -206,12 +206,7 @@ function PowerFlowProblem(system::SystemModel{N}, PM::Type{<:AbstractPowerModel}
     model = JumpModel(field(settings, :modelmode), field(settings, :optimizer))
     topology = Topology(system)
     var =  deepcopy(cache.vars)
-
-    if typeof(method) == SequentialMCS
-        sol = zeros(Float16,length(system.loads), N)
-    elseif typeof(method) == NonSequentialMCS
-        sol = zeros(Float16,length(system.loads))
-    end
+    sol =  deepcopy(cache.plc)
 
     return PM(
         model::AbstractModel,
@@ -243,7 +238,7 @@ end
 function empty_method!(pm::AbstractDCPowerModel, cache::Cache)
 
     empty!(pm.model)
-    empty_vars!(pm.var, cache.vars)
+    #empty_vars!(pm.var, cache.vars)
 
     return
 end

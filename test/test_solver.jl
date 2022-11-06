@@ -2,25 +2,22 @@ include("solvers.jl")
 
 settings = PRATS.Settings(
     juniper_optimizer_2, 
-    modelmode = JuMP.AUTOMATIC,
-    #powermodel =  PRATS.AbstractDCPModel
-    powermodel =  PRATS.AbstractDCPModel
+    modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"
 )
-
 
 @testset "test 5 Split situations RBTS system" begin
 
-    RawFile = "test/data/RBTS.m"
-    system = PRATSBase.SystemModel(RawFile)
+    RawFile = "test/data/RBTS/RBTS.m"
+    system = SystemModel(RawFile)
 
     field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
     cache = CompositeAdequacy.Cache(system, method, multiperiod=false)
-    pm = CompositeAdequacy.PowerFlowProblem(system, method, cache, settings)
+    pm = PowerFlowProblem(system, field(settings, :powermodel), method, cache, settings)
     t=1
 
     @testset "G3, G7, G8 and G9 on outage" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :generators)[3,t] = 0
         field(systemstates, :generators)[7,t] = 0
         field(systemstates, :generators)[8,t] = 0
@@ -39,7 +36,7 @@ settings = PRATS.Settings(
         CompositeAdequacy.empty_method!(pm, cache)
         
 
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[3,t] = 0
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[8,t] = 0
@@ -57,7 +54,7 @@ settings = PRATS.Settings(
         CompositeAdequacy.empty_method!(pm, cache)
         
 
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[2,t] = 0
         field(systemstates, :branches)[7,t] = 0
         field(systemstates, :generators)[1,t] = 0
@@ -77,7 +74,7 @@ settings = PRATS.Settings(
     end
     
     @testset "L5 and L8 on outage" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[5,t] = 0
         field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
@@ -94,7 +91,7 @@ settings = PRATS.Settings(
     end
 
     @testset "L3, L4 and L8 on outage" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[3,t] = 0
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[8,t] = 0
@@ -114,7 +111,7 @@ settings = PRATS.Settings(
     end
 
     @testset "G3, G7, G8 and G11 on outage" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :generators)[3,t] = 0
         field(systemstates, :generators)[7,t] = 0
         field(systemstates, :generators)[8,t] = 0
@@ -133,7 +130,7 @@ settings = PRATS.Settings(
     end
 
     @testset "L2 and L7 on outage, generation reduced" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[2,t] = 0
         field(systemstates, :branches)[7,t] = 0
         field(systemstates, :generators)[1,t] = 0
@@ -156,19 +153,19 @@ end
 
 @testset "test 7 Split situations IEEE-RTS system" begin
 
-    RawFile = "test/data/RTS.m"
-    system = PRATSBase.SystemModel(RawFile)
+    RawFile = "test/data/RTS/RTS.m"
+    system = SystemModel(RawFile)
 
     field(system, :loads, :cost)[:] = 
         [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 
         7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
-    method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
-    cache = CompositeAdequacy.Cache(system, method, multiperiod=false)
-    pm = CompositeAdequacy.PowerFlowProblem(system, method, cache, settings)
+    method = SequentialMCS(samples=1, seed=1, threaded=false)
+    cache = Cache(system, method, multiperiod=false)
+    pm = PowerFlowProblem(system, field(settings, :powermodel), method, cache, settings)
     t=1
     
     @testset "Outages of L12, L13" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[12,t] = 0
         field(systemstates, :branches)[13,t] = 0
         systemstates.system[t] = 0
@@ -198,7 +195,7 @@ end
     end
 
     @testset "Outages of L1, L4, L10" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[1,t] = 0
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[10,t] = 0
@@ -229,7 +226,7 @@ end
     end
 
     @testset "Outages of L1, L8, L10" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[1,t] = 0
         field(systemstates, :branches)[8,t] = 0
         field(systemstates, :branches)[10,t] = 0
@@ -260,7 +257,7 @@ end
     end
 
     @testset "Outages of L7, L19, L29" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[7,t] = 0
         field(systemstates, :branches)[19,t] = 0
         field(systemstates, :branches)[29,t] = 0
@@ -291,7 +288,7 @@ end
     end
 
     @testset "Outages of L7, L23, L29" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[7,t] = 0
         field(systemstates, :branches)[23,t] = 0
         field(systemstates, :branches)[29,t] = 0
@@ -322,7 +319,7 @@ end
     end
 
     @testset "Outages of L25, L26, L28" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[25,t] = 0
         field(systemstates, :branches)[26,t] = 0
         field(systemstates, :branches)[28,t] = 0
@@ -353,7 +350,7 @@ end
     end
 
     @testset "Outages of L29, L36, L37" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[29,t] = 0
         field(systemstates, :branches)[36,t] = 0
         field(systemstates, :branches)[37,t] = 0

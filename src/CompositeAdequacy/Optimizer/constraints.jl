@@ -114,7 +114,8 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
     t_bus = field(system, :branches, :t_bus)[i]
     buspair = topology(pm, :arcs, :buspairs)[(f_bus, t_bus)]
     
-    if !ismissing(buspair) && Int(buspair[1]) == i
+    if !ismissing(buspair)
+    #if !ismissing(buspair) && Int(buspair[1]) == i
         _constraint_voltage_angle_diff(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
     end
 

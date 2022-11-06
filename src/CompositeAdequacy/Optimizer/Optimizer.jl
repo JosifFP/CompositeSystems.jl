@@ -133,7 +133,7 @@ function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::System
 
     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in assetgrouplist(topology(pm, :loads_idxs))))
 
-    return @NLobjective(pm.model, Min, fd)
+    return @objective(pm.model, Min, fd)
     
 end
 

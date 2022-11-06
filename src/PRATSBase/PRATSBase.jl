@@ -1,27 +1,21 @@
 @reexport module PRATSBase
     import XLSX
     import Dates: @dateformat_str, AbstractDateTime, DateTime, Time,
-        Period, Minute, Hour, Day, Year, Date, hour, now
+        Period, Minute, Hour, Day, Year, Date, hour, now, format
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
     import LinearAlgebra
     import Missings: allowmissing
     import SparseArrays: SparseMatrixCSC, sparse, nonzeros
-    import PowerModels, InfrastructureModels
-    import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
-    __init__() = Memento.register(_LOGGER)
-
-    "Suppresses information and warning messages output"
-    function silence()
-        Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-        Memento.setlevel!(Memento.getlogger(InfrastructureModels), "error", recursive=false)
-        Memento.setlevel!(Memento.getlogger(PowerModels), "error", recursive=false)
-        Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
-    end
+    import InfrastructureModels: InfrastructureModels, ismultiinfrastructure, ismultinetwork,
+        parse_matlab_string, row_to_typed_dict
+    import PowerModels: PowerModels, standardize_cost_terms!, propagate_topology_status!, 
+        simplify_network!, select_largest_component!, resolve_swithces!, 
+        correct_branch_directions!, update_bus_ids!
 
     export
         # System assets
-        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, Arcs,
+        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, Arcs, StaticParameters,
         # Units
         Period, Minute, Hour, Day, Year,
         PowerUnit, kW, MW, GW, TW,
@@ -39,6 +33,6 @@
     include("BuildNetwork/utils.jl")
     include("BuildNetwork/FileGenerator.jl")
     include("SystemModel.jl")
-    include("read.jl")
+    include("load.jl")
 
 end

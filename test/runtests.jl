@@ -1,6 +1,7 @@
 import PRATS
 import PRATS.PRATSBase
-import PRATS.CompositeAdequacy: CompositeAdequacy, field, Topology, SystemStates, sol
+import PRATS.CompositeAdequacy: CompositeAdequacy, field, Topology, SystemStates, sol, Cache, 
+    SystemStates, PowerFlowProblem, SystemModel, SequentialMCS
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 using Test
 
@@ -9,3 +10,5 @@ using Test
     include("test_solver.jl")
     #include("test_solver2.jl")
 end;
+
+

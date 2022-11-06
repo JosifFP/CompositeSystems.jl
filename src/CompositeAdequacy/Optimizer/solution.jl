@@ -15,14 +15,16 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
 
-    if sum(sol(pm, :plc)[:,t]) > 0 
-        println("t=$(t), total_curtailed_load=$(sol(pm, :plc)[:,t]), $(assetgrouplist(topology(pm, :branches_idxs)))") 
+end
+
+
+    #if sum(sol(pm, :plc)[:,t]) > 0 
+        #println("t=$(t), total_curtailed_load=$(sol(pm, :plc)[:,t])")
+        #println("t=$(t), total_curtailed_load=$(sol(pm, :plc)[:,t]), $(assetgrouplist(topology(pm, :branches_idxs)))") 
     #else
         #println("t=$(t), $(assetgrouplist(topology(pm, :branches_idxs)))") 
-    end
+    #end
     #if sum(sol(pm, :plc, t)) > 0 println("t=$(t)") end
-
-end
 
 ""
 function term_status(model::Model, status::JuMP.MathOptInterface.TerminationStatusCode)

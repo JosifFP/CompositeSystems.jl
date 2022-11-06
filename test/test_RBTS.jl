@@ -28,7 +28,7 @@ method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
 pm = CompositeAdequacy.PowerFlowProblem(system, method, settings)
 t=1
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
-systemstates = CompositeAdequacy.SystemStates(system, method)
+systemstates = SystemStates(system, method)
 systemstates.branches
 
 CompositeAdequacy.initialize!(rng, systemstates, system)
@@ -62,7 +62,7 @@ pm.model
 JuMP.termination_status(pm.model)
 
 
-systemstates = CompositeAdequacy.SystemStates(system, method)
+systemstates = SystemStates(system, method)
 field(systemstates, :branches)[3,t] = 0
 field(systemstates, :branches)[4,t] = 0
 field(systemstates, :branches)[8,t] = 0
@@ -90,7 +90,7 @@ JuMP.empty!(pm.model)
     t=1
 
     @testset "L3, L4 and L8 on outage" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :branches)[3,t] = 0
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[8,t] = 0
@@ -109,7 +109,7 @@ JuMP.empty!(pm.model)
     end
 
     @testset "G3, G7, G8 and G9 on outage" begin
-        systemstates = CompositeAdequacy.SystemStates(system, method)
+        systemstates = SystemStates(system, method)
         field(systemstates, :generators)[3,t] = 0
         field(systemstates, :generators)[7,t] = 0
         field(systemstates, :generators)[8,t] = 0
