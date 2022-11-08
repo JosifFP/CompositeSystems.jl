@@ -16,7 +16,7 @@
     import StatsBase: mean, std, stderror
     import StaticArrays: StaticArrays, SVector, SMatrix, SArray
     import TimeZones: ZonedDateTime, @tz_str
-    import LinearAlgebra: qr, pinv
+    import LinearAlgebra: qr
 
     export
         # CompositeAdequacy submoduleexport

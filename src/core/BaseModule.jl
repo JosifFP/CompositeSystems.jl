@@ -25,7 +25,7 @@
         # Main data structure
         SystemModel,
         #utils
-        assetgrouplist, makeidxlist
+        assetgrouplist, makeidxlist, field, extract_timeseriesload, BuildNetwork
     #
 
     include("SystemModel/units.jl")

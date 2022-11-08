@@ -1,7 +1,8 @@
 @reexport module OPF
 
     using ..BaseModule
-    import MathOptInterface: MathOptInterface, OptimizerWithAttributes
+    import LinearAlgebra: pinv
+    import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE
     import Ipopt, Juniper, HiGHS
     import PowerModels
     import JuMP.Containers: DenseAxisArray
@@ -23,13 +24,14 @@
         Settings,
 
         #functions
-        Initialize_model, empty_model!, build_method!, build_result!, optimize_method!,
+        Initialize_model, empty_model!, build_method!, build_result!, 
+        optimize_method!, var, sol,
 
         #optimizationcontainers
-        OptimizationContainer, Topology, DatasetContainer
+        OptimizationContainer, Topology, DatasetContainer,
 
         #reexports
-
+        PowerModels
 
     #
 

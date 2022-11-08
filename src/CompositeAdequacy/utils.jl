@@ -1,22 +1,8 @@
 
-"Extract a field from a composite value by name or position."
-field(system::SystemModel, field::Symbol) = getfield(system, field)
-field(system::SystemModel, field::Symbol, subfield::Symbol) = getfield(getfield(system, field), subfield)
-
-field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
-field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
-field(branches::Branches, subfield::Symbol) = getfield(branches, subfield)
-field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
-field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
-field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
-field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
-field(arcs::Arcs, subfield::Symbol) = getfield(arcs, subfield)
-
-field(states::SystemStates, field::Symbol) = getfield(states, field)::Matrix{Bool}
-field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
-field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
-
-field(method::SimulationSpec, field::Symbol) = getfield(method, field)
+BaseModule.field(states::SystemStates, field::Symbol) = getfield(states, field)::Matrix{Bool}
+BaseModule.field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
+BaseModule.field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
+BaseModule.field(method::SimulationSpec, field::Symbol) = getfield(method, field)
 
 function Base.map!(f, dict::Dict)
 

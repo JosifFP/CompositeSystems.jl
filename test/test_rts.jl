@@ -6,9 +6,9 @@ import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime
 include("solvers.jl")
-TimeSeriesFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/Loads.xlsx"
-RawFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/RBTS.m"
-ReliabilityFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/R_RBTS.m"
+TimeSeriesFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS/Loads.xlsx"
+RawFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/RTS.m"
+ReliabilityFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS/R_RTS.m"
 
 timeseries_load, SParametrics = extract_timeseriesload(TimeSeriesFile)
 system = SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
@@ -18,7 +18,7 @@ settings = PRATS.Settings(
     ipopt_optimizer_3,
     modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"
 )
-method = SequentialMCS(samples=100, seed=654, threaded=true)
+method = SequentialMCS(samples=300, seed=654, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)

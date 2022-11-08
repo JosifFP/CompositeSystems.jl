@@ -15,7 +15,7 @@ function assess(
 
     if method.threaded
         for _ in 1:threads
-            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+            Threads.@spawn assess(system, method, deepcopy(settings), sampleseeds, results, resultspecs...)
         end
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)

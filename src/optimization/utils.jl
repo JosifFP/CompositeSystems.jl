@@ -1,6 +1,6 @@
-field(topology::Topology, field::Symbol) = getfield(topology, field)
-field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
-field(settings::Settings, field::Symbol) = getfield(settings, field)
+BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
+BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
+BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
 
 topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
 topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]

@@ -113,7 +113,7 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
         end
     end
 
-    return JuMP.@NLobjective(pm.model, Min, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+    return JuMP.@NLobjective(pm.model, MIN_SENSE, sum(gen_cost[i] for i in eachindex(gen_idxs)))
     
 end
 
@@ -133,7 +133,7 @@ function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::System
 
     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in assetgrouplist(topology(pm, :loads_idxs))))
 
-    return @objective(pm.model, Min, fd)
+    return @objective(pm.model, MIN_SENSE, fd)
     
 end
 
