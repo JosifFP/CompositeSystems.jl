@@ -14,8 +14,16 @@ ipopt_optimizer_3 = JuMP.optimizer_with_attributes(
     Ipopt.Optimizer, 
     "tol"=>1e-4,
     "max_cpu_time"=>5.0,
-    "constr_viol_tol"=>1e-3, 
     "print_level"=>0
+)
+
+"Slower than ipopt_optimizer_3, with a smaller amount of memory allocations"
+ipopt_optimizer_4 = JuMP.optimizer_with_attributes(
+    Ipopt.Optimizer, 
+    "tol"=>1e-4,
+    "max_cpu_time"=>5.0,
+    "print_level"=>0,
+    "hessian_approximation"=> "limited-memory"
 )
 
 highs_optimizer_1 = JuMP.optimizer_with_attributes(
@@ -30,5 +38,5 @@ juniper_optimizer_1 = optimizer_with_attributes(
 
 juniper_optimizer_2 = optimizer_with_attributes(
     Juniper.Optimizer, "nl_solver"=> ipopt_optimizer_3, 
-    "atol"=>1e-3, "log_levels"=>[], "processors"=>1
+    "atol"=>1e-4, "log_levels"=>[], "processors"=>1
 )

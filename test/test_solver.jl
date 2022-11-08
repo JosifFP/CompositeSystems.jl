@@ -12,8 +12,10 @@ settings = PRATS.Settings(
 
     field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     method = PRATS.SequentialMCS(samples=1, seed=1, threaded=false)
-    cache = CompositeAdequacy.Cache(system, method, multiperiod=false)
-    pm = PowerFlowProblem(system, field(settings, :powermodel), method, cache, settings)
+    #cache = CompositeAdequacy.SolContainer(system, method, multiperiod=false)
+    #pm = PowerFlowProblem(system, field(settings, :powermodel), method, cache, settings)
+    topology = Topology(system)
+    pm = Initialize_model(system, topology, settings)
     t=1
 
     @testset "G3, G7, G8 and G9 on outage" begin
@@ -23,7 +25,7 @@ settings = PRATS.Settings(
         field(systemstates, :generators)[8,t] = 0
         field(systemstates, :generators)[9,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.35; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -33,7 +35,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
         @test isapprox(pg, 1.5; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
 
         systemstates = SystemStates(system, method)
@@ -41,7 +43,7 @@ settings = PRATS.Settings(
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.1503; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -51,7 +53,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
         @test isapprox(pg, 1.699; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
 
         systemstates = SystemStates(system, method)
@@ -61,7 +63,7 @@ settings = PRATS.Settings(
         field(systemstates, :generators)[2,t] = 0
         field(systemstates, :generators)[3,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.7046; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -69,7 +71,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[5,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
     end
     
@@ -78,7 +80,7 @@ settings = PRATS.Settings(
         field(systemstates, :branches)[5,t] = 0
         field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.4; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -86,7 +88,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[4,t], 0.2; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[5,t], 0.2; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
     end
 
@@ -96,7 +98,7 @@ settings = PRATS.Settings(
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.1503; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -106,7 +108,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(CompositeAdequacy.build_sol_values(CompositeAdequacy.var(pm, :pg, 0))))
         @test isapprox(pg, 1.699; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
     end
 
@@ -117,7 +119,7 @@ settings = PRATS.Settings(
         field(systemstates, :generators)[8,t] = 0
         field(systemstates, :generators)[11,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.35; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -125,7 +127,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[5,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
     end
 
@@ -137,7 +139,7 @@ settings = PRATS.Settings(
         field(systemstates, :generators)[2,t] = 0
         field(systemstates, :generators)[3,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.7046; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[1,t], 0; atol = 1e-3)
@@ -145,7 +147,7 @@ settings = PRATS.Settings(
         @test isapprox(values(sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[5,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
         
     end
 
@@ -160,8 +162,10 @@ end
         [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 
         7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
     method = SequentialMCS(samples=1, seed=1, threaded=false)
-    cache = Cache(system, method, multiperiod=false)
-    pm = PowerFlowProblem(system, field(settings, :powermodel), method, cache, settings)
+    #cache = CompositeAdequacy.SolContainer(system, method, multiperiod=false)
+    #pm = PowerFlowProblem(system, field(settings, :powermodel), method, cache, settings)
+    topology = Topology(system)
+    pm = Initialize_model(system, topology, settings)
     t=1
     
     @testset "Outages of L12, L13" begin
@@ -169,7 +173,7 @@ end
         field(systemstates, :branches)[12,t] = 0
         field(systemstates, :branches)[13,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0; atol = 1e-3)
@@ -191,7 +195,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
     @testset "Outages of L1, L4, L10" begin
@@ -200,7 +204,7 @@ end
         field(systemstates, :branches)[4,t] = 0
         field(systemstates, :branches)[10,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0.4111; atol = 1e-3)
@@ -222,7 +226,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
     @testset "Outages of L1, L8, L10" begin
@@ -231,7 +235,7 @@ end
         field(systemstates, :branches)[8,t] = 0
         field(systemstates, :branches)[10,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 1.151; atol = 1e-3)
@@ -253,7 +257,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
     @testset "Outages of L7, L19, L29" begin
@@ -262,7 +266,7 @@ end
         field(systemstates, :branches)[19,t] = 0
         field(systemstates, :branches)[29,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 0; atol = 1e-3)
@@ -284,7 +288,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
     @testset "Outages of L7, L23, L29" begin
@@ -293,7 +297,7 @@ end
         field(systemstates, :branches)[23,t] = 0
         field(systemstates, :branches)[29,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 1.653; atol = 1e-3)
@@ -315,7 +319,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
     @testset "Outages of L25, L26, L28" begin
@@ -324,7 +328,7 @@ end
         field(systemstates, :branches)[26,t] = 0
         field(systemstates, :branches)[28,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 2.125; atol = 1e-3)
@@ -346,7 +350,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
     @testset "Outages of L29, L36, L37" begin
@@ -355,7 +359,7 @@ end
         field(systemstates, :branches)[36,t] = 0
         field(systemstates, :branches)[37,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.update!(pm, systemstates, system, t)
+        CompositeAdequacy.update!(pm.topology, systemstates, system, t)
         CompositeAdequacy.solve!(pm, system, t)
 
         @test isapprox(sum(values(sol(pm, :plc))[:]), 3.09; atol = 1e-3)
@@ -377,7 +381,7 @@ end
         @test isapprox(values(sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[16,t], 1.81; atol = 1e-3)
         @test isapprox(values(sol(pm, :plc))[17,t], 1.28; atol = 1e-3)
-        CompositeAdequacy.empty_method!(pm, cache)
+        CompositeAdequacy.empty!(pm.model)
     end
 
 end

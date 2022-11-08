@@ -205,8 +205,8 @@ function finalize(
         mean_std(acc.unservedload_busperiod)
 
     nsamples = first(acc.unservedload_total.stats).n
-    P = PRATSBase.powerunits["MW"]
-    E = PRATSBase.energyunits["MWh"]
+    P = BaseModule.powerunits["MW"]
+    E = BaseModule.energyunits["MWh"]
     p2e = conversionfactor(L,T,P,E,system.baseMVA)
 
     return ShortfallResult{N,L,T,E}(
@@ -279,9 +279,9 @@ function finalize(
     system::SystemModel{N,L,T},
 ) where {N,L,T}
 
-    P = PRATSBase.powerunits["MW"]
-    E = PRATSBase.energyunits["MWh"]
-    p2e = conversionfactor(L,T,P,E,B)
+    P = BaseModule.powerunits["MW"]
+    E = BaseModule.energyunits["MWh"]
+    p2e = conversionfactor(L,T,P,E)
     return ShortfallSamplesResult{N,L,T,P,E}(
         system.loads.keys, system.timestamps, p2e*acc.shortfall)
 

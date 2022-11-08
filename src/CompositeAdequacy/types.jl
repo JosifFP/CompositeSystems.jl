@@ -8,18 +8,6 @@ abstract type Result{
     T <: Period, # Units of each simulation timestep
 } end
 
-abstract type OptimizationContainer end
-
-"Types of optimization"
-abstract type AbstractPowerModel end
-abstract type AbstractDCPowerModel <: AbstractPowerModel end
-abstract type AbstractACPowerModel <: AbstractPowerModel end
-abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
-abstract type AbstractDCPModel <: AbstractDCPowerModel end
-abstract type AbstractNFAModel <: AbstractDCPowerModel end
-abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
-LoadCurtailment =  Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel}
-
 #AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
 #AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
 #AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
@@ -87,41 +75,6 @@ struct PreContingencies <: SimulationSpec
 
 end
 
-""
-struct Settings <: SimulationSpec
-
-    optimizer::MathOptInterface.OptimizerWithAttributes
-    modelmode::JuMP.ModelMode
-    powermodel::Type{<:AbstractPowerModel}
-
-    function Settings(
-        optimizer::MathOptInterface.OptimizerWithAttributes;
-        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-        powermodel::String="AbstractDCMPPModel"
-        )
-
-        abstractpm = type(powermodel)
-
-        new(optimizer, modelmode, abstractpm)
-    end
-
-end
-
-""
-function JumpModel(modelmode::JuMP.ModelMode, optimizer)
-    if modelmode == JuMP.AUTOMATIC
-        jumpmodel = Model(optimizer; add_bridges = false)
-    elseif modelmode == JuMP.DIRECT
-        @warn("Direct Mode is unsafe")
-        jumpmodel = direct_model(optimizer)
-    else
-        @warn("Manual Mode not supported")
-    end
-    JuMP.set_string_names_on_creation(jumpmodel, false)
-    JuMP.set_silent(jumpmodel)
-    GC.gc()
-    return jumpmodel
-end
 
 # ""
 # struct Settings <: SimulationSpec

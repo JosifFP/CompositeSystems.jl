@@ -15,29 +15,8 @@ field(arcs::Arcs, subfield::Symbol) = getfield(arcs, subfield)
 field(states::SystemStates, field::Symbol) = getfield(states, field)::Matrix{Bool}
 field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
 field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
-field(settings::Settings, field::Symbol) = getfield(settings, field)
+
 field(method::SimulationSpec, field::Symbol) = getfield(method, field)
-
-field(topology::Topology, field::Symbol) = getfield(topology, field)
-field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
-
-topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
-topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]
-topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol) = getfield(getfield(getfield(pm, :topology), field), subfield)
-topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol, nw::Int) = getindex(getfield(getfield(getfield(pm, :topology), field), subfield), nw)
-
-var(pm::AbstractPowerModel) = getfield(pm, :var)
-var(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :var), field)
-var(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getfield(getfield(pm, :var), field), nw)
-
-sol(pm::AbstractPowerModel, field::Symbol) = getfield(pm, :sol)
-#sol(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :sol), field)
-
-cache(pm::AbstractPowerModel) = getfield(pm, :cache)
-cache(pm::AbstractPowerModel, field::Symbol) = getfield(getfield(pm, :cache), field)
-
-#sol(pm::AbstractPowerModel, args...) = _sol(pm.sol, args...)
-#sol(pm::AbstractPowerModel, key::Symbol) = pm.sol[key]
 
 function Base.map!(f, dict::Dict)
 
@@ -82,56 +61,6 @@ function findfirstunique(a::AbstractVector{T}, i::T) where T
     i_idx = findfirst(isequal(i), a)
     i_idx === nothing && throw(BoundsError(a))
     return i_idx
-end
-
-""
-function assetgrouplist(idxss::Vector{UnitRange{Int}})
-    
-    if isempty(idxss)
-        results = Int[]
-    else
-        results = Vector{Int}(undef, last(idxss[end]))
-        for (g, idxs) in enumerate(idxss)
-            results[idxs] .= g
-        end
-    end
-    return results
-
-end
-
-""
-function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
-
-    if isempty(collectionidxs)
-        idxlist = fill(1:0, n_collections)
-    else
-        n_assets = length(collectionidxs)
-        idxlist = Vector{UnitRange{Int}}(undef, n_collections)
-        active_collection = 1
-        start_idx = 1
-        a = 1
-
-        while a <= n_assets
-        if collectionidxs[a] > active_collection
-                idxlist[active_collection] = start_idx:(a-1)       
-                active_collection += 1
-                start_idx = a
-        else
-            a += 1
-        end
-        end
-
-        idxlist[active_collection] = start_idx:n_assets       
-        active_collection += 1
-
-        while active_collection <= n_collections
-            idxlist[active_collection] = (n_assets+1):n_assets
-            active_collection += 1
-        end
-    end
-
-    return idxlist
-
 end
 
 ""

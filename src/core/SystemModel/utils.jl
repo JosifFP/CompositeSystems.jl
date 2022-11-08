@@ -507,62 +507,62 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
 
     for (i, gen) in ref[:gen]
         if !(gen["gen_bus"] in buses.keys) || !(generators.buses[i] in buses.keys)
-            Memento.error(_LOGGER, "bus $(gen["gen_bus"]) in shunt $(i) is not defined")
+            @error( "bus $(gen["gen_bus"]) in shunt $(i) is not defined")
         end
         if gen["gen_status"] != 0 && !(gen["gen_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active generator $(i) is connected to inactive bus $(gen["gen_bus"])")
+            @warn( "active generator $(i) is connected to inactive bus $(gen["gen_bus"])")
         end
     end
 
     for (i, load) in ref[:load]
         if !(load["load_bus"] in buses.keys) || !(loads.buses[i] in buses.keys)
-            Memento.error(_LOGGER, "bus $(load["load_bus"]) in load $(i) is not defined")
+            @error( "bus $(load["load_bus"]) in load $(i) is not defined")
         end
 
         if load["status"] != 0 && !(load["load_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active load $(i) is connected to inactive bus $(load["load_bus"])")
+            @warn( "active load $(i) is connected to inactive bus $(load["load_bus"])")
         end       
     end
 
     for (i, shunt) in ref[:shunt]
         if !(shunt["shunt_bus"] in buses.keys) || !(shunts.buses[i] in buses.keys)
-            Memento.error(_LOGGER, "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
+            @error( "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
         end
         if shunt["status"] != 0 && !(shunt["shunt_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active shunt $(i) is connected to inactive bus $(shunt["shunt_bus"])")
+            @warn( "active shunt $(i) is connected to inactive bus $(shunt["shunt_bus"])")
         end
     end
 
     for (i, strg) in ref[:storage]
         if !(strg["storage_bus"] in buses.keys) || !(storages.buses[i] in buses.keys)
-            Memento.error(_LOGGER, "bus $(strg["storage_bus"]) in shunt $(i) is not defined")
+            @error( "bus $(strg["storage_bus"]) in shunt $(i) is not defined")
         end
         if strg["status"] != 0 && !(strg["storage_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active storage unit $(i) is connected to inactive bus $(strg["storage_bus"])")
+            @warn( "active storage unit $(i) is connected to inactive bus $(strg["storage_bus"])")
         end
     end
     
     for (i, branch) in ref[:branch]
         if !(branch["f_bus"] in buses.keys) || !(branches.f_bus[i] in buses.keys)
-            Memento.error(_LOGGER, "bus $(branch["f_bus"]) in shunt $(i) is not defined")
+            @error( "bus $(branch["f_bus"]) in shunt $(i) is not defined")
         end
         if !(branch["t_bus"] in buses.keys) || !(branches.t_bus[i] in buses.keys)
-            Memento.error(_LOGGER, "bus $(branch["t_bus"]) in shunt $(i) is not defined")
+            @error( "bus $(branch["t_bus"]) in shunt $(i) is not defined")
         end
         if branch["br_status"] != 0 && !(branch["f_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active branch $(i) is connected to inactive bus $(branch["f_bus"])")
+            @warn( "active branch $(i) is connected to inactive bus $(branch["f_bus"])")
         end
 
         if branch["br_status"] != 0 && !(branch["t_bus"] in active_bus_ids)
-            Memento.warn(_LOGGER, "active branch $(i) is connected to inactive bus $(branch["t_bus"])")
+            @warn( "active branch $(i) is connected to inactive bus $(branch["t_bus"])")
         end
 
         # if dcline["br_status"] != 0 && !(dcline["f_bus"] in active_bus_ids)
-        #     Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["f_bus"])")
+        #     @warn( "active dcline $(i) is connected to inactive bus $(dcline["f_bus"])")
         # end
 
         # if dcline["br_status"] != 0 && !(dcline["t_bus"] in active_bus_ids)
-        #     Memento.warn(_LOGGER, "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
+        #     @warn( "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
         # end
     end
 

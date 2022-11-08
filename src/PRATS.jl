@@ -11,9 +11,9 @@ function silence()
     Memento.setlevel!(Memento.getlogger(PRATS), "info", recursive=false)
 end
 
-include("PRATSBase/PRATSBase.jl")
-include("CompositeAdequacy/CompositeAdequacy.jl")
-
+include("core/BaseModule.jl")
+include("optimization/OPF.jl")
+include("compositeadequacy/CompositeAdequacy.jl")
 
 end
 

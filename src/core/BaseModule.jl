@@ -1,4 +1,4 @@
-@reexport module PRATSBase
+@reexport module BaseModule
     import XLSX
     import Dates: @dateformat_str, AbstractDateTime, DateTime, Time,
         Period, Minute, Hour, Day, Year, Date, hour, now, format
@@ -23,16 +23,17 @@
         VoltageUnit, kV,
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
-        SystemModel
+        SystemModel,
+        #utils
+        assetgrouplist, makeidxlist
     #
 
     include("SystemModel/units.jl")
     include("SystemModel/assets.jl")
     include("SystemModel/utils.jl")
-
-    include("BuildNetwork/utils.jl")
-    include("BuildNetwork/FileGenerator.jl")
     include("SystemModel.jl")
+    include("utils.jl")
     include("load.jl")
+    include("BuildNetwork/FileGenerator.jl")
 
 end

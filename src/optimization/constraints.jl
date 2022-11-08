@@ -5,11 +5,11 @@ function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=0)
 end
 
 "nothing to do, no voltage angle variables"
-function constraint_theta_ref(pm::AbstractNFAModel, i::Int; nw::Int=0)
+function constraint_theta_ref(pm::AbstractNFAModel, i::Int; nw::Int=1)
 end
 
 "Nodal power balance constraints"
-function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=0)
+function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     bus_arcs = filter(!ismissing, skipmissing(topology(pm, :arcs, :busarcs)[i,:]))
     bus_gens = topology(pm, :generators_nodes)[i]
@@ -22,11 +22,11 @@ function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel,
 #    bus_gs = Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
 #    bus_bs = Float16.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
 
-    _constraint_power_balance(pm, system, t, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+    _constraint_power_balance(pm, system, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 end
 
 ""
-function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -43,13 +43,13 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, t::
         #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
         #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
         + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
     )
 end
 
 ""
-function _constraint_power_balance(pm::PM_AbstractDCPModel, system::SystemModel, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function _constraint_power_balance(pm::PM_AbstractDCPModel, system::SystemModel, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -64,13 +64,13 @@ function _constraint_power_balance(pm::PM_AbstractDCPModel, system::SystemModel,
         #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
         #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
         ==
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
         + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
     )
 end
 
 "Branch - Ohm's Law Constraints"
-function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=0)
+function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
@@ -108,7 +108,7 @@ function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus
 end
 
 "Branch - Phase Angle Difference Constraints "
-function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=0)
+function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
@@ -139,7 +139,7 @@ end
 constraint_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
 Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel.
 """
-function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=0)
+function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[i] 
     t_bus = field(system, :branches, :t_bus)[i]

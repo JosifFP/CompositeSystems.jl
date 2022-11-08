@@ -1,5 +1,5 @@
 using PRATS
-import PRATS.PRATSBase
+import PRATS.BaseModule
 import PRATS.CompositeAdequacy: CompositeAdequacy, field, var,
 assetgrouplist, findfirstunique, 
 build_sol_values, optimizer_with_attributes
@@ -9,7 +9,7 @@ using Test
 using ProfileView, Profile
 import BenchmarkTools: @btime
 RawFile = "test/data/RBTS.m"
-PRATSBase.silence()
+BaseModule.silence()
 #@code_warntype
 
 nl_solver = optimizer_with_attributes(
@@ -17,11 +17,11 @@ nl_solver = optimizer_with_attributes(
     "constr_viol_tol"=>0.01, "acceptable_tol"=>0.1, "print_level"=>0, "threads"=>1)
 optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[], "threads"=>1)
 
-system = PRATSBase.SystemModel(RawFile)
+system = BaseModule.SystemModel(RawFile)
 systemstates = SystemStates(system, method)
 field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 method = PRATS.SequentialMCS(samples=1, seed=321, threaded=false)
-pm = CompositeAdequacy.PowerFlowProblem(system, method, settings)
+pm = CompositeAdequacy.Initialize_model(system, method, settings)
 t=1
 
 
@@ -31,7 +31,7 @@ field(systemstates, :generators)[8,t] = 0
 field(systemstates, :generators)[9,t] = 0
 field(systemstates, :branches)[1,t] = 0
 systemstates.system[t] = 0
-CompositeAdequacy.update!(pm, systemstates, system, t)
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 CompositeAdequacy.solve!(pm, system, t)
 
 
@@ -40,10 +40,10 @@ CompositeAdequacy.solve!(pm, system, t)
 @testset "test Topology" begin
     RawFile = "test/data/RBTS.m"
 
-    system = PRATSBase.SystemModel(RawFile)
+    system = BaseModule.SystemModel(RawFile)
     field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     method = PRATS.SequentialMCS(samples=1, seed=321, threaded=true)
-    pm = CompositeAdequacy.PowerFlowProblem(system, method, settings)
+    pm = CompositeAdequacy.Initialize_model(system, method, settings)
     t=1
 
     i_buses_idxs = deepcopy(pm.topology.buses_idxs)
@@ -68,11 +68,11 @@ CompositeAdequacy.solve!(pm, system, t)
     field(systemstates, :generators)[8,t] = 0
     field(systemstates, :generators)[11,t] = 0
     systemstates.system[t] = 0
-    CompositeAdequacy.update!(pm, systemstates, system, t)
+    CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 
     t=1
     systemstates = SystemStates(system, method)
-    CompositeAdequacy.update!(pm, systemstates, system, t)
+    CompositeAdequacy.update!(pm.topology, systemstates, system, t)
     f_topology_system = CompositeAdequacy.Topology(system)
     f_topology_pm = deepcopy(pm.topology)
 
