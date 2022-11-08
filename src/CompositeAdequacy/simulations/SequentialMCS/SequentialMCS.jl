@@ -56,7 +56,7 @@ function assess(
 
         foreach(recorder -> record!(recorder, system, pm, s), recorders)
         foreach(recorder -> reset!(recorder, s), recorders)
-        empty_model!(system, pm)
+        empty_model!(system, pm, settings)
     end
 
     put!(results, recorders)
@@ -84,7 +84,7 @@ function initialize!(rng::AbstractRNG, states::SystemStates, system::SystemModel
         else
             if total_load >= total_gen
                 states.system[t] = false
-            elseif count(field(states, :generators)[:,t]) < length(system.generators) - 1
+            elseif count(field(states, :generators)[:,t]) < length(system.generators)
                 states.system[t] = false
             end
 

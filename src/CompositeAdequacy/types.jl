@@ -79,13 +79,13 @@ end
 # ""
 # struct Settings <: SimulationSpec
 
-#     optimizer::MathOptInterface.OptimizerWithAttributes
+#     optimizer::MOI.OptimizerWithAttributes
 #     file::String
 #     modelmode::JuMP.ModelMode
 #     powermodel::Type{<:AbstractPowerModel}
 
 #     function Settings(
-#         optimizer::MathOptInterface.OptimizerWithAttributes;
+#         optimizer::MOI.OptimizerWithAttributes;
 #         file::String="",
 #         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
 #         powermodel::String="AbstractDCMPPModel"

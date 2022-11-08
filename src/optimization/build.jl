@@ -271,7 +271,7 @@ end
     #if sum(sol(pm, :plc, t)) > 0 println("t=$(t)") end
 
 # ""
-# function term_status(model::Model, status::JuMP.MathOptInterface.TerminationStatusCode)
+# function term_status(model::Model, status::JuMP.MOI.TerminationStatusCode)
 
 #     if status == LOCALLY_SOLVED || status == OPTIMAL
 #         status = 1

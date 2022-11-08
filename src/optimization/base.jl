@@ -13,12 +13,12 @@ LoadCurtailment =  Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel}
 ""
 struct Settings
 
-    optimizer::MathOptInterface.OptimizerWithAttributes
+    optimizer::MOI.OptimizerWithAttributes
     modelmode::JuMP.ModelMode
     powermodel::Type{<:AbstractPowerModel}
 
     function Settings(
-        optimizer::MathOptInterface.OptimizerWithAttributes;
+        optimizer::MOI.OptimizerWithAttributes;
         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
         powermodel::String="AbstractDCMPPModel"
         )
