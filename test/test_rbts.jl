@@ -18,7 +18,7 @@ settings = PRATS.Settings(
     ipopt_optimizer_3,
     modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"
 )
-method = SequentialMCS(samples=8, seed=654, threaded=false)
+method = SequentialMCS(samples=50, seed=555, threaded=false)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)

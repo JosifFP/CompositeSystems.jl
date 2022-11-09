@@ -13,7 +13,7 @@
         GenericAffExpr, GenericQuadExpr, NonlinearExpression, ConstraintRef, 
         dual, UpperBoundRef, LowerBoundRef, upper_bound, lower_bound, 
         has_upper_bound, has_lower_bound, set_lower_bound, set_upper_bound,
-        LOCALLY_SOLVED, set_silent, set_string_names_on_creation
+        LOCALLY_SOLVED, set_silent, set_string_names_on_creation, set_optimizer
 
     const MOI = MathOptInterface
     const MOIU = MathOptInterface.Utilities

@@ -6,9 +6,6 @@
 function mpc = RTS
 mpc.version = '2';
 mpc.baseMVA = 100.0;
-mpc.N = 8736;
-mpc.L = 1;
-mpc.T = 'h';
 
 %% area data
 %	area	refbus

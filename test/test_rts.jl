@@ -8,10 +8,9 @@ import BenchmarkTools: @btime
 include("solvers.jl")
 TimeSeriesFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS/Loads.xlsx"
 RawFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS/RTS.m"
-ReliabilityFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS/R_RTS.m"
+ReliabilityFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS/R_RTS2.m"
 
 timeseries_load, SParametrics = extract_timeseriesload(TimeSeriesFile)
-
 system = SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
 
 resultspecs = (Shortfall(), Shortfall())
@@ -19,9 +18,9 @@ settings = PRATS.Settings(
     ipopt_optimizer_3,
     modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"
 )
-method = SequentialMCS(samples=100, seed=2, threaded=false)
+method = SequentialMCS(samples=20, seed=818, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
-PRATS.LOLE.(shortfall, system.loads.keys)
+@show PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)

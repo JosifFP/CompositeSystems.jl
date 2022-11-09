@@ -42,6 +42,9 @@ function assess(
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
     for s in sampleseeds
+
+        iszero(s%10) &&  OPF.set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
+
         println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, systemstates, system) #creates the up/down sequence for each device.
@@ -84,7 +87,7 @@ function initialize!(rng::AbstractRNG, states::SystemStates, system::SystemModel
         else
             if total_load >= total_gen
                 states.system[t] = false
-            elseif count(field(states, :generators)[:,t]) < length(system.generators)
+            elseif count(field(states, :generators)[:,t]) < length(system.generators) - 1
                 states.system[t] = false
             end
 

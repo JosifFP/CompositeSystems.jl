@@ -34,7 +34,7 @@ end
 "Constructor for an AbstractPowerModel modeling object"
 function Initialize_model(system::SystemModel{N}, topology::Topology, settings::Settings) where {N}
     
-    model = JumpModel(field(settings, :modelmode), field(settings, :optimizer))
+    model = JumpModel(field(settings, :modelmode), deepcopy(field(settings, :optimizer)))
     
     var = DatasetContainer{AbstractArray}()
     add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
@@ -54,6 +54,7 @@ function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings
 
     empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
+    #OPF.set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
     reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
     reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
     reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)

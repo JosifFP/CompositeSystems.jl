@@ -48,7 +48,7 @@ function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
             set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-            set_lower_bound(pg[l], 0.0)
+            set_lower_bound(pg[l], 0.0001)
         end
     end
 
@@ -66,7 +66,7 @@ function var_gen_power_imaginary(pm::AbstractACPowerModel, system::SystemModel; 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
             set_upper_bound(qg[l], field(system, :generators, :qmax)[l])
-            set_lower_bound(qg[l], 0.0)
+            set_lower_bound(qg[l], 0.0001)
         end
     end
     #sol_component_fixed(pm, :gen, :qg, ids(pm, :gen), qg)
