@@ -73,7 +73,7 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    pg::Array{Float16}  # Active power in per unit
+    pg::VecOrMat{Float16} # Active power in per unit
     qg::Vector{Float16}  # Active power in per unit
     vg::Vector{Float16}
     pmax::Vector{Float16}
@@ -87,7 +87,7 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     status::Vector{Bool}
 
     function Generators{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int}, pg::Array{Float16}, qg::Vector{Float16}, 
+        keys::Vector{Int}, buses::Vector{Int}, pg::VecOrMat{Float16}, qg::Vector{Float16}, 
         vg::Vector{Float16}, pmax::Vector{Float16}, pmin::Vector{Float16}, 
         qmax::Vector{Float16}, qmin::Vector{Float16}, mbase::Vector{Int}, 
         cost::Vector{<:Any}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
@@ -152,7 +152,7 @@ function Base.vcat(gs::G...) where {N,L,T,G <: Generators{N,L,T}}
     ngens = sum(length(g) for g in gs)
     keys = Vector{Int}(undef, ngens)
     buses = Vector{Int}(undef, ngens)
-    pg = Matrix{Float16}(undef, ngens, N)
+    pg = VecOrMat{Float16}(undef, ngens, N)
     qg = Vector{Float16}(undef, ngens)
     vg = Vector{Float32}(undef, ngens)
     pmax = Vector{Float16}(undef, ngens)
@@ -194,13 +194,13 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    pd::Array{Float16} # Active power in per unit
+    pd::VecOrMat{Float16} # Active power in per unit
     qd::Vector{Float16} # Reactive power in per unit
     cost::Vector{Float16}
     status::Vector{Bool}
 
     function Loads{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int}, pd::Array{Float16}, 
+        keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float16}, 
         qd::Vector{Float16}, cost::Vector{Float16}, status::Vector{Bool}
         ) where {N,L,T}
 
@@ -528,12 +528,11 @@ Base.:(==)(x::T, y::T) where {T <: Shunts} =
 ""
 struct Arcs
 
-    busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
     arcs_from::Vector{Union{Missing,Tuple{Int, Int, Int}}}
     arcs_to::Vector{Union{Missing,Tuple{Int, Int, Int}}}
     arcs::Vector{Union{Missing,Tuple{Int, Int, Int}}}
+    busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Union{Missing,Vector{Float16}}}
-    empty::Array{Missing}
 
     function Arcs(branches::Branches, buses::Vector{Int}, Nodes::Int, Edges::Int)
 
@@ -556,10 +555,9 @@ struct Arcs
         arcs_to =  allowmissing(filter(i -> i[2] > i[3], skipmissing(A)))
         arcs = [arcs_from; arcs_to]
 
-        buspairs = calc_buspair_parameters(branches, keys)
-        empty = Array{Missing}(undef, Nodes)    
+        buspairs = calc_buspair_parameters(branches, keys)   
 
-        return new(A, arcs_from, arcs_to, arcs, buspairs, empty)
+        return new(arcs_from, arcs_to, arcs, A, buspairs)
     end
 end
 
@@ -567,8 +565,8 @@ Base.:(==)(x::T, y::T) where {T <: Arcs} =
     x.busarcs == y.busarcs &&
     x.arcs_from == y.arcs_from &&
     x.arcs_to == y.arcs_to &&
-    x.buspairs == y.buspairs &&
-    x.empty == y.empty
+    x.arcs == y.arcs &&
+    x.buspairs == y.buspairs
 
 Base.getindex(x::Arcs, row::Int) = getfield(x, :values)[row]
 Base.getindex(x::Arcs, row::Int, ::Colon) = getfield(x, :values)[row,:]

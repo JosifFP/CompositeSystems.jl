@@ -55,9 +55,10 @@ function assess(
                 solve!(pm, system, t)
                 empty!(pm.model)
             end
+            foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
 
-        foreach(recorder -> record!(recorder, system, pm, s), recorders)
+        #foreach(recorder -> record!(recorder, system, pm, s), recorders)
         foreach(recorder -> reset!(recorder, s), recorders)
         empty_model!(system, pm, settings)
     end
@@ -69,30 +70,11 @@ end
 ""
 function initialize!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
 
-    fill!(field(states, :branches), 1)
-    fill!(field(states, :generators), 1)
-
     initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
     initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
     initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
     initialize_availability!(rng, field(states, :generatorstorages), field(system, :generatorstorages), N)
-
-    @inbounds for t in 1:N
-
-        total_load::Float16 = sum(field(system, :loads, :pd)[:,t])
-        total_gen::Float16 = sum(field(system, :generators, :pmax)[i] for i in filter(k -> field(states, :generators)[k,t], field(system, :generators, :keys)))
-
-        if all(field(states, :branches)[:,t]) == false
-            states.system[t] = false
-        else
-            if total_load >= total_gen
-                states.system[t] = false
-            elseif count(field(states, :generators)[:,t]) < length(system.generators) - 1
-                states.system[t] = false
-            end
-
-        end
-    end
+    initialize_availability_system!(states, field(system, :generators), field(system, :loads), N)
 
     #initialize_availability!(states, N)
     #states = propagate_outages!(states, system.branches, settings, N)
@@ -111,11 +93,11 @@ function update!(topology::Topology, states::SystemStates, system::SystemModel, 
     #    topology(pm, :loads_idxs), topology(pm, :loads_nodes), field(system, :loads, :buses))
 
     update_idxs!(
-        filter(i->field(states, :shunts, i, t), field(system, :shunts, :keys)), 
+        filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
         topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
 
     update_idxs!(
-        filter(i->field(states, :generators, i, t), field(system, :generators, :keys)), 
+        filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
         topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
 
     update_branch_idxs!(
@@ -139,6 +121,7 @@ function solve!(pm::AbstractPowerModel, system::SystemModel, t::Int)
     build_method!(pm, system, t)
     optimize_method!(pm.model)
     build_result!(pm, system, t)
+    GC.gc()
     return
 
 end

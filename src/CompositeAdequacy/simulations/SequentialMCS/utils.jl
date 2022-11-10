@@ -3,28 +3,30 @@ function initialize_availability!(
     rng::AbstractRNG,
     availability::Matrix{Bool},
     asset::AbstractAssets, N::Int)
-    
-    ndevices = Base.length(asset)
 
-    for i in 1:ndevices
-        if field(asset, :status) ≠ false
+    if field(asset, :status) ≠ false
+        for i in 1:length(asset)
+            sequence = view(availability, i, :)
             λ = asset.λ[i]/N
             μ = asset.μ[i]/N
             if λ ≠ 0.0 || μ ≠ 0.0
-                availability[i,:] = cycles!(rng, λ, μ, N)
-            end
+                cycles!(sequence, rng, λ, μ, N)
+            else
+
+             end
         end
+    else
+        fill!(availability, 0)
     end
 
-    return availability
+    return
     
 end
 
 ""
 function cycles!(
-    rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
+    sequence::AbstractArray{Bool}, rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
-    sequence = Array{Bool, 1}(undef, N)
     fill!(sequence, 1)
     (ttf,ttr) = T(rng,λ,μ)
     i=Int(1)
@@ -37,7 +39,8 @@ function cycles!(
         (ttf,ttr) = T(rng,λ,μ)
         if i + ttf + ttr  >= N && i + ttf < N ttr = N - ttf - i end
     end
-    return sequence
+
+    return
 
 end
 
@@ -56,29 +59,29 @@ function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
 end
 
 ""
-function initialize_availability_system!(states::SystemStates, N::Int)
-
-    v = vcat(field(states, :branches), field(states, :generators), field(states, :loads))
+function initialize_availability_system!(states::SystemStates, gens::Generators, loads::Loads, N::Int)
 
     @inbounds for t in 1:N
-        B = filter(i -> states.buses[i]==4, states.buses)
-        if check_status(view(v, :, t)) == false ||  length(B) > 0
+
+        total_gen::Float16 = gens_sum(field(gens, :pmax), filter(k -> field(states, :generators)[k,t], field(gens, :keys)))
+
+        if all(view(field(states, :branches),:,t)) == false
             states.system[t] = false
+        else
+            if sum(view(field(loads, :pd), :, t)) >= total_gen
+                states.system[t] = false
+            elseif count(view(field(states, :generators),:,t)) < length(gens) - 2
+                states.system[t] = false
+            end
+
         end
     end
+
 end
 
 ""
-function initialize_availability!(states::SystemStates, N::Int)
-
-    v = vcat(field(states, :branches), field(states, :generators))
-    #filter(field(states, :generators), field(states, :generators))
-
-    @inbounds for t in 1:N
-        if check_status(view(v, :, t)) == false
-            states.system[t] = false
-        end
-    end
+function gens_sum(v_pmax::Vector{Float16}, active_keys::Vector{Int})
+    return sum(v_pmax[i] for i in active_keys)
 end
 
 "Update asset_idxs and asset_nodes"
@@ -113,14 +116,14 @@ end
 ""
 function update_arcs!(branches::Branches, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
     
-    state = asset_states[:,t]
+    state = view(asset_states, :, t)
     @inbounds for i in eachindex(state)
 
         f_bus = field(branches, :f_bus)[i]
         t_bus = field(branches, :t_bus)[i]
 
         if state[i] == false
-            field(topology_arcs, :busarcs)[:,i] = field(topology_arcs, :empty)
+            field(topology_arcs, :busarcs)[:,i] = Array{Missing}(undef, size(field(topology_arcs, :busarcs),1))
             field(topology_arcs, :arcs_from)[i] = missing
             field(topology_arcs, :arcs_to)[i] = missing
             field(topology_arcs, :buspairs)[(f_bus, t_bus)] = missing
@@ -287,4 +290,30 @@ end
 
 #     end
 
+# end
+
+# ""
+# function initialize_availability_system!(states::SystemStates, N::Int)
+
+#     v = vcat(field(states, :branches), field(states, :generators), field(states, :loads))
+
+#     @inbounds for t in 1:N
+#         B = filter(i -> states.buses[i]==4, states.buses)
+#         if check_status(view(v, :, t)) == false ||  length(B) > 0
+#             states.system[t] = false
+#         end
+#     end
+# end
+
+# ""
+# function initialize_availability!(states::SystemStates, N::Int)
+
+#     v = vcat(field(states, :branches), field(states, :generators))
+#     #filter(field(states, :generators), field(states, :generators))
+
+#     @inbounds for t in 1:N
+#         if check_status(view(v, :, t)) == false
+#             states.system[t] = false
+#         end
+#     end
 # end

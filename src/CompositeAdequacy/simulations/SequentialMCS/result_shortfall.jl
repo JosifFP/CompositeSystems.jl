@@ -76,96 +76,47 @@ function accumulator(
 
 end
 
-# function record!(
-#     acc::SMCShortfallAccumulator,
-#     sys::SystemModel{N,L,T},
-#     #pm::AbstractPowerModel,
-#     sampleid::Int, t::Int
-# ) where {N,L,T}
-
-#     totalshortfall = 0
-#     isshortfall = false
-#     busshortfalls = 0#sol(pm, :plc)
-
-#     for r in sys.loads.keys
-
-#         busshortfall = busshortfalls[r]
-#         isbusshortfall = busshortfall > 0
-
-#         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
-#         fit!(acc.unservedload_busperiod[r,t], busshortfall)
-    
-#         if isbusshortfall
-
-#             isshortfall = true
-#             totalshortfall += busshortfall
-
-#             acc.periodsdropped_bus_currentsim[r] += 1
-#             acc.unservedload_bus_currentsim[r] += busshortfall
-
-#         end
-    
-#     end
-
-#     if isshortfall
-#         acc.periodsdropped_total_currentsim += 1
-#         acc.unservedload_total_currentsim += totalshortfall
-#     end
-
-#     fit!(acc.periodsdropped_period[t], isshortfall)
-#     fit!(acc.unservedload_period[t], totalshortfall)
-
-#     return
-
-# end
-
 function record!(
     acc::SMCShortfallAccumulator,
-    sys::SystemModel{N},
     pm::AbstractPowerModel,
-    sampleid::Int
-) where {N}
+    sampleid::Int, t::Int
+ )
 
-    for t in 1:N
+    totalshortfall = 0
+    isshortfall = false
 
-        totalshortfall = 0
-        isshortfall = false
+    for r in eachindex(acc.periodsdropped_bus)
 
-        @inbounds for r in eachindex(field(sys, :loads, :keys))
+        busshortfall = sol(pm, :plc)[r,t]
+        isbusshortfall = busshortfall > 0
 
-            busshortfall = sol(pm, :plc)[r,t]
-            isbusshortfall = busshortfall > 0
+        fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
+        fit!(acc.unservedload_busperiod[r,t], busshortfall)
     
-            fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
-            fit!(acc.unservedload_busperiod[r,t], busshortfall)
-        
-            if isbusshortfall
-    
-                isshortfall = true
-                totalshortfall += busshortfall
-    
-                acc.periodsdropped_bus_currentsim[r] += 1
-                acc.unservedload_bus_currentsim[r] += busshortfall
-    
-            end
-        
+        if isbusshortfall
+
+            isshortfall = true
+            totalshortfall += busshortfall
+            acc.periodsdropped_bus_currentsim[r] += 1
+            acc.unservedload_bus_currentsim[r] += busshortfall
+
         end
     
-        if isshortfall
-            acc.periodsdropped_total_currentsim += 1
-            acc.unservedload_total_currentsim += totalshortfall
-        end
-    
-        fit!(acc.periodsdropped_period[t], isshortfall)
-        fit!(acc.unservedload_period[t], totalshortfall)
-
     end
+
+    if isshortfall
+        acc.periodsdropped_total_currentsim += 1
+        acc.unservedload_total_currentsim += totalshortfall
+    end
+
+    fit!(acc.periodsdropped_period[t], isshortfall)
+    fit!(acc.unservedload_period[t], totalshortfall)
 
     return
 
 end
 
-
+""
 function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
 
     # Store busal / total sums for current simulation
@@ -286,3 +237,51 @@ function finalize(
         system.loads.keys, system.timestamps, p2e*acc.shortfall)
 
 end
+
+""
+# function record!(
+#     acc::SMCShortfallAccumulator,
+#     pm::AbstractPowerModel#,
+#     #sampleid::Int
+# )
+
+#     nloads = size(sol(pm, :plc), 1)
+
+#     for t in 1:N
+
+#         totalshortfall = 0
+#         isshortfall = false
+
+#         @inbounds for r in eachindex(acc.periodsdropped_bus)
+
+#             busshortfall = sol(pm, :plc)[r,t]
+#             isbusshortfall = busshortfall > 0
+    
+#             fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
+#             fit!(acc.unservedload_busperiod[r,t], busshortfall)
+        
+#             if isbusshortfall
+    
+#                 isshortfall = true
+#                 totalshortfall += busshortfall
+    
+#                 acc.periodsdropped_bus_currentsim[r] += 1
+#                 acc.unservedload_bus_currentsim[r] += busshortfall
+    
+#             end
+        
+#         end
+    
+#         if isshortfall
+#             acc.periodsdropped_total_currentsim += 1
+#             acc.unservedload_total_currentsim += totalshortfall
+#         end
+    
+#         fit!(acc.periodsdropped_period[t], isshortfall)
+#         fit!(acc.unservedload_period[t], totalshortfall)
+
+#     end
+
+#     return
+
+# end

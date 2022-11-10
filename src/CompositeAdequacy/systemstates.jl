@@ -34,22 +34,16 @@ function SystemStates(system::SystemModel{N}, ::SequentialMCS) where {N}
     end
 
     loads = Array{Bool, 2}(undef, length(system.loads), N)
-    fill!(loads, 1)
     #loads_nexttransition = Int[]
     branches = Array{Bool, 2}(undef, length(system.branches), N)
-    fill!(branches, 1)
     #branches_nexttransition = Int[]
     shunts = Array{Bool, 2}(undef, length(system.shunts), N)
-    fill!(shunts, 1)
     #shunts_nexttransition = Int[]
     generators = Array{Bool, 2}(undef, length(system.generators), N)
-    fill!(generators, 1)
     #generators_nexttransition = Int[]
     storages = Array{Bool, 2}(undef, length(system.storages), N)
-    fill!(storages, 1)
     #storages_nexttransition = Int[]
     generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
-    fill!(generatorstorages, 1)
     #generatorstorages_nexttransition = Int[]
     storages_energy = zeros(Float16, Base.length(system.storages), N)
     generatorstorages_energy = zeros(Float16, Base.length(system.generatorstorages), N)

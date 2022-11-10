@@ -66,6 +66,7 @@ struct Topology <: OptimizationContainer
 
     function Topology(system::SystemModel{N}) where {N}
 
+        #nodes = first(buses.keys):last(buses.keys)
         key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
         buses_idxs = makeidxlist(key_buses, length(system.buses))
 
