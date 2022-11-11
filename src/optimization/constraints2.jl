@@ -130,8 +130,8 @@ function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, nw::Int, f_bus
     
     va_fr = var(pm, :va, nw)[f_bus]
     va_to = var(pm, :va, nw)[t_bus]
-    @constraint(pm.model, va_fr - va_to <= angmax)
-    @constraint(pm.model, va_fr - va_to >= angmin)
+    @constraint(pm.model, va_fr - va_to in MOI.LessThan(angmax))
+    @constraint(pm.model, va_fr - va_to in MOI.GreaterThan(angmin))
 
 end
 
@@ -170,7 +170,7 @@ function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, nw::Int, f_idx
         end
 
     else
-        @constraint(pm.model, p_fr <= rate_a)
+        @constraint(pm.model, p_fr in MOI.LessThan(rate_a))
     end
 
 end
@@ -182,7 +182,7 @@ function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, nw::Int, t_idx, 
         UpperBoundRef(p_fr)
     else
         #p_to = var(pm, :p, t_idx)
-        @constraint(pm.model, var(pm, :p, nw)[t_idx] <= rate_a)
+        @constraint(pm.model, var(pm, :p, nw)[t_idx] in MOI.LessThan(rate_a))
     end
 end
 

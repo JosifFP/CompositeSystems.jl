@@ -65,6 +65,7 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_bus_voltage(pm, system, nw=t)
     var_gen_power(pm, system, states, nw=t)
     var_branch_power(pm, system, nw=t)
+    #var_branch_power(pm, system, states, nw=t)
     var_load_curtailment(pm, system, nw=t)
 
     # Add Constraints

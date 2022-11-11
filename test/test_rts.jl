@@ -28,11 +28,11 @@ PRATS.EUE.(shortfall)
 
 
 
-topo = Topology(system)
+topo = CompositeAdequacy.Topology(system)
 @time pm = CompositeAdequacy.Initialize_model(system, topo, settings)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 seed!(rng, (666, 1))
-systemstates = SystemStates(system, method)
+systemstates = CompositeAdequacy.SystemStates(system)
 initialize!(rng, systemstates, system)
 
 
@@ -42,10 +42,10 @@ field(systemstates, :generators)[7,t] = 0
 field(systemstates, :generators)[8,t] = 0
 field(systemstates, :generators)[9,t] = 0
 systemstates.system[t] = 0
-update!(pm.topology, systemstates, system, t)
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 @code_warntype CompositeAdequacy.build_method!(pm, system, t)
 CompositeAdequacy.optimize!(pm.model; ignore_optimize_hook = true)
-@code_warntype solve!(pm, system, t)
+@code_warntype CompositeAdequacy.solve!(pm, system, t)
 
 
 import PowerModels

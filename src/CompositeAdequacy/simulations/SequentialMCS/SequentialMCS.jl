@@ -52,7 +52,7 @@ function assess(
         for t in 1:N
             if systemstates.system[t] ≠ true
                 update!(pm.topology, systemstates, system, t)
-                solve!(pm, system, systemstates, t)
+                solve!(pm, system, t)
                 empty!(pm.model)
             end
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
@@ -87,6 +87,10 @@ end
 function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
 
     update_idxs!(
+        filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
+        topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
+
+    update_idxs!(
         filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
         topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
 
@@ -105,6 +109,16 @@ function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemState
     build_result!(pm, system, t)
     #GC.gc()
 end
+
+""
+function solve!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+
+    build_method!(pm, system, t)
+    optimize_method!(pm.model)
+    build_result!(pm, system, t)
+    #GC.gc()
+end
+
 
 
 #update_energy!(states.stors_energy, system.storages, t)

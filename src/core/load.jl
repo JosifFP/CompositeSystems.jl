@@ -1,13 +1,14 @@
 """
 Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
-function SystemModel(RawFile::String)
+function SystemModel(RawFile::String, ReliabilityFile::String)
 
     #load network data
     network = BuildNetwork(RawFile)
-    SParametrics = StaticParameters{1,1,Hour}(nothing, nothing)
-    get!(network, :timeseries_load, Dict{Int64, Vector{Float16}}())
-
+    reliability_data = parse_reliability_data(ReliabilityFile)
+    SParametrics = StaticParameters{1,1,Hour}()
+    get!(network, :timeseries_load, "")
+    _merge_prats_data!(network, reliability_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
@@ -20,7 +21,6 @@ function SystemModel(RawFile::String, ReliabilityFile::String, TimeSeriesFile::S
     reliability_data = parse_reliability_data(ReliabilityFile)
     timeseries_data, SParametrics = extract_timeseriesload(TimeSeriesFile)
     merge_prats_data!(network, reliability_data, timeseries_data, SParametrics)
-
     return _SystemModel(network, SParametrics)
 
 end
@@ -32,10 +32,10 @@ function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::
     network = BuildNetwork(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
     merge_prats_data!(network, reliability_data, timeseries_data, SParametrics)
-
     return _SystemModel(network, SParametrics)
 
 end
+
 
 ""
 function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
@@ -134,14 +134,14 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
         if isempty(network[:timeseries_load])
 
-        loads = Loads{N,L,T}(
-            data["index"], 
-            data["load_bus"], 
-            data["pd"], 
-            data["qd"], 
-            data["cost"],
-            data["status"]
-        )
+            loads = Loads{N,L,T}(
+                data["index"], 
+                data["load_bus"], 
+                data["pd"], 
+                data["qd"], 
+                data["cost"],
+                data["status"]
+            )
 
         else
             timeseries_load::Dict{Int64, Vector{Float16}} = network[:timeseries_load]

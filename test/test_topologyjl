@@ -18,7 +18,7 @@ nl_solver = optimizer_with_attributes(
 optimizer = optimizer_with_attributes(Juniper.Optimizer, "nl_solver"=>nl_solver, "atol"=>1e-2, "log_levels"=>[], "threads"=>1)
 
 system = BaseModule.SystemModel(RawFile)
-systemstates = SystemStates(system, method)
+systemstates = SystemStates(system)
 field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 method = SequentialMCS(samples=1, seed=321, threaded=false)
 pm = CompositeAdequacy.Initialize_model(system, method, settings)
@@ -31,8 +31,8 @@ field(systemstates, :generators)[8,t] = 0
 field(systemstates, :generators)[9,t] = 0
 field(systemstates, :branches)[1,t] = 0
 systemstates.system[t] = 0
-update!(pm.topology, systemstates, system, t)
-solve!(pm, system, t)
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+CompositeAdequacy.solve!(pm, system, t)
 
 
 
@@ -59,7 +59,7 @@ solve!(pm, system, t)
     i_bus_generatorstorages = deepcopy(pm.topology.generatorstorages_nodes)
     i_plc = deepcopy(pm.topology.plc)
 
-    systemstates = SystemStates(system, method)
+    systemstates = SystemStates(system)
     field(systemstates, :branches)[3,t] = 0
     field(systemstates, :branches)[4,t] = 0
     field(systemstates, :branches)[8,t] = 0
@@ -68,11 +68,11 @@ solve!(pm, system, t)
     field(systemstates, :generators)[8,t] = 0
     field(systemstates, :generators)[11,t] = 0
     systemstates.system[t] = 0
-    update!(pm.topology, systemstates, system, t)
+    CompositeAdequacy.update!(pm.topology, systemstates, system, t)
 
     t=1
-    systemstates = SystemStates(system, method)
-    update!(pm.topology, systemstates, system, t)
+    systemstates = SystemStates(system)
+    CompositeAdequacy.update!(pm.topology, systemstates, system, t)
     f_topology_system = CompositeAdequacy.Topology(system)
     f_topology_pm = deepcopy(pm.topology)
 

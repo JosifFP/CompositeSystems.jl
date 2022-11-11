@@ -4,7 +4,7 @@ To be improved/enhanced.
 """
 struct StaticParameters{N,L,T}
     timestamps::StepRange{ZonedDateTime,T}
-    function StaticParameters{N,L,T}(start_timestamp::Union{Nothing, DateTime}=nothing, timezone::Union{Nothing, String}=nothing) where {N,L,T<:Period}
+    function StaticParameters{N,L,T}(;start_timestamp::Union{Nothing, DateTime}=nothing, timezone::Union{Nothing, String}=nothing) where {N,L,T<:Period}
 
         if isnothing(start_timestamp) && isnothing(timezone)
             @warn "No time zone data provided - defaulting to UTC. To specify a " *
@@ -226,6 +226,12 @@ end
 function merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float16}}, SP::StaticParameters{N}) where {N}
 
     get!(network, :timeseries_load, timeseries_data)
+    return _merge_prats_data!(network, reliability_data, SP)
+
+end
+
+"Returns network data container with reliability_data and timeseries_data merged"
+function _merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, SP::StaticParameters{N}) where {N}
 
     for (k,v) in network[:gen]
         i = string(k)
@@ -293,7 +299,7 @@ function extract_timeseriesload(file::String)
     L::Int = dict_core[:timestep_length][1]
     start_timestamp::DateTime = dict_core[:start_timestamp][1]
     timezone::String = dict_core[:timezone][1]
-    SP = StaticParameters{N,L,T}(start_timestamp, timezone)
+    SP = StaticParameters{N,L,T}(start_timestamp=start_timestamp, timezone=timezone)
 
     return dict_timeseries, SP
 
