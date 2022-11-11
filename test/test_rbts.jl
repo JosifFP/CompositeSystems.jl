@@ -18,54 +18,42 @@ settings = PRATS.Settings(
     ipopt_optimizer_3,
     modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"
 )
-method = SequentialMCS(samples=8, seed=1, threaded=false)
+method = SequentialMCS(samples=20, seed=1, threaded=false)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)
 
-
-
-import Ipopt
-add_constrs!()
-
-
-
-
-
-
-
-
-
-
+system.shunts
+using JuMP
 
 
 topo = CompositeAdequacy.Topology(system)
 pm = CompositeAdequacy.Initialize_model(system, topo, settings)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 CompositeAdequacy.seed!(rng, (666, 1))
-states = SystemStates(system, method)
-CompositeAdequacy.initialize!(rng, states, system)
-@code_warntype 
-@code_warntype 
-@code_warntype 
+systemstates = SystemStates(system, method)
+CompositeAdequacy.initialize!(rng, systemstates, system)
+#@code_warntype 
 
 
-using Ipopt
-IpoptNLSolver()
-
-
-t=1
+t=2
 field(systemstates, :generators)[3,t] = 0
 field(systemstates, :generators)[7,t] = 0
 field(systemstates, :generators)[8,t] = 0
 field(systemstates, :generators)[9,t] = 0
 systemstates.system[t] = 0
-update!(pm.topology, systemstates, system, t)
-@code_warntype CompositeAdequacy.build_method!(pm, system, t)
-CompositeAdequacy.optimize!(pm.model; ignore_optimize_hook = true)
-@code_warntype solve!(pm, system, t)
+CompositeAdequacy.update!(pm.topology, systemstates, system, t)
+CompositeAdequacy.build_method!(pm, system, t)
+CompositeAdequacy.optimize_method!(pm.model)
+
+x = JuMP.all_variables(pm.model)
+x_solution = JuMP.value.(x)
+@show JuMP.set_start_value.(x, x_solution)
+
+pm.model
+
 
 
 import PowerModels
@@ -93,3 +81,7 @@ pm.topology.generators_nodes
 pm.topology.storages_nodes
 pm.topology.generatorstorages_nodes
 @show pm.topology.arcs.buspairs
+
+
+using Ipopt
+IpoptNLSolver()

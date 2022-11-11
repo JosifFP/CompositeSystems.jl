@@ -60,6 +60,35 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
 end
 
 ""
+function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
+    # Add Optimization and State Variables
+    var_bus_voltage(pm, system, nw=t)
+    var_gen_power(pm, system, states, nw=t)
+    var_branch_power(pm, system, nw=t)
+    var_load_curtailment(pm, system, nw=t)
+
+    # Add Constraints
+    # ---------------
+    for i in field(system, :ref_buses)
+        constraint_theta_ref(pm, i, nw=t)
+    end
+
+    for i in assetgrouplist(topology(pm, :buses_idxs))
+        constraint_power_balance(pm, system, i, nw=t)
+    end
+
+    for i in assetgrouplist(topology(pm, :branches_idxs))
+        constraint_ohms_yt(pm, system, i, nw=t)
+        constraint_voltage_angle_diff(pm, system, i, nw=t)
+        #constraint_thermal_limits(pm, system, i, t)
+    end
+
+    objective_min_load_curtailment(pm, system, nw=t)
+    return
+
+end
+
+""
 function build_opf!(pm::PM_AbstractDCPModel, system::SystemModel, t)
     # Add Optimization and State Variables
     var_bus_voltage(pm, system, nw=t)

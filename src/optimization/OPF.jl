@@ -35,7 +35,7 @@
         OptimizationContainer, Topology, DatasetContainer,
 
         #reexports
-        PowerModels, reset_optimizer, MOI, MOIU
+        PowerModels, reset_optimizer, MOI, MOIU, JuMP
 
     #
 

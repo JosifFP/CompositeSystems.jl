@@ -23,7 +23,7 @@
         VoltageUnit, kV,
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
-        SystemModel,
+        SystemModel, SystemStates,
         #utils
         assetgrouplist, makeidxlist, field, extract_timeseriesload, BuildNetwork
     #
@@ -34,6 +34,7 @@
     include("SystemModel.jl")
     include("utils.jl")
     include("load.jl")
+    include("systemstates.jl")
     include("BuildNetwork/FileGenerator.jl")
 
 end

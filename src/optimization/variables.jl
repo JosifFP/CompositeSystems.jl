@@ -34,9 +34,16 @@ function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel
 
 end
 
+
 ""
 function var_gen_power(pm::AbstractPowerModel, system::SystemModel; kwargs...)
     var_gen_power_real(pm, system; kwargs...)
+    var_gen_power_imaginary(pm, system; kwargs...)
+end
+
+""
+function var_gen_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; kwargs...)
+    var_gen_power_real(pm, system, states; kwargs...)
     var_gen_power_imaginary(pm, system; kwargs...)
 end
 
@@ -47,10 +54,20 @@ function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int
 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
-            set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
+            set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*t)
             set_lower_bound(pg[l], 0.0001)
         end
     end
+
+end
+
+""
+function var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates; nw::Int=1, bounded::Bool=true, report::Bool=false)
+    
+    var(pm, :pg)[nw] = @variable(pm.model, [l in assetgrouplist(topology(pm, :generators_idxs))],
+    lower_bound = min(0, field(system, :generators, :pmin)[l]*field(states, :generators)[l,nw]),
+    upper_bound = field(system, :generators, :pmax)[l]*field(states, :generators)[l,nw]
+    )
 
 end
 

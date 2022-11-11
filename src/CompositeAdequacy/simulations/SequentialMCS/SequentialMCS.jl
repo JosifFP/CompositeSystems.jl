@@ -36,7 +36,7 @@ function assess(
 ) where {N}
 
     topology = Topology(system)
-    systemstates = SystemStates(system, method)
+    systemstates = SystemStates(system)
     pm = Initialize_model(system, topology, settings)
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
@@ -52,7 +52,7 @@ function assess(
         for t in 1:N
             if systemstates.system[t] ≠ true
                 update!(pm.topology, systemstates, system, t)
-                solve!(pm, system, t)
+                solve!(pm, system, systemstates, t)
                 empty!(pm.model)
             end
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
@@ -61,6 +61,7 @@ function assess(
         #foreach(recorder -> record!(recorder, system, pm, s), recorders)
         foreach(recorder -> reset!(recorder, s), recorders)
         empty_model!(system, pm, settings)
+        GC.gc()
     end
 
     put!(results, recorders)
@@ -85,6 +86,37 @@ end
 ""
 function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
 
+    update_idxs!(
+        filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
+        topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
+
+    update_branch_idxs!(
+        field(system, :branches), topology.branches_idxs, topology.arcs, field(system, :arcs), field(states, :branches), t)       
+
+    return
+
+end
+
+""
+function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    build_method!(pm, system, states, t)
+    optimize_method!(pm.model)
+    build_result!(pm, system, t)
+    #GC.gc()
+end
+
+
+#update_energy!(states.stors_energy, system.storages, t)
+#update_energy!(states.genstors_energy, system.generatorstorages, t)
+
+#include("result_report.jl")
+include("result_shortfall.jl")
+
+
+""
+#function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
+
     #update_idxs!(
     #    filter(i->states.buses[i]!= 4,field(system, :buses, :keys)), topology(pm, :buses_idxs))
 
@@ -92,16 +124,16 @@ function update!(topology::Topology, states::SystemStates, system::SystemModel, 
     #    filter(i->field(states, :loads, i, t), field(system, :loads, :keys)), 
     #    topology(pm, :loads_idxs), topology(pm, :loads_nodes), field(system, :loads, :buses))
 
-    update_idxs!(
-        filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
-        topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
+    # update_idxs!(
+    #     filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
+    #     topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
 
-    update_idxs!(
-        filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
-        topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
+    #update_idxs!(
+    #    filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
+    #    topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
 
-    update_branch_idxs!(
-        field(system, :branches), topology.branches_idxs, topology.arcs, field(system, :arcs), field(states, :branches), t)    
+    # update_branch_idxs!(
+    #     field(system, :branches), topology.branches_idxs, topology.arcs, field(system, :arcs), field(states, :branches), t)    
 
     #update_idxs!(
     #    filter(i->field(states, :storages, i, t), field(system, :storages, :keys)),
@@ -111,24 +143,6 @@ function update!(topology::Topology, states::SystemStates, system::SystemModel, 
     #    filter(i->field(states, :generatorstorages, i, t), field(system, :generatorstorages, :keys)), 
     #    topology(pm, :generatorstorages_idxs), topology(pm, :generatorstorages_nodes), field(system, :generatorstorages, :buses))    
 
-    return
+    #return
 
-end
-
-""
-function solve!(pm::AbstractPowerModel, system::SystemModel, t::Int)
-
-    build_method!(pm, system, t)
-    optimize_method!(pm.model)
-    build_result!(pm, system, t)
-    GC.gc()
-    return
-
-end
-
-
-#update_energy!(states.stors_energy, system.storages, t)
-#update_energy!(states.genstors_energy, system.generatorstorages, t)
-
-#include("result_report.jl")
-include("result_shortfall.jl")
+#end

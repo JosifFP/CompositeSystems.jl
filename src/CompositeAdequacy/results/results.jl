@@ -26,8 +26,8 @@ function finalize(
     for _ in 2:threads
         thread_result = take!(results)
         merge!(total_result, thread_result)
+        #GC.gc()
     end
-
     close(results)
 
     return finalize.(total_result, system)

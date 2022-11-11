@@ -26,8 +26,7 @@
         ReliabilityMetric, LOLE, EUE, val, stderror,
 
         # Simulation specification
-        SequentialMCS, NonSequentialMCS, PreContingencies,
-        SystemStates, accumulator,
+        SequentialMCS, NonSequentialMCS, PreContingencies, accumulator,
 
         # Result specifications
         Shortfall, ShortfallSamples,
@@ -41,7 +40,6 @@
 
     include("statistics.jl")
     include("types.jl")
-    include("systemstates.jl")
     include("results/results.jl")
     include("simulations/simulations.jl")
     include("utils.jl")

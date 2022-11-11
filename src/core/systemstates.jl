@@ -22,7 +22,7 @@ struct SystemStates <: AbstractState
 end
 
 "SystemStates structure for Sequential MCS"
-function SystemStates(system::SystemModel{N}, ::SequentialMCS) where {N}
+function SystemStates(system::SystemModel{N}; sequential::Bool=true) where {N}
 
     bus_type = field(system, :buses, :bus_type)
     buses = Array{Int, 2}(undef, length(system.buses), N)
