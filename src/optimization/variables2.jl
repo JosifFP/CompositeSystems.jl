@@ -34,8 +34,8 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, st
 
     if bounded
         for (l,i,j) in arcs
-            set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
-            set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
+            set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,nw])
+            set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,nw])
         end
     end
 

@@ -46,6 +46,28 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw:
         sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
         + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
     )
+
+
+    exp = @expression(pm.model,
+        sum(pg[g] for g in bus_gens)
+        + sum(plc[m] for m in loads_nodes)
+        - sum(p[a] for a in bus_arcs)
+    )
+
+    @constraint(pm.model,
+        sum(pg[g] for g in bus_gens)
+        + sum(plc[m] for m in loads_nodes)
+        - sum(p[a] for a in bus_arcs)
+        #- sum(ps[s] for s in bus_storage)
+        #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
+        #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
+        ==
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
+        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
+    )
+
+
+
 end
 
 ""

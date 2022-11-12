@@ -11,6 +11,7 @@ using Test
 @testset "Contingency Solver: split network situations" begin
     PRATS.silence()
     include("test_opf.jl")
+    include("test_opf2.jl")
 end;
 
 

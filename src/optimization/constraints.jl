@@ -1,7 +1,7 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=0)
-    @constraint(pm.model, var(pm, :va, nw)[i] == 0, container = Array)
-    #fix(var(pm, :va, nw)[i], 0, force = true)
+    #@constraint(pm.model, var(pm, :va, nw)[i] == 0, container = Array)
+    fix(var(pm, :va, nw)[i], 0, force = true)
 end
 
 "nothing to do, no voltage angle variables"
@@ -35,13 +35,16 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw:
     #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
     #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
-    @constraint(pm.model,
+    exp = @expression(pm.model,
         sum(pg[g] for g in bus_gens)
         + sum(plc[m] for m in loads_nodes)
         - sum(p[a] for a in bus_arcs)
-        #- sum(ps[s] for s in bus_storage)
-        #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
-        #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
+    )
+
+    JuMP.drop_zeros!(exp)
+
+    @constraint(pm.model,
+        exp
         ==
         sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
         + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2

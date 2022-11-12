@@ -88,17 +88,7 @@ end
 
 ""
 function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
-
-    update_idxs!(
-        filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
-        topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
-
-    update_idxs!(
-        filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
-        topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
-
-    update_branch_idxs!(
-        field(system, :branches), topology.branches_idxs, topology.arcs, field(system, :arcs), field(states, :branches), t)       
+     
 
     return
 
