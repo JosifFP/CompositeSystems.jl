@@ -73,7 +73,7 @@ CompositeAdequacy.solve!(pm, system, t)
     t=1
     systemstates = SystemStates(system)
     CompositeAdequacy.update!(pm.topology, systemstates, system, t)
-    f_topology_system = CompositeAdequacy.Topology(system)
+    f_topology_system = OPF.Topology(system)
     f_topology_pm = deepcopy(pm.topology)
 
     f_buses_idxs = pm.topology.buses_idxs

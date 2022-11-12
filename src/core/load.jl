@@ -182,10 +182,9 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
     _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
-    arcs = Arcs(branches, buses.keys, length(buses), length(branches))
     ref_buses = slack_buses(buses)
 
-    return SystemModel(loads, generators, storages, generatorstorages, buses, branches, shunts, arcs, ref_buses, baseMVA, SParametrics.timestamps)
+    return SystemModel(loads, generators, storages, generatorstorages, buses, branches, shunts, ref_buses, baseMVA, SParametrics.timestamps)
     
 end
 

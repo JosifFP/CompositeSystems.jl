@@ -43,89 +43,85 @@ struct DatasetContainer{T} <: OptimizationContainer
     end
 end
 
-"""
-Topology Container: a OptimizationContainer for some duplicated data input from SystemModel structure 
-but stored in lightweight vectors that can be mutated and filtered out when a topology change is detected.
-"""
-struct Topology <: OptimizationContainer
+"Topology"
+struct Topology
 
-    buses_idxs::Vector{UnitRange{Int}}
-    loads_idxs::Vector{UnitRange{Int}}
-    branches_idxs::Vector{UnitRange{Int}}
-    shunts_idxs::Vector{UnitRange{Int}}
-    generators_idxs::Vector{UnitRange{Int}}
-    storages_idxs::Vector{UnitRange{Int}}
-    generatorstorages_idxs::Vector{UnitRange{Int}}
     loads_nodes::Dict{Int, Vector{Int}}
     shunts_nodes::Dict{Int, Vector{Int}}
     generators_nodes::Dict{Int, Vector{Int}}
     storages_nodes::Dict{Int, Vector{Int}}
     generatorstorages_nodes::Dict{Int, Vector{Int}}
-    arcs::Arcs
-
+    arcs_from::Vector{Tuple{Int, Int, Int}}
+    arcs_to::Vector{Tuple{Int, Int, Int}}
+    arcs::Vector{Tuple{Int, Int, Int}}
+    busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
+    buspairs::Dict{Tuple{Int, Int}, Vector{Float16}}
 
     function Topology(system::SystemModel{N}) where {N}
 
-        #nodes = first(buses.keys):last(buses.keys)
         key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
-        buses_idxs = makeidxlist(key_buses, length(system.buses))
 
         key_loads = filter(i->field(system, :loads, :status)[i], field(system, :loads, :keys))
-        loads_idxs = makeidxlist(key_loads, length(system.loads))
         tmp = Dict((i, Int[]) for i in key_buses)
         loads_nodes = bus_asset!(tmp, key_loads, field(system, :loads, :buses))
 
         key_shunts = filter(i->field(system, :shunts, :status)[i], field(system, :shunts, :keys))
-        shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
         tmp = Dict((i, Int[]) for i in key_buses)
         shunts_nodes = bus_asset!(tmp, key_shunts, field(system, :shunts, :buses))
 
         key_generators = filter(i->field(system, :generators, :status)[i], field(system, :generators, :keys))
-        generators_idxs = makeidxlist(key_generators, length(system.generators))
         tmp = Dict((i, Int[]) for i in key_buses)
         generators_nodes = bus_asset!(tmp, key_generators, field(system, :generators, :buses))
 
         key_storages = filter(i->field(system, :storages, :status)[i], field(system, :storages, :keys))
-        storages_idxs = makeidxlist(key_storages, length(system.storages))
         tmp = Dict((i, Int[]) for i in key_buses)
         storages_nodes = bus_asset!(tmp, key_storages, field(system, :storages, :buses))
 
         key_generatorstorages = filter(i->field(system, :generatorstorages, :status)[i], field(system, :generatorstorages, :keys))
-        generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
         tmp = Dict((i, Int[]) for i in key_buses)
         generatorstorages_nodes = bus_asset!(tmp, key_generatorstorages, field(system, :generatorstorages, :buses))
 
-        key_branches = filter(i->field(system, :branches, :status)[i], field(system, :branches, :keys))
-        branches_idxs = makeidxlist(key_branches, length(system.branches))
+        Nodes = length(system.buses)
+        Edges = length(system.branches)
 
-        arcs = deepcopy(field(system, :arcs))
+        A = Array{Union{Missing,Tuple{Int,Int,Int}}, 2}(undef, Nodes, Edges)
 
-        return new(
-            buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
-            branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
-            generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
-            generatorstorages_idxs::Vector{UnitRange{Int}}, loads_nodes, shunts_nodes, 
-            generators_nodes, storages_nodes, generatorstorages_nodes, arcs)
+        f_bus = field(system, :branches, :f_bus)
+        t_bus = field(system, :branches, :t_bus)
+        keys = field(system, :branches, :keys)
+
+        for j in keys
+            for i in field(system, :branches, :keys)
+                if f_bus[j]==i
+                    A[i,j] = (j, f_bus[j], t_bus[j])
+                elseif t_bus[j]==i
+                    A[i,j] = (j, t_bus[j], f_bus[j])
+                end
+            end
+        end
+
+        arcs_from = filter(i -> i[2] < i[3], skipmissing(A))
+        arcs_to = filter(i -> i[2] > i[3], skipmissing(A))
+        arcs = [arcs_from; arcs_to]
+
+        buspairs = calc_buspair_parameters(field(system, :branches), keys)   
+
+        return new(loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, arcs_from, arcs_to, arcs, A, buspairs)
     end
 
 end
 
 Base.:(==)(x::T, y::T) where {T <: Topology} =
-    x.buses_idxs == y.buses_idxs &&
-    x.loads_idxs == y.loads_idxs &&
-    x.shunts_idxs == y.shunts_idxs &&
-    x.generators_idxs == y.generators_idxs &&
-    x.storages_idxs == y.storages_idxs &&
-    x.generatorstorages_idxs == y.generatorstorages_idxs &&
-    x.nodes == y.nodes &&
     x.loads_nodes == y.loads_nodes &&
     x.shunts_nodes == y.shunts_nodes &&
     x.generators_nodes == y.generators_nodes &&
     x.storages_nodes == y.storages_nodes &&
     x.generatorstorages_nodes == y.generatorstorages_nodes &&
+    x.busarcs == y.busarcs &&
+    x.arcs_from == y.arcs_from &&
+    x.arcs_to == y.arcs_to &&
     x.arcs == y.arcs &&
-    x.plc == y.plc
-#
+    x.buspairs == y.buspairs
 
 ""
 struct DCPPowerModel <: AbstractDCPModel

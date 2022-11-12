@@ -15,7 +15,7 @@
 
     export
         # System assets
-        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, Arcs, StaticParameters,
+        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, StaticParameters,
         # Units
         Period, Minute, Hour, Day, Year,
         PowerUnit, kW, MW, GW, TW,
@@ -27,7 +27,7 @@
         #utils
         assetgrouplist, makeidxlist, field, extract_timeseriesload, BuildNetwork
     #
-
+ 
     include("SystemModel/units.jl")
     include("SystemModel/assets.jl")
     include("SystemModel/utils.jl")
@@ -35,6 +35,5 @@
     include("utils.jl")
     include("load.jl")
     include("systemstates.jl")
-    include("BuildNetwork/FileGenerator.jl")
 
 end

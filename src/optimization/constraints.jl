@@ -1,6 +1,5 @@
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=0)
-    #@constraint(pm.model, var(pm, :va, nw)[i] == 0, container = Array)
     fix(var(pm, :va, nw)[i], 0, force = true)
 end
 
@@ -11,17 +10,10 @@ end
 "Nodal power balance constraints"
 function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
-    bus_arcs = filter(!ismissing, skipmissing(topology(pm, :arcs, :busarcs)[i,:]))
+    bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i,:]))
     bus_gens = topology(pm, :generators_nodes)[i]
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
-    #bus_storage = assetgrouplist(field(pm, :bus_storage))[i]
-
-#    bus_pd = Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-#    bus_qd = Float16.([field(system, :loads, :qd)[k] for k in loads_nodes])
-#    bus_gs = Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
-#    bus_bs = Float16.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
-
     _constraint_power_balance(pm, system, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 end
 
@@ -31,9 +23,6 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw:
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
     plc   = var(pm, :plc, nw)
-    #ps   = get(var(pm), :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
-    #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
-    #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
 
     exp = @expression(pm.model,
         sum(pg[g] for g in bus_gens)
@@ -51,26 +40,6 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw:
     )
 end
 
-""
-function _constraint_power_balance(pm::PM_AbstractDCPModel, system::SystemModel, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
-
-    p    = var(pm, :p, nw)
-    pg   = var(pm, :pg, nw)
-    #ps   = get(var(pm), :ps, Dict()); _check_var_keys(ps, bus_storage, "active power", "storage")
-    #psw  = get(var(pm), :psw, Dict()); _check_var_keys(psw, bus_arcs_sw, "active power", "switch")
-    #p_dc = get(var(pm), :p_dc, Dict()); _check_var_keys(p_dc, bus_arcs_dc, "active power", "dcline")
-
-    @constraint(pm.model,
-        sum(pg[g] for g in bus_gens)
-        - sum(p[a] for a in bus_arcs)
-        #- sum(ps[s] for s in bus_storage)
-        #- sum(p_dc[a_dc] for a_dc in bus_arcs_dc)
-        #- sum(psw[a_sw] for a_sw in bus_arcs_sw)
-        ==
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
-        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
-    )
-end
 
 "Branch - Ohm's Law Constraints"
 function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
@@ -115,7 +84,7 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
 
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
-    buspair = topology(pm, :arcs, :buspairs)[(f_bus, t_bus)]
+    buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
     
     if !ismissing(buspair)
     #if !ismissing(buspair) && Int(buspair[1]) == i

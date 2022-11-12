@@ -58,10 +58,9 @@ function assess(
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
 
-        #foreach(recorder -> record!(recorder, system, pm, s), recorders)
         foreach(recorder -> reset!(recorder, s), recorders)
         empty_model!(system, pm, settings)
-        GC.gc()
+        #GC.gc()
     end
 
     put!(results, recorders)
@@ -89,16 +88,6 @@ end
 ""
 function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
 
-    update_idxs!(
-        filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
-        topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
-
-    update_idxs!(
-        filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
-        topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
-
-    update_branch_idxs!(
-        field(system, :branches), topology.branches_idxs, topology.arcs, field(system, :arcs), field(states, :branches), t)       
 
     return
 
@@ -113,15 +102,6 @@ function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemState
     #GC.gc()
 end
 
-""
-function solve!(pm::AbstractPowerModel, system::SystemModel, t::Int)
-
-    build_method!(pm, system, t)
-    optimize_method!(pm.model)
-    build_result!(pm, system, t)
-    #GC.gc()
-end
-
 
 
 #update_energy!(states.stors_energy, system.storages, t)
@@ -129,37 +109,3 @@ end
 
 #include("result_report.jl")
 include("result_shortfall.jl")
-
-
-""
-#function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
-
-    #update_idxs!(
-    #    filter(i->states.buses[i]!= 4,field(system, :buses, :keys)), topology(pm, :buses_idxs))
-
-    #update_idxs!(
-    #    filter(i->field(states, :loads, i, t), field(system, :loads, :keys)), 
-    #    topology(pm, :loads_idxs), topology(pm, :loads_nodes), field(system, :loads, :buses))
-
-    # update_idxs!(
-    #     filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
-    #     topology.shunts_idxs, topology.shunts_nodes, field(system, :shunts, :buses))    
-
-    #update_idxs!(
-    #    filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
-    #    topology.generators_idxs, field(topology, :generators_nodes), field(system, :generators, :buses))
-
-    # update_branch_idxs!(
-    #     field(system, :branches), topology.branches_idxs, topology.arcs, field(system, :arcs), field(states, :branches), t)    
-
-    #update_idxs!(
-    #    filter(i->field(states, :storages, i, t), field(system, :storages, :keys)),
-    #    topology(pm, :storages_idxs), topology(pm, :storages_nodes), field(system, :storages, :buses))
-
-    #update_idxs!(
-    #    filter(i->field(states, :generatorstorages, i, t), field(system, :generatorstorages, :keys)), 
-    #    topology(pm, :generatorstorages_idxs), topology(pm, :generatorstorages_nodes), field(system, :generatorstorages, :buses))    
-
-    #return
-
-#end

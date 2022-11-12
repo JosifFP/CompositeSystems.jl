@@ -1,3 +1,27 @@
+"maps component types to status parameters"
+const pm_component_status = Dict(
+    "bus" => "bus_type",
+    "load" => "status",
+    "shunt" => "status",
+    "gen" => "gen_status",
+    "storage" => "status",
+    "switch" => "status",
+    "branch" => "br_status",
+    "dcline" => "br_status",
+)
+
+"maps component types to inactive status values"
+const pm_component_status_inactive = Dict(
+    "bus" => 4,
+    "load" => 0,
+    "shunt" => 0,
+    "gen" => 0,
+    "storage" => 0,
+    "switch" => 0,
+    "branch" => 0,
+    "dcline" => 0,
+)
+
 BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
 BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
 BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
@@ -32,15 +56,22 @@ function JumpModel(modelmode::JuMP.ModelMode, optimizer)
 end
 
 "Constructor for an AbstractPowerModel modeling object"
-function Initialize_model(system::SystemModel{N}, topology::Topology, settings::Settings) where {N}
+function Initialize_model(system::SystemModel{N}, topology::Topology, settings::Settings; timeseries=false) where {N}
     
     model = JumpModel(field(settings, :modelmode), deepcopy(field(settings, :optimizer)))
     
     var = DatasetContainer{AbstractArray}()
-    add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
-    add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
-    add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
-    add_object_container!(var, :p, field(system, :arcs, :arcs), timesteps = 1:N)
+    if timeseries == false
+        add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+        add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
+        add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
+        add_object_container!(var, :p, field(topology, :arcs), timesteps = 1:N)
+    else
+        add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:1)
+        add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:1)
+        add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:1)
+        add_object_container!(var, :p, field(topology, :arcs), timesteps = 1:1)
+    end
 
     sol = DatasetContainer{Matrix{Float64}}()
     add_object_container!(sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
@@ -58,20 +89,11 @@ function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings
     reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
     reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
     reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :p), field(system, :arcs, :arcs), timesteps=1:N)
+    reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
     fill!(sol(pm, :plc), 0.0)
 
     return
 end
-
-""
-function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_assets::Vector{Int})
-    for k in key_assets
-        push!(tmp[bus_assets[k]], k)
-    end
-    return tmp
-end
-
 
 ""
 function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}) where {T <: Matrix{Float64}}
@@ -91,7 +113,7 @@ function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, 
 end
 
 ""
-function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
+function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
     var_container = container_spec(value, timesteps)
@@ -139,7 +161,7 @@ end
 
 
 ""
-function reset_object_container!(container::DenseAxisArray{T}, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}) where {T <: Dict}
+function reset_object_container!(container::DenseAxisArray{T}, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}) where {T <: Dict}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
 
@@ -180,31 +202,6 @@ function type(pmodel::String)
     return apm
 end
 
-"maps component types to status parameters"
-const pm_component_status = Dict(
-    "bus" => "bus_type",
-    "load" => "status",
-    "shunt" => "status",
-    "gen" => "gen_status",
-    "storage" => "status",
-    "switch" => "status",
-    "branch" => "br_status",
-    "dcline" => "br_status",
-)
-
-"maps component types to inactive status values"
-const pm_component_status_inactive = Dict(
-    "bus" => 4,
-    "load" => 0,
-    "shunt" => 0,
-    "gen" => 0,
-    "storage" => 0,
-    "switch" => 0,
-    "branch" => 0,
-    "dcline" => 0,
-)
-
-
 """
 computes the connected components of the network graph
 returns a set of sets of bus ids, each set is a connected component
@@ -237,6 +234,92 @@ function calc_connected_components(pm::AbstractPowerModel, branches::Branches)
     return ccs
     
 end
+
+""
+function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
+ 
+    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+    
+    for l in branch_lookup
+        i = branches.f_bus[l]
+        j = branches.t_bus[l]
+        bp_angmin[(i,j)] = Float16(max(bp_angmin[(i,j)], branches.angmin[l]))
+        bp_angmax[(i,j)] = Float16(min(bp_angmax[(i,j)], branches.angmax[l]))
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    end
+    
+    buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
+        #"tap"=>Float16(branches.tap[bp_branch[(i,j)]]),
+        #"vm_fr_min"=>Float16(field(buses, :vmin)[i]),
+        #"vm_fr_max"=>Float16(field(buses, :vmax)[i]),
+        #"vm_to_min"=>Float16(field(buses, :vmin)[j]),
+        #"vm_to_max"=>Float16(field(buses, :vmax)[j]),
+    
+    # add optional parameters
+    #for bp in buspair_indexes
+    #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
+    #end
+    
+    return buspairs
+
+end
+
+"compute bus pair level data, can be run on data or ref data structures"
+function calc_buspair_parameters(buses, branches)
+
+    bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
+    branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 && 
+        haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
+    buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+
+    for (l,branch) in branch_lookup
+        i = branch["f_bus"]
+        j = branch["t_bus"]
+        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
+        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    end
+
+    buspairs = Dict((i,j) => Dict(
+        "branch"=>bp_branch[(i,j)],
+        "angmin"=>bp_angmin[(i,j)],
+        "angmax"=>bp_angmax[(i,j)],
+        "tap"=>branch_lookup[bp_branch[(i,j)]]["tap"],
+        #"vm_fr_min"=>bus_lookup[i]["vmin"],
+        #"vm_fr_max"=>bus_lookup[i]["vmax"],
+        #"vm_to_min"=>bus_lookup[j]["vmin"],
+        #"vm_to_max"=>bus_lookup[j]["vmax"]
+        ) for (i,j) in buspair_indexes
+    )
+
+    # add optional parameters
+    for bp in buspair_indexes
+        branch = branch_lookup[bp_branch[bp]]
+        if haskey(branch, "rate_a")
+            buspairs[bp]["rate_a"] = branch["rate_a"]
+        end
+        if haskey(branch, "c_rating_a")
+            buspairs[bp]["c_rating_a"] = branch["c_rating_a"]
+        end
+    end
+
+    return buspairs
+end
+
+""
+function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_assets::Vector{Int})
+    for k in key_assets
+        push!(tmp[bus_assets[k]], k)
+    end
+    return tmp
+end
+
 
 
 #"garbage-----------------------------------------------------------------------------------------------------------------"
