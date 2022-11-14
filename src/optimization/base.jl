@@ -129,15 +129,17 @@ struct DCPPowerModel <: AbstractDCPModel
     model::AbstractModel
     topology::Topology
     var::DatasetContainer
+    con::DatasetContainer
     sol::DatasetContainer
 
     function DCPPowerModel(
         model::AbstractModel,
         topology::Topology,
         var::DatasetContainer,
+        con::DatasetContainer,
         sol::DatasetContainer
     )
-        return new(model, topology, var, sol)
+        return new(model, topology, var, con, sol)
     end
 end
 

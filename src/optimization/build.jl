@@ -25,32 +25,13 @@ function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
 
 end
 
-"Transportation"
-function build_method!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t)
- 
-    var_gen_power(pm, system, states, nw=t)
-    var_branch_power(pm, system, states, nw=t)
-    var_load_curtailment(pm, system, nw=t)
-
-    # Add Constraints
-    # ---------------
-    for i in field(system, :buses, :keys)
-        constraint_power_balance(pm, system, i, nw=t)
-    end
-
-    objective_min_load_curtailment(pm, system, nw=t)
-
-    return
-
-end
-
 "Load Minimization version of DCOPF"
-function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
+function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system, nw=t)
-    var_gen_power(pm, system, states, nw=t)
-    var_branch_power(pm, system, states, nw=t)
+    var_gen_power(pm, system, nw=t)
+    var_branch_power(pm, system, nw=t)
     var_load_curtailment(pm, system, nw=t)
 
     # Add Constraints
@@ -64,14 +45,27 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     end
 
     for i in field(system, :branches, :keys)
-        if field(states, :branches)[i,t] != 0
-            constraint_ohms_yt(pm, system, i, nw=t)
-            constraint_voltage_angle_diff(pm, system, i, nw=t)
-        end
+        constraint_ohms_yt(pm, system, i, nw=t)
+        constraint_voltage_angle_diff(pm, system, i, nw=t)
     end
 
     objective_min_load_curtailment(pm, system, nw=t)
     return
+
+end
+
+"Load Minimization version of DCOPF"
+function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
+
+    #var_bus_voltage(pm, system, nw=t)
+    var_gen_power(pm, system, states, nw=t)
+    var_branch_power(pm, system, states, nw=t)
+    var_load_curtailment(pm, system, states, nw=t)
+
+
+    for i in field(system, :buses, :keys)
+        constraint_power_balance(pm, system, i, states, nw=t)
+    end
 
 end
 
@@ -144,9 +138,9 @@ function optimize_method!(model::Model)
 end
 
 ""
-function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int)
+function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    plc = build_sol_values(var(pm, :plc, t))
+    plc = build_sol_values(var(pm, :plc, nw))
 
     if termination_status(pm.model) == LOCALLY_SOLVED
         for i in field(system, :loads, :keys)

@@ -35,6 +35,10 @@ var(pm::AbstractPowerModel) = getfield(pm, :var)
 var(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(getfield(pm, :var), :object), field)
 var(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(getfield(pm, :var), :object), field), nw)
 
+con(pm::AbstractPowerModel) = getfield(pm, :con)
+con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(getfield(pm, :con), :object), field)
+con(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(getfield(pm, :con), :object), field), nw)
+
 sol(pm::AbstractPowerModel) = getfield(pm, :sol)
 sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(getfield(pm, :sol), :object), field)
 sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(getfield(pm, :sol), :object), field), :, nw)
@@ -56,12 +60,13 @@ function JumpModel(modelmode::JuMP.ModelMode, optimizer)
 end
 
 "Constructor for an AbstractPowerModel modeling object"
-function Initialize_model(system::SystemModel{N}, topology::Topology, settings::Settings; timeseries=false) where {N}
+function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settings; timeseries=false) where {N}
     
     model = JumpModel(field(settings, :modelmode), deepcopy(field(settings, :optimizer)))
-    
     var = DatasetContainer{AbstractArray}()
-    if timeseries == false
+    con = DatasetContainer{AbstractArray}()
+
+    if timeseries == true
         add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
         add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
         add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
@@ -71,25 +76,35 @@ function Initialize_model(system::SystemModel{N}, topology::Topology, settings::
         add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:1)
         add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:1)
         add_object_container!(var, :p, field(topology, :arcs), timesteps = 1:1)
+        add_con_object_container!(con, :power_balance, field(system, :buses, :keys), timesteps = 1:1)
+        add_con_object_container!(con, :ohms_yt, field(system, :branches, :keys), timesteps = 1:1)
+        add_con_object_container!(con, :voltage_angle_diff, field(system, :branches, :keys), timesteps = 1:1)
     end
 
     sol = DatasetContainer{Matrix{Float64}}()
     add_object_container!(sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
 
-    return DCPPowerModel(model, topology, var, sol)
+    return DCPPowerModel(model, topology, var, con, sol)
 
 end
 
 ""
-function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings::Settings) where {N}
+function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings::Settings; timeseries=false) where {N}
 
     empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
     #OPF.set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
-    reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
+    if timeseries == true
+        reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
+        reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
+        reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
+        reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
+    else
+        reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:1)
+        reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:1)
+        reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:1)
+        reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:1)
+    end 
     fill!(sol(pm, :plc), 0.0)
 
     return
@@ -109,6 +124,15 @@ function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, 
     value = _container_spec(VariableRef, keys)
     var_container = container_spec(value, timesteps)
     _assign_container!(container.object, var_key, var_container)
+    return
+end
+
+""
+function add_con_object_container!(container::DatasetContainer{T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
+
+    value = _container_spec(ConstraintRef, keys)
+    con_container = container_spec(value, timesteps)
+    _assign_container!(container.object, con_key, con_container)
     return
 end
 

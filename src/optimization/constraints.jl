@@ -1,5 +1,5 @@
 "Fix the voltage angle to zero at the reference bus"
-function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=0)
+function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=1)
     fix(var(pm, :va, nw)[i], 0, force = true)
 end
 
@@ -14,11 +14,24 @@ function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel,
     bus_gens = topology(pm, :generators_nodes)[i]
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
-    _constraint_power_balance(pm, system, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+    _constraint_power_balance(pm, system, nw, i, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 end
 
 ""
-function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, states::SystemStates; nw::Int=1)
+
+    loads_nodes = topology(pm, :loads_nodes)[i]
+    shunts_nodes = topology(pm, :shunts_nodes)[i]
+
+    JuMP.set_normalized_rhs(OPF.con(pm, :power_balance, 1)[i], 
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
+        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,nw] for k in shunts_nodes]))*1.0^2
+    )
+
+end
+
+""
+function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw::Int, i::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -32,7 +45,7 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw:
 
     JuMP.drop_zeros!(exp)
 
-    @constraint(pm.model,
+    con(pm, :power_balance, nw)[i] = @constraint(pm.model,
         exp
         ==
         sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))

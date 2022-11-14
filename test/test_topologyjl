@@ -21,7 +21,7 @@ system = BaseModule.SystemModel(RawFile)
 systemstates = SystemStates(system)
 field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 method = SequentialMCS(samples=1, seed=321, threaded=false)
-pm = CompositeAdequacy.Initialize_model(system, method, settings)
+pm = CompositeAdequacy.PowerModel(system, method, settings)
 t=1
 
 
@@ -43,7 +43,7 @@ CompositeAdequacy.solve!(pm, system, t)
     system = BaseModule.SystemModel(RawFile)
     field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     method = SequentialMCS(samples=1, seed=321, threaded=true)
-    pm = CompositeAdequacy.Initialize_model(system, method, settings)
+    pm = CompositeAdequacy.PowerModel(system, method, settings)
     t=1
 
     i_buses_idxs = deepcopy(pm.topology.buses_idxs)

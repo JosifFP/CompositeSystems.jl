@@ -13,7 +13,7 @@ settings = PRATS.Settings(
 
     PRATS.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     topology = OPF.Topology(system)
-    pm = CompositeAdequacy.Initialize_model(system, topology, settings)
+    pm = CompositeAdequacy.PowerModel(, topology, settings)
     t=1
 
     @testset "G3, G7, G8 and G9 on outage" begin
@@ -162,7 +162,7 @@ end
         [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 
         7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
     topology = OPF.Topology(system)
-    pm = CompositeAdequacy.Initialize_model(system, topology, settings)
+    pm = CompositeAdequacy.PowerModel(, topology, settings)
     t=1
     
     @testset "Outages of L12, L13" begin

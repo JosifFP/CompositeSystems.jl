@@ -37,7 +37,7 @@ function assess(
 
     topology = Topology(system)
     systemstates = SystemStates(system)
-    pm = Initialize_model(system, topology, settings)
+    pm = PowerModel(system, topology, settings)
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
@@ -48,12 +48,11 @@ function assess(
         println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
+        initialize_powermodel!(pm, system)
 
-        for t in 1:N
+        for t in 2:N
             if systemstates.system[t] ≠ true
-                #update!(pm.topology, systemstates, system, t)
-                solve!(pm, system, systemstates, t)
-                empty!(pm.model)
+                update_powermodel!(pm, system, systemstates, t)
             end
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
@@ -82,26 +81,23 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
 
 end
 
-
-
-
 ""
-function update!(topology::Topology, states::SystemStates, system::SystemModel, t::Int)
+function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel)
 
-
-    return
+    build_method!(pm, system, 1)
+    optimize_method!(pm.model)
+    build_result!(pm, system, 1)
 
 end
 
-""
-function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    build_method!(pm, system, states, t)
+""
+function update_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    update_method!(pm, system, states, t)
     optimize_method!(pm.model)
     build_result!(pm, system, t)
-    #GC.gc()
 end
-
 
 
 #update_energy!(states.stors_energy, system.storages, t)

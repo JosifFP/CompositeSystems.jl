@@ -29,7 +29,7 @@ PRATS.EUE.(shortfall)
 
 
 topo = OPF.Topology(system)
-@time pm = CompositeAdequacy.Initialize_model(system, topo, settings)
+@time pm = CompositeAdequacy.PowerModel(system, topo, settings)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 seed!(rng, (666, 1))
 systemstates = CompositeAdequacy.SystemStates(system)

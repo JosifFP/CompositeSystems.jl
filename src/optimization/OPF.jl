@@ -28,8 +28,8 @@
         Settings,
 
         #functions
-        Initialize_model, empty_model!, build_method!, build_result!, 
-        optimize_method!, var, sol,
+        PowerModel, empty_model!, build_method!, update_method!,
+        build_result!, optimize_method!, var, sol,
 
         #optimizationcontainers
         OptimizationContainer, Topology, DatasetContainer,
