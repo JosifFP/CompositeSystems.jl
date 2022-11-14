@@ -6,9 +6,9 @@ import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime
 include("solvers.jl")
-TimeSeriesFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/Loads.xlsx"
-RawFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/RBTS.m"
-ReliabilityFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RBTS/R_RBTS.m"
+TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
+RawFile = "test/data/RBTS/RBTS.m"
+ReliabilityFile = "test/data/RBTS/R_RBTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = PRATS.Settings(
