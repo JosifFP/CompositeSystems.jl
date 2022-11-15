@@ -8,30 +8,17 @@ function constraint_theta_ref(pm::AbstractNFAModel, i::Int; nw::Int=1)
 end
 
 "Nodal power balance constraints"
-function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i,:]))
     bus_gens = topology(pm, :generators_nodes)[i]
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
-    _constraint_power_balance(pm, system, nw, i, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+    _constraint_power_balance(pm, system, i, t, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 end
 
 ""
-function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, states::SystemStates; nw::Int=1)
-
-    loads_nodes = topology(pm, :loads_nodes)[i]
-    shunts_nodes = topology(pm, :shunts_nodes)[i]
-
-    JuMP.set_normalized_rhs(OPF.con(pm, :power_balance, 1)[i], 
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
-        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,nw] for k in shunts_nodes]))*1.0^2
-    )
-
-end
-
-""
-function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw::Int, i::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -48,7 +35,7 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, nw:
     con(pm, :power_balance, nw)[i] = @constraint(pm.model,
         exp
         ==
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,nw] for k in loads_nodes]))
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
         + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
     )
 end
@@ -76,7 +63,7 @@ function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
-    @constraint(pm.model, p_fr == (va_fr_to - ta)/(x*tm))
+    con(pm, :ohms_yt_from, nw)[i] = @constraint(pm.model, p_fr == (va_fr_to - ta)/(x*tm))
 
 end
 
@@ -84,7 +71,7 @@ end
 function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
-    @constraint(pm.model, p_fr == -b*(va_fr_to))
+    con(pm, :ohms_yt_from, nw)[i] = @constraint(pm.model, p_fr == -b*(va_fr_to))
 
 end
 
@@ -101,7 +88,7 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
     
     if !ismissing(buspair)
     #if !ismissing(buspair) && Int(buspair[1]) == i
-        _constraint_voltage_angle_diff(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
+        _constraint_voltage_angle_diff(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
     end
 
 end
@@ -111,12 +98,12 @@ function _constraint_voltage_angle_diff(pm::AbstractNFAModel, nw::Int, f_bus::In
 end
 
 "Polar Form"
-function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+function _constraint_voltage_angle_diff(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
     
     va_fr = var(pm, :va, nw)[f_bus]
     va_to = var(pm, :va, nw)[t_bus]
-    @constraint(pm.model, va_fr - va_to <= angmax)
-    @constraint(pm.model, va_fr - va_to >= angmin)
+    con(pm, :voltage_angle_diff_upper, nw)[i] = @constraint(pm.model, va_fr - va_to <= angmax)
+    con(pm, :voltage_angle_diff_lower, nw)[i] = @constraint(pm.model, va_fr - va_to >= angmin)
 
 end
 
@@ -170,6 +157,8 @@ function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, nw::Int, t_idx, 
         @constraint(pm.model, var(pm, :p, nw)[t_idx] <= rate_a)
     end
 end
+
+
 
 
 

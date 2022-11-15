@@ -34,6 +34,7 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     end
 
     loads = Array{Bool, 2}(undef, length(system.loads), N)
+    fill!(loads, 1)
     #loads_nexttransition = Int[]
     branches = Array{Bool, 2}(undef, length(system.branches), N)
     #branches_nexttransition = Int[]

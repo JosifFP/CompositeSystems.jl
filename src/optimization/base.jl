@@ -46,11 +46,21 @@ end
 "Topology"
 struct Topology
 
+    
+    buses_idxs::Vector{UnitRange{Int}}
+    loads_idxs::Vector{UnitRange{Int}}
+    branches_idxs::Vector{UnitRange{Int}}
+    shunts_idxs::Vector{UnitRange{Int}}
+    generators_idxs::Vector{UnitRange{Int}}
+    storages_idxs::Vector{UnitRange{Int}}
+    generatorstorages_idxs::Vector{UnitRange{Int}}
+
     loads_nodes::Dict{Int, Vector{Int}}
     shunts_nodes::Dict{Int, Vector{Int}}
     generators_nodes::Dict{Int, Vector{Int}}
     storages_nodes::Dict{Int, Vector{Int}}
     generatorstorages_nodes::Dict{Int, Vector{Int}}
+
     arcs_from::Vector{Tuple{Int, Int, Int}}
     arcs_to::Vector{Tuple{Int, Int, Int}}
     arcs::Vector{Tuple{Int, Int, Int}}
@@ -60,26 +70,35 @@ struct Topology
     function Topology(system::SystemModel{N}) where {N}
 
         key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
+        buses_idxs = makeidxlist(key_buses, length(system.buses))
 
         key_loads = filter(i->field(system, :loads, :status)[i], field(system, :loads, :keys))
+        loads_idxs = makeidxlist(key_loads, length(system.loads))
         tmp = Dict((i, Int[]) for i in key_buses)
         loads_nodes = bus_asset!(tmp, key_loads, field(system, :loads, :buses))
 
         key_shunts = filter(i->field(system, :shunts, :status)[i], field(system, :shunts, :keys))
+        shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
         tmp = Dict((i, Int[]) for i in key_buses)
         shunts_nodes = bus_asset!(tmp, key_shunts, field(system, :shunts, :buses))
 
         key_generators = filter(i->field(system, :generators, :status)[i], field(system, :generators, :keys))
+        generators_idxs = makeidxlist(key_generators, length(system.generators))
         tmp = Dict((i, Int[]) for i in key_buses)
         generators_nodes = bus_asset!(tmp, key_generators, field(system, :generators, :buses))
 
         key_storages = filter(i->field(system, :storages, :status)[i], field(system, :storages, :keys))
+        storages_idxs = makeidxlist(key_storages, length(system.storages))
         tmp = Dict((i, Int[]) for i in key_buses)
         storages_nodes = bus_asset!(tmp, key_storages, field(system, :storages, :buses))
 
         key_generatorstorages = filter(i->field(system, :generatorstorages, :status)[i], field(system, :generatorstorages, :keys))
+        generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
         tmp = Dict((i, Int[]) for i in key_buses)
         generatorstorages_nodes = bus_asset!(tmp, key_generatorstorages, field(system, :generatorstorages, :buses))
+
+        key_branches = filter(i->field(system, :branches, :status)[i], field(system, :branches, :keys))
+        branches_idxs = makeidxlist(key_branches, length(system.branches))
 
         Nodes = length(system.buses)
         Edges = length(system.branches)
@@ -106,12 +125,24 @@ struct Topology
 
         buspairs = calc_buspair_parameters(field(system, :branches), keys)   
 
-        return new(loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, arcs_from, arcs_to, arcs, A, buspairs)
+        return new(
+            buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
+            branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
+            generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
+            generatorstorages_idxs::Vector{UnitRange{Int}}, 
+            loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
+            arcs_from, arcs_to, arcs, A, buspairs)
     end
 
 end
 
 Base.:(==)(x::T, y::T) where {T <: Topology} =
+    x.buses_idxs == y.buses_idxs &&
+    x.loads_idxs == y.loads_idxs &&
+    x.shunts_idxs == y.shunts_idxs &&
+    x.generators_idxs == y.generators_idxs &&
+    x.storages_idxs == y.storages_idxs &&
+    x.generatorstorages_idxs == y.generatorstorages_idxs &&
     x.loads_nodes == y.loads_nodes &&
     x.shunts_nodes == y.shunts_nodes &&
     x.generators_nodes == y.generators_nodes &&

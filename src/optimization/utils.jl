@@ -77,8 +77,10 @@ function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settin
         add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:1)
         add_object_container!(var, :p, field(topology, :arcs), timesteps = 1:1)
         add_con_object_container!(con, :power_balance, field(system, :buses, :keys), timesteps = 1:1)
-        add_con_object_container!(con, :ohms_yt, field(system, :branches, :keys), timesteps = 1:1)
-        add_con_object_container!(con, :voltage_angle_diff, field(system, :branches, :keys), timesteps = 1:1)
+        add_con_object_container!(con, :ohms_yt_from, field(system, :branches, :keys), timesteps = 1:1)
+        add_con_object_container!(con, :ohms_yt_to, field(system, :branches, :keys), timesteps = 1:1)
+        add_con_object_container!(con, :voltage_angle_diff_upper, field(system, :branches, :keys), timesteps = 1:1)
+        add_con_object_container!(con, :voltage_angle_diff_lower, field(system, :branches, :keys), timesteps = 1:1)
     end
 
     sol = DatasetContainer{Matrix{Float64}}()
@@ -147,9 +149,9 @@ end
 
 ""
 function _assign_container!(container::Dict, key::Symbol, value)
-    if haskey(container, key)
-        @error "$(key) is already stored"
-    end
+    #if haskey(container, key)
+        #@error "$(key) is already stored"
+    #end
     container[key] = value
     return
 end
@@ -344,7 +346,60 @@ function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_as
     return tmp
 end
 
+"Update asset_idxs and asset_nodes"
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
+    
+    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
+    map!(x -> Int[], bus_assets)
+    update_asset_nodes!(key_assets, bus_assets, buses)
 
+end
+
+""
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
+    
+    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
+
+end
+
+""
+function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
+    @inbounds for k in key_assets
+        push!(bus_assets[buses[k]], k)
+    end
+end
+
+#""
+#function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
+#    assets_idxs .= makeidxlist(filter(i->asset_states[i,t]==1, field(branches, :keys)), length(assets_idxs))
+#    #update_arcs!(branches, topology_arcs, initial_arcs, asset_states, t)
+#end
+
+#""
+# function update_arcs!(branches::Branches, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
+    
+#     state = view(asset_states, :, t)
+#     @inbounds for i in eachindex(state)
+
+#         f_bus = field(branches, :f_bus)[i]
+#         t_bus = field(branches, :t_bus)[i]
+
+#         if state[i] == false
+#             field(topology_arcs, :busarcs)[:,i] = Array{Missing}(undef, size(field(topology_arcs, :busarcs),1))
+#             field(topology_arcs, :arcs_from)[i] = missing
+#             field(topology_arcs, :arcs_to)[i] = missing
+#             field(topology_arcs, :buspairs)[(f_bus, t_bus)] = missing
+#         else
+#             field(topology_arcs, :busarcs)[:,i] = field(initial_arcs, :busarcs)[:,i]
+#             field(topology_arcs, :arcs_from)[i] = field(initial_arcs, :arcs_from)[i]
+#             field(topology_arcs, :arcs_to)[i] = field(initial_arcs, :arcs_to)[i]
+#             field(topology_arcs, :buspairs)[(f_bus, t_bus)] = field(initial_arcs, :buspairs)[(f_bus, t_bus)]
+#         end
+#     end
+    
+#     field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
+
+# end
 
 #"garbage-----------------------------------------------------------------------------------------------------------------"
 # "computes flow bounds on branches from ref data"
