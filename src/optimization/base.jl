@@ -1,52 +1,6 @@
-abstract type OptimizationContainer end
-
-"Types of optimization"
-abstract type AbstractPowerModel end
-abstract type AbstractDCPowerModel <: AbstractPowerModel end
-abstract type AbstractACPowerModel <: AbstractPowerModel end
-abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
-abstract type AbstractDCPModel <: AbstractDCPowerModel end
-abstract type AbstractNFAModel <: AbstractDCPowerModel end
-abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
-LoadCurtailment =  Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel}
-
-""
-struct Settings
-
-    optimizer::MOI.OptimizerWithAttributes
-    modelmode::JuMP.ModelMode
-    powermodel::Type{<:AbstractPowerModel}
-
-    function Settings(
-        optimizer::MOI.OptimizerWithAttributes;
-        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-        powermodel::String="AbstractDCMPPModel"
-        )
-
-        abstractpm = type(powermodel)
-
-        new(optimizer, modelmode, abstractpm)
-    end
-
-end
-
-
-"""
-Variables: A struct DatasetContainer for AbstractACPowerModel variables that are mutated by JuMP.
-An alternate solution could be specifying a contaner within JuMP macros (container=Array, DenseAxisArray, Dict, etc.).
-However, the latter generates more allocations and slow down simulations.
-"""
-struct DatasetContainer{T} <: OptimizationContainer
-    object::Dict{Symbol, T}
-    function DatasetContainer{T}() where {T <: AbstractArray}
-        return new(Dict{Symbol, T}())
-    end
-end
-
 "Topology"
 struct Topology
 
-    
     buses_idxs::Vector{UnitRange{Int}}
     loads_idxs::Vector{UnitRange{Int}}
     branches_idxs::Vector{UnitRange{Int}}
@@ -154,128 +108,125 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.arcs == y.arcs &&
     x.buspairs == y.buspairs
 
-""
-struct DCPPowerModel <: AbstractDCPModel
-
+"a macro for adding the base AbstractPowerModels fields to a type definition"
+OPF.@def pm_fields begin
     model::AbstractModel
     topology::Topology
-    var::DatasetContainer
-    con::DatasetContainer
-    sol::DatasetContainer
+    var::Dict{Symbol, AbstractArray}
+    con::Dict{Symbol, AbstractArray}
+    sol::Dict{Symbol, Matrix{Float64}}
+end
 
-    function DCPPowerModel(
-        model::AbstractModel,
-        topology::Topology,
-        var::DatasetContainer,
-        con::DatasetContainer,
-        sol::DatasetContainer
-    )
-        return new(model, topology, var, con, sol)
+"root of the power formulation type hierarchy"
+abstract type AbstractPowerModel end
+
+"Types of optimization"
+abstract type AbstractDCPowerModel <: AbstractPowerModel end
+abstract type AbstractACPowerModel <: AbstractPowerModel end
+abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
+abstract type AbstractDCPModel <: AbstractDCPowerModel end
+abstract type AbstractNFAModel <: AbstractDCPowerModel end
+abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
+LoadCurtailment = Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel}
+
+struct DCPPowerModel <: AbstractDCPModel @pm_fields end
+struct DCMPPowerModel <: AbstractDCMPPModel @pm_fields end
+struct NFAPowerModel <: AbstractNFAModel @pm_fields end
+struct PM_DCPPowerModel <: PM_AbstractDCPModel @pm_fields end
+StructPowerModel = Union{DCPPowerModel, DCMPPowerModel, NFAPowerModel}
+
+""
+struct Settings
+
+    optimizer::MOI.OptimizerWithAttributes
+    modelmode::JuMP.ModelMode
+    powermodel::Type
+
+    function Settings(
+        optimizer::MOI.OptimizerWithAttributes;
+        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
+        powermodel::Type=OPF.DCPPowerModel
+        )
+
+        new(optimizer, modelmode, powermodel)
     end
+
 end
 
 ""
-struct DCMPPowerModel <: AbstractDCMPPModel
-
-    model::AbstractModel
-    topology::Topology
-    var::DatasetContainer
-    sol::DatasetContainer
-
-    function DCMPPowerModel(
-        model::AbstractModel,
-        topology::Topology,
-        var::DatasetContainer,
-        sol::DatasetContainer
-    )
-        return new(model, topology, var, sol)
+function JumpModel(modelmode::JuMP.ModelMode, optimizer)
+    if modelmode == JuMP.AUTOMATIC
+        jumpmodel = Model(optimizer; add_bridges = false)
+    elseif modelmode == JuMP.DIRECT
+        @warn("Direct Mode is unsafe")
+        jumpmodel = direct_model(optimizer)
+    else
+        @warn("Manual Mode not supported")
     end
-end
-
-""
-struct NFAPowerModel <: AbstractNFAModel
-
-    model::AbstractModel
-    topology::Topology
-    var::DatasetContainer
-    sol::DatasetContainer
-
-    function NFAPowerModel(
-        model::AbstractModel,
-        topology::Topology,
-        var::DatasetContainer,
-        sol::DatasetContainer
-    )
-        return new(model, topology, var, sol)
-    end
-end
-
-""
-struct PM_DCPPowerModel <: PM_AbstractDCPModel
-
-    model::AbstractModel
-    topology::Topology
-    var::DatasetContainer
-    sol::DatasetContainer
-
-    function PM_DCPPowerModel(
-        model::AbstractModel,
-        topology::Topology,
-        var::DatasetContainer,
-        sol::DatasetContainer
-    )
-        return new(model, topology, var, sol)
-    end
+    JuMP.set_string_names_on_creation(jumpmodel, false)
+    JuMP.set_silent(jumpmodel)
+    #GC.gc()
+    return jumpmodel
 end
 
 
-
-# "a macro for adding the standard AbstractPowerModel fields to a type definition"
-# CompositeAdequacy.@def ca_fields begin
+"Constructor for an AbstractPowerModel modeling object"
+function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractDCPowerModel}
     
-#     model::AbstractModel
-#     topology::Topology
-#     var::Variables
-#     sol::Matrix{Float16}
+    var = Dict{Symbol, AbstractArray}()
+    con = Dict{Symbol, AbstractArray}()
+    sol = Dict{Symbol, Matrix{Float64}}()
 
-# end
+    method == DCMPPowerModel && @error("method $(method) not supported yet. DCPPowerModel method was built")
 
+    return M(model, topology, var, con, sol)
 
-#struct DCPPowerModel <: AbstractDCPModel @ca_fields end
-#struct DCMPPowerModel <: AbstractDCMPPModel @ca_fields end
-#struct NFAPowerModel <: AbstractNFAModel @ca_fields end
-#struct PM_DCPPowerModel <: PM_AbstractDCPModel @ca_fields end
+end
 
-# """
-# Cache: a OptimizationContainer structure that stores variables and results in mutable containers.
-# """
-# struct Cache <: OptimizationContainer
+""
+function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settings; timeseries=false) where {N}
+    
+    model = JumpModel(field(settings, :modelmode), deepcopy(field(settings, :optimizer)))
+    var = Dict{Symbol, AbstractArray}()
+    con = Dict{Symbol, AbstractArray}()
+    sol = Dict{Symbol, Matrix{Float64}}()
 
-#     var::Variables
+    field(settings, :powermodel) == DCMPPowerModel && @warn("method $(field(settings, :powermodel)) not supported yet. DCPPowerModel method was built")
 
-#     function Cache(system::SystemModel{N}; multiperiod::Bool=false) where {N}
+    if timeseries == true
+        add_var_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+        add_var_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
+        add_var_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
+        add_var_container!(var, :p, field(topology, :arcs), timesteps = 1:N)
+    else
+        add_var_container!(var, :pg, field(system, :generators, :keys))
+        add_var_container!(var, :va, field(system, :buses, :keys))
+        add_var_container!(var, :plc, field(system, :loads, :keys))
+        add_var_container!(var, :p, field(topology, :arcs))
+        add_con_container!(con, :power_balance, field(system, :buses, :keys))
+        add_con_container!(con, :ohms_yt_from, field(system, :branches, :keys))
+        add_con_container!(con, :ohms_yt_to, field(system, :branches, :keys))
+        add_con_container!(con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+    end
 
-#         var = Variables(system, multiperiod=multiperiod)
-#         return new(var)
+    add_sol_container!(sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
 
-#     end
-# end
+    return DCPPowerModel(model, topology, var, con, sol)
 
-# """
-# The `def` macro is used to build other macros that can insert the same block of
-# julia code into different parts of a program.
-# """
-# macro def(name, definition)
-#     return quote
-#         macro $(esc(name))()
-#             esc($(Expr(:quote, definition)))
-#         end
-#     end
-# end
+end
 
-# struct DatasetContainer{T}
-#     variables::Dict{Symbol, Union{AbstractArray, Dict}}
-#     function DatasetContainer()
-#         return new(Dict{Symbol, Union{AbstractArray, Dict}}())
-#     end
-# end
+""
+function reset_optimizer!(pm::AbstractDCPowerModel, settings::Settings, s)
+
+    if iszero(s%10) 
+        set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
+        fill!(sol(pm, :plc), 0.0)
+    else
+        MOIU.reset_optimizer(pm.model)
+        fill!(sol(pm, :plc), 0.0)
+    end
+
+    return
+
+end

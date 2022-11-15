@@ -22,138 +22,33 @@ const pm_component_status_inactive = Dict(
     "dcline" => 0,
 )
 
-BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
-BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
-BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
-
 topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
 topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]
 topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol) = getfield(getfield(getfield(pm, :topology), field), subfield)
 topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol, nw::Int) = getindex(getfield(getfield(getfield(pm, :topology), field), subfield), nw)
 
 var(pm::AbstractPowerModel) = getfield(pm, :var)
-var(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(getfield(pm, :var), :object), field)
-var(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(getfield(pm, :var), :object), field), nw)
+var(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :var), field)
+var(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :var), field), nw)
 
 con(pm::AbstractPowerModel) = getfield(pm, :con)
-con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(getfield(pm, :con), :object), field)
-con(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(getfield(pm, :con), :object), field), nw)
+con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :con), field)
+con(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :con), field), nw)
 
 sol(pm::AbstractPowerModel) = getfield(pm, :sol)
-sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(getfield(pm, :sol), :object), field)
-sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(getfield(pm, :sol), :object), field), :, nw)
+sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :sol), field)
+sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :sol), field), :, nw)
+
+BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
+BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
+BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
 
 ""
-function JumpModel(modelmode::JuMP.ModelMode, optimizer)
-    if modelmode == JuMP.AUTOMATIC
-        jumpmodel = Model(optimizer; add_bridges = false)
-    elseif modelmode == JuMP.DIRECT
-        @warn("Direct Mode is unsafe")
-        jumpmodel = direct_model(optimizer)
-    else
-        @warn("Manual Mode not supported")
+function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_assets::Vector{Int})
+    for k in key_assets
+        push!(tmp[bus_assets[k]], k)
     end
-    JuMP.set_string_names_on_creation(jumpmodel, false)
-    JuMP.set_silent(jumpmodel)
-    #GC.gc()
-    return jumpmodel
-end
-
-"Constructor for an AbstractPowerModel modeling object"
-function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settings; timeseries=false) where {N}
-    
-    model = JumpModel(field(settings, :modelmode), deepcopy(field(settings, :optimizer)))
-    var = DatasetContainer{AbstractArray}()
-    con = DatasetContainer{AbstractArray}()
-
-    if timeseries == true
-        add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
-        add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
-        add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
-        add_object_container!(var, :p, field(topology, :arcs), timesteps = 1:N)
-    else
-        add_object_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:1)
-        add_object_container!(var, :va, field(system, :buses, :keys), timesteps = 1:1)
-        add_object_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:1)
-        add_object_container!(var, :p, field(topology, :arcs), timesteps = 1:1)
-        add_con_object_container!(con, :power_balance, field(system, :buses, :keys), timesteps = 1:1)
-        add_con_object_container!(con, :ohms_yt_from, field(system, :branches, :keys), timesteps = 1:1)
-        add_con_object_container!(con, :ohms_yt_to, field(system, :branches, :keys), timesteps = 1:1)
-        add_con_object_container!(con, :voltage_angle_diff_upper, field(system, :branches, :keys), timesteps = 1:1)
-        add_con_object_container!(con, :voltage_angle_diff_lower, field(system, :branches, :keys), timesteps = 1:1)
-    end
-
-    sol = DatasetContainer{Matrix{Float64}}()
-    add_object_container!(sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
-
-    return DCPPowerModel(model, topology, var, con, sol)
-
-end
-
-""
-function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings::Settings; timeseries=false) where {N}
-
-    empty!(pm.model)
-    MOIU.reset_optimizer(pm.model)
-    #OPF.set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
-    if timeseries == true
-        reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
-        reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
-        reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
-        reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
-    else
-        reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:1)
-        reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:1)
-        reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:1)
-        reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:1)
-    end 
-    fill!(sol(pm, :plc), 0.0)
-
-    return
-end
-
-""
-function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}) where {T <: Matrix{Float64}}
-
-    var_container = _container_spec(Float64, keys, timesteps)
-    _assign_container!(container.object, var_key, var_container)
-    return
-end
-
-""
-function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
-
-    value = _container_spec(VariableRef, keys)
-    var_container = container_spec(value, timesteps)
-    _assign_container!(container.object, var_key, var_container)
-    return
-end
-
-""
-function add_con_object_container!(container::DatasetContainer{T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
-
-    value = _container_spec(ConstraintRef, keys)
-    con_container = container_spec(value, timesteps)
-    _assign_container!(container.object, con_key, con_container)
-    return
-end
-
-""
-function add_object_container!(container::DatasetContainer{T}, var_key::Symbol, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
-
-    value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
-    var_container = container_spec(value, timesteps)
-    _assign_container!(container.object, var_key, var_container)
-    return var_container
-end
-
-""
-function _assign_container!(container::Dict, key::Symbol, value)
-    #if haskey(container, key)
-        #@error "$(key) is already stored"
-    #end
-    container[key] = value
-    return
+    return tmp
 end
 
 """
@@ -211,21 +106,47 @@ function reset_object_container!(container::DenseAxisArray{T}, keys::Vector{Int}
 end
 
 ""
-function type(pmodel::String)
+function add_sol_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: Matrix{Float64}}
 
-    if pmodel == "AbstractDCPModel"
-        apm = DCPPowerModel
-    elseif pmodel == "AbstractDCMPPModel" 
-        apm = DCMPPowerModel
-    elseif pmodel == "AbstractNFAModel" 
-        apm = NFAPowerModel
-    elseif pmodel == "PM_AbstractDCPModel"
-        apm = PM_DCPPowerModel
-    else
-        error("AbstractPowerModel = $(pmodel) not supported, DCPPowerModel has been selected")
-        apm = DCPPowerModel
-    end
-    return apm
+    var_container = _container_spec(Float64, keys, timesteps)
+    _assign_container!(container, var_key, var_container)
+    return
+end
+
+""
+function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(VariableRef, keys)
+    var_container = container_spec(value, timesteps)
+    _assign_container!(container, var_key, var_container)
+    return
+end
+
+""
+function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(ConstraintRef, keys)
+    con_container = container_spec(value, timesteps)
+    _assign_container!(container, con_key, con_container)
+    return
+end
+
+""
+function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
+    var_container = container_spec(value, timesteps)
+    _assign_container!(container, var_key, var_container)
+    return var_container
+end
+
+""
+function _assign_container!(container::Dict, key::Symbol, value)
+    #if haskey(container, key)
+        #@error "$(key) is already stored"
+    #end
+    container[key] = value
+    return
 end
 
 """
@@ -339,11 +260,15 @@ function calc_buspair_parameters(buses, branches)
 end
 
 ""
-function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_assets::Vector{Int})
-    for k in key_assets
-        push!(tmp[bus_assets[k]], k)
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
+    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
+end
+
+""
+function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
+    @inbounds for k in key_assets
+        push!(bus_assets[buses[k]], k)
     end
-    return tmp
 end
 
 "Update asset_idxs and asset_nodes"
@@ -355,67 +280,26 @@ function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int
 
 end
 
-""
-function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
-    
-    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
-
-end
-
-""
-function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
-    @inbounds for k in key_assets
-        push!(bus_assets[buses[k]], k)
+function Base.getproperty(e::AbstractPowerModel, s::Symbol) 
+    if s === :model 
+        getfield(e, :model)::JuMP.Model
+    elseif s===:topology 
+        getfield(e, :topology)::Topology
+    elseif s === :var
+        getfield(e, :var)
+    elseif s === :con
+        getfield(e, :con) 
+    elseif s === :sol
+        getfield(e, :sol) 
     end
 end
 
-#""
-#function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
-#    assets_idxs .= makeidxlist(filter(i->asset_states[i,t]==1, field(branches, :keys)), length(assets_idxs))
-#    #update_arcs!(branches, topology_arcs, initial_arcs, asset_states, t)
-#end
-
-#""
-# function update_arcs!(branches::Branches, topology_arcs::Arcs, initial_arcs::Arcs, asset_states::Matrix{Bool}, t::Int)
-    
-#     state = view(asset_states, :, t)
-#     @inbounds for i in eachindex(state)
-
-#         f_bus = field(branches, :f_bus)[i]
-#         t_bus = field(branches, :t_bus)[i]
-
-#         if state[i] == false
-#             field(topology_arcs, :busarcs)[:,i] = Array{Missing}(undef, size(field(topology_arcs, :busarcs),1))
-#             field(topology_arcs, :arcs_from)[i] = missing
-#             field(topology_arcs, :arcs_to)[i] = missing
-#             field(topology_arcs, :buspairs)[(f_bus, t_bus)] = missing
-#         else
-#             field(topology_arcs, :busarcs)[:,i] = field(initial_arcs, :busarcs)[:,i]
-#             field(topology_arcs, :arcs_from)[i] = field(initial_arcs, :arcs_from)[i]
-#             field(topology_arcs, :arcs_to)[i] = field(initial_arcs, :arcs_to)[i]
-#             field(topology_arcs, :buspairs)[(f_bus, t_bus)] = field(initial_arcs, :buspairs)[(f_bus, t_bus)]
-#         end
-#     end
-    
-#     field(topology_arcs, :arcs)[:] = [field(topology_arcs, :arcs_from); field(topology_arcs, :arcs_to)]
-
-# end
-
-#"garbage-----------------------------------------------------------------------------------------------------------------"
-# "computes flow bounds on branches from ref data"
-# function ref_calc_branch_flow_bounds(branches::Branches)
-#     flow_lb = Dict() 
-#     flow_ub = Dict()
-
-#     for i in field(branches, :keys)
-#         flow_lb[i] = -Inf
-#         flow_ub[i] = Inf
-
-#         if hasfield(Branches, :rate_a)
-#             flow_lb[i] = max(flow_lb[i], -field(branches, :rate_a)[i])
-#             flow_ub[i] = min(flow_ub[i],  field(branches, :rate_a)[i])
-#         end
-#     end
-
-#     return flow_lb, flow_ub
-# end
+function Base.getproperty(e::Settings, s::Symbol) 
+    if s === :optimizer 
+        getfield(e, :optimizer)::MOI.OptimizerWithAttributes
+    elseif s===:modelmode 
+        getfield(e, :modelmode)::JuMP.ModelMode
+    elseif s === :powermodel
+        getfield(e, :powermodel)::Type
+    end
+end

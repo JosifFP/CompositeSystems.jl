@@ -158,6 +158,30 @@ function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, nw::Int, t_idx, 
     end
 end
 
+""
+function update_constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    for i in field(system, :buses, :keys)
+        loads_nodes = topology(pm, :loads_nodes)[i]
+        shunts_nodes = topology(pm, :shunts_nodes)[i]
+
+        JuMP.set_normalized_rhs(con(pm, :power_balance, 1)[i], 
+            sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
+            + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,t] for k in shunts_nodes]))*1.0^2
+        )
+    end
+
+    return
+
+end
+
+
+# JuMP.delete(pm.model, con(pm, :power_balance, 1).data)
+
+# for i in field(system, :buses, :keys)
+#     constraint_power_balance(pm, system, i, t)
+# end
+
 
 
 

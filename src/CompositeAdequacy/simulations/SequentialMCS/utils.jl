@@ -84,6 +84,30 @@ function gens_sum(v_pmax::Vector{Float16}, active_keys::Vector{Int})
     return sum(v_pmax[i] for i in active_keys)
 end
 
+""
+function initialize_pm_containers!(pm::AbstractPowerModel, system::SystemModel{N}; timeseries=false) where {N}
+
+    if timeseries == true
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :va, field(system, :buses, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :plc, field(system, :loads, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs), timesteps = 1:N)
+    else
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :va, field(system, :buses, :keys))
+        add_var_container!(pm.var, :plc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs))
+        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+    end
+
+    add_sol_container!(pm.sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
+    return
+
+end
 
 # ----------------------------------------------------------------------------------------------------------
 # function available_capacity(

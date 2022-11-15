@@ -19,7 +19,6 @@ function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
     #for i in assetgrouplist(topology(pm, :branches_idxs))
     #    constraint_thermal_limits(pm, system, i, t)
     #end
-
     objective_min_load_curtailment(pm, system)
     return
 
@@ -91,87 +90,24 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
-
-    JuMP.delete(pm.model, con(pm, :power_balance, 1).data)
-
-    for i in field(system, :buses, :keys)
-        constraint_power_balance(pm, system, i, t)
-    end
+    update_constraint_power_balance(pm, system, states, t)
 
     if all(view(states.branches,:,t)) != true
         JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
         JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
         JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
 
-        add_con_object_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)), timesteps = 1:1)
-        add_con_object_container!(pm.con, :ohms_yt_to, assetgrouplist(topology(pm, :branches_idxs)), timesteps = 1:1)
-        add_con_object_container!(pm.con, :voltage_angle_diff_upper, assetgrouplist(topology(pm, :branches_idxs)), timesteps = 1:1)
-        add_con_object_container!(pm.con, :voltage_angle_diff_lower, assetgrouplist(topology(pm, :branches_idxs)), timesteps = 1:1)
+        add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, assetgrouplist(topology(pm, :branches_idxs)))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, assetgrouplist(topology(pm, :branches_idxs)))
 
-        for i in field(system, :branches, :keys)
-            if field(states, :branches)[i,t] != 0
-                constraint_ohms_yt(pm, system, i)
-                constraint_voltage_angle_diff(pm, system, i)
-            end
+        for i in assetgrouplist(topology(pm, :branches_idxs))
+            constraint_ohms_yt(pm, system, i)
+            constraint_voltage_angle_diff(pm, system, i)
         end
     end
 
-end
-
-#
-    #for i in field(system, :buses, :keys)
-    #    update_constraint_power_balance(pm, system, states, i, t)
-    #end
-    
-    # JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-    # JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
-    # JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
-
-    # for i in field(system, :branches, :keys)
-    #     if field(states, :branches)[i,t] != 0
-    #         constraint_ohms_yt(pm, system, i)
-    #         constraint_voltage_angle_diff(pm, system, i)
-    #     end
-    # end   
-
-    # if t > 1
-    #     for i in field(system, :branches, :keys)
-    #         if field(states, :branches)[i,t] != 0 && field(states, :branches)[i,t-1] == 0
-    #             constraint_ohms_yt(pm, system, i)
-    #             constraint_voltage_angle_diff(pm, system, i)
-    #         elseif field(states, :branches)[i,t] == 0 && field(states, :branches)[i,t-1] != 0
-    #             JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1)[i])
-    #             JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1)[i])
-    #             JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1)[i])
-    #         end
-    #     end
-    # else
-
-    #     JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-    #     JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
-    #     JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
-
-    #     for i in field(system, :branches, :keys)
-    #         if field(states, :branches)[i,t] != 0
-    #             constraint_ohms_yt(pm, system, i)
-    #             constraint_voltage_angle_diff(pm, system, i)
-    #         end
-    #     end     
-    # end   
-
-#end
-
-
-""
-function update_constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
-
-    loads_nodes = topology(pm, :loads_nodes)[i]
-    shunts_nodes = topology(pm, :shunts_nodes)[i]
-
-    JuMP.set_normalized_rhs(con(pm, :power_balance, 1)[i], 
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
-        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,t] for k in shunts_nodes]))*1.0^2
-    )
+    return
 
 end
 
@@ -240,8 +176,12 @@ function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::System
     
 end
 
-function optimize_method!(model::Model)
-    optimize!(model; ignore_optimize_hook = true)
+function optimize_method!(pm::AbstractDCPowerModel)
+
+    #optimize!(model; ignore_optimize_hook = true)
+    _ = JuMP.optimize!(pm.model)
+    #_ = optimize!(pm.model; ignore_optimize_hook = true)
+    return
 end
 
 ""
@@ -259,6 +199,8 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
+
+    return
 
 end
 

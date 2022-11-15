@@ -5,6 +5,7 @@
     import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE
     import MathOptInterface.Utilities: reset_optimizer
     import Ipopt, Juniper, HiGHS
+    import InfrastructureModels: InfrastructureModels, @def
     import PowerModels
     import JuMP.Containers: DenseAxisArray
     import JuMP: @variable, @constraint, @objective, @expression, @NLobjective, JuMP, fix, 
@@ -28,11 +29,12 @@
         Settings,
 
         #functions
-        PowerModel, empty_model!, build_method!, update_method!, build_result!, optimize_method!, 
-        var, sol, con, topology, update_idxs!,
+        PowerModel, build_method!, update_method!, build_result!, optimize_method!, field,
+        var, sol, con, topology, update_idxs!, add_con_container!, add_var_container!, add_sol_container!,
+        reset_optimizer!,
 
         #optimizationcontainers
-        OptimizationContainer, Topology, DatasetContainer,
+        Topology,
 
         #reexports
         PowerModels, reset_optimizer, MOI, MOIU, JuMP
