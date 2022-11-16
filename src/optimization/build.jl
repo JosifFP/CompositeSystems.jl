@@ -91,20 +91,17 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
     update_constraint_power_balance(pm, system, states, t)
+    update_constraint_voltage_angle_diff(pm, system, states, t)
 
     if all(view(states.branches,:,t)) != true
-        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-        JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
-        JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
 
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
         add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
-        add_con_container!(pm.con, :voltage_angle_diff_upper, assetgrouplist(topology(pm, :branches_idxs)))
-        add_con_container!(pm.con, :voltage_angle_diff_lower, assetgrouplist(topology(pm, :branches_idxs)))
 
         for i in assetgrouplist(topology(pm, :branches_idxs))
             constraint_ohms_yt(pm, system, i)
-            constraint_voltage_angle_diff(pm, system, i)
         end
+        
     end
 
     return
@@ -189,7 +186,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
 
     plc = build_sol_values(var(pm, :plc, nw))
 
-    if termination_status(pm.model) == LOCALLY_SOLVED
+    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
         for i in field(system, :loads, :keys)
             if haskey(plc, i) == false
                 get!(plc, i, field(system, :loads, :pd)[i,t])

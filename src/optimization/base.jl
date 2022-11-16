@@ -158,7 +158,7 @@ function JumpModel(modelmode::JuMP.ModelMode, optimizer)
     if modelmode == JuMP.AUTOMATIC
         jumpmodel = Model(optimizer; add_bridges = false)
     elseif modelmode == JuMP.DIRECT
-        @warn("Direct Mode is unsafe")
+        @error("Mode not supported")
         jumpmodel = direct_model(optimizer)
     else
         @warn("Manual Mode not supported")
@@ -219,7 +219,7 @@ end
 ""
 function reset_optimizer!(pm::AbstractDCPowerModel, settings::Settings, s)
 
-    if iszero(s%10) 
+    if iszero(s%20) 
         set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
         fill!(sol(pm, :plc), 0.0)
     else

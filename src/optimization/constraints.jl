@@ -175,92 +175,27 @@ function update_constraint_power_balance(pm::AbstractDCPowerModel, system::Syste
 
 end
 
+""
+function update_constraint_voltage_angle_diff(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-# JuMP.delete(pm.model, con(pm, :power_balance, 1).data)
+    for l in field(system, :branches, :keys)
 
-# for i in field(system, :buses, :keys)
-#     constraint_power_balance(pm, system, i, t)
-# end
+        f_bus = field(system, :branches, :f_bus)[l]
+        t_bus = field(system, :branches, :t_bus)[l]    
+        buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
+        if field(states, :branches)[l,t] != 0
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], buspair[3])
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l], buspair[2])
+        else
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], Inf)
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l],-Inf)
+        end
 
+    end
 
+    return
 
-
-
-#"***************************************************************************************************************************"
-#"Needs to be fixed/updated"
-
-#"DC LINES "
-# function constraint_dcline_power_losses(pm::AbstractDCPowerModel, i::Int)
-#     dcline = ref(pm, :dcline, i)
-#     f_bus = dcline["f_bus"]
-#     t_bus = dcline["t_bus"]
-#     f_idx = (i, f_bus, t_bus)
-#     t_idx = (i, t_bus, f_bus)
-#     loss0 = dcline["loss0"]
-#     loss1 = dcline["loss1"]
-
-#     _constraint_dcline_power_losses(pm, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
-# end
-
-# """
-# Creates Line Flow constraint for DC Lines (Matpower Formulation)
-
-# ```
-# p_fr + p_to == loss0 + p_fr * loss1
-# ```
-# """
-# function _constraint_dcline_power_losses(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
-#     p_fr = var(pm, :p_dc, f_idx)
-#     p_to = var(pm, :p_dc, t_idx)
-
-#     @constraint(pm.model, (1-loss1) * p_fr + (p_to - loss0) == 0)
-# end
-
-# "Fixed Power Factor"
-# function constraint_power_factor(pm::AbstractACPowerModel)
-
-#     z_demand = var(pm, :z_demand)
-#     plc = var(pm, :plc)
-#     q_lc = var(pm, :q_lc)
-    
-#     for (l,_) in ref(pm, :load)
-#         @constraint(pm.model, z_demand[i]*plc[i] - q_lc[i] == 0.0)      
-#     end
-# end
-
-# ""
-# function constraint_voltage_magnitude_diff(pm::AbstractDCPowerModel, i::Int)
-
-#     branch = ref(pm, :branch, i)
-#     f_bus = branch["f_bus"]
-#     t_bus = branch["t_bus"]
-#     f_idx = (i, f_bus, t_bus)
-#     t_idx = (i, t_bus, f_bus)
-
-#     r = branch["br_r"]
-#     x = branch["br_x"]
-#     g_sh_fr = branch["g_fr"]
-#     b_sh_fr = branch["b_fr"]
-#     tm = branch["tap"]
-
-#     _constraint_voltage_magnitude_difference(pm, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
-# end
-
-# """
-# Defines voltage drop over a branch, linking from and to side voltage magnitude
-# """
-# function _constraint_voltage_magnitude_difference(pm::AbstractDCPowerModel, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
-#     p_fr = var(pm, :p, f_idx)
-#     #q_fr = var(pm, n, :q, f_idx)
-#     q_fr = 0
-#     w_fr = var(pm, :w, f_bus)
-#     w_to = var(pm, :w, t_bus)
-#     ccm =  var(pm, :ccm, i)
-
-#     ym_sh_sqr = g_sh_fr^2 + b_sh_fr^2
-
-#     @constraint(pm.model, (1+2*(r*g_sh_fr - x*b_sh_fr))*(w_fr/tm^2) - w_to ==  2*(r*p_fr + x*q_fr) - (r^2 + x^2)*(ccm + ym_sh_sqr*(w_fr/tm^2) - 2*(g_sh_fr*p_fr - b_sh_fr*q_fr)))
-# end
+end
 
 ""
 function calc_branch_y(branches::Branches, i::Int)

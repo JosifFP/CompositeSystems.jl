@@ -318,3 +318,23 @@ function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings
 
     return
 end
+
+""
+function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology::Topology, asset_states::Matrix{Bool}, t::Int)
+    assets_idxs .= makeidxlist(filter(i->asset_states[i,t]==1, field(branches, :keys)), length(assets_idxs))
+
+    state = view(asset_states, :, t)
+    @inbounds for i in eachindex(state)
+        f_bus = field(branches, :f_bus)[i]
+        t_bus = field(branches, :t_bus)[i]
+        if state[i] == false
+            field(topology, :busarcs)[:,i] = Array{Missing}(undef, size(field(topology, :busarcs),1))
+            field(topology, :arcs_from)[i] = missing
+            field(topology, :arcs_to)[i] = missing
+            field(topology, :buspairs)[(f_bus, t_bus)] = missing
+        end
+    end
+
+    field(topology, :arcs)[:] = [field(topology, :arcs_from); field(topology, :arcs_to)]
+    return
+end

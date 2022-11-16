@@ -1,7 +1,7 @@
 include("solvers.jl")
 
 settings = PRATS.Settings(
-    gurobi_solver, 
+    gurobi_optimizer_1,
     modelmode = JuMP.AUTOMATIC
 )
 

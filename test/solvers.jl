@@ -41,5 +41,14 @@ juniper_optimizer_2 = optimizer_with_attributes(
     "atol"=>1e-4, "log_levels"=>[], "processors"=>1
 )
 
-sdp_solver = JuMP.optimizer_with_attributes(SCS.Optimizer, "verbose"=>false)
-gurobi_solver = JuMP.optimizer_with_attributes(Gurobi.Optimizer)
+#sdp_solver = JuMP.optimizer_with_attributes(SCS.Optimizer, "verbose"=>false)
+gurobi_optimizer_1 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>0, "OutputFlag"=>0)
+
+# GLPK_optimizer =
+#     JuMP.optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
+# scs_solver = JuMP.optimizer_with_attributes(
+#     SCS.Optimizer,
+#     "max_iters" => 100000,
+#     "eps" => 1e-4,
+#     "verbose" => 0,
+# )

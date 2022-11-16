@@ -70,7 +70,7 @@ function initialize_availability_system!(states::SystemStates, gens::Generators,
         else
             if sum(view(field(loads, :pd), :, t)) >= total_gen
                 states.system[t] = false
-            elseif count(view(field(states, :generators),:,t)) < length(gens) - 2
+            elseif count(view(field(states, :generators),:,t)) < length(gens) - 1
                 states.system[t] = false
             end
 
