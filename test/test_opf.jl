@@ -1,7 +1,7 @@
 include("solvers.jl")
 
 settings = PRATS.Settings(
-    juniper_optimizer_2, 
+    gurobi_solver, 
     modelmode = JuMP.AUTOMATIC
 )
 
@@ -13,8 +13,8 @@ settings = PRATS.Settings(
 
     PRATS.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     topology = OPF.Topology(system)
-    model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = OPF.PowerModel(settings.powermodel, system, topology, model)
+    #model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+    pm = OPF.PowerModel(system, topology, settings)
     t=1
 
     @testset "G3, G7, G8 and G9 on outage" begin
@@ -34,7 +34,7 @@ settings = PRATS.Settings(
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.5; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
 
         systemstates = OPF.SystemStates(system, available=true)
@@ -52,7 +52,7 @@ settings = PRATS.Settings(
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.699; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
 
         systemstates = OPF.SystemStates(system, available=true)
@@ -70,7 +70,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
     end
     
@@ -87,7 +87,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0.2; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0.2; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
     end
 
@@ -107,7 +107,7 @@ settings = PRATS.Settings(
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.699; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
     end
 
@@ -126,7 +126,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
     end
 
@@ -146,7 +146,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
         
     end
 
@@ -163,8 +163,8 @@ end
         [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 
         7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
     topology = OPF.Topology(system)
-    model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = OPF.PowerModel(settings.powermodel, system, topology, model)
+    #model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+    pm = OPF.PowerModel(system, topology, settings)
     t=1
     
     @testset "Outages of L12, L13" begin
@@ -193,7 +193,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
     @testset "Outages of L1, L4, L10" begin
@@ -223,7 +223,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
     @testset "Outages of L1, L8, L10" begin
@@ -253,7 +253,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
     @testset "Outages of L7, L19, L29" begin
@@ -283,7 +283,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
     @testset "Outages of L7, L23, L29" begin
@@ -312,7 +312,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
     @testset "Outages of L25, L26, L28" begin
@@ -341,7 +341,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
     @testset "Outages of L29, L36, L37" begin
@@ -370,7 +370,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 1.81; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 1.28; atol = 1e-3)
         @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
-        CompositeAdequacy.empty_model!(system, pm, settings)
+        OPF.empty_model!(system, pm, settings)
     end
 
 end

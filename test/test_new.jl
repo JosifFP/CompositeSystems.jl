@@ -1,10 +1,13 @@
 using PRATS, PRATS.OPF, PRATS.BaseModule
 using PRATS.OPF
 using PRATS.CompositeAdequacy
-import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
+import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS, SCS
 import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime
+#using ProfileView, Profile
+
+
 include("solvers.jl")
 TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 RawFile = "test/data/RBTS/RBTS.m"
@@ -12,21 +15,35 @@ ReliabilityFile = "test/data/RBTS/R_RBTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = PRATS.Settings(
-    ipopt_optimizer_3,
+    #ipopt_optimizer_3,
+    gurobi_solver,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC
 )
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=100, seed=1, threaded=true)
-
+method = SequentialMCS(samples=1, seed=1, threaded=false)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+
+
+
+Profile.clear()
+@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+ProfileView.view()
+
 PRATS.LOLE.(shortfall, system.loads.keys)
 PRATS.EUE.(shortfall, system.loads.keys)
 PRATS.LOLE.(shortfall)
 PRATS.EUE.(shortfall)
 
+
+
+
+using TimerOutputs
+const to = TimerOutput()
+@timeit to "" foo()
+show(to)
 
 
 

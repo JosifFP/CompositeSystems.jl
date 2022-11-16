@@ -1,6 +1,6 @@
-import Ipopt, Juniper, HiGHS
+import Ipopt, Juniper, HiGHS, Gurobi
 import JuMP: JuMP, optimizer_with_attributes
-   
+const GRB_ENV = Gurobi.Env()
 
 ipopt_optimizer_1 = JuMP.optimizer_with_attributes(
     Ipopt.Optimizer, "tol" => 1e-6, "print_level" => 0
@@ -40,3 +40,6 @@ juniper_optimizer_2 = optimizer_with_attributes(
     Juniper.Optimizer, "nl_solver"=> ipopt_optimizer_3, 
     "atol"=>1e-4, "log_levels"=>[], "processors"=>1
 )
+
+sdp_solver = JuMP.optimizer_with_attributes(SCS.Optimizer, "verbose"=>false)
+gurobi_solver = JuMP.optimizer_with_attributes(Gurobi.Optimizer)

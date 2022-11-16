@@ -303,3 +303,18 @@ function Base.getproperty(e::Settings, s::Symbol)
         getfield(e, :powermodel)::Type
     end
 end
+
+""
+function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings::Settings) where {N}
+
+    empty!(pm.model)
+    MOIU.reset_optimizer(pm.model)
+    #OPF.set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
+    reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
+    reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
+    reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
+    reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
+    fill!(sol(pm, :plc), 0.0)
+
+    return
+end
