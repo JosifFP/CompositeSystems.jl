@@ -16,10 +16,8 @@ function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
         constraint_power_balance(pm, system, i, t)
     end
 
-    #for i in assetgrouplist(topology(pm, :branches_idxs))
-    #    constraint_thermal_limits(pm, system, i, t)
-    #end
     objective_min_load_curtailment(pm, system)
+    
     return
 
 end
@@ -39,11 +37,11 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
         constraint_theta_ref(pm, i)
     end
 
-    for i in field(system, :buses, :keys)
+    for i in assetgrouplist(topology(pm, :buses_idxs))
         constraint_power_balance(pm, system, i, t)
     end
 
-    for i in field(system, :branches, :keys)
+    for i in assetgrouplist(topology(pm, :branches_idxs))
         constraint_ohms_yt(pm, system, i)
         constraint_voltage_angle_diff(pm, system, i)
     end
@@ -54,7 +52,7 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
 end
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
+function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t::Int)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
@@ -91,15 +89,21 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
     update_constraint_power_balance(pm, system, states, t)
-    update_constraint_voltage_angle_diff(pm, system, states, t)
+    #update_constraint_voltage_angle_diff(pm, system, states, t)
 
     if all(view(states.branches,:,t)) != true
 
         JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
+        JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
+        JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
+
         add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, assetgrouplist(topology(pm, :branches_idxs)))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, assetgrouplist(topology(pm, :branches_idxs)))
 
         for i in assetgrouplist(topology(pm, :branches_idxs))
             constraint_ohms_yt(pm, system, i)
+            constraint_voltage_angle_diff(pm, system, i)
         end
         
     end

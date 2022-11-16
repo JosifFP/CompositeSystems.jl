@@ -35,9 +35,9 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    topology = Topology(system)
+    cache = Topology(system)
     model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = PowerModel(settings.powermodel, topology, model)
+    pm = PowerModel(settings.powermodel, Topology(system), model)
     systemstates = SystemStates(system)
 
     initialize_powermodel!(pm, system)
@@ -52,14 +52,13 @@ function assess(
 
         for t in 2:N
             if systemstates.system[t] ≠ true
-                update_powermodel!(pm, system, systemstates, t)
+                update_powermodel!(pm, cache, system, systemstates, t)
             end
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
         reset_optimizer!(pm, settings, s)
-        #GC.gc()
     end
 
     put!(results, recorders)
@@ -93,11 +92,9 @@ end
 
 
 ""
-function update_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_powermodel!(pm::AbstractPowerModel, cache::Topology, system::SystemModel, states::SystemStates, t::Int)
 
-    #update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs))    
-    #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
-    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))    
+    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))
     update_method!(pm, system, states, t)
     OPF.optimize!(pm.model)
     build_result!(pm, system, t)
@@ -106,11 +103,25 @@ function update_powermodel!(pm::AbstractPowerModel, system::SystemModel, states:
 end
 
 ""
-function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_solve!(pm::AbstractPowerModel, cache::Topology, system::SystemModel, states::SystemStates, t::Int)
 
-    build_method!(pm, system, states, t)
+    update_idxs!(
+        filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
+        pm.topology.generators_idxs, field(pm.topology, :generators_nodes), field(system, :generators, :buses))
+
+    update_idxs!(
+        filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
+        pm.topology.shunts_idxs,  field(pm.topology, :shunts_nodes), field(system, :shunts, :buses))  
+
+
+    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))
+    update_arcs!(system.branches, pm.topology, cache, field(states, :branches), t)
+
+    build_method!(pm, system, t)
     optimize_method!(pm)
     build_result!(pm, system, t)
+    empty!(pm.model)
+
     return
 
 end

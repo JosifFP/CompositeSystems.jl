@@ -15,11 +15,11 @@ struct Topology
     storages_nodes::Dict{Int, Vector{Int}}
     generatorstorages_nodes::Dict{Int, Vector{Int}}
 
-    arcs_from::Vector{Tuple{Int, Int, Int}}
-    arcs_to::Vector{Tuple{Int, Int, Int}}
-    arcs::Vector{Tuple{Int, Int, Int}}
+    arcs_from::Vector{Union{Missing,Tuple{Int, Int, Int}}}
+    arcs_to::Vector{Union{Missing,Tuple{Int, Int, Int}}}
+    arcs::Vector{Union{Missing,Tuple{Int, Int, Int}}}
     busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Vector{Float16}}
+    buspairs::Dict{Tuple{Int, Int}, Union{Missing,Vector{Float16}}}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -80,10 +80,7 @@ struct Topology
         buspairs = calc_buspair_parameters(field(system, :branches), keys)   
 
         return new(
-            buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
-            branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
-            generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
-            generatorstorages_idxs::Vector{UnitRange{Int}}, 
+            buses_idxs, loads_idxs, branches_idxs, shunts_idxs, generators_idxs, storages_idxs, generatorstorages_idxs, 
             loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
             arcs_from, arcs_to, arcs, A, buspairs)
     end
@@ -219,13 +216,15 @@ end
 ""
 function reset_optimizer!(pm::AbstractDCPowerModel, settings::Settings, s)
 
-    if iszero(s%20) 
-        set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
-        fill!(sol(pm, :plc), 0.0)
+    if iszero(s%10) && settings.optimizer == Ipopt
+        set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+    elseif iszero(s%50) && settings.optimizer == Gurobi
+        set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     else
         MOIU.reset_optimizer(pm.model)
-        fill!(sol(pm, :plc), 0.0)
     end
+
+    fill!(sol(pm, :plc), 0.0)
 
     return
 
