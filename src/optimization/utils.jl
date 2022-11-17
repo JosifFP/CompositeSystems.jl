@@ -141,15 +141,6 @@ function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::V
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
-
-    value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
-    var_container = container_spec(value, timesteps)
-    _assign_container!(container, var_key, var_container)
-    return var_container
-end
-
-""
 function _assign_container!(container::Dict, key::Symbol, value)
     #if haskey(container, key)
         #@error "$(key) is already stored"
@@ -269,6 +260,26 @@ function calc_buspair_parameters(buses, branches)
 end
 
 ""
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
+    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
+end
+
+""
+function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
+    @inbounds for k in key_assets
+        push!(bus_assets[buses[k]], k)
+    end
+end
+
+"Update asset_idxs and asset_nodes"
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
+    
+    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
+    map!(x -> Int[], bus_assets)
+    update_asset_nodes!(key_assets, bus_assets, buses)
+
+end
+
 function Base.getproperty(e::AbstractPowerModel, s::Symbol) 
     if s === :model 
         getfield(e, :model)::JuMP.Model
@@ -283,7 +294,6 @@ function Base.getproperty(e::AbstractPowerModel, s::Symbol)
     end
 end
 
-""
 function Base.getproperty(e::Settings, s::Symbol) 
     if s === :optimizer 
         getfield(e, :optimizer)::MOI.OptimizerWithAttributes
@@ -310,47 +320,21 @@ function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings
 end
 
 ""
-function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
-    @inbounds for k in key_assets
-        push!(bus_assets[buses[k]], k)
-    end
-end
+function update_branch_idxs!(branches::Branches, assets_idxs::Vector{UnitRange{Int}}, topology::Topology, asset_states::Matrix{Bool}, t::Int)
+    assets_idxs .= makeidxlist(filter(i->asset_states[i,t]==1, field(branches, :keys)), length(assets_idxs))
 
-""
-function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
-    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
-end
-
-"Update asset_idxs and asset_nodes"
-function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
-    assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
-    map!(x -> Int[], bus_assets)
-    update_asset_nodes!(key_assets, bus_assets, buses)
-end
-
-""
-function update_arcs!(branches::Branches, actual_topology::Topology, initial_topology::Topology, asset_states::Matrix{Bool}, t::Int)
-    
     state = view(asset_states, :, t)
-    
-    for i in eachindex(state)
-
+    @inbounds for i in eachindex(state)
         f_bus = field(branches, :f_bus)[i]
         t_bus = field(branches, :t_bus)[i]
-
         if state[i] == false
-            field(actual_topology, :busarcs)[:,i] = Array{Missing}(undef, size(field(actual_topology, :busarcs),1))
-            field(actual_topology, :arcs_from)[i] = missing
-            field(actual_topology, :arcs_to)[i] = missing
-            field(actual_topology, :buspairs)[(f_bus, t_bus)] = missing
-        else
-            field(actual_topology, :busarcs)[:,i] = field(initial_topology, :busarcs)[:,i]
-            field(actual_topology, :arcs_from)[i] = field(initial_topology, :arcs_from)[i]
-            field(actual_topology, :arcs_to)[i] = field(initial_topology, :arcs_to)[i]
-            field(actual_topology, :buspairs)[(f_bus, t_bus)] = field(initial_topology, :buspairs)[(f_bus, t_bus)]
+            field(topology, :busarcs)[:,i] = Array{Missing}(undef, size(field(topology, :busarcs),1))
+            field(topology, :arcs_from)[i] = missing
+            field(topology, :arcs_to)[i] = missing
+            field(topology, :buspairs)[(f_bus, t_bus)] = missing
         end
     end
-   
-    field(actual_topology, :arcs)[:] = [field(actual_topology, :arcs_from); field(actual_topology, :arcs_to)]
 
+    field(topology, :arcs)[:] = [field(topology, :arcs_from); field(topology, :arcs_to)]
+    return
 end

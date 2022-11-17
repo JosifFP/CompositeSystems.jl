@@ -7,13 +7,11 @@ import PowerModels
 import BenchmarkTools: @btime
 #using ProfileView, Profile
 
+
 include("solvers.jl")
-TimeSeriesFile = "test/data/RTS/Loads.xlsx"
-RawFile = "test/data/RTS/RTS.m"
-ReliabilityFile = "test/data/RTS/R_RTS.m"
-#TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
-#RawFile = "test/data/RBTS/RBTS.m"
-#ReliabilityFile = "test/data/RBTS/R_RBTS.m"
+TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
+RawFile = "test/data/RBTS/RBTS.m"
+ReliabilityFile = "test/data/RBTS/R_RBTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = PRATS.Settings(
@@ -25,8 +23,9 @@ settings = PRATS.Settings(
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=1, seed=100, threaded=false)
+method = SequentialMCS(samples=1000, seed=100, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+
 
 
 #Profile.clear()
@@ -42,6 +41,42 @@ PRATS.EUE.(shortfall)
 #const to = TimerOutput()
 #@timeit to "" foo()
 #show(to)
+
+
+
+
+
+settings = PRATS.Settings(
+    #ipopt_optimizer_3,
+    gurobi_solver,
+    #juniper_optimizer_2,
+    modelmode = JuMP.AUTOMATIC
+)
+
+topology = OPF.Topology(system)
+systemstates = BaseModule.SystemStates(system)
+pm = OPF.PowerModel(system, topology, settings)
+rng = CompositeAdequacy.Philox4x((0, 0), 10) 
+s=1
+PRATS.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
+CompositeAdequacy.seed!(rng, (method.seed, s))  #using the same seed for entire period.
+CompositeAdequacy.initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
+#CompositeAdequacy.initialize_powermodel!(pm, system)
+
+CompositeAdequacy.initialize_pm_containers!(pm, system; timeseries=false)
+OPF.var_gen_power(pm, system)
+OPF.var_branch_power(pm, system)
+OPF.var_load_curtailment(pm, system, 1)
+
+# Add Constraints
+# ---------------
+for i in assetgrouplist(OPF.topology(pm, :buses_idxs))
+    OPF.constraint_power_balance(pm, system, i, 1)
+end
+OPF.optimize_method!(pm)
+OPF.build_result!(pm, system, 1)
+@show JuMP.solution_summary(pm.model, verbose=true)
+OPF.sol(pm, :plc)
 
 
 
