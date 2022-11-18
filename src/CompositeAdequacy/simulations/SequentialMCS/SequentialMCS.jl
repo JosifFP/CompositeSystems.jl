@@ -10,7 +10,6 @@ function assess(
     threads = Base.Threads.nthreads()
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
-
     Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
     if method.threaded
@@ -41,7 +40,6 @@ function assess(
     systemstates = SystemStates(system)
 
     initialize_powermodel!(pm, system)
-
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
@@ -52,7 +50,7 @@ function assess(
 
         for t in 2:N
             if systemstates.system[t] ≠ true
-                update_powermodel!(pm, system, systemstates, t)
+                update_model!(pm, system, systemstates, t)
             end
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
@@ -72,10 +70,8 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
     initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
     initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
     initialize_availability!(rng, field(states, :generatorstorages), field(system, :generatorstorages), N)
-
-    #fill!(field(states, :branches), 1.0)
-    #fill!(field(states, :generators), 1.0)
     initialize_availability_system!(states, field(system, :generators), field(system, :loads), N)
+
     return
 
 end
@@ -92,7 +88,7 @@ end
 
 
 ""
-function update_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     #update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs))    
     #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))

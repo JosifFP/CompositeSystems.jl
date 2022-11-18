@@ -26,7 +26,7 @@ settings = PRATS.Settings(
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=20, seed=100, threaded=false)
+method = SequentialMCS(samples=10, seed=100, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
 
 

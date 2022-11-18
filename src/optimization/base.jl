@@ -198,6 +198,11 @@ function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settin
         add_var_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
         add_var_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
         add_var_container!(var, :p, field(topology, :arcs), timesteps = 1:N)
+        add_con_container!(con, :power_balance, field(system, :buses, :keys), timesteps = 1:N)
+        add_con_container!(con, :ohms_yt_from, field(system, :branches, :keys), timesteps = 1:N)
+        add_con_container!(con, :ohms_yt_to, field(system, :branches, :keys), timesteps = 1:N)
+        add_con_container!(con, :voltage_angle_diff_upper, field(system, :branches, :keys), timesteps = 1:N)
+        add_con_container!(con, :voltage_angle_diff_lower, field(system, :branches, :keys), timesteps = 1:N)
     else
         add_var_container!(var, :pg, field(system, :generators, :keys))
         add_var_container!(var, :va, field(system, :buses, :keys))
