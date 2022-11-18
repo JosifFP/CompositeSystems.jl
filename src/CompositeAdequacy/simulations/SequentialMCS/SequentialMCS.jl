@@ -34,12 +34,17 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    topology = Topology(system)
+    #model for contingency states
     model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = PowerModel(settings.powermodel, topology, model)
-    systemstates = SystemStates(system)
-
+    pm = PowerModel(settings.powermodel, Topology(system), model)
     initialize_powermodel!(pm, system)
+
+    #model for non-contingency states
+    ncmodel = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+    ncpm = PowerModel(OPF.NFAPowerModel, Topology(system), ncmodel)
+    initialize_powermodel!(ncpm, system)
+
+    systemstates = SystemStates(system)
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
@@ -49,9 +54,14 @@ function assess(
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
         for t in 2:N
-            if systemstates.system[t] ≠ true
+            if systemstates.system[t] == true
+                #println("t=$(t) NC")
+                update_model!(ncpm, system, systemstates, t)
+            else
+                #println("t=$(t) C")
                 update_model!(pm, system, systemstates, t)
             end
+
             foreach(recorder -> record!(recorder, pm, s, t), recorders)
         end
 
@@ -86,6 +96,15 @@ function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel)
 
 end
 
+""
+function initialize_powermodel!(pm::AbstractNFAModel, system::SystemModel)
+
+    initialize_pm_containers!(pm, system; timeseries=false)
+    build_method!(pm, system, 1)
+    optimize_method!(pm)
+
+end
+
 
 ""
 function update_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
@@ -96,6 +115,15 @@ function update_model!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     update_method!(pm, system, states, t)
     OPF.optimize!(pm.model)
     build_result!(pm, system, t)
+    return
+
+end
+
+""
+function update_model!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
+
+    update_method!(pm, system, states, t)
+    OPF.optimize!(pm.model)
     return
 
 end

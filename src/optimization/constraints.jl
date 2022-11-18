@@ -40,6 +40,24 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, i::
     )
 end
 
+""
+function _constraint_power_balance(pm::AbstractNFAModel, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+
+    p    = var(pm, :p, nw)
+    pg   = var(pm, :pg, nw)
+
+    exp = @expression(pm.model,
+        sum(pg[g] for g in bus_gens)
+        - sum(p[a] for a in bus_arcs)
+    )
+
+    con(pm, :power_balance, nw)[i] = @constraint(pm.model,
+        exp
+        ==
+        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
+        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes]))*1.0^2
+    )
+end
 
 "Branch - Ohm's Law Constraints"
 function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
@@ -183,7 +201,7 @@ function update_constraint_voltage_angle_diff(pm::AbstractDCPowerModel, system::
         f_bus = field(system, :branches, :f_bus)[l]
         t_bus = field(system, :branches, :t_bus)[l]    
         buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
-        if field(states, :branches)[l,t] != 0
+        if field(states, :branches)[l,t] ≠ 0
             JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], buspair[3])
             JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l], buspair[2])
         else

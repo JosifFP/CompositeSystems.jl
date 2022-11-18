@@ -52,13 +52,41 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     end
 
     for i in field(system, :branches, :keys)
-        if field(states, :branches)[i,t] != 0
+        if field(states, :branches)[i,t] ≠ 0
             constraint_ohms_yt(pm, system, i)
             constraint_voltage_angle_diff(pm, system, i)
         end
     end
 
     objective_min_load_curtailment(pm, system)
+    return
+
+end
+
+"Transportation"
+function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
+ 
+    var_gen_power(pm, system)
+    var_branch_power(pm, system)
+
+    # Add Constraints
+    # ---------------
+    for i in field(system, :buses, :keys)
+        constraint_power_balance(pm, system, i, t)
+    end
+
+    objective_min_fuel_and_flow_cost(pm, system)
+    
+    return
+
+end
+
+"Transportation"
+function update_method!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
+
+    update_var_gen_power(pm, system, states, t)
+    update_var_branch_power(pm, system, states, t)
+    update_constraint_power_balance(pm, system, states, t)
     return
 
 end
@@ -72,7 +100,7 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_constraint_power_balance(pm, system, states, t)
     update_constraint_voltage_angle_diff(pm, system, states, t)
 
-    if all(view(states.branches,:,t)) != true
+    if all(view(states.branches,:,t)) ≠ true
 
         JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
         add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
@@ -128,17 +156,18 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
         cost = reverse(system.generators.cost[i])
         pg = var(pm, :pg, nw)[i]
         if length(cost) == 1
-            gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1])
+            gen_cost[i] = JuMP.@expression(pm.model, cost[1])
         elseif length(cost) == 2
-            gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg)
-        elseif length(cost) == 3
-            gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
+            gen_cost[i] = JuMP.@expression(pm.model, cost[1] + cost[2]*pg)
+        #elseif length(cost) == 3
+            #gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
         else
-            gen_cost[i] = JuMP.@NLexpression(pm.model, 0.0)
+            @error("Nonlinear problems not supported")
+            gen_cost[i] = JuMP.@expression(pm.model, 0.0)
         end
     end
 
-    return JuMP.@NLobjective(pm.model, MIN_SENSE, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+    return JuMP.@objective(pm.model, MIN_SENSE, sum(gen_cost[i] for i in eachindex(gen_idxs)))
     
 end
 

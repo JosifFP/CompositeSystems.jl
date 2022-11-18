@@ -33,7 +33,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.5; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
 
@@ -51,7 +51,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.7; atol = 1e-2)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
 
@@ -69,7 +69,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
     end
@@ -86,7 +86,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0.2; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0.2; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
     end
@@ -106,7 +106,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.7; atol = 1e-2)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
     end
@@ -125,7 +125,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
     end
@@ -145,7 +145,7 @@ settings = PRATS.Settings(
         @test isapprox(values(OPF.sol(pm, :plc))[3,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[4,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[5,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
     end
@@ -192,7 +192,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 
@@ -222,7 +222,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 
@@ -252,7 +252,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 
@@ -282,7 +282,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 
@@ -311,7 +311,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 
@@ -340,7 +340,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 0; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 
@@ -369,7 +369,7 @@ end
         @test isapprox(values(OPF.sol(pm, :plc))[15,t], 0; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[16,t], 1.81; atol = 1e-3)
         @test isapprox(values(OPF.sol(pm, :plc))[17,t], 1.28; atol = 1e-3)
-        @test JuMP.termination_status(pm.model) != JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
     end
 

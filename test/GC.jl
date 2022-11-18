@@ -1,6 +1,6 @@
 "SequentialMCS"
 #update_idxs!(
-    #    filter(i->states.buses[i]!= 4,field(system, :buses, :keys)), topology(pm, :buses_idxs))
+    #    filter(i->states.buses[i]≠ 4,field(system, :buses, :keys)), topology(pm, :buses_idxs))
 
 #update_idxs!(
     #    filter(i->field(states, :loads, i, t), field(system, :loads, :keys)), 
@@ -36,7 +36,7 @@
     # JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
 
     # for i in field(system, :branches, :keys)
-    #     if field(states, :branches)[i,t] != 0
+    #     if field(states, :branches)[i,t] ≠ 0
     #         constraint_ohms_yt(pm, system, i)
     #         constraint_voltage_angle_diff(pm, system, i)
     #     end
@@ -44,10 +44,10 @@
 
     # if t > 1
     #     for i in field(system, :branches, :keys)
-    #         if field(states, :branches)[i,t] != 0 && field(states, :branches)[i,t-1] == 0
+    #         if field(states, :branches)[i,t] ≠ 0 && field(states, :branches)[i,t-1] == 0
     #             constraint_ohms_yt(pm, system, i)
     #             constraint_voltage_angle_diff(pm, system, i)
-    #         elseif field(states, :branches)[i,t] == 0 && field(states, :branches)[i,t-1] != 0
+    #         elseif field(states, :branches)[i,t] == 0 && field(states, :branches)[i,t-1] ≠ 0
     #             JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1)[i])
     #             JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1)[i])
     #             JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1)[i])
@@ -60,7 +60,7 @@
     #     JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
 
     #     for i in field(system, :branches, :keys)
-    #         if field(states, :branches)[i,t] != 0
+    #         if field(states, :branches)[i,t] ≠ 0
     #             constraint_ohms_yt(pm, system, i)
     #             constraint_voltage_angle_diff(pm, system, i)
     #         end
@@ -417,7 +417,7 @@
 # end
 
 
-    # if all(view(states.branches,:,t)) != true
+    # if all(view(states.branches,:,t)) ≠ true
     #     JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
     #     JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
     #     JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
@@ -427,7 +427,7 @@
     #     add_con_container!(pm.con, :voltage_angle_diff_lower, assetgrouplist(topology(pm, :branches_idxs)))
 
     #     for i in field(system, :branches, :keys)
-    #         if field(states, :branches)[i,t] != 0
+    #         if field(states, :branches)[i,t] ≠ 0
     #             constraint_ohms_yt(pm, system, i)
     #             constraint_voltage_angle_diff(pm, system, i)
     #         end
@@ -573,7 +573,7 @@
 # end
 
 
-# if all(view(states.branches,:,t)) != true
+# if all(view(states.branches,:,t)) ≠ true
 #     JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
 #     #JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
 #     #JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)

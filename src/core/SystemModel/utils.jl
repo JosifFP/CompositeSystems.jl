@@ -308,7 +308,7 @@ end
 ""
 function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vector{Float16}}, baseMVA::Float16)
 
-    if length(index_keys) != length(collect(keys(timeseries_load)))
+    if length(index_keys) ≠ length(collect(keys(timeseries_load)))
         @error("Time-series Load data file does not match length of load in network data file")
     end
 
@@ -509,13 +509,13 @@ end
 function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
     @assert(length(buses.keys) == length(ref[:bus])) # if this is not true something very bad is going on
-    active_bus_ids = Set(bus["index"] for (i,bus) in ref[:bus] if bus["bus_type"] != 4)
+    active_bus_ids = Set(bus["index"] for (i,bus) in ref[:bus] if bus["bus_type"] ≠ 4)
 
     for (i, gen) in ref[:gen]
         if !(gen["gen_bus"] in buses.keys) || !(generators.buses[i] in buses.keys)
             @error( "bus $(gen["gen_bus"]) in shunt $(i) is not defined")
         end
-        if gen["gen_status"] != 0 && !(gen["gen_bus"] in active_bus_ids)
+        if gen["gen_status"] ≠ 0 && !(gen["gen_bus"] in active_bus_ids)
             @warn( "active generator $(i) is connected to inactive bus $(gen["gen_bus"])")
         end
     end
@@ -525,7 +525,7 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
             @error( "bus $(load["load_bus"]) in load $(i) is not defined")
         end
 
-        if load["status"] != 0 && !(load["load_bus"] in active_bus_ids)
+        if load["status"] ≠ 0 && !(load["load_bus"] in active_bus_ids)
             @warn( "active load $(i) is connected to inactive bus $(load["load_bus"])")
         end       
     end
@@ -534,7 +534,7 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
         if !(shunt["shunt_bus"] in buses.keys) || !(shunts.buses[i] in buses.keys)
             @error( "bus $(shunt["shunt_bus"]) in shunt $(i) is not defined")
         end
-        if shunt["status"] != 0 && !(shunt["shunt_bus"] in active_bus_ids)
+        if shunt["status"] ≠ 0 && !(shunt["shunt_bus"] in active_bus_ids)
             @warn( "active shunt $(i) is connected to inactive bus $(shunt["shunt_bus"])")
         end
     end
@@ -543,7 +543,7 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
         if !(strg["storage_bus"] in buses.keys) || !(storages.buses[i] in buses.keys)
             @error( "bus $(strg["storage_bus"]) in shunt $(i) is not defined")
         end
-        if strg["status"] != 0 && !(strg["storage_bus"] in active_bus_ids)
+        if strg["status"] ≠ 0 && !(strg["storage_bus"] in active_bus_ids)
             @warn( "active storage unit $(i) is connected to inactive bus $(strg["storage_bus"])")
         end
     end
@@ -555,19 +555,19 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
         if !(branch["t_bus"] in buses.keys) || !(branches.t_bus[i] in buses.keys)
             @error( "bus $(branch["t_bus"]) in shunt $(i) is not defined")
         end
-        if branch["br_status"] != 0 && !(branch["f_bus"] in active_bus_ids)
+        if branch["br_status"] ≠ 0 && !(branch["f_bus"] in active_bus_ids)
             @warn( "active branch $(i) is connected to inactive bus $(branch["f_bus"])")
         end
 
-        if branch["br_status"] != 0 && !(branch["t_bus"] in active_bus_ids)
+        if branch["br_status"] ≠ 0 && !(branch["t_bus"] in active_bus_ids)
             @warn( "active branch $(i) is connected to inactive bus $(branch["t_bus"])")
         end
 
-        # if dcline["br_status"] != 0 && !(dcline["f_bus"] in active_bus_ids)
+        # if dcline["br_status"] ≠ 0 && !(dcline["f_bus"] in active_bus_ids)
         #     @warn( "active dcline $(i) is connected to inactive bus $(dcline["f_bus"])")
         # end
 
-        # if dcline["br_status"] != 0 && !(dcline["t_bus"] in active_bus_ids)
+        # if dcline["br_status"] ≠ 0 && !(dcline["t_bus"] in active_bus_ids)
         #     @warn( "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
         # end
     end

@@ -110,7 +110,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
 
     # TODO transform PWL costs into linear costs
     for (i,gen) in data["gen"]
-        if get(gen, "cost_model", 2) != 2
+        if get(gen, "cost_model", 2) ≠ 2
             @error("make_basic_network only supports network data with polynomial cost functions, generator $(i) has a piecewise linear cost function")
         end
     end
@@ -175,7 +175,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
 
     # re-number non-bus component ids
     for comp_key in keys(pm_component_status)
-        if comp_key != "bus"
+        if comp_key ≠ "bus"
             data[comp_key] = _renumber_components(data[comp_key])
         end
     end
@@ -205,7 +205,7 @@ function _biggest_generator(gens::Dict)::Dict
     biggest_value = -Inf
 
     for (k,gen) in gens
-        if gen["gen_status"] != 0
+        if gen["gen_status"] ≠ 0
             pmax = maximum(gen["pmax"])
             if pmax > biggest_value
                 biggest_gen = gen
@@ -225,7 +225,7 @@ function _filter_inactive_components(comp_dict::Dict{String,<:Any}; status_key="
     filtered_dict = Dict{String,Any}()
 
     for (i,comp) in comp_dict
-        if comp[status_key] != status_inactive_value
+        if comp[status_key] ≠ status_inactive_value
             filtered_dict[i] = comp
         end
     end
