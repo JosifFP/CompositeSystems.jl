@@ -587,3 +587,21 @@
 #         #constraint_voltage_angle_diff(pm, system, i)
 #     end
 # end
+
+# "Transportation"
+# function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
+ 
+#     var_gen_power(pm, system)
+#     var_branch_power(pm, system)
+#     var_load_curtailment(pm, system, t)
+
+#     # Add Constraints
+#     # ---------------
+#     for i in assetgrouplist(topology(pm, :buses_idxs))
+#         constraint_power_balance(pm, system, i, t)
+#     end
+
+#     objective_min_load_curtailment(pm, system)
+#     return
+
+# end

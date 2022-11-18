@@ -58,8 +58,7 @@ function assess(
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        reset_optimizer!(pm, settings, s)
-        #GC.gc()
+        reset_model!(pm, system, settings, s)
     end
 
     put!(results, recorders)
@@ -73,10 +72,10 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
     initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
     initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
     initialize_availability!(rng, field(states, :generatorstorages), field(system, :generatorstorages), N)
-    initialize_availability_system!(states, field(system, :generators), field(system, :loads), N)
 
-    #initialize_availability!(states, N)
-    #states = propagate_outages!(states, system.branches, settings, N)
+    #fill!(field(states, :branches), 1.0)
+    #fill!(field(states, :generators), 1.0)
+    initialize_availability_system!(states, field(system, :generators), field(system, :loads), N)
     return
 
 end

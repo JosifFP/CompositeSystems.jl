@@ -3,27 +3,6 @@ Given a JuMP model and a PowerModels network data structure,
 Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data and returns the JuMP model
 """
 
-"Transportation"
-function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
- 
-    var_gen_power(pm, system)
-    var_branch_power(pm, system)
-    var_load_curtailment(pm, system, t)
-
-    # Add Constraints
-    # ---------------
-    for i in assetgrouplist(topology(pm, :buses_idxs))
-        constraint_power_balance(pm, system, i, t)
-    end
-
-    #for i in assetgrouplist(topology(pm, :branches_idxs))
-    #    constraint_thermal_limits(pm, system, i, t)
-    #end
-    objective_min_load_curtailment(pm, system)
-    return
-
-end
-
 "Load Minimization version of DCOPF"
 function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
 
@@ -193,6 +172,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
             end
             sol(pm, :plc)[i,t] = getindex(plc, i)
         end
+        #println("solved, t=$(t), PLC=$(sum(sol(pm, :plc)[:,t]))")  
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
@@ -201,6 +181,25 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw
 
 end
 
+function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, states::SystemStates)
+
+    plc = build_sol_values(var(pm, :plc, 1))
+
+    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
+        for i in field(system, :loads, :keys)
+            if haskey(plc, i) == false
+                get!(plc, i, field(system, :loads, :pd)[i,t])
+            end
+            sol(pm, :plc)[i,t] = getindex(plc, i)
+        end
+        println("solved, t=$(t), PLC=$(sum(sol(pm, :plc)[:,t])), outage=$(states.branches[:,t])")  
+    else
+        println("not solved, t=$(t), status=$(termination_status(pm.model))")        
+    end
+
+    return
+
+end
 
 ""
 function build_sol_values(var::DenseAxisArray)

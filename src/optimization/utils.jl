@@ -80,31 +80,6 @@ function container_spec(dictionary::Dict{Tuple{Int, Int, Int}, Any}, timesteps::
     return cont
 end
 
-
-""
-function reset_object_container!(container::DenseAxisArray{T}, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}) where {T <: Dict}
-
-    value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
-
-    @inbounds for i in timesteps
-        container[i] = value
-    end
-
-    return
-end
-
-""
-function reset_object_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}) where {T <: AbstractArray}
-
-    value = _container_spec(VariableRef, keys)
-
-    @inbounds for i in timesteps
-        container[i] = value
-    end
-
-    return
-end
-
 ""
 function add_sol_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: Matrix{Float64}}
 
@@ -304,19 +279,76 @@ function Base.getproperty(e::Settings, s::Symbol)
     end
 end
 
+
+""
+function reset_container!(container::DenseAxisArray{T}, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: Dict}
+
+    value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
+
+    for i in timesteps
+        container[i] = value
+    end
+
+    return
+end
+
+""
+function reset_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(VariableRef, keys)
+
+    for i in timesteps
+        container[i] = value
+    end
+
+    return
+end
+
 ""
 function empty_model!(system::SystemModel{N}, pm::AbstractDCPowerModel, settings::Settings) where {N}
 
     empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
-    #OPF.set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
-    reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
-    reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
+    reset_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
+    reset_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
+    reset_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
+    reset_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
     fill!(sol(pm, :plc), 0.0)
 
     return
+end
+
+""
+function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) where {N}
+
+    reset_container!(var(pm, :pg), field(system, :generators, :keys))
+    reset_container!(var(pm, :va), field(system, :buses, :keys))
+    reset_container!(var(pm, :plc), field(system, :loads, :keys))
+    reset_container!(var(pm, :p), topology(pm, :arcs))
+    reset_container!(con(pm, :power_balance), field(system, :buses, :keys))
+    reset_container!(con(pm, :ohms_yt_from), field(system, :branches, :keys))
+    reset_container!(con(pm, :ohms_yt_to), field(system, :branches, :keys))
+    reset_container!(con(pm, :voltage_angle_diff_upper), field(system, :branches, :keys))
+    reset_container!(con(pm, :voltage_angle_diff_lower), field(system, :branches, :keys))
+
+    return
+end
+
+
+""
+function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, settings::Settings, s)
+
+    if iszero(s%20) 
+        set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
+
+    fill!(sol(pm, :plc), 0.0)
+    reset_containers!(pm, system)
+
+    return
+
 end
 
 ""

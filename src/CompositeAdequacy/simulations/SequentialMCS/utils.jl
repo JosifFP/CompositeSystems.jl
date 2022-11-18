@@ -5,21 +5,19 @@ function initialize_availability!(
     asset::AbstractAssets, N::Int)
 
     if field(asset, :status) ≠ false
-        for i in 1:length(asset)
+        for i in asset.keys
             sequence = view(availability, i, :)
             λ = asset.λ[i]/N
             μ = asset.μ[i]/N
             if λ ≠ 0.0 || μ ≠ 0.0
                 cycles!(sequence, rng, λ, μ, N)
-            else
-
-             end
+            end
         end
     else
         fill!(availability, 0)
     end
 
-    return
+    return availability
     
 end
 

@@ -247,7 +247,7 @@ function _merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{S
     
     for (k,v) in network[:branch]
         i = string(k)
-        if haskey(reliability_data["reliability_branch"], i) && v["f_bus"] == reliability_data["reliability_branch"][i]["f_bus"] && v["t_bus"] == reliability_data["reliability_branch"][i]["t_bus"]
+        if haskey(reliability_data["reliability_branch"], i)
             get!(v, "λ", reliability_data["reliability_branch"][i]["λ"])
             if reliability_data["reliability_branch"][i]["mttr"] ≠ 0.0
                 get!(v, "μ", Float64.(N/reliability_data["reliability_branch"][i]["mttr"]))

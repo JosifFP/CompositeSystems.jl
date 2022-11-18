@@ -12,6 +12,9 @@ include("solvers.jl")
 TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 RawFile = "test/data/RBTS/RBTS.m"
 ReliabilityFile = "test/data/RBTS/R_RBTS.m"
+#TimeSeriesFile = "test/data/RTS/Loads.xlsx"
+#RawFile = "test/data/RTS/RTS.m"
+#ReliabilityFile = "test/data/RTS/R_RTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = PRATS.Settings(
@@ -23,7 +26,7 @@ settings = PRATS.Settings(
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=20, seed=100, threaded=false)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
 
 
@@ -43,62 +46,49 @@ PRATS.EUE.(shortfall)
 #show(to)
 
 
+#system = BaseModule.SystemModel(RawFile, ReliabilityFile)
+PRATS.field(system, :loads, :cost)[:] = [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
 
 
-
-settings = PRATS.Settings(
-    #ipopt_optimizer_3,
-    gurobi_solver,
-    #juniper_optimizer_2,
-    modelmode = JuMP.AUTOMATIC
-)
-
-topology = OPF.Topology(system)
-systemstates = BaseModule.SystemStates(system)
-pm = OPF.PowerModel(system, topology, settings)
-rng = CompositeAdequacy.Philox4x((0, 0), 10) 
-s=1
-PRATS.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
-CompositeAdequacy.seed!(rng, (method.seed, s))  #using the same seed for entire period.
-CompositeAdequacy.initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
-#CompositeAdequacy.initialize_powermodel!(pm, system)
-
-CompositeAdequacy.initialize_pm_containers!(pm, system; timeseries=false)
-OPF.var_gen_power(pm, system)
-OPF.var_branch_power(pm, system)
-OPF.var_load_curtailment(pm, system, 1)
-
-# Add Constraints
-# ---------------
-for i in assetgrouplist(OPF.topology(pm, :buses_idxs))
-    OPF.constraint_power_balance(pm, system, i, 1)
-end
-OPF.optimize_method!(pm)
-OPF.build_result!(pm, system, 1)
-@show JuMP.solution_summary(pm.model, verbose=true)
-OPF.sol(pm, :plc)
+recorders = accumulator.(system, method, resultspecs)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+topology = Topology(system)
+model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+pm = PowerModel(settings.powermodel, topology, model)
+systemstates = SystemStates(system)
+CompositeAdequacy.initialize_powermodel!(pm, system)
+CompositeAdequacy.initialize_states!(rng, systemstates, system)
 
 
+systemstates.branches
 
 
+t=1
+system.loads.pd[:,t] = peakload
+PRATS.field(systemstates, :branches)[29,t] = 0
+PRATS.field(systemstates, :branches)[36,t] = 0
+PRATS.field(systemstates, :branches)[37,t] = 0
+systemstates.system[t] = 0
+CompositeAdequacy.update_powermodel!(pm, system, systemstates, t)
+sol(pm, :plc)
 
 
-
-
-
-@code_warntype CompositeAdequacy.initialize_powermodel!(pm, system)
-@code_warntype PowerModel(system, topology, settings)
-@code_warntype pm.model
 
 t=2
-system.loads.pd[:,t] =  [0.2; 0.85; 0.4; 0.2; 0.2]
-PRATS.field(systemstates, :generators)[3,t] = 0
-PRATS.field(systemstates, :generators)[7,t] = 0
-PRATS.field(systemstates, :generators)[8,t] = 0
-PRATS.field(systemstates, :generators)[9,t] = 0
-systemstates.system[t] = 0
-states = systemstates
+system.loads.pd[:,t] = peakload
+systemstates.system[t] = 1
 CompositeAdequacy.update_powermodel!(pm, system, systemstates, t)
+sol(pm, :plc)
+
+pm.var
+
+
+
+
+#@code_warntype
+
+
+
 @code_warntype CompositeAdequacy.update_powermodel!(pm, system, systemstates, t)
 
 @code_warntype update_method!(pm, system, states, t)
@@ -166,17 +156,9 @@ systemstates.system[t] = 0
 states = systemstates
 CompositeAdequacy.update_powermodel!(pm, system, systemstates, t)
 
-
-
-states.branches[:,6]
-
 all(view(states.branches,:,t))
 
 JuMP.all_constraints(pm.model; include_variable_in_set_constraints = true)
-
-
-
-
 CompositeAdequacy.build_method!(pm, system, systemstates, t)
 CompositeAdequacy.optimize_method!(pm.model)
 CompositeAdequacy.build_result!(pm, system, t)
@@ -193,10 +175,21 @@ JuMP.LowerBoundRef(pg1)
 
 
 
-JuMP.fix(var(pm, :va), 135.0; force=true);
+include("solvers.jl")
+import PowerModels
+PowerModels.silence()
+data = PowerModels.parse_file("test/data/RTS/RTS.m")
+@time for i in 1:10
+    result = PowerModels.solve_dc_opf(data, gurobi_optimizer_1)
+end
 
-t=2
+result = PowerModels.solve_dc_opf(data, gurobi_optimizer_1)
+result = PowerModels.solve_dc_opf(data, ipopt_optimizer_3)
 
+
+JuMP.optimize!(pm.model) 
+JuMP.termination_status(pm.model)
+@show JuMP.solution_summary(pm.model, verbose=true)
 
 
 

@@ -215,18 +215,3 @@ function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settin
     return DCPPowerModel(model, topology, var, con, sol)
 
 end
-
-""
-function reset_optimizer!(pm::AbstractDCPowerModel, settings::Settings, s)
-
-    if iszero(s%20) 
-        set_optimizer(pm.model, deepcopy(field(settings, :optimizer)); add_bridges = false)
-        fill!(sol(pm, :plc), 0.0)
-    else
-        MOIU.reset_optimizer(pm.model)
-        fill!(sol(pm, :plc), 0.0)
-    end
-
-    return
-
-end
