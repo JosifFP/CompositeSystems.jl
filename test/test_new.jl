@@ -1,7 +1,7 @@
 using PRATS, PRATS.OPF, PRATS.BaseModule
 using PRATS.OPF
 using PRATS.CompositeAdequacy
-import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS, SCS
+import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime

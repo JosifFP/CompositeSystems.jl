@@ -250,3 +250,51 @@ end
 "Model ignores reactive power flows"
 function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 end
+
+"variables for modeling storage units, includes grid injection and internal variables"
+function variable_storage_power(pm::AbstractPowerModel; kwargs...)
+    variable_storage_power_real(pm; kwargs...)
+    variable_storage_power_imaginary(pm; kwargs...)
+    #variable_storage_power_control_imaginary(pm; kwargs...)
+    #variable_storage_current(pm; kwargs...)
+    #variable_storage_energy(pm; kwargs...)
+    #variable_storage_charge(pm; kwargs...)
+    #variable_storage_discharge(pm; kwargs...)
+end
+
+""
+function variable_storage_power_real(pm::AbstractPowerModel; nw::Int=1, bounded::Bool=true)
+
+    ps = var(pm, :ps)[nw] = @variable(pm.model,
+        [i in ids(pm, nw, :storage)], base_name="$(nw)_ps",
+        start = comp_start_value(ref(pm, nw, :storage, i), "ps_start")
+    )
+
+    if bounded
+        inj_lb, inj_ub = ref_calc_storage_injection_bounds(ref(pm, nw, :storage), ref(pm, nw, :bus))
+
+        for i in ids(pm, nw, :storage)
+            if !isinf(inj_lb[i])
+                JuMP.set_lower_bound(ps[i], inj_lb[i])
+            end
+            if !isinf(inj_ub[i])
+                JuMP.set_upper_bound(ps[i], inj_ub[i])
+            end
+        end
+    end
+
+    report && sol_component_value(pm, nw, :storage, :ps, ids(pm, nw, :storage), ps)
+end
+
+function var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    pg = var(pm, :pg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
+
+    if bounded
+        for l in field(system, :generators, :keys)
+            set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+            set_lower_bound(pg[l], 0.0)
+        end
+    end
+
+end

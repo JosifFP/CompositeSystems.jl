@@ -240,7 +240,6 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     discharge_rating::Vector{Float16}
     charge_efficiency::Vector{Float16}
     discharge_efficiency::Vector{Float16}
-    #carryover_efficiency::Vector{Float16}
     thermal_rating::Vector{Float16}
     qmax::Vector{Float16}
     qmin::Vector{Float16}

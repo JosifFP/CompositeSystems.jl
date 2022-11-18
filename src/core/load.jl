@@ -46,6 +46,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     network_shunt::Dict{Int, Any} = network[:shunt]
     network_gen::Dict{Int, Any} = network[:gen]
     network_load::Dict{Int, Any} = network[:load]
+    network_storage::Dict{Int, Any} = network[:storage]
 
     has = has_asset(network)
     
@@ -63,7 +64,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["va"], 
             data["vm"]
         )
-
     end
 
     if has[:branches]
@@ -90,7 +90,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["μ"],
             data["br_status"]
         )
-
     end
 
     if has[:shunts]
@@ -102,7 +101,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["gs"], 
             data["status"]
         )
-
     else
         shunts = Shunts(Int[], Int[], Float16[], Float16[], Vector{Bool}())
     end
@@ -125,7 +123,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["μ"],
             data["gen_status"]
         )
-
     end
     
     if has[:loads]
@@ -159,6 +156,23 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     end
 
     if has[:storages]
+        data = container(network_storage, storage_fields)
+        storages = Storages{N,L,T}(
+            data["index"], 
+            data["gen_bus"], 
+            data["pg"], 
+            data["qg"], 
+            data["vg"], 
+            data["pmax"], 
+            data["pmin"], 
+            data["qmax"], 
+            data["qmin"], 
+            data["mbase"], 
+            data["cost"], 
+            data["λ"],
+            data["μ"],
+            data["gen_status"]
+        )
     else
         storages = Storages{N,L,T}(
             Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 

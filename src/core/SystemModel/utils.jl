@@ -92,6 +92,28 @@ const load_fields = [
     ("status", Bool)
 ]
 
+const storage_fields = [
+    ("index", Int),
+    ("storage_bus", Int),
+    ("ps", Float16),
+    ("qs", Float16),
+    ("energy", Float16),
+    ("energy_rating", Float16),
+    ("charge_rating", Float16),
+    ("discharge_rating", Float16),
+    ("charge_efficiency", Float16),
+    ("discharge_efficiency", Float16),    
+    ("thermal_rating", Float16),
+    ("qmax", Float16),
+    ("qmin", Float16),
+    ("r", Float16),
+    ("x", Float16),
+    ("p_loss", Float16),
+    ("q_loss", Float16),
+    ("λ", Float16),
+    ("μ", Float16),
+    ("status", Bool)
+]
 
 const prats_fields = [
     ("λ", Float64),
@@ -102,6 +124,15 @@ const prats_fields = [
 const r_gen = [
     ("bus", Int),
     ("pmax", Float16),
+    ("λ", Float64),
+    ("mttr", Float64),
+    ("μ", Float64),
+    ("index", Int)
+]
+
+const r_storage = [
+    ("bus", Int),
+    ("energy_rating", Float16),
     ("λ", Float64),
     ("mttr", Float64),
     ("μ", Float64),
@@ -178,6 +209,18 @@ function _parse_reliability_data(matlab_data::Dict{String, Any})
         @error(string("no reliability_gen data found in matpower file.  The file seems to be missing \"mpc.reliability_gen = [...];\""))
     end
 
+    if haskey(matlab_data, "mpc.reliability_storage")
+        stors = []
+        for (i, storage_row) in enumerate(matlab_data["mpc.reliability_storage"])
+            storage_data = InfrastructureModels.row_to_typed_dict(storage_row, r_storage)
+            storage_data["index"] = i
+            push!(stors, storage_data)
+        end
+        case["reliability_storage"] = stors
+    else
+        @error(string("no reliability_storage data found in matpower file.  The file seems to be missing \"mpc.reliability_storage = [...];\""))
+    end
+
     if haskey(matlab_data, "mpc.reliability_branch")
         branches = []
         for (i, branch_row) in enumerate(matlab_data["mpc.reliability_branch"])
@@ -235,9 +278,27 @@ function _merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{S
 
     for (k,v) in network[:gen]
         i = string(k)
-        if haskey(reliability_data["reliability_gen"], i) && v["gen_bus"] == reliability_data["reliability_gen"][i]["bus"] && v["pmax"]*v["mbase"] == reliability_data["reliability_gen"][i]["pmax"]
+        if haskey(reliability_data["reliability_gen"], i) && 
+            v["gen_bus"] == reliability_data["reliability_gen"][i]["bus"] && 
+            v["pmax"]*v["mbase"] == reliability_data["reliability_gen"][i]["pmax"]
+
             get!(v, "λ", reliability_data["reliability_gen"][i]["λ"])
             if reliability_data["reliability_gen"][i]["mttr"] ≠ 0.0
+                get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
+            else
+                get!(v, "μ", 0)
+            end
+        end
+    end
+
+    for (k,v) in network[:storage]
+        i = string(k)
+        if haskey(reliability_data["reliability_storage"], i) && 
+            v["storage_bus"] == reliability_data["reliability_storage"][i]["bus"] && 
+            v["energy_rating"]*network[:baseMVA] == reliability_data["reliability_storage"][i]["energy_rating"]
+
+            get!(v, "λ", reliability_data["reliability_storage"][i]["λ"])
+            if reliability_data["reliability_storage"][i]["mttr"] ≠ 0.0
                 get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
             else
                 get!(v, "μ", 0)
