@@ -1,5 +1,5 @@
-broadcastable(x::ResultSpec) = Ref(x)
-broadcastable(x::Result) = Ref(x)
+Base.broadcastable(x::ResultSpec) = Ref(x)
+Base.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 
@@ -17,17 +17,17 @@ merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}} =
 
 function finalize(
     results::Channel{<:Tuple{Vararg{ResultAccumulator}}},
-    system::SystemModel{N,L,T,S},
+    system::SystemModel{N,L,T},
     threads::Int
-) where {N,L,T,S}
+) where {N,L,T}
 
     total_result = take!(results)
 
     for _ in 2:threads
         thread_result = take!(results)
         merge!(total_result, thread_result)
+        #GC.gc()
     end
-
     close(results)
 
     return finalize.(total_result, system)

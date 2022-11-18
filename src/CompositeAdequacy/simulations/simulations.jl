@@ -1,3 +1,3 @@
-broadcastable(x::SimulationSpec) = Ref(x)
+Base.broadcastable(x::SimulationSpec) = Ref(x)
 
-include("sequentialmontecarlo/SequentialMonteCarlo.jl")
+include("SequentialMCS/SequentialMCS.jl")

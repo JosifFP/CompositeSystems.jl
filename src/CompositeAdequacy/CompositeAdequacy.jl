@@ -1,71 +1,47 @@
 @reexport module CompositeAdequacy
 
-using ..PRATSBase
-import Base: -, broadcastable, getindex, merge!
-import Base.Threads: nthreads, @spawn
-import Dates: DateTime, Period
-import Decimals: Decimal, decimal
-import Distributions: DiscreteNonParametric, probs, support, Exponential
-import OnlineStatsBase: EqualWeight, fit!, Mean, value, Variance
-import OnlineStats: Series
-import Printf: @sprintf
-import Random: AbstractRNG, rand, seed!
-import Random123: Philox4x
-import StatsBase: mean, std, stderror
-import TimeZones: ZonedDateTime, @tz_str
-import PowerModels, JuMP, Ipopt, Juniper, HiGHS
-import LinearAlgebra: qr, pinv
-import JuMP: @variable, @constraint, @NLexpression, @NLconstraint, @objective, @expression, 
-optimize!, Model, LOCALLY_SOLVED
-import Memento; const _LOGGER = Memento.getlogger(@__MODULE__)
+    using ..BaseModule
+    using ..OPF
 
-"Suppresses information and warning messages output"
-function silence()
-    Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session.")
-    Memento.setlevel!(_LOGGER, "error")
-    Memento.setlevel!(Memento.getlogger(Ipopt), "error", recursive=false)
-    Memento.setlevel!(Memento.getlogger(PRATSBase), "error", recursive=false)
-    #Memento.setlevel!(Memento.getlogger(CompositeAdequacy), "error", recursive=false)
-end
+    import Base: -, getindex, merge!
+    #import Base.Threads: nthreads, @spawn
+    import Dates: DateTime, Period
+    import Decimals: Decimal, decimal
+    #import Distributions: DiscreteNonParametric, probs, support, Exponential
+    import OnlineStatsBase: EqualWeight, fit!, Mean, value, Variance
+    import OnlineStats: Series
+    import Printf: @sprintf
+    import Random: AbstractRNG, rand, seed!
+    import Random123: Philox4x
+    import StatsBase: mean, std, stderror
+    import StaticArrays: StaticArrays, SVector, SMatrix, SArray
+    import TimeZones: ZonedDateTime, @tz_str
+    import LinearAlgebra: qr
 
-export
-    # CompositeAdequacy submoduleexport
-    assess,
-    # Metrics
-    ReliabilityMetric, LOLE, EUE, val, stderror,
-    # Simulation specifications
-    SequentialMonteCarlo,
+    export
+        # CompositeAdequacy submoduleexport
+        assess, SimulationSpec,
+        
+        # Metrics
+        ReliabilityMetric, LOLE, EUE, val, stderror,
 
-    SystemState, accumulator,
+        # Simulation specification
+        SequentialMCS, NonSequentialMCS, PreContingencies, accumulator,
 
-    # Result specifications
-    Shortfall, ShortfallSamples,
+        # Result specifications
+        Shortfall, ShortfallSamples,
 
-    # Convenience re-exports
-    ZonedDateTime, @tz_str
-#
-abstract type ReliabilityMetric end
-abstract type SimulationSpec end
-abstract type ResultSpec end
-abstract type ResultAccumulator{S<:SimulationSpec,R<:ResultSpec} end
-abstract type Result{
-    N, # Number of timesteps simulated
-    L, # Length of each simulation timestep
-    T <: Period, # Units of each simulation timestep
-} end
+        #utils
+        makeidxlist, 
 
-MeanVariance = Series{ Number, Tuple{Mean{Float64, EqualWeight}, Variance{Float64, Float64, EqualWeight}}}
+        # Convenience re-exports
+        ZonedDateTime, @tz_str
+    #
 
-include("Optimizer/base.jl")
-include("Optimizer/utils.jl")
-include("Optimizer/variables.jl")
-include("Optimizer/constraints.jl")
-include("Optimizer/Optimizer.jl")
-include("Optimizer/solution.jl")
-
-include("metrics.jl")
-include("results/results.jl")
-include("simulations/simulations.jl")
-include("utils.jl")
+    include("statistics.jl")
+    include("types.jl")
+    include("results/results.jl")
+    include("simulations/simulations.jl")
+    include("utils.jl")
 
 end

@@ -1,24 +1,16 @@
-using PRATS
+import PRATS
+import PRATS.BaseModule
+import PRATS.OPF
+import PRATS.CompositeAdequacy
+import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
+import JuMP: termination_status
+import PowerModels
+import BenchmarkTools: @btime
 using Test
 
-# sys = PRAS.SystemModel("test/data/rts.pras")
-# sys2 = PRATS.SystemModel("test/data/rts.pras")
-
-# shortfalls, flows = PRAS.assess(sys, SequentialMonteCarlo(samples=100), Shortfall(), Flow())
-# lole, eue = LOLE(shortfalls), EUE(shortfalls)
-
-# assess(sys, SequentialMonteCarlo(samples=100),
-# GeneratorAvailability(), BranchAvailability(),
-# StorageAvailability(), GeneratorStorageAvailability(),
-# StorageEnergy(), GeneratorStorageEnergy(),
-# StorageEnergySamples(), GeneratorStorageEnergySamples())
+@testset "Contingency Solver: split network situations" begin
+    PRATS.silence()
+    include("test_opf.jl")
+end;
 
 
-utc = TimeZone("UTC")
-
-#using Pkg
-#Pkg.develop(PackageSpec(path = "C:/Users/jfiguero/.julia/dev/ContingencySolver"))
-
-@testset "PRATS.jl" begin
-    # Write your tests here.
-end
