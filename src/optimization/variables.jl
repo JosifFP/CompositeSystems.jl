@@ -168,6 +168,140 @@ end
 function var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 end
 
+"variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
+function variable_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; kwargs...)
+    variable_storage_power_real(pm, system; kwargs...)
+    variable_storage_power_imaginary(pm, system; kwargs...)
+    variable_storage_power_control_imaginary(pm, system; kwargs...)
+    variable_storage_energy(pm, system; kwargs...)
+    variable_storage_charge(pm, system; kwargs...)
+    variable_storage_discharge(pm, system; kwargs...)
+    variable_storage_complementary_indicator(pm, system; kwargs...)
+end
+
+"variables for modeling storage units, includes grid injection and internal variables"
+function variable_storage_power(pm::AbstractPowerModel, system::SystemModel; kwargs...)
+    variable_storage_power_real(pm, system; kwargs...)
+    variable_storage_power_imaginary(pm, system; kwargs...)
+    variable_storage_power_control_imaginary(pm, system; kwargs...)
+    variable_storage_energy(pm, system; kwargs...)
+    variable_storage_charge(pm, system; kwargs...)
+    variable_storage_discharge(pm, system; kwargs...)
+end
+
+""
+function variable_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+    
+    ps = var(pm, :ps)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+
+    if bounded
+        for i in assetgrouplist(topology(pm, :storages_idxs))
+            set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i]))
+            set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i]))
+        end
+    end
+
+end
+
+"Model ignores reactive power flows"
+function variable_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+end
+
+"""
+a reactive power slack variable that enables the storage device to inject or
+consume reactive power at its connecting bus, subject to the injection limits
+of the device.
+"""
+function variable_storage_power_control_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+end
+
+"""
+a reactive power slack variable that enables the storage device to inject or
+consume reactive power at its connecting bus, subject to the injection limits
+of the device.
+"""
+function variable_storage_power_control_imaginary(pm::AbstractACPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    qsc = var(pm, :qsc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+
+    if bounded
+        for i in assetgrouplist(topology(pm, :storages_idxs))
+            set_lower_bound(qsc[i], max(-Inf, -field(system, :storages, :qmin)[i]))
+            set_upper_bound(qsc[i], min(Inf,  field(system, :storages, :qmax)[i]))
+        end
+    end
+
+end
+
+""
+function variable_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    se = var(pm, :se)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+
+    if bounded
+        for i in assetgrouplist(topology(pm, :storages_idxs))
+            set_lower_bound(se[i], 0)
+            set_upper_bound(se[i], field(system, :storages, :energy_rating)[i])
+        end
+
+    end
+
+end
+
+""
+function variable_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    sc = var(pm, :sc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+
+    if bounded
+        for i in assetgrouplist(topology(pm, :storages_idxs))
+            set_lower_bound(sc[i], 0)
+            set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i])
+        end
+    end
+
+end
+
+""
+function variable_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    sd = var(pm, :sd)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+
+    if bounded
+        for i in assetgrouplist(topology(pm, :storages_idxs))
+            set_lower_bound(sd[i], 0)
+            set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i])
+        end
+    end
+
+end
+
+""
+function variable_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    if bounded
+
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
+
+    else
+
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], 
+            lower_bound = 0,
+            upper_bound = 1
+        )
+
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))],
+            lower_bound = 0,
+            upper_bound = 1
+        )
+
+    end
+
+end
+
+
+
 # ""
 # function comp_start_value(comp::Dict{String,<:Any}, key::String, default=0.0)
 #     return get(comp, key, default)
@@ -249,52 +383,4 @@ end
 
 "Model ignores reactive power flows"
 function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-end
-
-"variables for modeling storage units, includes grid injection and internal variables"
-function variable_storage_power(pm::AbstractPowerModel; kwargs...)
-    variable_storage_power_real(pm; kwargs...)
-    variable_storage_power_imaginary(pm; kwargs...)
-    #variable_storage_power_control_imaginary(pm; kwargs...)
-    #variable_storage_current(pm; kwargs...)
-    #variable_storage_energy(pm; kwargs...)
-    #variable_storage_charge(pm; kwargs...)
-    #variable_storage_discharge(pm; kwargs...)
-end
-
-""
-function variable_storage_power_real(pm::AbstractPowerModel; nw::Int=1, bounded::Bool=true)
-
-    ps = var(pm, :ps)[nw] = @variable(pm.model,
-        [i in ids(pm, nw, :storage)], base_name="$(nw)_ps",
-        start = comp_start_value(ref(pm, nw, :storage, i), "ps_start")
-    )
-
-    if bounded
-        inj_lb, inj_ub = ref_calc_storage_injection_bounds(ref(pm, nw, :storage), ref(pm, nw, :bus))
-
-        for i in ids(pm, nw, :storage)
-            if !isinf(inj_lb[i])
-                JuMP.set_lower_bound(ps[i], inj_lb[i])
-            end
-            if !isinf(inj_ub[i])
-                JuMP.set_upper_bound(ps[i], inj_ub[i])
-            end
-        end
-    end
-
-    report && sol_component_value(pm, nw, :storage, :ps, ids(pm, nw, :storage), ps)
-end
-
-function var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
-    pg = var(pm, :pg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
-
-    if bounded
-        for l in field(system, :generators, :keys)
-            set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-            set_lower_bound(pg[l], 0.0)
-        end
-    end
-
 end

@@ -30,8 +30,8 @@
 
         #functions
         PowerModel, build_method!, update_method!, build_result!, optimize_method!, field,
-        var, sol, con, topology, update_idxs!, add_con_container!, add_var_container!, add_sol_container!,
-        reset_model!, update_branch_idxs!,
+        var, sol, con, topology, update_idxs!, add_con_container!, add_var_container!, 
+        add_sol_container!, reset_model!,
 
         #optimizationcontainers
         Topology,
