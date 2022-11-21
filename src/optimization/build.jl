@@ -11,7 +11,9 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_gen_power(pm, system)
     var_branch_power(pm, system)
     var_load_curtailment(pm, system, t)
-    variable_storage_power_mi(pm, system)
+    var_storage_power_mi(pm, system)
+
+    objective_min_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------
@@ -19,23 +21,22 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
         constraint_theta_ref(pm, i)
     end
 
-    for i in field(system, :buses, :keys)
+    for i in assetgrouplist(topology(pm, :buses_idxs))
         constraint_power_balance(pm, system, i, t)
     end
 
-    for i in field(system, :storages, :keys)
-        constraint_storage_state(pm, system, i)
+    for i in assetgrouplist(topology(pm, :storages_idxs))
+        constraint_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
         constraint_storage_complementarity_mi(pm, system, i)
         constraint_storage_losses(pm, system, i)
         constraint_storage_thermal_limit(pm, system, i)
     end
 
-    for i in field(system, :branches, :keys)
+    for i in assetgrouplist(topology(pm, :branches_idxs))
         constraint_ohms_yt(pm, system, i)
         constraint_voltage_angle_diff(pm, system, i)
     end
 
-    objective_min_load_curtailment(pm, system)
     return
 
 end
@@ -48,7 +49,9 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_gen_power(pm, system, states, t)
     var_branch_power(pm, system, states, t)
     var_load_curtailment(pm, system, t)
-    variable_storage_power_mi(pm, system)
+    var_storage_power_mi(pm, system)
+
+    objective_min_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------
@@ -60,6 +63,17 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
         constraint_power_balance(pm, system, i, t)
     end
 
+    for i in field(system, :storages, :keys)
+        if t == 1
+            constraint_storage_state(pm, system, i)
+        else
+            constraint_storage_state(pm, system, states, i, t)
+        end
+        constraint_storage_complementarity_mi(pm, system, i)
+        constraint_storage_losses(pm, system, i)
+        constraint_storage_thermal_limit(pm, system, i)
+    end
+
     for i in field(system, :branches, :keys)
         if field(states, :branches)[i,t] ≠ 0
             constraint_ohms_yt(pm, system, i)
@@ -67,35 +81,6 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
         end
     end
 
-    objective_min_load_curtailment(pm, system)
-    return
-
-end
-
-"Transportation"
-function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
- 
-    var_gen_power(pm, system)
-    var_branch_power(pm, system)
-
-    # Add Constraints
-    # ---------------
-    for i in field(system, :buses, :keys)
-        constraint_power_balance(pm, system, i, t)
-    end
-
-    objective_min_fuel_and_flow_cost(pm, system)
-    
-    return
-
-end
-
-"Transportation"
-function update_method!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
-
-    update_var_gen_power(pm, system, states, t)
-    update_var_branch_power(pm, system, states, t)
-    update_constraint_power_balance(pm, system, states, t)
     return
 
 end
@@ -106,6 +91,8 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
+    update_var_storage_complementary_indicator(pm, system, states, t)
+    
     update_constraint_power_balance(pm, system, states, t)
     update_constraint_voltage_angle_diff(pm, system, states, t)
 
@@ -124,23 +111,32 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
 
 end
 
+function build_opf!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
 
-""
-function build_opf!(pm::PM_AbstractDCPModel, system::SystemModel, t)
     # Add Optimization and State Variables
-    var_bus_voltage(pm, system, nw=t)
-    var_gen_power(pm, system, nw=t)
-    var_branch_power(pm, system, nw=t)
-    variable_storage_power_mi(pm, system, nw=t)
+    var_bus_voltage(pm, system)
+    var_gen_power(pm, system)
+    var_branch_power(pm, system)
+    var_load_curtailment(pm, system, t)
+    var_storage_power_mi(pm, system)
+
+    objective_min_fuel_and_flow_cost(pm, system)
 
     # Add Constraints
     # ---------------
     for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i, nw=t)
+        constraint_theta_ref(pm, i)
     end
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
         constraint_power_balance(pm, system, i, t)
+    end
+
+    for i in assetgrouplist(topology(pm, :storages_idxs))
+        constraint_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
+        constraint_storage_complementarity_mi(pm, system, i)
+        constraint_storage_losses(pm, system, i)
+        constraint_storage_thermal_limit(pm, system, i)
     end
 
     for i in assetgrouplist(topology(pm, :branches_idxs))
@@ -148,7 +144,6 @@ function build_opf!(pm::PM_AbstractDCPModel, system::SystemModel, t)
         constraint_voltage_angle_diff(pm, system, i)
     end
 
-    objective_min_fuel_and_flow_cost(pm, system)
     return
 
 end
@@ -174,7 +169,10 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
         end
     end
 
-    return JuMP.@objective(pm.model, MIN_SENSE, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+    fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
+
+    return JuMP.@objective(pm.model, MIN_SENSE, fd+fg)
     
 end
 
@@ -197,38 +195,25 @@ function optimize_method!(pm::AbstractDCPowerModel)
 end
 
 ""
-function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1)
+function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
     plc = build_sol_values(var(pm, :plc, nw))
+    se = build_sol_values(var(pm, :se, nw))
 
     if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
         for i in field(system, :loads, :keys)
             if haskey(plc, i) == false
                 get!(plc, i, field(system, :loads, :pd)[i,t])
             end
-            sol(pm, :plc)[i,t] = getindex(plc, i)
+            states.plc[i,t] = abs.(getindex(plc, i))
+        end
+        for i in field(system, :storages, :keys)
+            if haskey(se, i) == false
+                get!(se, i, 0.0)
+            end
+            states.se[i,t] = getindex(se, i)
         end
         #println("solved, t=$(t), PLC=$(sum(sol(pm, :plc)[:,t]))")  
-    else
-        println("not solved, t=$(t), status=$(termination_status(pm.model))")        
-    end
-
-    return
-
-end
-
-function build_result!(pm::AbstractDCPowerModel, system::SystemModel, t::Int, states::SystemStates)
-
-    plc = build_sol_values(var(pm, :plc, 1))
-
-    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
-        for i in field(system, :loads, :keys)
-            if haskey(plc, i) == false
-                get!(plc, i, field(system, :loads, :pd)[i,t])
-            end
-            sol(pm, :plc)[i,t] = getindex(plc, i)
-        end
-        println("solved, t=$(t), PLC=$(sum(sol(pm, :plc)[:,t])), outage=$(states.branches[:,t])")  
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
@@ -240,11 +225,11 @@ end
 ""
 function build_sol_values(var::DenseAxisArray)
 
-    sol = Dict{Int, Float16}()
+    sol = Dict{Int, Float64}()
 
     for key in axes(var)[1]
-        val_r = abs(build_sol_values(var[key]))
-        sol[key] = Float16(val_r)
+        val_r = build_sol_values(var[key])
+        sol[key] = val_r
     end
 
     return sol
@@ -253,11 +238,11 @@ end
 ""
 function build_sol_values(var::Dict)
 
-    sol = Dict{Int, Float16}()
+    sol = Dict{Int, Float64}()
 
     for (key, val) in var
-        val_r = abs(build_sol_values(val))
-        sol[key] = Float16(val_r)
+        val_r = build_sol_values(val)
+        sol[key] = val_r
     end
 
     return sol

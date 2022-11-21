@@ -25,8 +25,9 @@ settings = PRATS.Settings(
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=10, seed=100, threaded=true)
+method = SequentialMCS(samples=8, seed=100, threaded=true)
 @time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+
 
 
 
@@ -72,7 +73,6 @@ OPF.con(pm, :power_balance, 1).data
 )
 
 
-all(view(states.branches,:,t))
 JuMP.all_constraints(pm.model; include_variable_in_set_constraints = true)
 CompositeAdequacy.build_method!(pm, system, systemstates, t)
 CompositeAdequacy.optimize_method!(pm.model)

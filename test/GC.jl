@@ -922,3 +922,67 @@
 # "Model ignores reactive power flows"
 # function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 # end
+
+# "SystemStates structure for NonSequential MCS"
+# function SystemStates(system::SystemModel{N}, method::NonSequentialMCS) where {N}
+
+#     @inbounds buses = field(system, :buses, :bus_type)
+
+#     @inbounds loads = Array{Bool, 1}(undef, length(system.loads))
+#     @inbounds loads_nexttransition = Array{Int, 1}(undef, length(system.loads))
+        
+#     @inbounds branches = Array{Bool, 1}(undef, length(system.branches))
+#     @inbounds branches_nexttransition = Array{Int, 1}(undef, length(system.branches))
+
+#     @inbounds shunts = Array{Bool, 1}(undef, length(system.shunts))
+#     @inbounds shunts_nexttransition = Array{Int, 1}(undef, length(system.shunts))
+
+#     @inbounds generators = Array{Bool, 1}(undef, length(system.generators))
+#     @inbounds generators_nexttransition = Array{Int, 1}(undef, length(system.generators))
+
+#     @inbounds storages = Array{Bool, 1}(undef, length(system.storages))
+#     @inbounds storages_nexttransition = Array{Int, 1}(undef, length(system.storages))
+
+#     @inbounds generatorstorages = Array{Bool, 1}(undef, length(system.generatorstorages))
+#     @inbounds generatorstorages_nexttransition = Array{Int, 1}(undef, length(system.generatorstorages))
+
+#     @inbounds storages_energy = Array{Float16, 1}(undef, length(system.storages))
+#     @inbounds generatorstorages_energy = Array{Float16, 1}(undef, length(system.generatorstorages))
+    
+#     @inbounds sys = [true]
+
+#     return SystemStates(
+#         buses, loads, branches, shunts, generators, storages, generatorstorages,
+#         loads_nexttransition, branches_nexttransition, shunts_nexttransition, 
+#         generators_nexttransition, storages_nexttransition, generatorstorages_nexttransition,
+#         storages_energy, generatorstorages_energy, sys)
+# end
+
+# "Transportation"
+# function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
+ 
+#     var_gen_power(pm, system)
+#     var_branch_power(pm, system)
+
+#     objective_min_fuel_and_flow_cost(pm, system)
+
+#     # Add Constraints
+#     # ---------------
+#     for i in field(system, :buses, :keys)
+#         constraint_power_balance(pm, system, i, t)
+#     end
+    
+#     return
+
+# end
+
+
+# "Transportation"
+# function update_method!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
+
+#     update_var_gen_power(pm, system, states, t)
+#     update_var_branch_power(pm, system, states, t)
+#     update_constraint_power_balance(pm, system, states, t)
+#     return
+
+# end

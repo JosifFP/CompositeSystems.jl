@@ -34,6 +34,8 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
+    systemstates = SystemStates(system)
+
     #model for contingency states
     model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
     pm = PowerModel(settings.powermodel, Topology(system), model)
@@ -41,10 +43,9 @@ function assess(
 
     #model for non-contingency states
     ncmodel = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    ncpm = PowerModel(OPF.NFAPowerModel, Topology(system), ncmodel)
+    ncpm = PowerModel(settings.powermodel, Topology(system), ncmodel)
     initialize_powermodel!(ncpm, system)
 
-    systemstates = SystemStates(system)
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
@@ -55,18 +56,16 @@ function assess(
 
         for t in 2:N
             if systemstates.system[t] == true
-                #println("t=$(t) NC")
                 update_model!(ncpm, system, systemstates, t)
             else
-                #println("t=$(t) C")
                 update_model!(pm, system, systemstates, t)
             end
 
-            foreach(recorder -> record!(recorder, pm, s, t), recorders)
+            foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        reset_model!(pm, system, settings, s)
+        reset_model!(pm, systemstates, settings, s)
     end
 
     put!(results, recorders)
@@ -92,19 +91,8 @@ function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel)
     initialize_pm_containers!(pm, system; timeseries=false)
     build_method!(pm, system, 1)
     optimize_method!(pm)
-    build_result!(pm, system, 1)
 
 end
-
-""
-function initialize_powermodel!(pm::AbstractNFAModel, system::SystemModel)
-
-    initialize_pm_containers!(pm, system; timeseries=false)
-    build_method!(pm, system, 1)
-    optimize_method!(pm)
-
-end
-
 
 ""
 function update_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
@@ -114,16 +102,7 @@ function update_model!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))    
     update_method!(pm, system, states, t)
     optimize_method!(pm)
-    build_result!(pm, system, t)
-    return
-
-end
-
-""
-function update_model!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
-
-    update_method!(pm, system, states, t)
-    optimize_method!(pm)
+    build_result!(pm, system, states, t)
     return
 
 end
@@ -133,7 +112,7 @@ function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemState
 
     build_method!(pm, system, states, t)
     optimize_method!(pm)
-    build_result!(pm, system, t)
+    build_result!(pm, system, states, t)
     return
 
 end

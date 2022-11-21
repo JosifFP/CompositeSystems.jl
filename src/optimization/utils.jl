@@ -35,9 +35,9 @@ con(pm::AbstractPowerModel) = getfield(pm, :con)
 con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :con), field)
 con(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :con), field), nw)
 
-sol(pm::AbstractPowerModel) = getfield(pm, :sol)
-sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :sol), field)
-sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :sol), field), :, nw)
+#sol(pm::AbstractPowerModel) = getfield(pm, :sol)
+#sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :sol), field)
+#sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :sol), field), :, nw)
 
 BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
 BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
@@ -301,9 +301,8 @@ function empty_model!(pm::AbstractDCPowerModel)
 
     JuMP.empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
-    fill!(sol(pm, :plc), 0.0)
-
     return
+
 end
 
 ""
@@ -323,8 +322,7 @@ function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) whe
 end
 
 ""
-function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, settings::Settings, s)
-
+function reset_model!(pm::AbstractDCPowerModel, states::SystemStates, settings::Settings, s)
 
     if iszero(s%10) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
@@ -334,7 +332,8 @@ function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, settings::S
         MOIU.reset_optimizer(pm.model)
     end
 
-    fill!(sol(pm, :plc), 0.0)
+    fill!(field(states, :plc), 0.0)
+    fill!(field(states, :se), 0.0)
 
     return
 

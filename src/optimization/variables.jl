@@ -169,18 +169,18 @@ function var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::System
 end
 
 "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
-function variable_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; kwargs...)
-    variable_storage_power_real(pm, system; kwargs...)
-    variable_storage_power_imaginary(pm, system; kwargs...)
-    variable_storage_power_control_imaginary(pm, system; kwargs...)
-    variable_storage_energy(pm, system; kwargs...)
-    variable_storage_charge(pm, system; kwargs...)
-    variable_storage_discharge(pm, system; kwargs...)
-    variable_storage_complementary_indicator(pm, system; kwargs...)
+function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; kwargs...)
+    var_storage_power_real(pm, system; kwargs...)
+    var_storage_power_imaginary(pm, system; kwargs...)
+    var_storage_power_control_imaginary(pm, system; kwargs...)
+    var_storage_energy(pm, system; kwargs...)
+    var_storage_charge(pm, system; kwargs...)
+    var_storage_discharge(pm, system; kwargs...)
+    var_storage_complementary_indicator(pm, system; kwargs...)
 end
 
 ""
-function variable_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     
     ps = var(pm, :ps)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
 
@@ -194,7 +194,7 @@ function variable_storage_power_real(pm::AbstractPowerModel, system::SystemModel
 end
 
 "Model ignores reactive power flows"
-function variable_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
 """
@@ -202,7 +202,7 @@ a reactive power slack variable that enables the storage device to inject or
 consume reactive power at its connecting bus, subject to the injection limits
 of the device.
 """
-function variable_storage_power_control_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_power_control_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
 """
@@ -210,7 +210,7 @@ a reactive power slack variable that enables the storage device to inject or
 consume reactive power at its connecting bus, subject to the injection limits
 of the device.
 """
-function variable_storage_power_control_imaginary(pm::AbstractACPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_power_control_imaginary(pm::AbstractACPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     qsc = var(pm, :qsc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
 
@@ -224,7 +224,7 @@ function variable_storage_power_control_imaginary(pm::AbstractACPowerModel, syst
 end
 
 ""
-function variable_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     se = var(pm, :se)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
 
@@ -239,7 +239,7 @@ function variable_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw
 end
 
 ""
-function variable_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     sc = var(pm, :sc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
 
@@ -253,7 +253,7 @@ function variable_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw
 end
 
 ""
-function variable_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     sd = var(pm, :sd)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
 
@@ -267,11 +267,11 @@ function variable_storage_discharge(pm::AbstractPowerModel, system::SystemModel;
 end
 
 ""
-function variable_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     if bounded
 
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 1)
         sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
 
     else

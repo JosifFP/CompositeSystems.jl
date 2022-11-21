@@ -78,6 +78,82 @@ function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system:
 end
 
 
+"variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
+function update_var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    update_var_storage_power_real(pm, system, states, t)
+    update_var_storage_energy(pm, system, states, t)
+    update_var_storage_charge(pm, system, states, t)
+    update_var_storage_discharge(pm, system, states, t)
+    update_var_storage_complementary_indicator(pm, system, states, t)
+end
+
+""
+function update_var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    ps = var(pm, :ps, 1)
+
+    for i in eachindex(field(system, :storages, :keys))
+        JuMP.set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+        JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    end
+
+end
+
+""
+function update_var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    se = var(pm, :se, 1)
+
+    for i in eachindex(field(system, :storages, :keys))
+        JuMP.set_lower_bound(se[i], 0)
+        JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
+    end
+
+end
+
+""
+function update_var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    sc = var(pm, :sc, 1)
+
+    for i in eachindex(field(system, :storages, :keys))
+        JuMP.set_lower_bound(sc[i], 0)
+        JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i]*field(states, :storages)[i,t])
+    end
+
+end
+
+""
+function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    sd = var(pm, :sc, 1)
+
+    for i in eachindex(field(system, :storages, :keys))
+        JuMP.set_lower_bound(sd[i], 0)
+        JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i]*field(states, :storages)[i,t])
+    end
+
+end
+
+""
+function update_var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    sc_on = var(pm, :sc_on, 1)
+    sd_on = var(pm, :sd_on, 1)
+
+    for i in eachindex(field(system, :storages, :keys))
+        if all(view(field(states, :branches),:,t)) == true
+            fix(sc_on[i], 1, force = true)
+            fix(sd_on[i], 0, force = true)
+        else
+            fix(sc_on[i], 0, force = true)
+            fix(sd_on[i], 1, force = true)
+        end
+    end
+end
+
+
+
 
 #***************************************************** CONSTRAINTS *************************************************************************
 ""

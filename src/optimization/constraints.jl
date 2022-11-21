@@ -214,6 +214,28 @@ function constraint_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int
 end
 
 ""
+function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, states::SystemStates, i::Int, t::Int; nw::Int=1) where {N,L,T<:Period}
+
+    charge_eff = field(system, :storages, :charge_efficiency)[i]
+    discharge_eff = field(system, :storages, :discharge_efficiency)[i]
+
+    if L==1 && T != Hour
+        @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
+    end
+
+    sc_2 = var(pm, :sc, nw)[i]
+    sd_2 = var(pm, :sd, nw)[i]
+    se_2 = var(pm, :se, nw)[i]
+    se_1 = field(states, :se)[i,t-1]
+
+    if field(states, :storages)[i,t] == true
+        JuMP.@constraint(pm.model, se_2 - se_1 == L*(charge_eff*sc_2 - sd_2/discharge_eff))
+    else
+        JuMP.@constraint(pm.model, se_2 - se_1 == 0.0)
+    end
+end
+
+""
 function constraint_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     charge_ub = field(system, :storages, :charge_rating)[i]

@@ -78,7 +78,7 @@ end
 
 function record!(
     acc::SMCShortfallAccumulator,
-    pm::AbstractPowerModel,
+    states::SystemStates,
     sampleid::Int, t::Int
  )
 
@@ -87,7 +87,7 @@ function record!(
 
     for r in eachindex(acc.periodsdropped_bus)
 
-        busshortfall = sol(pm, :plc)[r,t]
+        busshortfall = field(states, :plc)[r,t]
         isbusshortfall = busshortfall > 0
 
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
