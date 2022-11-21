@@ -11,6 +11,7 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_gen_power(pm, system)
     var_branch_power(pm, system)
     var_load_curtailment(pm, system, t)
+    variable_storage_power_mi(pm, system)
 
     # Add Constraints
     # ---------------
@@ -20,6 +21,13 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
 
     for i in field(system, :buses, :keys)
         constraint_power_balance(pm, system, i, t)
+    end
+
+    for i in field(system, :storages, :keys)
+        constraint_storage_state(pm, system, i)
+        constraint_storage_complementarity_mi(pm, system, i)
+        constraint_storage_losses(pm, system, i)
+        constraint_storage_thermal_limit(pm, system, i)
     end
 
     for i in field(system, :branches, :keys)
@@ -40,6 +48,7 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_gen_power(pm, system, states, t)
     var_branch_power(pm, system, states, t)
     var_load_curtailment(pm, system, t)
+    variable_storage_power_mi(pm, system)
 
     # Add Constraints
     # ---------------
@@ -122,8 +131,7 @@ function build_opf!(pm::PM_AbstractDCPModel, system::SystemModel, t)
     var_bus_voltage(pm, system, nw=t)
     var_gen_power(pm, system, nw=t)
     var_branch_power(pm, system, nw=t)
-    #variable_storage_power_mi(pm)
-    #var_dcline_power(pm)
+    variable_storage_power_mi(pm, system, nw=t)
 
     # Add Constraints
     # ---------------
@@ -138,7 +146,6 @@ function build_opf!(pm::PM_AbstractDCPModel, system::SystemModel, t)
     for i in assetgrouplist(topology(pm, :branches_idxs))
         constraint_ohms_yt(pm, system, i)
         constraint_voltage_angle_diff(pm, system, i)
-        #constraint_thermal_limits(pm, system, i, t)
     end
 
     objective_min_fuel_and_flow_cost(pm, system)
@@ -156,14 +163,14 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
         cost = reverse(system.generators.cost[i])
         pg = var(pm, :pg, nw)[i]
         if length(cost) == 1
-            gen_cost[i] = JuMP.@expression(pm.model, cost[1])
+            gen_cost[i] = @expression(pm.model, cost[1])
         elseif length(cost) == 2
-            gen_cost[i] = JuMP.@expression(pm.model, cost[1] + cost[2]*pg)
+            gen_cost[i] = @expression(pm.model, cost[1] + cost[2]*pg)
         #elseif length(cost) == 3
             #gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
         else
             @error("Nonlinear problems not supported")
-            gen_cost[i] = JuMP.@expression(pm.model, 0.0)
+            gen_cost[i] = @expression(pm.model, 0.0)
         end
     end
 
@@ -272,27 +279,27 @@ function build_sol_values(var::Number)
 end
 
 ""
-function build_sol_values(var::VariableRef)
+function build_sol_values(var::JuMP.VariableRef)
     return JuMP.value(var)
 end
 
 ""
-function build_sol_values(var::GenericAffExpr)
+function build_sol_values(var::JuMP.GenericAffExpr)
     return JuMP.value(var)
 end
 
 ""
-function build_sol_values(var::GenericQuadExpr)
+function build_sol_values(var::JuMP.GenericQuadExpr)
     return JuMP.value(var)
 end
 
 ""
-function build_sol_values(var::NonlinearExpression)
+function build_sol_values(var::JuMP.NonlinearExpression)
     return JuMP.value(var)
 end
 
 ""
-function build_sol_values(var::ConstraintRef)
+function build_sol_values(var::JuMP.ConstraintRef)
     return dual(var)
 end
 

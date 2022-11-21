@@ -91,7 +91,7 @@ end
 ""
 function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(VariableRef, keys)
+    value = _container_spec(JuMP.VariableRef, keys)
     var_container = container_spec(value, timesteps)
     _assign_container!(container, var_key, var_container)
     return
@@ -100,7 +100,7 @@ end
 ""
 function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(ConstraintRef, keys)
+    value = _container_spec(JuMP.ConstraintRef, keys)
     con_container = container_spec(value, timesteps)
     _assign_container!(container, con_key, con_container)
     return
@@ -275,7 +275,7 @@ end
 ""
 function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(VariableRef, keys)
+    value = _container_spec(JuMP.VariableRef, keys)
 
     for i in timesteps
         container[i] = value
@@ -287,7 +287,7 @@ end
 ""
 function reset_con_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(ConstraintRef, keys)
+    value = _container_spec(JuMP.ConstraintRef, keys)
 
     for i in timesteps
         container[i] = value
@@ -299,7 +299,7 @@ end
 ""
 function empty_model!(pm::AbstractDCPowerModel)
 
-    empty!(pm.model)
+    JuMP.empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
     fill!(sol(pm, :plc), 0.0)
 
@@ -327,9 +327,9 @@ function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, settings::S
 
 
     if iszero(s%10) && settings.optimizer == Ipopt
-        set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     elseif iszero(s%50) && settings.optimizer == Gurobi
-        set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     else
         MOIU.reset_optimizer(pm.model)
     end

@@ -23,8 +23,8 @@ function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel
     if bounded
         #for i in field(system, :buses, :keys)
         for i in assetgrouplist(topology(pm, :buses_idxs))
-            set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
-            set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
+            JuMP.set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
+            JuMP.set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
         end
     end
 
@@ -49,8 +49,8 @@ function var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw::I
 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
-            set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-            set_lower_bound(pg[l], 0.0)
+            JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
+            JuMP.set_lower_bound(pg[l], 0.0)
         end
     end
 
@@ -63,8 +63,8 @@ function var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel, state
 
     if bounded
         for l in field(system, :generators, :keys)
-            set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-            set_lower_bound(pg[l], 0.0)
+            JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+            JuMP.set_lower_bound(pg[l], 0.0)
         end
     end
 
@@ -101,8 +101,8 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw
     if bounded
         for (l,i,j) in arcs
         #for (l,i,j) in topology(pm, :arcs)
-            set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
-            set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
+            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
+            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
         end
     end
 
@@ -123,8 +123,8 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, st
 
     if bounded
         for (l,i,j) in  topology(pm, :arcs)
-            set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-            set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
         end
     end
 
@@ -158,8 +158,8 @@ function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, 
     #for l in assetgrouplist(topology(pm, :loads_idxs))
 
     for l in field(system, :loads, :keys)
-        set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
-        set_lower_bound(plc[l],0.0)
+        JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
+        JuMP.set_lower_bound(plc[l],0.0)
     end
 
 end
@@ -179,16 +179,6 @@ function variable_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; 
     variable_storage_complementary_indicator(pm, system; kwargs...)
 end
 
-"variables for modeling storage units, includes grid injection and internal variables"
-function variable_storage_power(pm::AbstractPowerModel, system::SystemModel; kwargs...)
-    variable_storage_power_real(pm, system; kwargs...)
-    variable_storage_power_imaginary(pm, system; kwargs...)
-    variable_storage_power_control_imaginary(pm, system; kwargs...)
-    variable_storage_energy(pm, system; kwargs...)
-    variable_storage_charge(pm, system; kwargs...)
-    variable_storage_discharge(pm, system; kwargs...)
-end
-
 ""
 function variable_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     
@@ -196,8 +186,8 @@ function variable_storage_power_real(pm::AbstractPowerModel, system::SystemModel
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i]))
-            set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i]))
+            JuMP.set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i]))
+            JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i]))
         end
     end
 
@@ -226,8 +216,8 @@ function variable_storage_power_control_imaginary(pm::AbstractACPowerModel, syst
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            set_lower_bound(qsc[i], max(-Inf, -field(system, :storages, :qmin)[i]))
-            set_upper_bound(qsc[i], min(Inf,  field(system, :storages, :qmax)[i]))
+            JuMP.set_lower_bound(qsc[i], max(-Inf, -field(system, :storages, :qmin)[i]))
+            JuMP.set_upper_bound(qsc[i], min(Inf,  field(system, :storages, :qmax)[i]))
         end
     end
 
@@ -240,8 +230,8 @@ function variable_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            set_lower_bound(se[i], 0)
-            set_upper_bound(se[i], field(system, :storages, :energy_rating)[i])
+            JuMP.set_lower_bound(se[i], 0)
+            JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i])
         end
 
     end
@@ -255,8 +245,8 @@ function variable_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            set_lower_bound(sc[i], 0)
-            set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i])
+            JuMP.set_lower_bound(sc[i], 0)
+            JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i])
         end
     end
 
@@ -269,8 +259,8 @@ function variable_storage_discharge(pm::AbstractPowerModel, system::SystemModel;
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            set_lower_bound(sd[i], 0)
-            set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i])
+            JuMP.set_lower_bound(sd[i], 0)
+            JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i])
         end
     end
 
@@ -298,89 +288,4 @@ function variable_storage_complementary_indicator(pm::AbstractPowerModel, system
 
     end
 
-end
-
-
-
-# ""
-# function comp_start_value(comp::Dict{String,<:Any}, key::String, default=0.0)
-#     return get(comp, key, default)
-# end
-
-""
-function update_var_gen_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_var_gen_power_real(pm, system, states, t)
-    update_var_gen_power_imaginary(pm, system, states, t)
-end
-
-""
-function update_var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    pg = var(pm, :pg, 1)
-
-    for l in eachindex(field(system, :generators, :keys))
-        set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-        set_lower_bound(pg[l], 0.0)
-    end
-
-end
-
-"Model ignores reactive power flows"
-function update_var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-end
-
-"Defines DC or AC power flow variables p to represent the active power flow for each branch"
-function update_var_branch_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_var_branch_power_real(pm, system, states, t)
-    update_var_branch_power_imaginary(pm, system, states, t)
-end
-
-""
-function update_var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-
-    p = var(pm, :p, 1)
-
-    for (l,i,j) in topology(pm, :arcs)
-
-        if typeof(p[(l,i,j)]) ==JuMP.AffExpr
-            p_var = first(keys(p[(l,i,j)].terms))
-        elseif typeof(p[(l,i,j)]) ==JuMP.VariableRef
-            p_var = p[(l,i,j)]
-        else
-            @error("Expression $(typeof(p[(l,i,j)])) not supported")
-        end
-
-        set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-        set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-
-    end
-
-
-end
-
-"DC models ignore reactive power flows"
-function update_var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-end
-
-"Defines load curtailment variables p to represent the active power flow for each branch"
-function update_var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_var_load_curtailment_real(pm, system, states, t)
-    update_var_load_curtailment_imaginary(pm, system, states, t)
-end
-
-
-""
-function update_var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    plc = var(pm, :plc, 1)
-    for l in eachindex(field(system, :loads, :keys))
-        set_upper_bound(plc[l], field(system, :loads, :pd)[l,t]*field(states, :loads)[l,t])
-        set_lower_bound(plc[l],0.0)
-    end
-
-end
-
-"Model ignores reactive power flows"
-function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 end

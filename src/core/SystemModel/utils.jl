@@ -110,8 +110,8 @@ const storage_fields = [
     ("x", Float16),
     ("p_loss", Float16),
     ("q_loss", Float16),
-    ("λ", Float16),
-    ("μ", Float16),
+    ("λ", Float64),
+    ("μ", Float64),
     ("status", Bool)
 ]
 
@@ -217,8 +217,6 @@ function _parse_reliability_data(matlab_data::Dict{String, Any})
             push!(stors, storage_data)
         end
         case["reliability_storage"] = stors
-    else
-        @error(string("no reliability_storage data found in matpower file.  The file seems to be missing \"mpc.reliability_storage = [...];\""))
     end
 
     if haskey(matlab_data, "mpc.reliability_branch")
@@ -278,8 +276,8 @@ function _merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{S
 
     for (k,v) in network[:gen]
         i = string(k)
-        if haskey(reliability_data["reliability_gen"], i) && 
-            v["gen_bus"] == reliability_data["reliability_gen"][i]["bus"] && 
+        if haskey(reliability_data["reliability_gen"], i) 
+            if v["gen_bus"] == reliability_data["reliability_gen"][i]["bus"] && 
             v["pmax"]*v["mbase"] == reliability_data["reliability_gen"][i]["pmax"]
 
             get!(v, "λ", reliability_data["reliability_gen"][i]["λ"])
@@ -288,20 +286,27 @@ function _merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{S
             else
                 get!(v, "μ", 0)
             end
+        else
+            @error("Storage reliability data does differ from network data")
+        end
         end
     end
 
     for (k,v) in network[:storage]
         i = string(k)
-        if haskey(reliability_data["reliability_storage"], i) && 
-            v["storage_bus"] == reliability_data["reliability_storage"][i]["bus"] && 
+        if haskey(reliability_data["reliability_storage"], i)
+
+            if v["storage_bus"] == reliability_data["reliability_storage"][i]["bus"] && 
             v["energy_rating"]*network[:baseMVA] == reliability_data["reliability_storage"][i]["energy_rating"]
 
-            get!(v, "λ", reliability_data["reliability_storage"][i]["λ"])
-            if reliability_data["reliability_storage"][i]["mttr"] ≠ 0.0
-                get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
+                get!(v, "λ", reliability_data["reliability_storage"][i]["λ"])
+                if reliability_data["reliability_storage"][i]["mttr"] ≠ 0.0
+                    get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
+                else
+                    get!(v, "μ", 0)
+                end
             else
-                get!(v, "μ", 0)
+                @error("Storage reliability data does differ from network data")
             end
         end
     end

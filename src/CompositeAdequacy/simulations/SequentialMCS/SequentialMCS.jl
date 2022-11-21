@@ -113,7 +113,7 @@ function update_model!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
     update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))    
     update_method!(pm, system, states, t)
-    OPF.optimize!(pm.model)
+    optimize_method!(pm)
     build_result!(pm, system, t)
     return
 
@@ -123,7 +123,7 @@ end
 function update_model!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
 
     update_method!(pm, system, states, t)
-    OPF.optimize!(pm.model)
+    optimize_method!(pm)
     return
 
 end

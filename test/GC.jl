@@ -638,8 +638,8 @@
 #         vm = var(pm, :vm)[nw] = @variable(pm.model, [field(system, :buses, :keys)], start =1.0)
 #         if bounded
 #             for i in eachindex(field(system, :buses, :keys))
-#                 set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
-#                 set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
+#                 JuMP.set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
+#                 JuMP.set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
 #             end
 #         end
 
@@ -648,8 +648,8 @@
 #         vm = var(pm, :vm)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))], start =1.0)
 #         if bounded
 #             for i in assetgrouplist(topology(pm, :buses_idxs))
-#                 set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
-#                 set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
+#                 JuMP.set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
+#                 JuMP.set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
 #             end
 #         end
         
@@ -677,8 +677,8 @@
 
 #         if bounded
 #             for l in eachindex(field(system, :generators, :keys))
-#                 set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-#                 set_lower_bound(pg[l], 0.0)
+#                 JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
+#                 JuMP.set_lower_bound(pg[l], 0.0)
 #             end
 #         end
 #     else
@@ -686,8 +686,8 @@
 
 #         if bounded
 #             for l in assetgrouplist(topology(pm, :generators_idxs))
-#                 set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-#                 set_lower_bound(pg[l], 0.0)
+#                 JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
+#                 JuMP.set_lower_bound(pg[l], 0.0)
 #             end
 #         end
     
@@ -702,8 +702,8 @@
 
 #     if bounded
 #             for l in eachindex(field(system, :generators, :keys))
-#             set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-#             set_lower_bound(pg[l], 0.0)
+#             JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+#             JuMP.set_lower_bound(pg[l], 0.0)
 #         end
 #     end
 
@@ -742,8 +742,8 @@
 
 #     if bounded
 #         for (l,i,j) in topology(pm, :arcs)
-#             set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
-#             set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
+#             JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
+#             JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
 #         end
 #     end
 
@@ -763,8 +763,8 @@
 
 #     if bounded
 #         for (l,i,j) in  topology(pm, :arcs)
-#             set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-#             set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#             JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#             JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
 #         end
 #     end
 
@@ -803,8 +803,8 @@
 #         plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
 
 #         for l in eachindex(field(system, :loads, :keys))
-#             set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
-#             set_lower_bound(plc[l],0.0)
+#             JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
+#             JuMP.set_lower_bound(plc[l],0.0)
 #         end
 
 #     else
@@ -812,8 +812,8 @@
 #         plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
 #         for l in assetgrouplist(topology(pm, :loads_idxs))
-#             set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
-#             set_lower_bound(plc[l],0.0)
+#             JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
+#             JuMP.set_lower_bound(plc[l],0.0)
 #         end
 
 #     end
@@ -826,8 +826,8 @@
 #     plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
 
 #     for l in eachindex(field(system, :loads, :keys))
-#         set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
-#         set_lower_bound(plc[l],0.0)
+#         JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
+#         JuMP.set_lower_bound(plc[l],0.0)
 #     end
 
 # end
@@ -857,8 +857,8 @@
 #     pg = var(pm, :pg, 1)
 
 #     for l in eachindex(field(system, :generators, :keys))
-#         set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-#         set_lower_bound(pg[l], 0.0)
+#         JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+#         JuMP.set_lower_bound(pg[l], 0.0)
 #     end
 
 # end
@@ -889,8 +889,8 @@
 #             @error("Expression $(typeof(p[(l,i,j)])) not supported")
 #         end
 
-#         set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-#         set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#         JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#         JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
 
 #     end
 
@@ -913,8 +913,8 @@
 
 #     plc = var(pm, :plc, 1)
 #     for l in eachindex(field(system, :loads, :keys))
-#         set_upper_bound(plc[l], field(system, :loads, :pd)[l,t]*field(states, :loads)[l,t])
-#         set_lower_bound(plc[l],0.0)
+#         JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t]*field(states, :loads)[l,t])
+#         JuMP.set_lower_bound(plc[l],0.0)
 #     end
 
 # end

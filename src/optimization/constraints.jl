@@ -11,23 +11,29 @@ end
 function constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i,:]))
-    bus_gens = topology(pm, :generators_nodes)[i]
+    generators_nodes = topology(pm, :generators_nodes)[i]
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
-    _constraint_power_balance(pm, system, i, t, nw, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+    storages_nodes = topology(pm, :storages_nodes)[i]
+
+    _constraint_power_balance(pm, system, i, t, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes)
 end
 
 ""
-function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function _constraint_power_balance(
+    pm::LoadCurtailment, system::SystemModel, i::Int, t::Int, nw::Int, 
+    bus_arcs::Vector{Tuple{Int, Int, Int}}, generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int})
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
     plc   = var(pm, :plc, nw)
+    ps   = var(pm, :ps, nw)
 
     exp = @expression(pm.model,
-        sum(pg[g] for g in bus_gens)
+        sum(pg[g] for g in generators_nodes)
         + sum(plc[m] for m in loads_nodes)
         - sum(p[a] for a in bus_arcs)
+        - sum(ps[s] for s in storages_nodes)
     )
 
     JuMP.drop_zeros!(exp)
@@ -41,14 +47,18 @@ function _constraint_power_balance(pm::LoadCurtailment, system::SystemModel, i::
 end
 
 ""
-function _constraint_power_balance(pm::AbstractNFAModel, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs, bus_gens, loads_nodes, shunts_nodes)
+function _constraint_power_balance(
+    pm::AbstractNFAModel, system::SystemModel, i::Int, t::Int, nw::Int, 
+    bus_arcs::Vector{Tuple{Int, Int, Int}}, generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int})
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
+    ps   = var(pm, :ps, nw)
 
     exp = @expression(pm.model,
-        sum(pg[g] for g in bus_gens)
+        sum(pg[g] for g in generators_nodes)
         - sum(p[a] for a in bus_arcs)
+        - sum(ps[s] for s in storages_nodes)
     )
 
     con(pm, :power_balance, nw)[i] = @constraint(pm.model,
@@ -150,13 +160,13 @@ Generic thermal limit constraint
 """
 function _constraint_thermal_limit_from(pm::AbstractDCPowerModel, nw::Int, f_idx, p_fr, rate_a)
 
-    if isa(p_fr, VariableRef) && has_lower_bound(p_fr)
+    if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
         
-        LowerBoundRef(p_fr)
-        lower_bound(p_fr) < -rate_a && set_lower_bound(p_fr, -rate_a)
+        JuMP.LowerBoundRef(p_fr)
+        JuMP.lower_bound(p_fr) < -rate_a && JuMP.set_lower_bound(p_fr, -rate_a)
 
-        if has_upper_bound(p_fr)
-            upper_bound(p_fr) > rate_a && set_upper_bound(p_fr, rate_a)
+        if JuMP.has_upper_bound(p_fr)
+            JuMP.upper_bound(p_fr) > rate_a && JuMP.set_upper_bound(p_fr, rate_a)
         end
 
     else
@@ -168,51 +178,94 @@ end
 "`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
 function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, nw::Int, t_idx, p_fr, rate_a)
     
-    if isa(p_fr, VariableRef) && has_upper_bound(p_fr)
-        UpperBoundRef(p_fr)
+    if isa(p_fr, JuMP.VariableRef) && JuMP.has_upper_bound(p_fr)
+        JuMP.UpperBoundRef(p_fr)
     else
         #p_to = var(pm, :p, t_idx)
         @constraint(pm.model, var(pm, :p, nw)[t_idx] <= rate_a)
     end
 end
 
+
+### Storage Constraints ###
+
 ""
-function update_constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i::Int; nw::Int=1) where {N,L,T<:Period}
 
-    for i in field(system, :buses, :keys)
-        loads_nodes = topology(pm, :loads_nodes)[i]
-        shunts_nodes = topology(pm, :shunts_nodes)[i]
+    energy = field(system, :storages, :energy)[i]
+    charge_eff = field(system, :storages, :charge_efficiency)[i]
+    discharge_eff = field(system, :storages, :discharge_efficiency)[i]
 
-        JuMP.set_normalized_rhs(con(pm, :power_balance, 1)[i], 
-            sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
-            + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,t] for k in shunts_nodes]))*1.0^2
-        )
+    if L==1 && T != Hour
+        @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
     end
 
-    return
+    constraint_storage_state_initial(pm, nw, i, energy, charge_eff, discharge_eff, L)
+end
+
+""
+function constraint_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
+
+    sc = var(pm, :sc, n)[i]
+    sd = var(pm, :sd, n)[i]
+    se = var(pm, :se, n)[i]
+
+    @constraint(pm.model, se - energy == time_elapsed*(charge_eff*sc - sd/discharge_eff))
+end
+
+""
+function constraint_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+
+    charge_ub = field(system, :storages, :charge_rating)[i]
+    discharge_ub = field(system, :storages, :discharge_rating)[i]
+
+    sc = var(pm, :sc, nw)[i]
+    sd = var(pm, :sd, nw)[i]
+    sc_on = var(pm, :sc_on, nw)[i]
+    sd_on = var(pm, :sd_on, nw)[i]
+
+    @constraint(pm.model, sc_on + sd_on == 1)
+    @constraint(pm.model, sc_on*charge_ub >= sc)
+    @constraint(pm.model, sd_on*discharge_ub >= sd)
 
 end
 
 ""
-function update_constraint_voltage_angle_diff(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function constraint_storage_losses(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
-    for l in field(system, :branches, :keys)
+    storage_bus = field(system, :storages, :buses)[i]
+    storage_r = field(system, :storages, :r)[i]
+    storage_x = field(system, :storages, :x)[i]
+    p_loss = field(system, :storages, :ploss)[i]
+    q_loss = field(system, :storages, :qloss)[i]
 
-        f_bus = field(system, :branches, :f_bus)[l]
-        t_bus = field(system, :branches, :t_bus)[l]    
-        buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
-        if field(states, :branches)[l,t] ≠ 0
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], buspair[3])
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l], buspair[2])
-        else
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], Inf)
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l],-Inf)
-        end
+    constraint_storage_losses(pm, nw, i, storage_bus, storage_r, storage_x, p_loss, q_loss)
+end
 
-    end
+""
+function constraint_storage_losses(pm::AbstractDCPowerModel, n::Int, i, bus, r, x, p_loss, q_loss)
 
-    return
+    ps = var(pm, :ps, n)[i]
+    sc = var(pm, :sc, n)[i]
+    sd = var(pm, :sd, n)[i]
 
+    @constraint(pm.model, ps + (sd - sc) == p_loss)
+end
+
+""
+function constraint_storage_thermal_limit(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+
+    thermal_rating = field(system, :storages, :thermal_rating)[i]
+    constraint_storage_thermal_limit(pm, nw, i, thermal_rating)
+end
+
+""
+function constraint_storage_thermal_limit(pm::AbstractDCPowerModel, n::Int, i, rating)
+    
+    ps = var(pm, :ps, n)[i]
+
+    JuMP.lower_bound(ps) < -rating && JuMP.set_lower_bound(ps, -rating)
+    JuMP.upper_bound(ps) >  rating && JuMP.set_upper_bound(ps,  rating)
 end
 
 ""

@@ -155,24 +155,31 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
     end
 
-    if has[:storages]
+    if has[:storages] && network[:time_elapsed] == 1.0
         data = container(network_storage, storage_fields)
         storages = Storages{N,L,T}(
             data["index"], 
-            data["gen_bus"], 
-            data["pg"], 
-            data["qg"], 
-            data["vg"], 
-            data["pmax"], 
-            data["pmin"], 
-            data["qmax"], 
-            data["qmin"], 
-            data["mbase"], 
-            data["cost"], 
+            data["storage_bus"],
+            data["ps"], 
+            data["qs"],
+            data["energy"],
+            data["energy_rating"],
+            data["charge_rating"],
+            data["discharge_rating"],
+            data["charge_efficiency"],
+            data["discharge_efficiency"],
+            data["thermal_rating"],
+            data["qmax"],
+            data["qmin"],
+            data["r"],
+            data["x"],
+            data["p_loss"],
+            data["q_loss"],
             data["λ"],
             data["μ"],
-            data["gen_status"]
+            data["status"],
         )
+
     else
         storages = Storages{N,L,T}(
             Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 

@@ -4,14 +4,6 @@ abstract type TimeSeriesAssets{N,L,T<:Period} <: AbstractAssets end
 
 Base.length(a::AbstractAssets) = length(a.keys)
 
-# abstract type compts end
-# struct Length{T <: compts}
-#     value::Int
-# end
-# function Length(::Type{T}, number::Int) where {T <: compts}
-#     return Length{T}(number)
-# end
-
 "Buses"
 struct Buses <: AbstractAssets
 

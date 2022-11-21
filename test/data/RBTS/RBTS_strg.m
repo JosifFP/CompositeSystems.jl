@@ -64,8 +64,12 @@ mpc.gencost = [
 	2	0.0	0.0	2	0.5		5.9354;
 ];
 
+% hours
+mpc.time_elapsed = 1.0
+
 %% storage data
 %   storage_bus ps 	qs		energy  energy_rating 	charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin	qmax  	r  	x  	p_loss  q_loss  status
 mpc.storage = [
-	 6	 		0.0	 0.0	40.0	40.0	 		50.0	 		70.0			1	 				1						40.0	 	-50.0	70.0	0.0	0.0	 0.0	0.0	 	1;
+	 6	 		0.0	 0.0	20.0	40.0	 		50.0	 		70.0			1	 				1						40.0	 	-50.0	70.0	0.0	0.0	 0.0	0.0	 	1;
 ];
+
