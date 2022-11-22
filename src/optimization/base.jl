@@ -21,6 +21,8 @@ struct Topology
     busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Vector{Float16}}
 
+    Peak::Matrix{Float16}
+
     function Topology(system::SystemModel{N}) where {N}
 
         key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
@@ -77,7 +79,16 @@ struct Topology
         arcs_to = filter(i -> i[2] > i[3], skipmissing(A))
         arcs = [arcs_from; arcs_to]
 
-        buspairs = calc_buspair_parameters(field(system, :branches), keys)   
+        buspairs = calc_buspair_parameters(field(system, :branches), keys)
+
+        Peak = Array{Float16, 2}(undef, 1, N)
+        for t in 1:N
+            if iszero((t+23)%24)
+                for k in t:t+23
+                    Peak[k] = sum(maximum([field(system, :loads, :pd)[:,k] for k in t:t+23]))
+                end
+            end
+        end
 
         return new(
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
@@ -85,7 +96,7 @@ struct Topology
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
             generatorstorages_idxs::Vector{UnitRange{Int}}, 
             loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
-            arcs_from, arcs_to, arcs, A, buspairs)
+            arcs_from, arcs_to, arcs, A, buspairs, Peak)
     end
 
 end
@@ -106,7 +117,8 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.arcs_from == y.arcs_from &&
     x.arcs_to == y.arcs_to &&
     x.arcs == y.arcs &&
-    x.buspairs == y.buspairs
+    x.buspairs == y.buspairs &&
+    x.Peak == y.Peak
 
 "a macro for adding the base AbstractPowerModels fields to a type definition"
 OPF.@def pm_fields begin
@@ -209,6 +221,12 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_var_container!(pm.var, :sc_on, field(system, :storages, :keys), timesteps = 1:N)
         add_var_container!(pm.var, :sd_on, field(system, :storages, :keys), timesteps = 1:N)
 
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys), timesteps = 1:N)
+
     else
         
         add_var_container!(pm.var, :pg, field(system, :generators, :keys))
@@ -228,6 +246,12 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_var_container!(pm.var, :sd, field(system, :storages, :keys))
         add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
         add_var_container!(pm.var, :sd_on, field(system, :storages, :keys))
+
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
 
     end
 

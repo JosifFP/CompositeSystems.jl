@@ -152,6 +152,17 @@ function update_var_storage_complementary_indicator(pm::AbstractPowerModel, syst
     end
 end
 
+""
+function update_constraint_storage(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+
+    for i in field(system, :storages, :keys)
+
+        se_1 = field(states, :se)[i,t-1]
+        JuMP.set_normalized_rhs(con(pm, :storage_state, 1)[i], se_1)
+    end
+
+end
 
 
 

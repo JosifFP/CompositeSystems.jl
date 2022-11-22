@@ -13,7 +13,8 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_load_curtailment(pm, system, t)
     var_storage_power_mi(pm, system)
 
-    objective_min_load_curtailment(pm, system)
+    #objective_min_load_curtailment(pm, system)
+    objective_min_fuel_and_flow_cost(pm, system)
 
     # Add Constraints
     # ---------------
@@ -41,76 +42,7 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
 
 end
 
-"Load Minimization version of DCOPF"
-function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
-
-    # Add Optimization and State Variables
-    var_bus_voltage(pm, system)
-    var_gen_power(pm, system, states, t)
-    var_branch_power(pm, system, states, t)
-    var_load_curtailment(pm, system, t)
-    var_storage_power_mi(pm, system)
-
-    objective_min_load_curtailment(pm, system)
-
-    # Add Constraints
-    # ---------------
-    for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i)
-    end
-
-    for i in field(system, :buses, :keys)
-        constraint_power_balance(pm, system, i, t)
-    end
-
-    for i in field(system, :storages, :keys)
-        if t == 1
-            constraint_storage_state(pm, system, i)
-        else
-            constraint_storage_state(pm, system, states, i, t)
-        end
-        constraint_storage_complementarity_mi(pm, system, i)
-        constraint_storage_losses(pm, system, i)
-        constraint_storage_thermal_limit(pm, system, i)
-    end
-
-    for i in field(system, :branches, :keys)
-        if field(states, :branches)[i,t] ≠ 0
-            constraint_ohms_yt(pm, system, i)
-            constraint_voltage_angle_diff(pm, system, i)
-        end
-    end
-
-    return
-
-end
-
-"Load Minimization version of DCOPF"
-function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t::Int)
-
-    update_var_gen_power(pm, system, states, t)
-    update_var_branch_power(pm, system, states, t)
-    update_var_load_curtailment(pm, system, states, t)
-    update_var_storage_complementary_indicator(pm, system, states, t)
-    
-    update_constraint_power_balance(pm, system, states, t)
-    update_constraint_voltage_angle_diff(pm, system, states, t)
-
-    if all(view(states.branches,:,t)) ≠ true
-
-        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-        add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
-
-        for i in assetgrouplist(topology(pm, :branches_idxs))
-            constraint_ohms_yt(pm, system, i)
-        end
-        
-    end
-
-    return
-
-end
-
+""
 function build_opf!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
 
     # Add Optimization and State Variables
@@ -148,6 +80,78 @@ function build_opf!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::Sys
 
 end
 
+"Load Minimization version of DCOPF"
+function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
+
+    # Add Optimization and State Variables
+    var_bus_voltage(pm, system)
+    var_gen_power(pm, system, states, t)
+    var_branch_power(pm, system, states, t)
+    var_load_curtailment(pm, system, t)
+    var_storage_power_mi(pm, system, states, t)
+    #var_storage_power_mi(pm, system)
+
+    objective_min_load_curtailment(pm, system, states, t)
+    #objective_min_load_curtailment(pm, system)
+    #objective_min_fuel_and_flow_cost(pm, system)
+
+    # Add Constraints
+    # ---------------
+    for i in field(system, :ref_buses)
+        constraint_theta_ref(pm, i)
+    end
+
+    for i in field(system, :buses, :keys)
+        constraint_power_balance(pm, system, i, t)
+    end
+
+    for i in field(system, :storages, :keys)
+        if field(states, :storages)[i,t] ≠ 0
+            constraint_storage_state(pm, system, states, i, t)
+            constraint_storage_complementarity_mi(pm, system, i)
+            constraint_storage_losses(pm, system, i)
+            constraint_storage_thermal_limit(pm, system, i)
+        end
+    end
+
+    for i in field(system, :branches, :keys)
+        if field(states, :branches)[i,t] ≠ 0
+            constraint_ohms_yt(pm, system, i)
+            constraint_voltage_angle_diff(pm, system, i)
+        end
+    end
+
+    return
+
+end
+
+"Load Minimization version of DCOPF"
+function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t::Int)
+
+    update_var_gen_power(pm, system, states, t)
+    update_var_branch_power(pm, system, states, t)
+    update_var_load_curtailment(pm, system, states, t)
+    update_var_storage_complementary_indicator(pm, system, states, t)
+    
+    update_constraint_power_balance(pm, system, states, t)
+    update_constraint_voltage_angle_diff(pm, system, states, t)
+    update_constraint_storage(pm, system, states, t)
+
+    if all(view(states.branches,:,t)) ≠ true
+
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
+        add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
+
+        for i in assetgrouplist(topology(pm, :branches_idxs))
+            constraint_ohms_yt(pm, system, i)
+        end
+        
+    end
+
+    return
+
+end
+
 ""
 function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
 
@@ -176,13 +180,42 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
     
 end
 
-
 ""
 function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
 
     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-
     return @objective(pm.model, MIN_SENSE, fd)
+    
+end
+
+""
+function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
+
+    #fd = @expression(pm.model, sum(field(system, :loads, :cost)[field(system, :storages, :buses)i](-var(pm, :sc, nw)[i]/(1.001-sum(system.loads.pd[:,t])/topology(pm, :Peak)[t])) for i in field(system, :storages, :keys)))
+    
+    gen_cost = Dict{Int, Any}()
+    gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
+
+    for i in system.generators.keys
+        cost = reverse(system.generators.cost[i])
+        pg = var(pm, :pg, nw)[i]
+        if length(cost) == 1
+            gen_cost[i] = @expression(pm.model, cost[1])
+        elseif length(cost) == 2
+            gen_cost[i] = @expression(pm.model, cost[1] + cost[2]*pg)
+        #elseif length(cost) == 3
+            #gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
+        else
+            @error("Nonlinear problems not supported")
+            gen_cost[i] = @expression(pm.model, 0.0)
+        end
+    end
+
+    fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+    fe = @expression(pm.model, 3000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
+    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
+
+    return @objective(pm.model, MIN_SENSE, fd+fg+fe)
     
 end
 

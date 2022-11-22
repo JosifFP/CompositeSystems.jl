@@ -3,7 +3,7 @@
     using ..BaseModule
     import LinearAlgebra: pinv
     import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE
-    import MathOptInterface.Utilities: reset_optimizer
+    import MathOptInterface.Utilities: reset_optimizer, is_empty
     import Ipopt, Juniper, HiGHS, Gurobi
     import InfrastructureModels: InfrastructureModels, @def
     import PowerModels
@@ -26,8 +26,8 @@
 
         #functions
         PowerModel, build_method!, update_method!, build_result!, optimize_method!, field,
-        var, sol, con, topology, update_idxs!, add_con_container!, add_var_container!, 
-        add_sol_container!, reset_model!, initialize_pm_containers!,
+        var, con, topology, update_idxs!, add_con_container!, add_var_container!, 
+        add_sol_container!, reset_model!, initialize_pm_containers!, JumpModel,
 
         #optimizationcontainers
         Topology,

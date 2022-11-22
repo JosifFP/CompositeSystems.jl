@@ -1,7 +1,7 @@
 include("solvers.jl")
 import PowerModels, JuMP
 using Test
-import PRATS: PRATS, BaseModule, OPF, CompositeAdequacy
+import PRATS: PRATS, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
 PowerModels.silence()
 
 # gurobi_optimizer_1
@@ -18,59 +18,40 @@ settings = PRATS.Settings(
     modelmode = JuMP.AUTOMATIC
 )
 
+method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
+
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
+
 system = BaseModule.SystemModel(RawFile_strg, ReliabilityFile_strg, timeseries_load, SParametrics)
-PRATS.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
+#system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
+method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
+systemstates = CompositeAdequacy.SystemStates(system)
 model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
 pm = OPF.PowerModel(settings.powermodel, OPF.Topology(system), model)
+recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+CompositeAdequacy.seed!(rng, (method.seed, 1))
+CompositeAdequacy.initialize_states!(rng, systemstates, system)
 OPF.initialize_pm_containers!(pm, system; timeseries=false)
-systemstates = OPF.SystemStates(system, available=true)
-t=1
-
-#system.loads.pd[:,t] = system.loads.pd[:,t]*1.5
-OPF.build_method!(pm, system, systemstates, t)
-OPF.optimize_method!(pm)
-OPF.build_result!(pm, system, systemstates, t)
-
-sum(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100))))
-sum(system.loads.pd[:,t]*100)
-
-
-OPF.build_sol_values(OPF.var(pm, :se, t))[1]
-OPF.build_sol_values(OPF.var(pm, :sc, t))[1]
-OPF.build_sol_values(OPF.var(pm, :sd, t))[1]
-OPF.build_sol_values(OPF.var(pm, :ps, t))[1]
-
-
-
-
-t=1
-data_strg = PowerModels.parse_file(RawFile_strg)
-PowerModels.standardize_cost_terms!(data_strg, order=1)
-data_strg["load"]["1"]
-for (k,v) in data_strg["load"]
-    v["pd"] = system.loads.pd[parse(Int,k),t]*1.5
-end
-
-result_strg = PowerModels._solve_opf_strg(data_strg, PowerModels.DCPPowerModel, ipopt_optimizer_3)
-result_strg["solution"]
-result_strg["solution"]["bus"]
-result_strg["solution"]["gen"]
-result_strg["solution"]["storage"]["1"]
-@show result_strg["solution"]["branch"]
-
-pm.topology.busarcs
-
-
-
-
 for t in 1:24
+    import InfrastructureModels
     system.loads.pd[:,t] = system.loads.pd[:,t]*1.25
-    OPF.build_method!(pm, system, t)
+
+    if t==17 || t==18 || t==19 || t==20
+        PRATS.field(systemstates, :branches)[8,t] = 0
+        systemstates.system[t] = 0
+    end
+
+    OPF.build_method!(pm, system, systemstates, t)
     OPF.optimize_method!(pm)
     OPF.build_result!(pm, system, systemstates, t)
-    #println(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100))))
-    #println(Float16.(values(sort(InfrastructureModels.build_solution_values(var(pm, :p, 1))))))
+    #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
+    #println(Float16.(systemstates.se[t]))
+    #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
+    #println(Float16.(systemstates.se[t]*100))
+    #println(Float16.(systemstates.plc[:,t]*100))
+    #println(Float16.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
     println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
     OPF.empty_model!(pm)
 end
@@ -78,15 +59,27 @@ end
 
 
 
+#if OPF.is_empty(pm.model.moi_backend)
+#    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
+#end
 
+#CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
+#t=1
+#println(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100))))
+#println(systemstates.se[t])
 
-
-
+#CompositeAdequacy.update_model!(pm, system, systemstates, t)
+CompositeAdequacy.build_method!(pm, system, systemstates, t)
+OPF.optimize_method!(pm)
+OPF.build_result!(pm, system, systemstates, t)
+systemstates.se
+systemstates.plc
+OPF.build_sol_values(OPF.var(pm, :se, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sc, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sd, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :ps, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sc_on, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sd_on, 1))[1]
 
 JuMP.termination_status(pm.model)
 @show JuMP.solution_summary(pm.model, verbose=true)
-
-OPF.build_sol_values(OPF.var(pm, :se, t))[1]
-OPF.build_sol_values(OPF.var(pm, :sc, t))[1]
-OPF.build_sol_values(OPF.var(pm, :sd, t))[1]
-OPF.build_sol_values(OPF.var(pm, :ps, t))[1]

@@ -37,14 +37,12 @@ function assess(
     systemstates = SystemStates(system)
 
     #model for contingency states
-    model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+    model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
     pm = PowerModel(settings.powermodel, Topology(system), model)
-    initialize_powermodel!(pm, system)
 
     #model for non-contingency states
-    ncmodel = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+    ncmodel = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
     ncpm = PowerModel(settings.powermodel, Topology(system), ncmodel)
-    initialize_powermodel!(ncpm, system)
 
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
@@ -53,6 +51,11 @@ function assess(
         println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
+
+        if OPF.is_empty(pm.model.moi_backend)
+            initialize_powermodel!(pm, system, systemstates)
+            initialize_powermodel!(ncpm, system, systemstates, results=true)
+        end
 
         for t in 2:N
             if systemstates.system[t] == true
@@ -86,11 +89,15 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
 end
 
 ""
-function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel)
+function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; results::Bool=false)
 
     initialize_pm_containers!(pm, system; timeseries=false)
-    build_method!(pm, system, 1)
+    build_method!(pm, system, states, 1)
     optimize_method!(pm)
+
+    if results == true
+        build_result!(pm, system, states, 1)
+    end
 
 end
 

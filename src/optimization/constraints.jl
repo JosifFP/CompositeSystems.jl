@@ -210,7 +210,7 @@ function constraint_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int
     sd = var(pm, :sd, n)[i]
     se = var(pm, :se, n)[i]
 
-    @constraint(pm.model, se - energy == time_elapsed*(charge_eff*sc - sd/discharge_eff))
+    con(pm, :storage_state, n)[i] = @constraint(pm.model, se - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
 end
 
 ""
@@ -226,13 +226,19 @@ function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,
     sc_2 = var(pm, :sc, nw)[i]
     sd_2 = var(pm, :sd, nw)[i]
     se_2 = var(pm, :se, nw)[i]
-    se_1 = field(states, :se)[i,t-1]
+
+    if t == 1
+        se_1 = field(system, :storages, :energy)[i]
+    else
+        se_1 = field(states, :se)[i,t-1]
+    end
 
     if field(states, :storages)[i,t] == true
-        JuMP.@constraint(pm.model, se_2 - se_1 == L*(charge_eff*sc_2 - sd_2/discharge_eff))
+        con(pm, :storage_state, nw)[i] = @constraint(pm.model, se_2 - L*(charge_eff*sc_2 - sd_2/discharge_eff) == se_1) #se_2 - se_1 == L*(charge_eff*sc_2 - sd_2/discharge_eff)
     else
-        JuMP.@constraint(pm.model, se_2 - se_1 == 0.0)
+        con(pm, :storage_state, nw)[i] = @constraint(pm.model, se_2 == se_1)
     end
+
 end
 
 ""
@@ -246,9 +252,9 @@ function constraint_storage_complementarity_mi(pm::AbstractPowerModel, system::S
     sc_on = var(pm, :sc_on, nw)[i]
     sd_on = var(pm, :sd_on, nw)[i]
 
-    @constraint(pm.model, sc_on + sd_on == 1)
-    @constraint(pm.model, sc_on*charge_ub >= sc)
-    @constraint(pm.model, sd_on*discharge_ub >= sd)
+    con(pm, :storage_complementarity_mi_1, nw)[i] = @constraint(pm.model, sc_on + sd_on == 1)
+    con(pm, :storage_complementarity_mi_2, nw)[i] = @constraint(pm.model, sc_on*charge_ub >= sc)
+    con(pm, :storage_complementarity_mi_3, nw)[i] = @constraint(pm.model, sd_on*discharge_ub >= sd)
 
 end
 
@@ -271,7 +277,7 @@ function constraint_storage_losses(pm::AbstractDCPowerModel, n::Int, i, bus, r, 
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
 
-    @constraint(pm.model, ps + (sd - sc) == p_loss)
+    con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss)
 end
 
 ""

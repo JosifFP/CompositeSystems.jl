@@ -179,6 +179,15 @@ function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; kwarg
     var_storage_complementary_indicator(pm, system; kwargs...)
 end
 
+"variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
+function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; kwargs...)
+    var_storage_power_real(pm, system, states, t; kwargs...)
+    var_storage_energy(pm, system, states, t; kwargs...)
+    var_storage_charge(pm, system, states, t; kwargs...)
+    var_storage_discharge(pm, system, states, t; kwargs...)
+    var_storage_complementary_indicator(pm, system, states, t; kwargs...)
+end
+
 ""
 function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     
@@ -188,6 +197,20 @@ function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw:
         for i in assetgrouplist(topology(pm, :storages_idxs))
             JuMP.set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i]))
             JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i]))
+        end
+    end
+
+end
+
+""
+function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+    
+    ps = var(pm, :ps)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+            JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
         end
     end
 
@@ -239,6 +262,21 @@ function var_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int
 end
 
 ""
+function var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    se = var(pm, :se)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(se[i], 0)
+            JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
+        end
+
+    end
+
+end
+
+""
 function var_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     sc = var(pm, :sc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
@@ -247,6 +285,20 @@ function var_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int
         for i in assetgrouplist(topology(pm, :storages_idxs))
             JuMP.set_lower_bound(sc[i], 0)
             JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i])
+        end
+    end
+
+end
+
+""
+function var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    sc = var(pm, :sc)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(sc[i], 0)
+            JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i]*field(states, :storages)[i,t])
         end
     end
 
@@ -267,11 +319,25 @@ function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::
 end
 
 ""
+function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    sd = var(pm, :sd)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(sd[i], 0)
+            JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i]*field(states, :storages)[i,t])
+        end
+    end
+
+end
+
+""
 function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     if bounded
 
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 1)
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
         sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
 
     else
@@ -282,6 +348,31 @@ function var_storage_complementary_indicator(pm::AbstractPowerModel, system::Sys
         )
 
         sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))],
+            lower_bound = 0,
+            upper_bound = 1
+        )
+
+    end
+
+end
+
+
+""
+function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+
+    if bounded
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], binary = true)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], binary = true)
+
+    else
+
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], 
+            lower_bound = 0,
+            upper_bound = 1
+        )
+
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)],
             lower_bound = 0,
             upper_bound = 1
         )
