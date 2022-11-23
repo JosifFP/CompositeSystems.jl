@@ -1,6 +1,6 @@
-using PRATS, PRATS.OPF, PRATS.BaseModule
-using PRATS.OPF
-using PRATS.CompositeAdequacy
+using CompositeSystems, CompositeSystems.OPF, CompositeSystems.BaseModule
+using CompositeSystems.OPF
+using CompositeSystems.CompositeAdequacy
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 import JuMP: termination_status
 import PowerModels
@@ -22,7 +22,7 @@ Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
 
 
 resultspecs = (Shortfall(), Shortfall())
-settings = PRATS.Settings(
+settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC
@@ -30,16 +30,16 @@ settings = PRATS.Settings(
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
-system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
+system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 #system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
-method = SequentialMCS(samples=200, seed=100, threaded=true)
-@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+method = SequentialMCS(samples=8, seed=100, threaded=true)
+@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
-PRATS.LOLE.(shortfall, system.loads.keys)
-PRATS.EUE.(shortfall, system.loads.keys)
-PRATS.LOLE.(shortfall)
-PRATS.EUE.(shortfall)
+CompositeSystems.LOLE.(shortfall, system.loads.keys)
+CompositeSystems.EUE.(shortfall, system.loads.keys)
+CompositeSystems.LOLE.(shortfall)
+CompositeSystems.EUE.(shortfall)
 
 
 

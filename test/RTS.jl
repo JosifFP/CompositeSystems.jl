@@ -1,9 +1,9 @@
 module RTS
-    using PRATS
-    import PRATS: BaseModuleModule, Branches, Buses, Shunts, Loads, Generators, Storages
+    using CompositeSystems
+    import CompositeSystems: BaseModuleModule, Branches, Buses, Shunts, Loads, Generators, Storages
 
-    ReliabilityDataDir = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS"
-    RawFile = "C:/Users/jfiguero/.julia/dev/PRATS/test/data/RTS.m"
+    ReliabilityDataDir = "C:/Users/jfiguero/.julia/dev/CompositeSystems/test/data/RTS"
+    RawFile = "C:/Users/jfiguero/.julia/dev/CompositeSystems/test/data/RTS.m"
     BaseModule.silence()
     CurrentDir = pwd()
 

@@ -1,7 +1,7 @@
 include("solvers.jl")
 import PowerModels, JuMP
 using Test
-import PRATS: PRATS, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
+import CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
 
 Base_RawFile = "test/data/RBTS/Base/RBTS.m"
 Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
@@ -14,12 +14,12 @@ Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
 
 TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 
-settings = PRATS.Settings(gurobi_optimizer_1,modelmode = JuMP.AUTOMATIC)
+settings = CompositeSystems.Settings(gurobi_optimizer_1,modelmode = JuMP.AUTOMATIC)
 
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 
-system = BaseModule.SystemModel(RawFile_strg, ReliabilityFile_strg, timeseries_load, SParametrics)
+system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
 #system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
 method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 systemstates = CompositeAdequacy.SystemStates(system)
@@ -59,9 +59,9 @@ for t in 2:24
     system.loads.pd[:,t] = system.loads.pd[:,t]*1.25
 
     if t==17 || t==18 || t==19 || t==20
-        PRATS.field(systemstates, :branches)[3,t] = 0
-        PRATS.field(systemstates, :branches)[4,t] = 0
-        PRATS.field(systemstates, :branches)[8,t] = 0
+        CompositeSystems.field(systemstates, :branches)[3,t] = 0
+        CompositeSystems.field(systemstates, :branches)[4,t] = 0
+        CompositeSystems.field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
     end
 

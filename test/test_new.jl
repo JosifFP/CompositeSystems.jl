@@ -1,6 +1,6 @@
-using PRATS, PRATS.OPF, PRATS.BaseModule
-using PRATS.OPF
-using PRATS.CompositeAdequacy
+using CompositeSystems, CompositeSystems.OPF, CompositeSystems.BaseModule
+using CompositeSystems.OPF
+using CompositeSystems.CompositeAdequacy
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 import JuMP: termination_status
 import PowerModels
@@ -17,7 +17,7 @@ ReliabilityFile = "test/data/RBTS/R_RBTS.m"
 #ReliabilityFile = "test/data/RTS/R_RTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
-settings = PRATS.Settings(
+settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC
@@ -26,19 +26,19 @@ settings = PRATS.Settings(
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
 method = SequentialMCS(samples=1, seed=100, threaded=false)
-@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 
 
 
 #Profile.clear()
-#@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+#@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 #ProfileView.view()
 
-PRATS.LOLE.(shortfall, system.loads.keys)
-PRATS.EUE.(shortfall, system.loads.keys)
-PRATS.LOLE.(shortfall)
-PRATS.EUE.(shortfall)
+CompositeSystems.LOLE.(shortfall, system.loads.keys)
+CompositeSystems.EUE.(shortfall, system.loads.keys)
+CompositeSystems.LOLE.(shortfall)
+CompositeSystems.EUE.(shortfall)
 
 #using TimerOutputs
 #const to = TimerOutput()
@@ -62,7 +62,7 @@ CompositeAdequacy.initialize_states!(rng, systemstates, system)
 @code_warntype update_method!(pm, system, states, t)
 OPF.con(pm, :power_balance, 1).data
 
-@code_warntype PRATS.Settings(
+@code_warntype CompositeSystems.Settings(
     ipopt_optimizer_3,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"

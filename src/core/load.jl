@@ -8,7 +8,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String)
     reliability_data = parse_reliability_data(ReliabilityFile)
     SParametrics = StaticParameters{1,1,Hour}()
     get!(network, :timeseries_load, "")
-    _merge_prats_data!(network, reliability_data, SParametrics)
+    _merge_CompositeSystems_data!(network, reliability_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
@@ -20,7 +20,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String, TimeSeriesFile::S
     network = BuildNetwork(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
     timeseries_data, SParametrics = extract_timeseriesload(TimeSeriesFile)
-    merge_prats_data!(network, reliability_data, timeseries_data, SParametrics)
+    merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
@@ -31,7 +31,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::
     #load network data
     network = BuildNetwork(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
-    merge_prats_data!(network, reliability_data, timeseries_data, SParametrics)
+    merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end

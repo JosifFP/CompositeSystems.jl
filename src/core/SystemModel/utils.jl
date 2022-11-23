@@ -115,7 +115,7 @@ const storage_fields = [
     ("status", Bool)
 ]
 
-const prats_fields = [
+const CompositeSystems_fields = [
     ("λ", Float64),
     ("μ", Float64),
     ("cost", Float16)
@@ -162,7 +162,7 @@ function container(dict::Dict{Int, <:Any}, type::Vector{Tuple{String, DataType}}
         for i in eachindex(type)
             if haskey(v, type[i][1]) == true
                 v[type[i][1]] = type[i][2](v[type[i][1]])
-            elseif type[i] in prats_fields
+            elseif type[i] in CompositeSystems_fields
                 get!(v, type[i][1], type[i][2](0))
             end
         end
@@ -264,15 +264,15 @@ end
 
 
 "Returns network data container with reliability_data and timeseries_data merged"
-function merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float16}}, SP::StaticParameters{N}) where {N}
+function merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float16}}, SP::StaticParameters{N}) where {N}
 
     get!(network, :timeseries_load, timeseries_data)
-    return _merge_prats_data!(network, reliability_data, SP)
+    return _merge_CompositeSystems_data!(network, reliability_data, SP)
 
 end
 
 "Returns network data container with reliability_data and timeseries_data merged"
-function _merge_prats_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, SP::StaticParameters{N}) where {N}
+function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, SP::StaticParameters{N}) where {N}
 
     for (k,v) in network[:gen]
         i = string(k)
