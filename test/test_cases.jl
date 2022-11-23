@@ -29,8 +29,8 @@ settings = PRATS.Settings(
 )
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
-system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
-#system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
+#system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
+system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
 #system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
 method = SequentialMCS(samples=200, seed=100, threaded=true)

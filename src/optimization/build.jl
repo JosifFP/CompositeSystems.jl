@@ -128,7 +128,7 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
-    update_var_storage_power_mi(pm, system, states, t)
+    #update_var_storage_power_mi(pm, system, states, t)
     
     update_constraint_power_balance(pm, system, states, t)
     update_constraint_voltage_angle_diff(pm, system, states, t)

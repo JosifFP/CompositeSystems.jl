@@ -16,7 +16,6 @@ TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 
 settings = PRATS.Settings(gurobi_optimizer_1,modelmode = JuMP.AUTOMATIC)
 
-method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 
