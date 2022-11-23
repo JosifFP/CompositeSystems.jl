@@ -7,8 +7,8 @@ settings = PRATS.Settings(
 
 @testset "test 5 Split situations RBTS system" begin
 
-    RawFile = "test/data/RBTS/RBTS.m"
-    ReliabilityFile = "test/data/RBTS/R_RBTS.m"
+    RawFile = "test/data/RBTS/Base/RBTS.m"
+    ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
     system = BaseModule.SystemModel(RawFile, ReliabilityFile)
 
     PRATS.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]

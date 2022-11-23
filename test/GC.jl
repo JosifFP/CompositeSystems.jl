@@ -986,3 +986,32 @@
 #     return
 
 # end
+
+# Peak = Array{Float16, 2}(undef, 1, N)
+# for t in 1:N
+#     if iszero((t+23)%24)
+#         for k in t:t+23
+#             Peak[k] = sum(maximum([field(system, :loads, :pd)[:,k] for k in t:t+23]))
+#         end
+#     end
+# end
+
+    # gen_cost = Dict{Int, Any}()
+    # gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
+
+    # for i in system.generators.keys
+    #     cost = reverse(system.generators.cost[i])
+    #     pg = var(pm, :pg, nw)[i]
+    #     if length(cost) == 1
+    #          gen_cost[i] = @expression(pm.model, cost[1])
+    #     elseif length(cost) == 2
+    #          gen_cost[i] = @expression(pm.model, cost[1] + cost[2]*pg)
+    #     #elseif length(cost) == 3
+    #          #gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
+    #     else
+    #          @error("Nonlinear problems not supported")
+    #          gen_cost[i] = @expression(pm.model, 0.0)
+    #     end
+    #  end
+
+    # fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))

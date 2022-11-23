@@ -21,8 +21,6 @@ struct Topology
     busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Vector{Float16}}
 
-    Peak::Matrix{Float16}
-
     function Topology(system::SystemModel{N}) where {N}
 
         key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
@@ -81,22 +79,13 @@ struct Topology
 
         buspairs = calc_buspair_parameters(field(system, :branches), keys)
 
-        Peak = Array{Float16, 2}(undef, 1, N)
-        for t in 1:N
-            if iszero((t+23)%24)
-                for k in t:t+23
-                    Peak[k] = sum(maximum([field(system, :loads, :pd)[:,k] for k in t:t+23]))
-                end
-            end
-        end
-
         return new(
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
             branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
             generatorstorages_idxs::Vector{UnitRange{Int}}, 
             loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
-            arcs_from, arcs_to, arcs, A, buspairs, Peak)
+            arcs_from, arcs_to, arcs, A, buspairs)
     end
 
 end
@@ -117,8 +106,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.arcs_from == y.arcs_from &&
     x.arcs_to == y.arcs_to &&
     x.arcs == y.arcs &&
-    x.buspairs == y.buspairs &&
-    x.Peak == y.Peak
+    x.buspairs == y.buspairs
 
 "a macro for adding the base AbstractPowerModels fields to a type definition"
 OPF.@def pm_fields begin

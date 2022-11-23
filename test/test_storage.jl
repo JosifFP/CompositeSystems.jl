@@ -2,25 +2,22 @@ include("solvers.jl")
 import PowerModels, JuMP
 using Test
 import PRATS: PRATS, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
-PowerModels.silence()
 
-# gurobi_optimizer_1
-# juniper_optimizer_2
-# ipopt_optimizer_3
-RawFile = "test/data/RBTS/RBTS.m"
-RawFile_strg = "test/data/RBTS/RBTS_strg.m"
-ReliabilityFile = "test/data/RBTS/R_RBTS.m"
-ReliabilityFile_strg = "test/data/RBTS/R_RBTS_strg.m"
+Base_RawFile = "test/data/RBTS/Base/RBTS.m"
+Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
+
+Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
+Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
+
+Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
+Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
+
 TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 
-settings = PRATS.Settings(
-    gurobi_optimizer_1,
-    modelmode = JuMP.AUTOMATIC
-)
+settings = PRATS.Settings(gurobi_optimizer_1,modelmode = JuMP.AUTOMATIC)
 
 method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
-
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 
 system = BaseModule.SystemModel(RawFile_strg, ReliabilityFile_strg, timeseries_load, SParametrics)
@@ -33,26 +30,53 @@ recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 CompositeAdequacy.seed!(rng, (method.seed, 1))
 CompositeAdequacy.initialize_states!(rng, systemstates, system)
-OPF.initialize_pm_containers!(pm, system; timeseries=false)
-for t in 1:24
+#OPF.initialize_pm_containers!(pm, system; timeseries=false)
+CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
+
+t=4
+system.loads.pd[:,t] = system.loads.pd[:,t]*2
+
+CompositeAdequacy.update_model!(pm, system, systemstates, t)
+#OPF.build_method!(pm, system, systemstates, t)
+#OPF.optimize_method!(pm)
+#OPF.build_result!(pm, system, systemstates, t)
+systemstates.plc
+systemstates.se
+
+OPF.build_sol_values(OPF.var(pm, :se, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sc, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sd, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :ps, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sc_on, 1))[1]
+OPF.build_sol_values(OPF.var(pm, :sd_on, 1))[1]
+OPF.empty_model!(pm)
+JuMP.termination_status(pm.model)
+@show JuMP.solution_summary(pm.model, verbose=true)
+
+
+
+for t in 2:24
     import InfrastructureModels
     system.loads.pd[:,t] = system.loads.pd[:,t]*1.25
 
     if t==17 || t==18 || t==19 || t==20
+        PRATS.field(systemstates, :branches)[3,t] = 0
+        PRATS.field(systemstates, :branches)[4,t] = 0
         PRATS.field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
     end
 
-    OPF.build_method!(pm, system, systemstates, t)
-    OPF.optimize_method!(pm)
-    OPF.build_result!(pm, system, systemstates, t)
+    #OPF.build_method!(pm, system, systemstates, t)
+    #OPF.optimize_method!(pm)
+    #OPF.build_result!(pm, system, systemstates, t)
+    CompositeAdequacy.update_model!(pm, system, systemstates, t)
     #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
     #println(Float16.(systemstates.se[t]))
     #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
     #println(Float16.(systemstates.se[t]*100))
-    #println(Float16.(systemstates.plc[:,t]*100))
+    println(Float16.(systemstates.plc[:,t]*100))
     #println(Float16.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
-    println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
+    #println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
     OPF.empty_model!(pm)
 end
 

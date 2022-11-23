@@ -36,13 +36,12 @@ function assess(
 
     systemstates = SystemStates(system)
 
-    #model for contingency states
     model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
     pm = PowerModel(settings.powermodel, Topology(system), model)
 
     #model for non-contingency states
-    ncmodel = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    ncpm = PowerModel(settings.powermodel, Topology(system), ncmodel)
+    #ncmodel = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
+    #ncpm = PowerModel(settings.powermodel, Topology(system), ncmodel)
 
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
@@ -54,21 +53,16 @@ function assess(
 
         if OPF.is_empty(pm.model.moi_backend)
             initialize_powermodel!(pm, system, systemstates)
-            initialize_powermodel!(ncpm, system, systemstates, results=true)
         end
 
         for t in 2:N
-            if systemstates.system[t] == true
-                update_model!(ncpm, system, systemstates, t)
-            else
-                update_model!(pm, system, systemstates, t)
-            end
-
+            update_model!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
         reset_model!(pm, systemstates, settings, s)
+        
     end
 
     put!(results, recorders)

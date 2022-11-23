@@ -43,7 +43,8 @@ mpc.branch = [
 	1	3	0.0342	0.18	0.0212	89.25	98.18	102.64	0	0	1	-60	60;								
 	2	4	0.114	0.6		0.0704	74.55	82.0	85.73	0	0	1	-60	60;								
 	4	5	0.0228	0.12	0.0142	74.55	82.0	85.73	0	0	1	-60	60;								
-	5	6	0.0228	0.12	0.0142	74.55	82.0	85.73	0	0	1	-60	60;								
+	5	6	0.0228	0.12	0.0142	74.55	82.0	85.73	0	0	1	-60	60;
+	5	6	0.0228	0.12	0.0142	74.55	82.0	85.73	0	0	1	-60	60;							
 ];
 
 %%-----  OPF Data  -----%%
@@ -63,13 +64,3 @@ mpc.gencost = [
 	2	0.0	0.0	2	0.5		5.9354;
 	2	0.0	0.0	2	0.5		5.9354;
 ];
-
-% hours
-mpc.time_elapsed = 1.0
-
-%% storage data
-%   storage_bus ps 	qs		energy  energy_rating 	charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin	qmax  	r  	x  	p_loss  q_loss  status
-mpc.storage = [
-	 6	 		0.0	 0.0	0.0		40.0	 		5.0	 		10.0			1	 				1						10.0	 	0.0	0.0	0.0	0.0	 0.0	0.0	 	1;
-];
-

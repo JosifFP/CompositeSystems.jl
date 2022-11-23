@@ -84,7 +84,6 @@ function update_var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel
     update_var_storage_energy(pm, system, states, t)
     update_var_storage_charge(pm, system, states, t)
     update_var_storage_discharge(pm, system, states, t)
-    update_var_storage_complementary_indicator(pm, system, states, t)
 end
 
 ""
@@ -133,23 +132,6 @@ function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemMode
         JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i]*field(states, :storages)[i,t])
     end
 
-end
-
-""
-function update_var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    
-    sc_on = var(pm, :sc_on, 1)
-    sd_on = var(pm, :sd_on, 1)
-
-    for i in eachindex(field(system, :storages, :keys))
-        if all(view(field(states, :branches),:,t)) == true
-            fix(sc_on[i], 1, force = true)
-            fix(sd_on[i], 0, force = true)
-        else
-            fix(sc_on[i], 0, force = true)
-            fix(sd_on[i], 1, force = true)
-        end
-    end
 end
 
 ""

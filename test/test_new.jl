@@ -46,10 +46,6 @@ PRATS.EUE.(shortfall)
 #show(to)
 
 
-#system = BaseModule.SystemModel(RawFile, ReliabilityFile)
-PRATS.field(system, :loads, :cost)[:] = [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
-
-
 recorders = accumulator.(system, method, resultspecs)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 topology = Topology(system)

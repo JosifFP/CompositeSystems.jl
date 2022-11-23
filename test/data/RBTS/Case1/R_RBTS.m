@@ -20,12 +20,6 @@ mpc.reliability_gen = [
 	2	20	2.4	55;
 ];
 
-%% storage reliability data
-%	bus	energy_rating	λ	mttr
-mpc.reliability_storage = [
-	6	40.0	0	0;
-];
-
 %% branch reliability data
 %    f_bus	t_bus	λ	mttr    
 mpc.reliability_branch = [
@@ -37,7 +31,8 @@ mpc.reliability_branch = [
 	1	3	1.5	10;									
 	2	4	5.0	10;								
 	4	5	1.0 10;								
-	5	6	1.0 10;								
+	5	6	1.0 10;
+	5	6	1.0 10;							
 ];
 
 %% load cost data

@@ -89,11 +89,8 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
     var_branch_power(pm, system, states, t)
     var_load_curtailment(pm, system, t)
     var_storage_power_mi(pm, system, states, t)
-    #var_storage_power_mi(pm, system)
 
-    objective_min_load_curtailment(pm, system, states, t)
-    #objective_min_load_curtailment(pm, system)
-    #objective_min_fuel_and_flow_cost(pm, system)
+    objective_min_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------
@@ -131,7 +128,7 @@ function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system:
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
-    update_var_storage_complementary_indicator(pm, system, states, t)
+    update_var_storage_power_mi(pm, system, states, t)
     
     update_constraint_power_balance(pm, system, states, t)
     update_constraint_voltage_angle_diff(pm, system, states, t)
@@ -180,42 +177,21 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
     
 end
 
+# ""
+# function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
+
+#     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
+#     return @objective(pm.model, MIN_SENSE, fd)
+    
+# end
+
 ""
 function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
 
-    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-    return @objective(pm.model, MIN_SENSE, fd)
-    
-end
-
-""
-function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
-
-    #fd = @expression(pm.model, sum(field(system, :loads, :cost)[field(system, :storages, :buses)i](-var(pm, :sc, nw)[i]/(1.001-sum(system.loads.pd[:,t])/topology(pm, :Peak)[t])) for i in field(system, :storages, :keys)))
-    
-    gen_cost = Dict{Int, Any}()
-    gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
-
-    for i in system.generators.keys
-        cost = reverse(system.generators.cost[i])
-        pg = var(pm, :pg, nw)[i]
-        if length(cost) == 1
-            gen_cost[i] = @expression(pm.model, cost[1])
-        elseif length(cost) == 2
-            gen_cost[i] = @expression(pm.model, cost[1] + cost[2]*pg)
-        #elseif length(cost) == 3
-            #gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
-        else
-            @error("Nonlinear problems not supported")
-            gen_cost[i] = @expression(pm.model, 0.0)
-        end
-    end
-
-    fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
-    fe = @expression(pm.model, 3000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
+    fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
 
-    return @objective(pm.model, MIN_SENSE, fd+fg+fe)
+    return @objective(pm.model, MIN_SENSE, fd+fe)
     
 end
 
