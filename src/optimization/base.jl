@@ -77,7 +77,7 @@ struct Topology
         arcs_to = filter(i -> i[2] > i[3], skipmissing(A))
         arcs = [arcs_from; arcs_to]
 
-        buspairs = calc_buspair_parameters(field(system, :branches), keys)   
+        buspairs = calc_buspair_parameters(field(system, :branches), keys)
 
         return new(
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
@@ -114,7 +114,6 @@ OPF.@def pm_fields begin
     topology::Topology
     var::Dict{Symbol, AbstractArray}
     con::Dict{Symbol, AbstractArray}
-    sol::Dict{Symbol, Matrix{Float64}}
 end
 
 "root of the power formulation type hierarchy"
@@ -155,6 +154,7 @@ end
 
 ""
 function JumpModel(modelmode::JuMP.ModelMode, optimizer)
+
     if modelmode == JuMP.AUTOMATIC
         jumpmodel = Model(optimizer; add_bridges = false)
     elseif modelmode == JuMP.DIRECT
@@ -163,10 +163,12 @@ function JumpModel(modelmode::JuMP.ModelMode, optimizer)
     else
         @warn("Manual Mode not supported")
     end
+
     JuMP.set_string_names_on_creation(jumpmodel, false)
     JuMP.set_silent(jumpmodel)
-    #GC.gc()
+
     return jumpmodel
+    
 end
 
 
@@ -175,48 +177,73 @@ function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) wher
     
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()
-    sol = Dict{Symbol, Matrix{Float64}}()
 
     method == DCMPPowerModel && @error("method $(method) not supported yet. DCPPowerModel method was built")
 
-    return M(model, topology, var, con, sol)
+    return M(model, topology, var, con)
 
 end
 
 ""
-function PowerModel(system::SystemModel{N}, topology::Topology, settings::Settings; timeseries=false) where {N}
-    
-    model = JumpModel(field(settings, :modelmode), deepcopy(field(settings, :optimizer)))
-    var = Dict{Symbol, AbstractArray}()
-    con = Dict{Symbol, AbstractArray}()
-    sol = Dict{Symbol, Matrix{Float64}}()
-
-    field(settings, :powermodel) == DCMPPowerModel && @warn("method $(field(settings, :powermodel)) not supported yet. DCPPowerModel method was built")
+function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}; timeseries=false) where {N}
 
     if timeseries == true
-        add_var_container!(var, :pg, field(system, :generators, :keys), timesteps = 1:N)
-        add_var_container!(var, :va, field(system, :buses, :keys), timesteps = 1:N)
-        add_var_container!(var, :plc, field(system, :loads, :keys), timesteps = 1:N)
-        add_var_container!(var, :p, field(topology, :arcs), timesteps = 1:N)
-        add_con_container!(con, :power_balance, field(system, :buses, :keys), timesteps = 1:N)
-        add_con_container!(con, :ohms_yt_from, field(system, :branches, :keys), timesteps = 1:N)
-        add_con_container!(con, :ohms_yt_to, field(system, :branches, :keys), timesteps = 1:N)
-        add_con_container!(con, :voltage_angle_diff_upper, field(system, :branches, :keys), timesteps = 1:N)
-        add_con_container!(con, :voltage_angle_diff_lower, field(system, :branches, :keys), timesteps = 1:N)
+
+        @error("Timeseries containers not supported")
+
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :va, field(system, :buses, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :plc, field(system, :loads, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs), timesteps = 1:N)
+
+        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys), timesteps = 1:N)
+
+        add_var_container!(pm.var, :ps, field(system, :storages, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :se, field(system, :storages, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :sc, field(system, :storages, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :sd, field(system, :storages, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :sc_on, field(system, :storages, :keys), timesteps = 1:N)
+        add_var_container!(pm.var, :sd_on, field(system, :storages, :keys), timesteps = 1:N)
+
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys), timesteps = 1:N)
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys), timesteps = 1:N)
+
     else
-        add_var_container!(var, :pg, field(system, :generators, :keys))
-        add_var_container!(var, :va, field(system, :buses, :keys))
-        add_var_container!(var, :plc, field(system, :loads, :keys))
-        add_var_container!(var, :p, field(topology, :arcs))
-        add_con_container!(con, :power_balance, field(system, :buses, :keys))
-        add_con_container!(con, :ohms_yt_from, field(system, :branches, :keys))
-        add_con_container!(con, :ohms_yt_to, field(system, :branches, :keys))
-        add_con_container!(con, :voltage_angle_diff_upper, field(system, :branches, :keys))
-        add_con_container!(con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :va, field(system, :buses, :keys))
+        add_var_container!(pm.var, :plc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs))
+
+        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+
+        add_var_container!(pm.var, :ps, field(system, :storages, :keys))
+        add_var_container!(pm.var, :se, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd_on, field(system, :storages, :keys))
+
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+
     end
 
-    add_sol_container!(sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
-
-    return DCPPowerModel(model, topology, var, con, sol)
+    #add_sol_container!(pm.sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
+    return
 
 end

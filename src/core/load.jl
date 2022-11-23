@@ -8,7 +8,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String)
     reliability_data = parse_reliability_data(ReliabilityFile)
     SParametrics = StaticParameters{1,1,Hour}()
     get!(network, :timeseries_load, "")
-    _merge_prats_data!(network, reliability_data, SParametrics)
+    _merge_CompositeSystems_data!(network, reliability_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
@@ -20,7 +20,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String, TimeSeriesFile::S
     network = BuildNetwork(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
     timeseries_data, SParametrics = extract_timeseriesload(TimeSeriesFile)
-    merge_prats_data!(network, reliability_data, timeseries_data, SParametrics)
+    merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
@@ -31,7 +31,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::
     #load network data
     network = BuildNetwork(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
-    merge_prats_data!(network, reliability_data, timeseries_data, SParametrics)
+    merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
@@ -46,6 +46,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     network_shunt::Dict{Int, Any} = network[:shunt]
     network_gen::Dict{Int, Any} = network[:gen]
     network_load::Dict{Int, Any} = network[:load]
+    network_storage::Dict{Int, Any} = network[:storage]
 
     has = has_asset(network)
     
@@ -63,7 +64,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["va"], 
             data["vm"]
         )
-
     end
 
     if has[:branches]
@@ -90,7 +90,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["μ"],
             data["br_status"]
         )
-
     end
 
     if has[:shunts]
@@ -102,7 +101,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["gs"], 
             data["status"]
         )
-
     else
         shunts = Shunts(Int[], Int[], Float16[], Float16[], Vector{Bool}())
     end
@@ -125,7 +123,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["μ"],
             data["gen_status"]
         )
-
     end
     
     if has[:loads]
@@ -158,7 +155,31 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
     end
 
-    if has[:storages]
+    if has[:storages] && network[:time_elapsed] == 1.0
+        data = container(network_storage, storage_fields)
+        storages = Storages{N,L,T}(
+            data["index"], 
+            data["storage_bus"],
+            data["ps"], 
+            data["qs"],
+            data["energy"],
+            data["energy_rating"],
+            data["charge_rating"],
+            data["discharge_rating"],
+            data["charge_efficiency"],
+            data["discharge_efficiency"],
+            data["thermal_rating"],
+            data["qmax"],
+            data["qmin"],
+            data["r"],
+            data["x"],
+            data["p_loss"],
+            data["q_loss"],
+            data["λ"],
+            data["μ"],
+            data["status"],
+        )
+
     else
         storages = Storages{N,L,T}(
             Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 

@@ -35,9 +35,9 @@ con(pm::AbstractPowerModel) = getfield(pm, :con)
 con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :con), field)
 con(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :con), field), nw)
 
-sol(pm::AbstractPowerModel) = getfield(pm, :sol)
-sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :sol), field)
-sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :sol), field), :, nw)
+#sol(pm::AbstractPowerModel) = getfield(pm, :sol)
+#sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :sol), field)
+#sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :sol), field), :, nw)
 
 BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
 BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
@@ -91,7 +91,7 @@ end
 ""
 function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(VariableRef, keys)
+    value = _container_spec(JuMP.VariableRef, keys)
     var_container = container_spec(value, timesteps)
     _assign_container!(container, var_key, var_container)
     return
@@ -100,7 +100,7 @@ end
 ""
 function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(ConstraintRef, keys)
+    value = _container_spec(JuMP.ConstraintRef, keys)
     con_container = container_spec(value, timesteps)
     _assign_container!(container, con_key, con_container)
     return
@@ -275,7 +275,7 @@ end
 ""
 function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(VariableRef, keys)
+    value = _container_spec(JuMP.VariableRef, keys)
 
     for i in timesteps
         container[i] = value
@@ -287,7 +287,7 @@ end
 ""
 function reset_con_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
-    value = _container_spec(ConstraintRef, keys)
+    value = _container_spec(JuMP.ConstraintRef, keys)
 
     for i in timesteps
         container[i] = value
@@ -299,11 +299,10 @@ end
 ""
 function empty_model!(pm::AbstractDCPowerModel)
 
-    empty!(pm.model)
+    JuMP.empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
-    fill!(sol(pm, :plc), 0.0)
-
     return
+
 end
 
 ""
@@ -323,18 +322,18 @@ function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) whe
 end
 
 ""
-function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, settings::Settings, s)
-
+function reset_model!(pm::AbstractDCPowerModel, states::SystemStates, settings::Settings, s)
 
     if iszero(s%10) && settings.optimizer == Ipopt
-        set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     elseif iszero(s%50) && settings.optimizer == Gurobi
-        set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     else
         MOIU.reset_optimizer(pm.model)
     end
 
-    fill!(sol(pm, :plc), 0.0)
+    fill!(field(states, :plc), 0.0)
+    fill!(field(states, :se), 0.0)
 
     return
 

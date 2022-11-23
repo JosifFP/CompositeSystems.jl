@@ -4,14 +4,6 @@ abstract type TimeSeriesAssets{N,L,T<:Period} <: AbstractAssets end
 
 Base.length(a::AbstractAssets) = length(a.keys)
 
-# abstract type compts end
-# struct Length{T <: compts}
-#     value::Int
-# end
-# function Length(::Type{T}, number::Int) where {T <: compts}
-#     return Length{T}(number)
-# end
-
 "Buses"
 struct Buses <: AbstractAssets
 
@@ -240,7 +232,6 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     discharge_rating::Vector{Float16}
     charge_efficiency::Vector{Float16}
     discharge_efficiency::Vector{Float16}
-    #carryover_efficiency::Vector{Float16}
     thermal_rating::Vector{Float16}
     qmax::Vector{Float16}
     qmin::Vector{Float16}

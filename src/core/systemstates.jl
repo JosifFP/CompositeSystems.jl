@@ -10,8 +10,9 @@ struct SystemStates <: AbstractState
     generators::Matrix{Bool}
     storages::Matrix{Bool}
     generatorstorages::Matrix{Bool}
-    storages_energy::Matrix{Float16}
-    generatorstorages_energy::Matrix{Float16}
+    se::Matrix{Float64}
+    gse::Matrix{Float64}
+    plc::Matrix{Float64}
     system::Vector{Bool}
     #loads_nexttransition::Vector{Int}
     #branches_nexttransition::Vector{Int}
@@ -34,7 +35,6 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     end
 
     loads = Array{Bool, 2}(undef, length(system.loads), N)
-    fill!(loads, 1)
     #loads_nexttransition = Int[]
     branches = Array{Bool, 2}(undef, length(system.branches), N)
     #branches_nexttransition = Int[]
@@ -46,10 +46,19 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     #storages_nexttransition = Int[]
     generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
     #generatorstorages_nexttransition = Int[]
-    storages_energy = zeros(Float16, Base.length(system.storages), N)
-    generatorstorages_energy = zeros(Float16, Base.length(system.generatorstorages), N)
+
+    se = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
+
+    gse = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
+
+    plc = Array{Float64, 2}(undef, length(system.loads), N)
     
     sys = Array{Bool, 1}(undef, N)
+
+    fill!(loads, 1)
+    fill!(se, 0)
+    fill!(gse, 0)
+    fill!(plc, 0)
     fill!(sys, 1)
 
     if available==true
@@ -62,42 +71,6 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
         fill!(generatorstorages, 1)
     end
 
-    return SystemStates(
-        buses, loads, branches, shunts, generators, storages, generatorstorages,
-        storages_energy, generatorstorages_energy, sys)
-end
-
-# "SystemStates structure for NonSequential MCS"
-# function SystemStates(system::SystemModel{N}, method::NonSequentialMCS) where {N}
-
-#     @inbounds buses = field(system, :buses, :bus_type)
-
-#     @inbounds loads = Array{Bool, 1}(undef, length(system.loads))
-#     @inbounds loads_nexttransition = Array{Int, 1}(undef, length(system.loads))
-        
-#     @inbounds branches = Array{Bool, 1}(undef, length(system.branches))
-#     @inbounds branches_nexttransition = Array{Int, 1}(undef, length(system.branches))
-
-#     @inbounds shunts = Array{Bool, 1}(undef, length(system.shunts))
-#     @inbounds shunts_nexttransition = Array{Int, 1}(undef, length(system.shunts))
-
-#     @inbounds generators = Array{Bool, 1}(undef, length(system.generators))
-#     @inbounds generators_nexttransition = Array{Int, 1}(undef, length(system.generators))
-
-#     @inbounds storages = Array{Bool, 1}(undef, length(system.storages))
-#     @inbounds storages_nexttransition = Array{Int, 1}(undef, length(system.storages))
-
-#     @inbounds generatorstorages = Array{Bool, 1}(undef, length(system.generatorstorages))
-#     @inbounds generatorstorages_nexttransition = Array{Int, 1}(undef, length(system.generatorstorages))
-
-#     @inbounds storages_energy = Array{Float16, 1}(undef, length(system.storages))
-#     @inbounds generatorstorages_energy = Array{Float16, 1}(undef, length(system.generatorstorages))
+    return SystemStates(buses, loads, branches, shunts, generators, storages, generatorstorages, se, gse, plc, sys)
     
-#     @inbounds sys = [true]
-
-#     return SystemStates(
-#         buses, loads, branches, shunts, generators, storages, generatorstorages,
-#         loads_nexttransition, branches_nexttransition, shunts_nexttransition, 
-#         generators_nexttransition, storages_nexttransition, generatorstorages_nexttransition,
-#         storages_energy, generatorstorages_energy, sys)
-# end
+end

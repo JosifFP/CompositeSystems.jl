@@ -43,7 +43,7 @@ function BuildNetwork(RawFile::String; replace=false, export_file=false, export_
             end
 
             file = RawFile[1:findlast(==('.'), RawFile)-1]
-            new_file = file*"_PRATS_"*format(now(),"HHMMSS")*"."*export_filetype
+            new_file = file*"_CompositeSystems_"*format(now(),"HHMMSS")*"."*export_filetype
             @info("A new file: $(new_file) has been created.")
             PowerModels.export_file(new_file, data)
             return  Dict{Symbol, Any}(ref_initialize!(data))
@@ -189,7 +189,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     end
     PowerModels.update_bus_ids!(data, bus_id_map)
 
-    get!(pm_data, "PRATS_sanity_check", true)
+    get!(pm_data, "CompositeSystems_sanity_check", true)
 
     return data
 

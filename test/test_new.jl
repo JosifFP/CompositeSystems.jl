@@ -1,7 +1,7 @@
-using PRATS, PRATS.OPF, PRATS.BaseModule
-using PRATS.OPF
-using PRATS.CompositeAdequacy
-import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS, SCS
+using CompositeSystems, CompositeSystems.OPF, CompositeSystems.BaseModule
+using CompositeSystems.OPF
+using CompositeSystems.CompositeAdequacy
+import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
 import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime
@@ -17,7 +17,7 @@ ReliabilityFile = "test/data/RBTS/R_RBTS.m"
 #ReliabilityFile = "test/data/RTS/R_RTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
-settings = PRATS.Settings(
+settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC
@@ -25,28 +25,25 @@ settings = PRATS.Settings(
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=10, seed=100, threaded=true)
-@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+method = SequentialMCS(samples=1, seed=100, threaded=false)
+@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
+
 
 
 
 #Profile.clear()
-#@time shortfall,report = PRATS.assess(system, method, settings, resultspecs...)
+#@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 #ProfileView.view()
 
-PRATS.LOLE.(shortfall, system.loads.keys)
-PRATS.EUE.(shortfall, system.loads.keys)
-PRATS.LOLE.(shortfall)
-PRATS.EUE.(shortfall)
+CompositeSystems.LOLE.(shortfall, system.loads.keys)
+CompositeSystems.EUE.(shortfall, system.loads.keys)
+CompositeSystems.LOLE.(shortfall)
+CompositeSystems.EUE.(shortfall)
 
 #using TimerOutputs
 #const to = TimerOutput()
 #@timeit to "" foo()
 #show(to)
-
-
-#system = BaseModule.SystemModel(RawFile, ReliabilityFile)
-PRATS.field(system, :loads, :cost)[:] = [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6]
 
 
 recorders = accumulator.(system, method, resultspecs)
@@ -65,14 +62,13 @@ CompositeAdequacy.initialize_states!(rng, systemstates, system)
 @code_warntype update_method!(pm, system, states, t)
 OPF.con(pm, :power_balance, 1).data
 
-@code_warntype PRATS.Settings(
+@code_warntype CompositeSystems.Settings(
     ipopt_optimizer_3,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC, powermodel="AbstractDCPModel"
 )
 
 
-all(view(states.branches,:,t))
 JuMP.all_constraints(pm.model; include_variable_in_set_constraints = true)
 CompositeAdequacy.build_method!(pm, system, systemstates, t)
 CompositeAdequacy.optimize_method!(pm.model)

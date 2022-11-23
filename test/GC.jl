@@ -638,8 +638,8 @@
 #         vm = var(pm, :vm)[nw] = @variable(pm.model, [field(system, :buses, :keys)], start =1.0)
 #         if bounded
 #             for i in eachindex(field(system, :buses, :keys))
-#                 set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
-#                 set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
+#                 JuMP.set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
+#                 JuMP.set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
 #             end
 #         end
 
@@ -648,8 +648,8 @@
 #         vm = var(pm, :vm)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))], start =1.0)
 #         if bounded
 #             for i in assetgrouplist(topology(pm, :buses_idxs))
-#                 set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
-#                 set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
+#                 JuMP.set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
+#                 JuMP.set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
 #             end
 #         end
         
@@ -677,8 +677,8 @@
 
 #         if bounded
 #             for l in eachindex(field(system, :generators, :keys))
-#                 set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-#                 set_lower_bound(pg[l], 0.0)
+#                 JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
+#                 JuMP.set_lower_bound(pg[l], 0.0)
 #             end
 #         end
 #     else
@@ -686,8 +686,8 @@
 
 #         if bounded
 #             for l in assetgrouplist(topology(pm, :generators_idxs))
-#                 set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-#                 set_lower_bound(pg[l], 0.0)
+#                 JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
+#                 JuMP.set_lower_bound(pg[l], 0.0)
 #             end
 #         end
     
@@ -702,8 +702,8 @@
 
 #     if bounded
 #             for l in eachindex(field(system, :generators, :keys))
-#             set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-#             set_lower_bound(pg[l], 0.0)
+#             JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+#             JuMP.set_lower_bound(pg[l], 0.0)
 #         end
 #     end
 
@@ -742,8 +742,8 @@
 
 #     if bounded
 #         for (l,i,j) in topology(pm, :arcs)
-#             set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
-#             set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
+#             JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
+#             JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
 #         end
 #     end
 
@@ -763,8 +763,8 @@
 
 #     if bounded
 #         for (l,i,j) in  topology(pm, :arcs)
-#             set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-#             set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#             JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#             JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
 #         end
 #     end
 
@@ -803,8 +803,8 @@
 #         plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
 
 #         for l in eachindex(field(system, :loads, :keys))
-#             set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
-#             set_lower_bound(plc[l],0.0)
+#             JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
+#             JuMP.set_lower_bound(plc[l],0.0)
 #         end
 
 #     else
@@ -812,8 +812,8 @@
 #         plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
 #         for l in assetgrouplist(topology(pm, :loads_idxs))
-#             set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
-#             set_lower_bound(plc[l],0.0)
+#             JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
+#             JuMP.set_lower_bound(plc[l],0.0)
 #         end
 
 #     end
@@ -826,8 +826,8 @@
 #     plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
 
 #     for l in eachindex(field(system, :loads, :keys))
-#         set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
-#         set_lower_bound(plc[l],0.0)
+#         JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
+#         JuMP.set_lower_bound(plc[l],0.0)
 #     end
 
 # end
@@ -857,8 +857,8 @@
 #     pg = var(pm, :pg, 1)
 
 #     for l in eachindex(field(system, :generators, :keys))
-#         set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
-#         set_lower_bound(pg[l], 0.0)
+#         JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+#         JuMP.set_lower_bound(pg[l], 0.0)
 #     end
 
 # end
@@ -889,8 +889,8 @@
 #             @error("Expression $(typeof(p[(l,i,j)])) not supported")
 #         end
 
-#         set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-#         set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#         JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+#         JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
 
 #     end
 
@@ -913,8 +913,8 @@
 
 #     plc = var(pm, :plc, 1)
 #     for l in eachindex(field(system, :loads, :keys))
-#         set_upper_bound(plc[l], field(system, :loads, :pd)[l,t]*field(states, :loads)[l,t])
-#         set_lower_bound(plc[l],0.0)
+#         JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t]*field(states, :loads)[l,t])
+#         JuMP.set_lower_bound(plc[l],0.0)
 #     end
 
 # end
@@ -922,3 +922,96 @@
 # "Model ignores reactive power flows"
 # function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 # end
+
+# "SystemStates structure for NonSequential MCS"
+# function SystemStates(system::SystemModel{N}, method::NonSequentialMCS) where {N}
+
+#     @inbounds buses = field(system, :buses, :bus_type)
+
+#     @inbounds loads = Array{Bool, 1}(undef, length(system.loads))
+#     @inbounds loads_nexttransition = Array{Int, 1}(undef, length(system.loads))
+        
+#     @inbounds branches = Array{Bool, 1}(undef, length(system.branches))
+#     @inbounds branches_nexttransition = Array{Int, 1}(undef, length(system.branches))
+
+#     @inbounds shunts = Array{Bool, 1}(undef, length(system.shunts))
+#     @inbounds shunts_nexttransition = Array{Int, 1}(undef, length(system.shunts))
+
+#     @inbounds generators = Array{Bool, 1}(undef, length(system.generators))
+#     @inbounds generators_nexttransition = Array{Int, 1}(undef, length(system.generators))
+
+#     @inbounds storages = Array{Bool, 1}(undef, length(system.storages))
+#     @inbounds storages_nexttransition = Array{Int, 1}(undef, length(system.storages))
+
+#     @inbounds generatorstorages = Array{Bool, 1}(undef, length(system.generatorstorages))
+#     @inbounds generatorstorages_nexttransition = Array{Int, 1}(undef, length(system.generatorstorages))
+
+#     @inbounds storages_energy = Array{Float16, 1}(undef, length(system.storages))
+#     @inbounds generatorstorages_energy = Array{Float16, 1}(undef, length(system.generatorstorages))
+    
+#     @inbounds sys = [true]
+
+#     return SystemStates(
+#         buses, loads, branches, shunts, generators, storages, generatorstorages,
+#         loads_nexttransition, branches_nexttransition, shunts_nexttransition, 
+#         generators_nexttransition, storages_nexttransition, generatorstorages_nexttransition,
+#         storages_energy, generatorstorages_energy, sys)
+# end
+
+# "Transportation"
+# function build_method!(pm::AbstractNFAModel, system::SystemModel, t)
+ 
+#     var_gen_power(pm, system)
+#     var_branch_power(pm, system)
+
+#     objective_min_fuel_and_flow_cost(pm, system)
+
+#     # Add Constraints
+#     # ---------------
+#     for i in field(system, :buses, :keys)
+#         constraint_power_balance(pm, system, i, t)
+#     end
+    
+#     return
+
+# end
+
+
+# "Transportation"
+# function update_method!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
+
+#     update_var_gen_power(pm, system, states, t)
+#     update_var_branch_power(pm, system, states, t)
+#     update_constraint_power_balance(pm, system, states, t)
+#     return
+
+# end
+
+# Peak = Array{Float16, 2}(undef, 1, N)
+# for t in 1:N
+#     if iszero((t+23)%24)
+#         for k in t:t+23
+#             Peak[k] = sum(maximum([field(system, :loads, :pd)[:,k] for k in t:t+23]))
+#         end
+#     end
+# end
+
+    # gen_cost = Dict{Int, Any}()
+    # gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
+
+    # for i in system.generators.keys
+    #     cost = reverse(system.generators.cost[i])
+    #     pg = var(pm, :pg, nw)[i]
+    #     if length(cost) == 1
+    #          gen_cost[i] = @expression(pm.model, cost[1])
+    #     elseif length(cost) == 2
+    #          gen_cost[i] = @expression(pm.model, cost[1] + cost[2]*pg)
+    #     #elseif length(cost) == 3
+    #          #gen_cost[i] = JuMP.@NLexpression(pm.model, cost[1] + cost[2]*pg + cost[3]*pg^2)
+    #     else
+    #          @error("Nonlinear problems not supported")
+    #          gen_cost[i] = @expression(pm.model, 0.0)
+    #     end
+    #  end
+
+    # fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
