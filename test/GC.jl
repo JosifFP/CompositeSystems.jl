@@ -457,7 +457,7 @@
 # end
 
 # ""
-# function build_method_idxs!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
+# function build_method_idxs!(pm::AbstractDCPowerModel, system::SystemModel, t)
 #     # Add Optimization and State Variables
 #     var_bus_voltage(pm, system, nw=t, idxs=true)
 #     var_gen_power(pm, system, nw=t, idxs=true)
@@ -1015,3 +1015,60 @@
     #  end
 
     # fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+
+
+
+#     "Load Minimization version of DCOPF"
+# function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+#     update_var_gen_power(pm, system, states, t)
+#     update_var_branch_power(pm, system, states, t)
+#     update_var_load_curtailment(pm, system, states, t)
+#     #update_var_storage_power_mi(pm, system, states, t)
+#     update_constraint_power_balance(pm, system, states, t)
+    
+#     if any(i -> i==4,view(states.buses, :, t)) == true || any(i -> i==4,view(states.buses, :, t-1)) == true
+
+#         JuMP.delete(pm.model, con(pm, :power_balance, 1).data)
+#         add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
+
+#         for i in assetgrouplist(topology(pm, :buses_idxs))
+#             constraint_power_balance(pm, system, i, t)
+#         end
+
+#     else
+#         update_constraint_power_balance(pm, system, states, t)
+#     end
+
+#     update_constraint_voltage_angle_diff(pm, system, states, t)
+#     update_constraint_storage(pm, system, states, t)
+
+
+#     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
+
+#         JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
+#         add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
+
+#         for i in assetgrouplist(topology(pm, :branches_idxs))
+#             constraint_ohms_yt(pm, system, i)
+#         end  
+    
+#     end
+
+#     return
+
+# end
+
+    # for i in field(system, :loads, :keys)
+    #     if view(field(states, :loads), i, t) != 0 && all(view(field(system, :loads, :pd), :, t) .== 0.0) && all(view(field(system, :loads, :qd), :, t) .== 0.0)
+    #         field(states, :loads)[i,t] = 0
+    #         revised = true
+    #     end
+    # end
+
+    # for i in field(system, :shunts, :keys)
+    #     if view(field(states, :shunts), i, t) != 0 && all(view(field(system, :shunts, :gs), :, t) .== 0.0) && all(view(field(system, :shunts, :bs), :, t) .== 0.0)
+    #         field(states, :shunts)[i,t] = 0
+    #         revised = true
+    #     end
+    # end

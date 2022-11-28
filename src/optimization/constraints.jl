@@ -85,7 +85,7 @@ function constraint_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel, i::In
 end
 
 "DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_from(pm::Union{AbstractDCMPPModel, AbstractDCPLLModel}, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
@@ -96,7 +96,7 @@ function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus
 end
 
 "DC Line Flow Constraints"
-function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_from(pm::AbstractDCPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     con(pm, :ohms_yt_from, nw)[i] = @constraint(pm.model, p_fr == -b*(va_fr_to))
@@ -104,7 +104,23 @@ function _constraint_ohms_yt_from(pm::AbstractDCPowerModel, i::Int, nw::Int, f_b
 end
 
 "nothing to do, this model is symetric"
-function _constraint_ohms_yt_to(pm::AbstractDCPowerModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_to(pm::AbstractDCPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+end
+
+"nothing to do, this model is symetric"
+function _constraint_ohms_yt_to(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+end
+
+"""
+Creates Ohms constraints (yt post fix indicates that Y and T values are in rectangular form)
+"""
+function _constraint_ohms_yt_to(pm::AbstractDCPLLModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    p_to  = var(pm, :p, nw)[i, t_bus, f_bus]
+
+    r = g/(g^2 + b^2)
+    con(pm, :ohms_yt_to, nw)[i] = @constraint(pm.model, p_fr + p_to >= r*(p_fr^2))
 end
 
 "Branch - Phase Angle Difference Constraints "

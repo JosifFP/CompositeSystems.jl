@@ -19,8 +19,8 @@ mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMCS,Shortf
     unservedload_busperiod::Matrix{MeanVariance}
 
     # Running UE totals for current simulation
-    unservedload_total_currentsim::Float16
-    unservedload_bus_currentsim::Vector{Float16}
+    unservedload_total_currentsim::Float64
+    unservedload_bus_currentsim::Vector{Float64}
 
 end
 
@@ -184,7 +184,7 @@ end
 struct SMCShortfallSamplesAccumulator <:
     ResultAccumulator{SequentialMCS,ShortfallSamples}
 
-    shortfall::Array{Float16,3}
+    shortfall::Array{Float64,3}
 
 end
 

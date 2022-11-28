@@ -15,11 +15,11 @@ struct Topology
     storages_nodes::Dict{Int, Vector{Int}}
     generatorstorages_nodes::Dict{Int, Vector{Int}}
 
-    arcs_from::Vector{Tuple{Int, Int, Int}}
-    arcs_to::Vector{Tuple{Int, Int, Int}}
-    arcs::Vector{Tuple{Int, Int, Int}}
+    arcs_from::Vector{Union{Missing, Tuple{Int, Int, Int}}}
+    arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
+    arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Vector{Float16}}
+    buspairs::Dict{Tuple{Int, Int}, Union{Missing,Vector{Float16}}}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -122,17 +122,24 @@ abstract type AbstractPowerModel end
 "Types of optimization"
 abstract type AbstractDCPowerModel <: AbstractPowerModel end
 abstract type AbstractACPowerModel <: AbstractPowerModel end
+abstract type AbstractLPACModel <: AbstractPowerModel end
+
+abstract type AbstractLPACCModel <: AbstractLPACModel end
 abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
+abstract type AbstractDCPLLModel <: AbstractDCPowerModel end
 abstract type AbstractDCPModel <: AbstractDCPowerModel end
 abstract type AbstractNFAModel <: AbstractDCPowerModel end
 abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
-LoadCurtailment = Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel}
+LoadCurtailment = Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel, AbstractDCPLLModel, AbstractLPACCModel}
 
+struct LPACCPowerModel <: AbstractLPACCModel @pm_fields end
 struct DCPPowerModel <: AbstractDCPModel @pm_fields end
 struct DCMPPowerModel <: AbstractDCMPPModel @pm_fields end
+struct DCPLLPowerModel <: AbstractDCPLLModel @pm_fields end
 struct NFAPowerModel <: AbstractNFAModel @pm_fields end
+
 struct PM_DCPPowerModel <: PM_AbstractDCPModel @pm_fields end
-StructPowerModel = Union{DCPPowerModel, DCMPPowerModel, NFAPowerModel}
+StructPowerModel = Union{DCPPowerModel, DCMPPowerModel, DCPLLPowerModel, NFAPowerModel}
 
 ""
 struct Settings
@@ -177,9 +184,7 @@ function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) wher
     
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()
-
-    method == DCMPPowerModel && @error("method $(method) not supported yet. DCPPowerModel method was built")
-
+    #method == DCMPPowerModel && @error("method $(method) not supported yet. DCPPowerModel method was built")
     return M(model, topology, var, con)
 
 end

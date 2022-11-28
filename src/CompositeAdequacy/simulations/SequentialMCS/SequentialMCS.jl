@@ -35,7 +35,7 @@ function assess(
 ) where {N}
 
     systemstates = SystemStates(system)
-
+    initial_topology = Topology(system)
     model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
     pm = PowerModel(settings.powermodel, Topology(system), model)
 
@@ -56,6 +56,7 @@ function assess(
         end
 
         for t in 2:N
+            #println("t=$(t)")
             update_model!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
@@ -97,13 +98,39 @@ end
 
 ""
 function update_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+        
+    #update_arcs!(system.branches, pm.topology, initial_topology, states.branches, t)
+    # update_idxs!(
+    # filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), 
+    # topology(pm, :generators_idxs), topology(pm, :generators_nodes), field(system, :generators, :buses))
 
-    #update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs))    
-    #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
-    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))    
+    # update_idxs!(
+    #     filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), 
+    #     topology(pm, :shunts_idxs), topology(pm, :shunts_nodes), field(system, :shunts, :buses))
+
+    # update_idxs!(
+    #     filter(i->BaseModule.field(states, :storages, i, t), field(system, :storages, :keys)), 
+    #     topology(pm, :storages_idxs), topology(pm, :storages_nodes), field(system, :storages, :buses))
+        
+    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))
+
+    if all(view(field(states, :branches),:,t)) == false 
+        simplify!(system, states, pm.topology, t)
+    end
+
+    # update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+
+    # if any(i -> i==4,view(states.buses, :, t)) == true
+    #     build_method!(pm, system, states, t)
+    # else
+    #     update_method!(pm, system, states, t)
+    # end
+
     update_method!(pm, system, states, t)
+
     optimize_method!(pm)
     build_result!(pm, system, states, t)
+    
     return
 
 end

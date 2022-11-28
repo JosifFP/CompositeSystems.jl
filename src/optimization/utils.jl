@@ -107,7 +107,7 @@ function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::V
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
     var_container = container_spec(value, timesteps)
@@ -128,10 +128,10 @@ end
 computes the connected components of the network graph
 returns a set of sets of bus ids, each set is a connected component
 """
-function calc_connected_components(pm::AbstractPowerModel, branches::Branches)
+function calc_connected_components(topology::Topology, branches::Branches)
 
-    active_bus_ids = assetgrouplist(topology(pm, :buses_idxs))
-    active_branches_ids = assetgrouplist(topology(pm, :branches_idxs))
+    active_bus_ids = assetgrouplist(topology.buses_idxs)
+    active_branches_ids = assetgrouplist(topology.branches_idxs)
     neighbors = Dict(i => Int[] for i in active_bus_ids)
 
     for i in active_branches_ids
@@ -261,7 +261,7 @@ function Base.getproperty(e::Settings, s::Symbol)
 end
 
 ""
-function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Tuple{Int, Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: Dict}
+function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}=1:1) where {T <: Dict}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
 
@@ -384,5 +384,170 @@ function update_arcs!(branches::Branches, actual_topology::Topology, initial_top
     end
    
     field(actual_topology, :arcs)[:] = [field(actual_topology, :arcs_from); field(actual_topology, :arcs_to)]
+
+end
+
+
+"""
+attempts to deactive components that are not needed in the network by repeated
+calls to `propagate_topology_status!` and `deactivate_isolated_components!`
+
+warning: this implementation has quadratic complexity, in the worst case
+"""
+function simplify!(system::SystemModel, systemstates::SystemStates, topology::Topology, t::Int)
+    revised = true
+    iteration = 0
+    while revised
+        iteration += 1
+        revised = false
+        revised |= deactivate_isolatedcomponents!(system, systemstates, topology, t)
+        revised |= propagate_topologystatus!(system, systemstates, topology, t)
+    end
+    return iteration
+end
+
+"""
+removes buses with single branch connections and without any other attached
+components.  Also removes connected components without suffuceint generation
+or loads.
+
+also deactivates 0 valued loads and shunts.
+"""
+function deactivate_isolatedcomponents!(system::SystemModel, states::SystemStates, topology::Topology, t::Int)
+
+    revised = false
+
+    changed = true
+    while changed
+        changed = false
+        for i in field(system, :buses, :keys)
+            if states.buses[i,t] != 4
+                incident_active_edge = 0
+                busarcs = filter(!ismissing, skipmissing(topology.busarcs[i,:]))
+                if length(busarcs) > 0
+                    incident_branch_count = sum([0; [field(states, :branches)[l,t] for (l,i,j) in busarcs]])
+                    incident_active_edge = incident_branch_count
+                end
+
+                if incident_active_edge == 1 && length(topology.generators_nodes[i]) == 0 && 
+                    length(topology.loads_nodes[i]) == 0 && length(topology.storages_nodes[i]) == 0 &&
+                    length(topology.shunts_nodes[i]) == 0
+                    states.buses[i,t] = 4
+                    changed = true
+                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
+                elseif incident_active_edge == 0
+                    states.buses[i,t] = 4
+                    changed = true
+                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
+                end
+            end
+        end
+
+        if changed
+            for i in field(system, :branches, :keys)
+                if states.branches[i,t] != 0
+                    f_bus = field(states, :buses)[system.branches.f_bus[i], t]
+                    t_bus = field(states, :buses)[system.branches.t_bus[i], t]
+                    if f_bus == 4 || t_bus == 4
+                        states.branches[i,t] = 0
+                    end
+                end
+            end
+            update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), getfield(topology, :buses_idxs))
+            update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), getfield(topology, :branches_idxs))
+        end
+
+    end
+
+    ccs = OPF.calc_connected_components(topology, system.branches)
+
+    for cc in ccs
+        cc_active_loads = [0]
+        cc_active_shunts = [0]
+        cc_active_gens = [0]
+        cc_active_strg = [0]
+
+        for i in cc
+            cc_active_loads = push!(cc_active_loads, length(topology.loads_nodes[i]))
+            cc_active_shunts = push!(cc_active_shunts, length(topology.shunts_nodes[i]))
+            cc_active_gens = push!(cc_active_gens, length(topology.generators_nodes[i]))
+            cc_active_strg = push!(cc_active_strg, length(topology.storages_nodes[i]))
+        end
+
+        active_load_count = sum(cc_active_loads)
+        active_shunt_count = sum(cc_active_shunts)
+        active_gen_count = sum(cc_active_gens)
+        active_strg_count = sum(cc_active_strg)
+
+        if (active_load_count == 0 && active_shunt_count == 0 && active_strg_count == 0) || active_gen_count == 0
+            #@info("deactivating connected component $(cc) due to isolation without generation, load or storage")
+            for i in cc
+                states.buses[i,t] = 4
+            end
+            revised = true
+        end
+    end
+    
+    return revised
+
+end
+
+"""
+propagates inactive active network buses status to attached components so that
+the system status values are consistent.
+
+returns true if any component was modified.
+"""
+function propagate_topologystatus!(system::SystemModel, states::SystemStates, topology::Topology, t::Int)
+
+    revised = false
+    for i in field(system, :buses, :keys)
+        if states.buses[i,t] == 4
+            # for k in topology.loads_nodes[i]
+            #     view(states.loads, k, t)
+            #     if getfield(states, :loads)[k, t] != 0
+            #         field(states, :loads)[k, t] = 0
+            #         revised = true
+            #     end
+            # end
+            # for k in topology.shunts_nodes[i]
+            #     if getfield(states, :shunts)[k, t] != 0
+            #         field(states, :shunts)[k, t] = 0
+            #         revised = true
+            #     end
+            # end
+            for k in topology.generators_nodes[i]
+                if getfield(states, :generators)[k, t] != 0
+                    field(states, :generators)[k, t] = 0
+                    revised = true
+                end
+            end
+            # for k in topology.storages_nodes[i]
+            #     if getfield(states, :storages)[k, t] != 0
+            #         field(states, :storages)[k, t] = 0
+            #         revised = true
+            #     end
+            # end
+        end
+    end
+
+    for i in field(system, :branches, :keys)
+        if states.branches[i,t] != 0
+            f_bus = field(states, :buses)[system.branches.f_bus[i], t]
+            t_bus = field(states, :buses)[system.branches.t_bus[i], t]
+            if f_bus == 4 || t_bus == 4
+                states.branches[i,t] = 0
+            end
+        end
+    end
+
+    # if revised == true
+    #     update_idxs!(filter(i->BaseModule.field(states, :loads, i, t), field(system, :loads, :keys)), topology.loads_idxs)
+    #     update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology.shunts_idxs)
+    #     update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology.generators_idxs)
+    #     update_idxs!(filter(i->BaseModule.field(states, :storages, i, t), field(system, :storages, :keys)), topology.storages_idxs)
+    # end
+
+    return revised
 
 end

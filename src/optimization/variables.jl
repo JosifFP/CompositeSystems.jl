@@ -5,6 +5,13 @@ function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel; kwargs...)
 end
 
 ""
+function var_bus_voltage(pm::AbstractLPACModel, system::SystemModel; kwargs...)
+    var_bus_voltage_angle(pm, system; kwargs...)
+    var_bus_voltage_magnitude(pm, system; kwargs...)
+    var_buspair_cosine(pm, system; kwargs...)
+end
+
+""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     var(pm, :va)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
     #var(pm, :va)[nw] = @variable(pm.model, [field(system, :buses, :keys)])
@@ -14,17 +21,45 @@ end
 function var_bus_voltage_magnitude(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
-"variable: `v[i]` for `i` in `bus`es"
-function var_bus_voltage_magnitude(pm::AbstractACPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+""
+function var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    vm = var(pm, :vm)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))], start =1.0)
-    #vm = var(pm, :vm)[nw] = @variable(pm.model, [field(system, :buses, :keys)], start =1.0)
+    phi = var(pm, :phi)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
 
     if bounded
         #for i in field(system, :buses, :keys)
         for i in assetgrouplist(topology(pm, :buses_idxs))
-            JuMP.set_lower_bound(vm[i], field(system, :buses, :vmin)[i])
-            JuMP.set_upper_bound(vm[i], field(system, :buses, :vmax)[i])
+            JuMP.set_lower_bound(phi[i], field(system, :buses, :vmin)[i] - 1.0)
+            JuMP.set_upper_bound(phi[i], field(system, :buses, :vmax)[i] - 1.0)
+        end
+    end
+
+end
+
+""
+function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    cs = var(pm, :cs)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buspairs))], start=1.0)
+
+    if bounded
+        for (bp, buspair) in assetgrouplist(topology(pm, :buspairs))
+            angmin = buspair[2]
+            angmax = buspair[3]
+            if angmin >= 0
+                cos_max = cos(angmin)
+                cos_min = cos(angmax)
+            end
+            if angmax <= 0
+                cos_max = cos(angmax)
+                cos_min = cos(angmin)
+            end
+            if angmin < 0 && angmax > 0
+                cos_max = 1.0
+                cos_min = min(cos(angmin), cos(angmax))
+            end
+
+            JuMP.set_lower_bound(cs[bp], cos_min)
+            JuMP.set_upper_bound(cs[bp], cos_max)
         end
     end
 
@@ -74,8 +109,36 @@ end
 function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
+""
+function var_gen_power_imaginary(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    qg = var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
+
+    if bounded
+        for l in assetgrouplist(topology(pm, :generators_idxs))
+            JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l])
+            JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l])
+        end
+    end
+
+end
+
 "Model ignores reactive power flows"
 function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+end
+
+""
+function var_gen_power_imaginary(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    qg = var(pm, :pg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
+
+    if bounded
+        for l in field(system, :generators, :keys)
+            JuMP.set_upper_bound(qg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+            JuMP.set_lower_bound(qg[l], 0.0)
+        end
+    end
+
 end
 
 "Defines DC or AC power flow variables p to represent the active power flow for each branch"
@@ -94,6 +157,31 @@ end
 function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     #p = @variable(pm.model, [topology(pm, :arcs)])
+    arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs_from)))
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+    p = @variable(pm.model, [arcs])
+
+    if bounded
+        for (l,i,j) in arcs
+        #for (l,i,j) in topology(pm, :arcs)
+            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
+            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
+        end
+    end
+
+    # this explicit type erasure is necessary
+    var(pm, :p)[nw] = merge(
+        Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in arcs_from), 
+        Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in arcs_from)
+        #Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from)), 
+        #Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from))
+    )
+
+end
+
+""
+function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
     arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs_from)))
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
     p = @variable(pm.model, [arcs])

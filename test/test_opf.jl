@@ -154,8 +154,8 @@ end
 
 @testset "test 7 Split situations IEEE-RTS system" begin
 
-    RawFile = "test/data/RTS/RTS.m"
-    ReliabilityFile = "test/data/RTS/R_RTS.m"
+    RawFile = "test/data/RTS/Base/RTS.m"
+    ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
     system = BaseModule.SystemModel(RawFile, ReliabilityFile)
 
     CompositeSystems.field(system, :loads, :cost)[:] = 

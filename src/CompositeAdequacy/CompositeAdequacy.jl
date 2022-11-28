@@ -14,7 +14,6 @@
     import Random: AbstractRNG, rand, seed!
     import Random123: Philox4x
     import StatsBase: mean, std, stderror
-    import StaticArrays: StaticArrays, SVector, SMatrix, SArray
     import TimeZones: ZonedDateTime, @tz_str
     import LinearAlgebra: qr
 

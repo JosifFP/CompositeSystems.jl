@@ -4,7 +4,7 @@ Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data
 """
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
@@ -43,7 +43,7 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
 end
 
 ""
-function build_opf!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, t)
+function build_opf!(pm::AbstractDCPowerModel, system::SystemModel, t)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
@@ -81,7 +81,7 @@ function build_opf!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::Sys
 end
 
 "Load Minimization version of DCOPF"
-function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t)
+function build_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
@@ -123,27 +123,23 @@ function build_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::
 end
 
 "Load Minimization version of DCOPF"
-function update_method!(pm::Union{AbstractDCMPPModel, AbstractDCPModel}, system::SystemModel, states::SystemStates, t::Int)
-
+function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    #if any(i -> i==4,view(states.buses, :, t-1)) == true var_bus_voltage(pm, system) end
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
     #update_var_storage_power_mi(pm, system, states, t)
-    
     update_constraint_power_balance(pm, system, states, t)
     update_constraint_voltage_angle_diff(pm, system, states, t)
     update_constraint_storage(pm, system, states, t)
 
-    if all(view(states.branches,:,t)) ≠ true
+    JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
+    add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
 
-        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-        add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
-
-        for i in assetgrouplist(topology(pm, :branches_idxs))
-            constraint_ohms_yt(pm, system, i)
-        end
-        
-    end
+    for i in assetgrouplist(topology(pm, :branches_idxs))
+        constraint_ohms_yt(pm, system, i)
+    end  
 
     return
 
