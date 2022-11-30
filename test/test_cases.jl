@@ -13,7 +13,7 @@ TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 TimeSeriesFile2 = "test/data/RTS/Loads.xlsx"
 
 Base_RawFile = "test/data/RBTS/Base/RBTS2.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
+Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
 
 Base_RawFile2 = "test/data/RTS/Base/RTS.m"
 Base_ReliabilityFile2 = "test/data/RTS/Base/R_RTS.m"
@@ -40,8 +40,19 @@ timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile
 system = BaseModule.SystemModel(Base_RawFile2, Base_ReliabilityFile3, timeseries_load, SParametrics)
 #system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
-method = SequentialMCS(samples=20, seed=100, threaded=true)
+method = SequentialMCS(samples=6, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+system.branches.λ[10,:]
+system.branches.μ[10,:]
+systemstates = SystemStates(system)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+CompositeAdequacy.seed!(rng, (method.seed, 1))
+CompositeAdequacy.initialize_states!(rng, systemstates, system)
+
+y = systemstates.branches[10,:]
+using Plots
+plot(1:8736, y)
 
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)
