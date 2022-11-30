@@ -99,8 +99,8 @@ end
 ""
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
         
-    update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
-    update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs)) 
+    #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
+    #update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs)) 
     update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))
 
     #if all(view(field(states, :branches),:,t)) == false 

@@ -4,7 +4,7 @@ using Test
 import CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
 
 Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
+Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
 
 Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
 Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
@@ -19,8 +19,8 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1,modelmode = JuMP.AUTOMAT
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 
-system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
-#system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
+#system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
+system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 systemstates = CompositeAdequacy.SystemStates(system)
 model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))

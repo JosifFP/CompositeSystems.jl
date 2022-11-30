@@ -218,7 +218,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
             end
             states.se[i,t] = getindex(se, i)
         end
-        if sum(states.plc[:,t]) > 0  println("t=$(t), PLC = $(sum(states.plc[:,t]))")  end
+        #if sum(states.plc[:,t]) > 0  println("t=$(t), PLC = $(sum(states.plc[:,t]))")  end
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end

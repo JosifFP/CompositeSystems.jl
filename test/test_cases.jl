@@ -10,14 +10,9 @@ import BenchmarkTools: @btime
 
 include("solvers.jl")
 TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
-TimeSeriesFile2 = "test/data/RTS/Loads.xlsx"
 
 Base_RawFile = "test/data/RBTS/Base/RBTS2.m"
 Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
-
-Base_RawFile2 = "test/data/RTS/Base/RTS.m"
-Base_ReliabilityFile2 = "test/data/RTS/Base/R_RTS.m"
-Base_ReliabilityFile3 = "test/data/RTS/Base/R_RTS2.m"
 
 Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
 Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
@@ -31,16 +26,16 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
-    powermodel = OPF.DCMPPowerModel
-    #powermodel = OPF.DCPLLPowerModel
+    #powermodel = OPF.DCMPPowerModel
+    powermodel = OPF.DCPLLPowerModel
 )
 
-timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile2)
-#system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
-system = BaseModule.SystemModel(Base_RawFile2, Base_ReliabilityFile3, timeseries_load, SParametrics)
+timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
+system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
+#system = BaseModule.SystemModel(Base_RawFile2, Base_ReliabilityFile3, timeseries_load, SParametrics)
 #system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
-method = SequentialMCS(samples=6, seed=100, threaded=false)
+method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 system.branches.λ[10,:]
