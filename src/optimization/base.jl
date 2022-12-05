@@ -190,38 +190,12 @@ function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) wher
 end
 
 ""
-function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}; timeseries=false) where {N}
+function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel; timeseries=false)
 
     if timeseries == true
-
         @error("Timeseries containers not supported")
-
-        add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :va, field(system, :buses, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :plc, field(system, :loads, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :p, field(pm.topology, :arcs), timesteps = 1:N)
-
-        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys), timesteps = 1:N)
-
-        add_var_container!(pm.var, :ps, field(system, :storages, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :se, field(system, :storages, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :sc, field(system, :storages, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :sd, field(system, :storages, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :sc_on, field(system, :storages, :keys), timesteps = 1:N)
-        add_var_container!(pm.var, :sd_on, field(system, :storages, :keys), timesteps = 1:N)
-
-        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys), timesteps = 1:N)
-        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys), timesteps = 1:N)
-
+        #add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
     else
-        
         add_var_container!(pm.var, :pg, field(system, :generators, :keys))
         add_var_container!(pm.var, :va, field(system, :buses, :keys))
         add_var_container!(pm.var, :plc, field(system, :loads, :keys))
@@ -245,10 +219,51 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
-
     end
 
-    #add_sol_container!(pm.sol, :plc, field(system, :loads, :keys), timesteps = 1:N)
+    return
+
+end
+
+""
+function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; timeseries=false)
+
+    if timeseries == true
+        @error("Timeseries containers not supported")
+        #add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+    else
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :qg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :va, field(system, :buses, :keys))
+        add_var_container!(pm.var, :phi, field(system, :buses, :keys))
+        add_var_container!(pm.var, :cs, field(pm.topology, :buspairs))
+        add_var_container!(pm.var, :plc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :qlc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs))
+        add_var_container!(pm.var, :q, field(pm.topology, :arcs))
+
+        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+
+        add_var_container!(pm.var, :ps, field(system, :storages, :keys))
+        add_var_container!(pm.var, :qs, field(system, :storages, :keys))
+        add_var_container!(pm.var, :qsc, field(system, :storages, :keys))
+        add_var_container!(pm.var, :se, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd_on, field(system, :storages, :keys))
+
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+    end
+
     return
 
 end

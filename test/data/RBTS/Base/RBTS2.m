@@ -46,6 +46,20 @@ mpc.branch = [
 	5	6	0.0228	0.12	0.0142	71.00	82.0	85.73	0	0	1	-20	20;								
 ];
 
+% adds current ratings to branch matrix
+%column_names%	c_rating_a
+mpc.branch_currents = [
+	85.00;
+	71.00;
+	71.00;
+	71.00;
+	71.00;
+	85.00;
+	71.00;
+	71.00;
+	71.00;
+];
+
 %%-----  OPF Data  -----%%
 %% cost data
 %    1    startup    shutdown    n    x1    y1    ...    xn    yn

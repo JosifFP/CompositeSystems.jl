@@ -1,3 +1,5 @@
+
+### Voltage Constraints ###
 "Fix the voltage angle to zero at the reference bus"
 function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=1)
     fix(var(pm, :va, nw)[i], 0, force = true)
@@ -5,6 +7,53 @@ end
 
 "nothing to do, no voltage angle variables"
 function constraint_theta_ref(pm::AbstractNFAModel, i::Int; nw::Int=1)
+end
+
+"""
+This constraint captures problem agnostic constraints that are used to link
+the model's voltage variables together, in addition to the standard problem
+formulation constraints.
+"""
+function constraint_model_voltage(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
+    constraint_model_voltage(pm, system, nw)
+end
+
+"""
+do nothing.
+"""
+function constraint_model_voltage(pm::AbstractDCPowerModel, n::Int)
+end
+
+""
+function constraint_model_voltage(pm::AbstractLPACModel, system::SystemModel, n::Int)
+
+    _check_missing_keys(pm.var, [:va,:cs], typeof(pm))
+
+    t = var(pm, :va, n)
+    cs = var(pm, :cs, n)
+
+    for (bp, buspair) in topology(pm, :buspairs)
+        i,j = bp
+        angmin = buspair[2]
+        angmax = buspair[3]
+        vad_max = max(abs(angmin), abs(angmax))
+        JuMP.@constraint(pm.model, cs[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(t[i] - t[j])^2)
+   end
+end
+
+
+
+"checks of any of the given keys are missing from the given dict"
+function _check_missing_keys(dict, keys, type)
+    missing = []
+    for key in keys
+        if !haskey(dict, key)
+            push!(missing, key)
+        end
+    end
+    if length(missing) > 0
+        @error("the formulation $(type) requires the following varible(s) $(keys) but the $(missing) variable(s) were not found in the model")
+    end
 end
 
 "Nodal power balance constraints"

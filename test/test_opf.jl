@@ -2,7 +2,7 @@ include("solvers.jl")
 
 settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
-    modelmode = JuMP.AUTOMATIC
+    modelmode = JuMP.AUTOMATIC,
 )
 
 @testset "test 5 Split situations RBTS system" begin
@@ -51,24 +51,6 @@ settings = CompositeSystems.Settings(
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-3)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.7; atol = 1e-2)
-        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-        OPF.empty_model!(pm)
-        
-
-        systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[2,t] = 0
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :generators)[1,t] = 0
-        CompositeSystems.field(systemstates, :generators)[2,t] = 0
-        CompositeSystems.field(systemstates, :generators)[3,t] = 0
-        systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
-        @test isapprox(sum(systemstates.plc[:]), 0.7046; atol = 1e-3)
-        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
-        @test isapprox(systemstates.plc[2,t], 0.7046; atol = 1e-3)
-        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-3)
-        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-3)
-        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         OPF.empty_model!(pm)
         
@@ -139,13 +121,16 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :generators)[3,t] = 0
         systemstates.system[t] = 0
         CompositeAdequacy.solve!(pm, system, systemstates, t)
-        @test isapprox(sum(systemstates.plc[:]), 0.7046; atol = 1e-3)
+        @test isapprox(sum(systemstates.plc[:]), 0.748; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
-        @test isapprox(systemstates.plc[2,t], 0.7046; atol = 1e-3)
+        @test isapprox(systemstates.plc[2,t], 0.748; atol = 1e-3)
         @test isapprox(systemstates.plc[3,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
+        println(pg)
+        println(values(OPF.build_sol_values(OPF.var(pm, :va, t))).*180/pi)
         OPF.empty_model!(pm)
         
     end

@@ -18,6 +18,9 @@ function build_method!(pm::AbstractDCPowerModel, system::SystemModel, t)
 
     # Add Constraints
     # ---------------
+
+    constraint_model_voltage(pm, system)
+
     for i in field(system, :ref_buses)
         constraint_theta_ref(pm, i)
     end
@@ -134,12 +137,16 @@ function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::S
     update_constraint_voltage_angle_diff(pm, system, states, t)
     update_constraint_storage(pm, system, states, t)
 
-    JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-    add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
+    if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
 
-    for i in assetgrouplist(topology(pm, :branches_idxs))
-        constraint_ohms_yt(pm, system, i)
-    end  
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
+        add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
+
+        for i in assetgrouplist(topology(pm, :branches_idxs))
+            constraint_ohms_yt(pm, system, i)
+        end
+        
+    end
 
     return
 
