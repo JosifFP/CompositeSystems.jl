@@ -13,8 +13,8 @@ resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
-    modelmode = JuMP.AUTOMATIC,
-    powermodel = OPF.DCPLLPowerModel
+    modelmode = JuMP.AUTOMATIC#,
+    #powermodel = OPF.DCPLLPowerModel
 )
 
 RawFile = "test/data/RBTS/Base/RBTS.m"
@@ -28,11 +28,17 @@ OPF.initialize_pm_containers!(pm, system; timeseries=false)
 t=1
 
 systemstates = OPF.SystemStates(system, available=true)
-CompositeAdequacy.solve!(pm, system, systemstates, t)
+build_method!(pm, system, systemstates, t)
+optimize_method!(pm)
+build_result!(pm, system, systemstates, t)
+JuMP.termination_status(pm.model)
+@show JuMP.solution_summary(pm.model, verbose=true)
+pm.model
+println(pm.model)
 
-sum(systemstates.plc)
+systemstates.plc
 pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
-
+OPF.build_sol_values(OPF.var(pm, :va, t))
 
 
 

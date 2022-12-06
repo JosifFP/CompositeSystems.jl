@@ -1,3 +1,5 @@
+# Shared Formulation Definitions
+
 ""
 function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel; kwargs...)
     var_bus_voltage_angle(pm, system; kwargs...)
@@ -5,64 +7,9 @@ function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel; kwargs...)
 end
 
 ""
-function var_bus_voltage(pm::AbstractLPACModel, system::SystemModel; kwargs...)
-    var_bus_voltage_angle(pm, system; kwargs...)
-    var_bus_voltage_magnitude(pm, system; kwargs...)
-    var_buspair_cosine(pm, system; kwargs...)
-end
-
-""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     var(pm, :va)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
     #var(pm, :va)[nw] = @variable(pm.model, [field(system, :buses, :keys)])
-end
-
-""
-function var_bus_voltage_magnitude(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-end
-
-""
-function var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    phi = var(pm, :phi)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
-
-    if bounded
-        #for i in field(system, :buses, :keys)
-        for i in assetgrouplist(topology(pm, :buses_idxs))
-            JuMP.set_lower_bound(phi[i], field(system, :buses, :vmin)[i] - 1.0)
-            JuMP.set_upper_bound(phi[i], field(system, :buses, :vmax)[i] - 1.0)
-        end
-    end
-
-end
-
-""
-function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    cs = var(pm, :cs)[nw] = @variable(pm.model, [keys(topology(pm, :buspairs))], start=1.0)
-
-    if bounded
-        for (bp, buspair) in topology(pm, :buspairs)
-            angmin = buspair[2]
-            angmax = buspair[3]
-            if angmin >= 0
-                cos_max = cos(angmin)
-                cos_min = cos(angmax)
-            end
-            if angmax <= 0
-                cos_max = cos(angmax)
-                cos_min = cos(angmin)
-            end
-            if angmin < 0 && angmax > 0
-                cos_max = 1.0
-                cos_min = min(cos(angmin), cos(angmax))
-            end
-
-            JuMP.set_lower_bound(cs[bp], cos_min)
-            JuMP.set_upper_bound(cs[bp], cos_max)
-        end
-    end
-
 end
 
 ""
@@ -105,42 +52,6 @@ function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states:
 
 end
 
-"Model ignores reactive power flows"
-function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-end
-
-""
-function var_gen_power_imaginary(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
-
-    if bounded
-        for l in assetgrouplist(topology(pm, :generators_idxs))
-            JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l])
-            JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l])
-        end
-    end
-
-end
-
-"Model ignores reactive power flows"
-function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-end
-
-""
-function var_gen_power_imaginary(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
-
-    if bounded
-        for l in field(system, :generators, :keys)
-            JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l]*field(states, :generators)[l,t])
-            JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l]*field(states, :generators)[l,t])
-        end
-    end
-
-end
-
 "Defines DC or AC power flow variables p to represent the active power flow for each branch"
 function var_branch_power(pm::AbstractPowerModel, system::SystemModel; kwargs...)
     var_branch_power_real(pm, system; kwargs...)
@@ -151,32 +62,6 @@ end
 function var_branch_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; kwargs...)
     var_branch_power_real(pm, system, states, t; kwargs...)
     var_branch_power_imaginary(pm, system, states, t; kwargs...)
-end
-
-""
-function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    #p = @variable(pm.model, [topology(pm, :arcs)])
-    arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs_from)))
-    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    p = @variable(pm.model, [arcs])
-
-    if bounded
-        for (l,i,j) in arcs
-        #for (l,i,j) in topology(pm, :arcs)
-            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
-            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
-        end
-    end
-
-    # this explicit type erasure is necessary
-    var(pm, :p)[nw] = merge(
-        Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in arcs_from), 
-        Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in arcs_from)
-        #Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from)), 
-        #Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from))
-    )
-
 end
 
 ""
@@ -195,26 +80,6 @@ function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::
 end
 
 ""
-function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
-    p = @variable(pm.model, [topology(pm, :arcs)])
-
-    if bounded
-        for (l,i,j) in  topology(pm, :arcs)
-            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-        end
-    end
-
-    # this explicit type erasure is necessary
-    var(pm, :p)[nw] = merge(
-        Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from)), 
-        Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from))
-    )
-
-end
-
-""
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
@@ -227,10 +92,6 @@ function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, stat
         end
     end
 
-end
-
-"DC models ignore reactive power flows"
-function var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
 ""
@@ -246,10 +107,6 @@ function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel;
         end
     end
 
-end
-
-"DC models ignore reactive power flows"
-function var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 end
 
 ""
@@ -286,9 +143,11 @@ function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, 
 
 end
 
-""
-function var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
-end
+# NEED QLC curtailment
+
+
+
+
 
 "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
 function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; kwargs...)
@@ -310,7 +169,6 @@ function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel, state
     var_storage_charge(pm, system, states, t; kwargs...)
     var_storage_discharge(pm, system, states, t; kwargs...)
     var_storage_complementary_indicator(pm, system, states, t; kwargs...)
-
 end
 
 ""
@@ -341,45 +199,6 @@ function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, sta
 
 end
 
-"Model ignores reactive power flows"
-function var_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-end
-
-"Model ignores reactive power flows"
-function var_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-end
-
-""
-function var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    qs = var(pm, :qs)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
-
-    if bounded
-        for i in assetgrouplist(topology(pm, :storages_idxs))
-            JuMP.set_lower_bound(qs[i], max(-field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmin)[i]))
-            JuMP.set_upper_bound(qs[i], min(field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmax)[i]))
-        end
-    end
-
-end
-
-""
-function var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
-    qs = var(pm, :qs)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
-
-    if bounded
-        for i in field(system, :storages, :keys)
-            JuMP.set_lower_bound(qs[i], max(-field(system, :storages, :thermal_rating)[i],
-                field(system, :storages, :qmin)[i])*field(states, :storages)[i,t]
-            )
-            JuMP.set_upper_bound(qs[i], min(field(system, :storages, :thermal_rating)[i],
-            field(system, :storages, :qmax)[i])*field(states, :storages)[i,t]
-            )
-        end
-    end
-end
-
 """
 a reactive power slack variable that enables the storage device to inject or
 consume reactive power at its connecting bus, subject to the injection limits
@@ -395,10 +214,6 @@ function var_storage_power_control_imaginary(pm::AbstractPowerModel, system::Sys
             JuMP.set_upper_bound(qsc[i], min(field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmax)[i]))            
         end
     end
-end
-
-"do nothing by default but some formulations require this"
-function var_storage_power_control_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
 ""
@@ -428,7 +243,6 @@ function var_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int
             JuMP.set_lower_bound(se[i], 0)
             JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i])
         end
-
     end
 
 end
@@ -443,7 +257,6 @@ function var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states:
             JuMP.set_lower_bound(se[i], 0)
             JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
         end
-
     end
 
 end
@@ -508,47 +321,25 @@ end
 function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     if bounded
-
         sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
         sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
-
     else
-
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], 
-            lower_bound = 0,
-            upper_bound = 1
-        )
-
-        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))],
-            lower_bound = 0,
-            upper_bound = 1
-        )
-
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1)
     end
 
 end
 
-
 ""
 function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
 
     if bounded
         sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], binary = true)
         sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], binary = true)
 
     else
-
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], 
-            lower_bound = 0,
-            upper_bound = 1
-        )
-
-        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)],
-            lower_bound = 0,
-            upper_bound = 1
-        )
-
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], lower_bound = 0, upper_bound = 1)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], lower_bound = 0, upper_bound = 1)
     end
 
 end

@@ -123,14 +123,15 @@ abstract type AbstractPowerModel end
 abstract type AbstractDCPowerModel <: AbstractPowerModel end
 abstract type AbstractACPowerModel <: AbstractPowerModel end
 abstract type AbstractLPACModel <: AbstractPowerModel end
-
 abstract type AbstractLPACCModel <: AbstractLPACModel end
-abstract type AbstractDCMPPModel <: AbstractDCPowerModel end
-abstract type AbstractDCPLLModel <: AbstractDCPowerModel end
+
 abstract type AbstractDCPModel <: AbstractDCPowerModel end
-abstract type AbstractNFAModel <: AbstractDCPowerModel end
+abstract type AbstractDCMPPModel <: AbstractDCPModel end
+abstract type AbstractDCPLLModel <: AbstractDCPModel end
+abstract type AbstractNFAModel <: AbstractDCPModel end
+
 abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
-LoadCurtailment = Union{AbstractDCMPPModel, AbstractDCPModel, AbstractNFAModel, AbstractDCPLLModel, AbstractLPACCModel}
+LoadCurtailment = Union{AbstractDCPModel, AbstractLPACCModel}
 
 struct LPACCPowerModel <: AbstractLPACCModel @pm_fields end
 struct DCPPowerModel <: AbstractDCPModel @pm_fields end
@@ -147,13 +148,12 @@ struct Settings
     optimizer::MOI.OptimizerWithAttributes
     modelmode::JuMP.ModelMode
     powermodel::Type
-
+    
     function Settings(
         optimizer::MOI.OptimizerWithAttributes;
         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
         powermodel::Type=OPF.DCPPowerModel
         )
-
         new(optimizer, modelmode, powermodel)
     end
 

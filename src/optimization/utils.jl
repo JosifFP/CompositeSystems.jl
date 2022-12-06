@@ -446,3 +446,17 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
     end
 
 end
+
+""
+function calc_branch_y(branches::Branches, i::Int)
+    y = pinv(field(branches, :r)[i] + im * field(branches, :x)[i])
+    g, b = real(y), imag(y)
+    return g, b
+end
+
+""
+function calc_branch_t(branches::Branches, i::Int)
+    tr = field(branches, :tap)[i] .* cos.(field(branches, :shift)[i])
+    ti = field(branches, :tap)[i] .* sin.(field(branches, :shift)[i])
+    return tr, ti
+end

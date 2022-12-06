@@ -103,6 +103,3 @@ OPF.build_sol_values(OPF.var(pm, :sd, 1))[1]
 OPF.build_sol_values(OPF.var(pm, :ps, 1))[1]
 OPF.build_sol_values(OPF.var(pm, :sc_on, 1))[1]
 OPF.build_sol_values(OPF.var(pm, :sd_on, 1))[1]
-
-JuMP.termination_status(pm.model)
-@show JuMP.solution_summary(pm.model, verbose=true)
