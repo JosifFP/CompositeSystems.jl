@@ -88,6 +88,7 @@ const load_fields = [
     ("load_bus", Int),
     ("pd", Float16),
     ("qd", Float16),
+    ("pf", Float16),
     ("cost", Float16),
     ("status", Bool)
 ]
@@ -386,113 +387,6 @@ function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vecto
     return array
 
 end
-
-"Creates AbstractAsset - Generators with time-series data"
-function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Generators}, N, baseMVA)
-
-    container_key = [i for i in keys(dict_timeseries)]
-    key_order_series = sortperm(container_key)
-
-    container_data = container(network, asset)
-
-    if length(container_key) ≠ length(container_data[:keys])
-        for i in container_data[:keys]
-            if in(container_key).(i) == false
-                setindex!(dict_timeseries, [container_data[:pg][i] for k in 1:N]*baseMVA, i)
-            end
-        end
-        container_key = [i for i in keys(dict_timeseries)]
-        key_order_series = sortperm(container_key)
-        @assert length(container_key) == length(container_data[:keys])
-    end
-
-    container_timeseries = [Float16.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
-
-    container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
-    container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
-
-    for i in 1:length(values(dict_core[Symbol("repairtime[hrs]")]))
-        if values(dict_core[Symbol("repairtime[hrs]")])[i]≠0.0
-            container_μ[i] = Float64.(8736/values(dict_core[Symbol("repairtime[hrs]")])[i])
-        else
-            container_μ[i] = 0.0
-        end
-    end
-
-    key_order_core = sortperm(container_data[:keys])
-
-    container_data[:pg] = reduce(vcat,transpose.(container_timeseries[key_order_series]))
-    container_data[:λ] = deepcopy(container_λ[key_order_core])
-    container_data[:μ] = deepcopy(container_μ[key_order_core])
-
-    return container_data
-
-end
-
-
-"Creates AbstractAsset - Loads with time-series data"
-function container(dict_core::Dict{<:Any}, dict_timeseries::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Loads}, N, baseMVA)
-
-    container_key = [i for i in keys(dict_timeseries)]
-    key_order_series = sortperm(container_key)
-    container_data = container(network, asset)
-
-    tmp_cost = Dict(Int(dict_core[:key][i]) => Float16(dict_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dict_core[:key]))
-    for (i,load) in network[:load]
-        get!(load, "cost", tmp_cost[i])
-    end
-
-    for i in eachindex(container_data[:cost])
-        container_data[:cost][i] = tmp_cost[i]
-    end
-
-    if isempty(dict_timeseries) error("Load data must be provided") end
-
-    if length(container_key) ≠ length(container_data[:keys])
-        for i in container_data[:keys]
-            if in(container_key).(i) == false
-                setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*baseMVA, i)
-            end
-            #get!(dict_timeseries_qd, i, Float16.(dict_timeseries_pd[i]*powerfactor))
-        end
-        container_key = [i for i in keys(dict_timeseries)]
-        key_order_series = sortperm(container_key)
-        @assert length(container_key) == length(container_data[:keys])
-    end
-
-    container_timeseries = [Float16.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
-    container_data[:pd] = reduce(vcat,transpose.(container_timeseries[key_order_series]))
-
-    return container_data
-
-end
-
-
-"Creates AbstractAsset - Branches with time-series data"
-function container(dict_core::Dict{<:Any}, network::Dict{Symbol, <:Any}, asset::Type{Branches}, N, B)
-
-    container_data = container(network, asset)
-    key_order_core = sortperm(container_data[:keys])
-
-    container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
-    container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
-
-    for i in 1:length(values(dict_core[Symbol("repairtime[hrs]")]))
-        if values(dict_core[Symbol("repairtime[hrs]")])[i]≠0.0
-            container_μ[i] = Float64.(N/values(dict_core[Symbol("repairtime[hrs]")])[i])
-        else
-            container_μ[i] = 0.0
-        end
-    end
-
-    container_data[:λ] = deepcopy(container_λ[key_order_core])
-    container_data[:μ] = deepcopy(container_μ[key_order_core])
-
-    return container_data
-
-end
-
-
 
 "Checks for inconsistencies between AbstractAsset and Power Model Network"
 function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)

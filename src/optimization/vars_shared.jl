@@ -136,12 +136,42 @@ function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, 
     #plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
     #for l in assetgrouplist(topology(pm, :loads_idxs))
 
-    for l in field(system, :loads, :keys)
-        JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
-        JuMP.set_lower_bound(plc[l],0.0)
+    if bounded
+        for l in field(system, :loads, :keys)
+            JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
+            JuMP.set_lower_bound(plc[l],0.0)
+        end
     end
 
 end
+
+""
+function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
+
+    qlc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
+
+    if bounded
+        for l in field(system, :loads, :keys)
+            JuMP.set_upper_bound(qlc[l], field(system, :loads, :qd)[l,t])
+            JuMP.set_lower_bound(qlc[l],0.0)
+        end
+    end
+
+end
+
+""
+function var_load_power_factor_range(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
+
+    z_demand = var(pm, :z_demand)[nw] = @variable(pm.model, [field(system, :loads, :keys)])
+
+    for l in field(system, :loads, :keys)
+        JuMP.set_lower_bound(z_demand[l], -(field(system, :loads, :qd)[l]/field(system, :loads, :pd)[l]))
+        JuMP.set_upper_bound(z_demand[l], (field(system, :loads, :qd)[l]/field(system, :loads, :pd)[l]))
+    end
+
+end
+
+
 
 # NEED QLC curtailment
 

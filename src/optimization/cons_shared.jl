@@ -74,6 +74,19 @@ function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, 
 
 end
 
+
+"Fixed Power Factor"
+function constraint_power_factor(ref::Dict{Symbol,Any}, model::Model)
+    for i in keys(ref[:load])
+        JuMP.@constraint(model, model[:z_demand][i]*model[:plc][i] - model[:qlc][i] == 0.0)      
+    end
+end
+
+
+
+
+#********************************************************************************************************************************
+
 ### Storage Constraints ###
 ""
 function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i::Int; nw::Int=1) where {N,L,T<:Period}

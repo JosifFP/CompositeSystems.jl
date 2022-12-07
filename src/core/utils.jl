@@ -106,7 +106,6 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
 
     # make a copy of data so that modifications do not change the input data
     data = deepcopy(pm_data)
-    changed = false
 
     # TODO transform PWL costs into linear costs
     for (i,gen) in data["gen"]
@@ -187,7 +186,15 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     for (i,bus) in enumerate(bus_ordered)
         bus_id_map[bus["index"]] = i
     end
+
     PowerModels.update_bus_ids!(data, bus_id_map)
+
+    #add load power factors
+    for (i,load) in data["load"]
+        if load["pd"] > 0.0 || load["qd"] != 0.0
+            get!(load, "pf", load["qd"]/load["pd"])
+        end
+    end
 
     get!(pm_data, "CompositeSystems_sanity_check", true)
 

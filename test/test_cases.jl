@@ -9,13 +9,13 @@ import BenchmarkTools: @btime
 
 
 include("solvers.jl")
-TimeSeriesFile = "test/data/RTS/Loads.xlsx"
+TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 
-#Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-#Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
+Base_RawFile = "test/data/RBTS/Base/RBTS.m"
+Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
 
-Base_RawFile = "test/data/RTS/Base/RTS.m"
-Base_ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
+#Base_RawFile = "test/data/RTS/Base/RTS.m"
+#Base_ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
 
 #Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
 #Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"

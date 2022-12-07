@@ -188,12 +188,13 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     buses::Vector{Int}
     pd::VecOrMat{Float16} # Active power in per unit
     qd::Vector{Float16} # Reactive power in per unit
+    pf::Vector{Float16} # Power factor
     cost::Vector{Float16}
     status::Vector{Bool}
 
     function Loads{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float16}, 
-        qd::Vector{Float16}, cost::Vector{Float16}, status::Vector{Bool}
+        qd::Vector{Float16}, pf::Vector{Float16}, cost::Vector{Float16}, status::Vector{Bool}
         ) where {N,L,T}
 
         nloads = length(keys)
@@ -202,10 +203,11 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert size(pd, 2) == N
         @assert length(qd) == (nloads)
         @assert all(pd .>= 0)
+        @assert length(pf) == (nloads)
         @assert length(cost) == (nloads)
         @assert length(status) == (nloads)
 
-        new{N,L,T}(Int.(keys), Int.(buses), pd, Float16.(qd), Float16.(cost), Bool.(status))
+        new{N,L,T}(Int.(keys), Int.(buses), pd, Float16.(qd), Float16.(pf), Float16.(cost), Bool.(status))
     end
 
 end
@@ -215,6 +217,7 @@ Base.:(==)(x::T, y::T) where {T <: Loads} =
     x.buses == y.buses &&
     x.pd == y.pd &&
     x.qd == y.qd &&
+    x.pf == y.pf &&
     x.cost == y.cost &&
     x.status == y.status
 #

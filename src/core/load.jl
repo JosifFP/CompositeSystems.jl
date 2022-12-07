@@ -135,7 +135,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
                 data["index"], 
                 data["load_bus"], 
                 data["pd"], 
-                data["qd"], 
+                data["qd"],
+                data["pf"],
                 data["cost"],
                 data["status"]
             )
@@ -147,7 +148,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
                 data["index"], 
                 data["load_bus"], 
                 timeseries_pd, 
-                data["qd"], 
+                data["qd"],
+                data["pf"],
                 data["cost"],
                 data["status"]
             )
