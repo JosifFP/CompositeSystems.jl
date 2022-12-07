@@ -87,7 +87,13 @@ end
 function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; results::Bool=false)
 
     initialize_pm_containers!(pm, system; timeseries=false)
-    build_method!(pm, system, states, 1)
+
+    if length(system.storages) > 0
+        build_method_stor!(pm, system, states, 1)
+    else
+        build_method!(pm, system, states, 1)
+    end
+    
     optimize_method!(pm)
 
     if results == true

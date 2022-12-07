@@ -83,7 +83,7 @@ end
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    p = var(pm, :p)[nw] = @variable(pm.model, [arcs])
+    p = var(pm, :p)[nw] = @variable(pm.model, [arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -144,8 +144,6 @@ function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, 
 end
 
 # NEED QLC curtailment
-
-
 
 
 

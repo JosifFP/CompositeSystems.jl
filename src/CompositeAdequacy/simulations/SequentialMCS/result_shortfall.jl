@@ -88,7 +88,7 @@ function record!(
     for r in eachindex(acc.periodsdropped_bus)
 
         busshortfall = field(states, :plc)[r,t]
-        isbusshortfall = busshortfall > 0
+        isbusshortfall = sum(busshortfall) > 1e-6
 
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)

@@ -12,7 +12,7 @@ function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, 
 end
 
 ""
-function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_branch_power_real(pm::AbstractAPLossLessModels, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs_from)))
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
@@ -34,7 +34,7 @@ function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel; nw
 end
 
 ""
-function var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+function var_branch_power_real(pm::AbstractAPLossLessModels, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
     p = @variable(pm.model, [topology(pm, :arcs)])
 
@@ -160,7 +160,7 @@ function _constraint_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus
 end
 
 "nothing to do, this model is symetric"
-function _constraint_ohms_yt_to(pm::AbstractDCPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
+function _constraint_ohms_yt_to(pm::AbstractAPLossLessModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, tr, ti, tm, va_fr_to)
 end
 
 """
@@ -222,13 +222,24 @@ function _constraint_thermal_limit_to(pm::AbstractDCPowerModel, nw::Int, t_idx, 
 end
 
 ""
-function _constraint_storage_losses(pm::AbstractDCPowerModel, n::Int, i, bus, r, x, p_loss, q_loss)
+function _constraint_storage_losses(pm::AbstractAPLossLessModels, n::Int, i, bus, r, x, p_loss, q_loss)
 
     ps = var(pm, :ps, n)[i]
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
 
     con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss)
+end
+
+""
+function _constraint_storage_losses(pm::AbstractDCPowerModel, n::Int, i, bus, r, x, p_loss, q_loss)
+
+    ps = var(pm, :ps, n)[i]
+    sc = var(pm, :sc, n)[i]
+    sd = var(pm, :sd, n)[i]
+    
+    con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss + r*ps^2)
+
 end
 
 ""

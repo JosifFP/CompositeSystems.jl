@@ -9,16 +9,19 @@ import BenchmarkTools: @btime
 
 
 include("solvers.jl")
-TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
+TimeSeriesFile = "test/data/RTS/Loads.xlsx"
 
-Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
+#Base_RawFile = "test/data/RBTS/Base/RBTS.m"
+#Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
 
-Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
-Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
+Base_RawFile = "test/data/RTS/Base/RTS.m"
+Base_ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
 
-Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
-Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
+#Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
+#Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
+
+#Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
+#Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
 
 
 resultspecs = (Shortfall(), Shortfall())
@@ -26,16 +29,22 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
+    #powermodel = OPF.DCMPPowerModel
     powermodel = OPF.DCMPPowerModel
-    #powermodel = OPF.DCPLLPowerModel
 )
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
 system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
-method = SequentialMCS(samples=20, seed=100, threaded=true)
+method = SequentialMCS(samples=250, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+CompositeSystems.LOLE.(shortfall, system.loads.keys)
+CompositeSystems.EUE.(shortfall, system.loads.keys)
+CompositeSystems.LOLE.(shortfall)
+CompositeSystems.EUE.(shortfall)
+
 
 
 model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
@@ -53,9 +62,3 @@ CompositeAdequacy.initialize_states!(rng, systemstates, system)
 y = systemstates.branches[10,:]
 using Plots
 plot(1:8736, y)
-
-
-CompositeSystems.LOLE.(shortfall, system.loads.keys)
-CompositeSystems.EUE.(shortfall, system.loads.keys)
-CompositeSystems.LOLE.(shortfall)
-CompositeSystems.EUE.(shortfall)

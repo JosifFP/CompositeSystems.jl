@@ -30,11 +30,10 @@ end
 ""
 function update_var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-
     p = var(pm, :p, 1)
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
 
-    for (l,i,j) in topology(pm, :arcs)
-
+    for (l,i,j) in arcs
         if typeof(p[(l,i,j)]) ==JuMP.AffExpr
             p_var = first(keys(p[(l,i,j)].terms))
         elseif typeof(p[(l,i,j)]) ==JuMP.VariableRef
@@ -42,12 +41,9 @@ function update_var_branch_power_real(pm::AbstractDCPowerModel, system::SystemMo
         else
             @error("Expression $(typeof(p[(l,i,j)])) not supported")
         end
-
         JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
         JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-
     end
-
 
 end
 

@@ -121,26 +121,28 @@ abstract type AbstractPowerModel end
 
 "Types of optimization"
 abstract type AbstractDCPowerModel <: AbstractPowerModel end
-abstract type AbstractACPowerModel <: AbstractPowerModel end
-abstract type AbstractLPACModel <: AbstractPowerModel end
-abstract type AbstractLPACCModel <: AbstractLPACModel end
 
 abstract type AbstractDCPModel <: AbstractDCPowerModel end
-abstract type AbstractDCMPPModel <: AbstractDCPModel end
-abstract type AbstractDCPLLModel <: AbstractDCPModel end
-abstract type AbstractNFAModel <: AbstractDCPModel end
-
-abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
-LoadCurtailment = Union{AbstractDCPModel, AbstractLPACCModel}
-
-struct LPACCPowerModel <: AbstractLPACCModel @pm_fields end
 struct DCPPowerModel <: AbstractDCPModel @pm_fields end
+
+abstract type AbstractDCMPPModel <: AbstractDCPModel end
 struct DCMPPowerModel <: AbstractDCMPPModel @pm_fields end
+
+abstract type AbstractDCPLLModel <: AbstractDCPModel end
 struct DCPLLPowerModel <: AbstractDCPLLModel @pm_fields end
+
+abstract type AbstractNFAModel <: AbstractDCPModel end
 struct NFAPowerModel <: AbstractNFAModel @pm_fields end
 
+abstract type AbstractLPACModel <: AbstractPowerModel end
+abstract type AbstractLPACCModel <: AbstractLPACModel end
+struct LPACCPowerModel <: AbstractLPACCModel @pm_fields end
+
+abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
 struct PM_DCPPowerModel <: PM_AbstractDCPModel @pm_fields end
-StructPowerModel = Union{DCPPowerModel, DCMPPowerModel, DCPLLPowerModel, NFAPowerModel}
+
+AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
+AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPModel}
 
 ""
 struct Settings
@@ -148,7 +150,7 @@ struct Settings
     optimizer::MOI.OptimizerWithAttributes
     modelmode::JuMP.ModelMode
     powermodel::Type
-    
+
     function Settings(
         optimizer::MOI.OptimizerWithAttributes;
         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
