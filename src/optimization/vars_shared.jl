@@ -152,7 +152,7 @@ function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemMo
 
     if bounded
         for l in field(system, :loads, :keys)
-            JuMP.set_upper_bound(qlc[l], field(system, :loads, :qd)[l,t])
+            JuMP.set_upper_bound(qlc[l], field(system, :loads, :pd)[l,t]*field(system, :loads, :pf))
             JuMP.set_lower_bound(qlc[l],0.0)
         end
     end
