@@ -35,8 +35,9 @@ OPF.build_sol_values(OPF.var(pm, :qg, t))
 
 sum(system.loads.pd)
 
-
-result = PowerModels.run_opf(RawFile, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+data = PowerModels.parse_file(RawFile)
+PowerModels.standardize_cost_terms!(data, order=1)
+result = PowerModels.run_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
 result["solution"]
 result["solution"]["gen"]
 
