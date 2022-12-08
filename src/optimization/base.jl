@@ -243,6 +243,7 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
 
+        add_con_container!(pm.con, :power_factor, field(system, :loads, :keys))
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
         add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))

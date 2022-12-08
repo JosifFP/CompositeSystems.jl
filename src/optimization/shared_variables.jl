@@ -155,7 +155,7 @@ end
 function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
     var_load_curtailment_real(pm, system, t; kwargs...)
     var_load_curtailment_imaginary(pm, system, t; kwargs...)
-    var_load_power_factor_range(pm, system, t; kwargs...)
+    #var_load_power_factor_range(pm, system, t; kwargs...)
 end
 
 ""

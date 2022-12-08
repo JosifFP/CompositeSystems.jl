@@ -13,7 +13,7 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
     var_load_curtailment(pm, system, t)
     var_storage_power_mi(pm, system)
 
-    objective_min_load_curtailment(pm, system)
+    objective_min_gen_stor_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------
@@ -58,7 +58,7 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     var_load_curtailment(pm, system, t)
 
     #objective_min_load_curtailment(pm, system)
-    objective_min_stor_load_curtailment(pm, system)
+    objective_min_gen_stor_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------

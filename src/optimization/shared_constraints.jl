@@ -101,7 +101,12 @@ end
 
 "Fix Load Power Factor"
 function con_power_factor(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
-    fix(var(pm, :z_demand, nw)[i], field(system, :loads, :pf)[i], force = true)
+    #fix(var(pm, :z_demand, nw)[i], field(system, :loads, :pf)[i], force = true)
+    plc   = var(pm, :plc, nw)[i]
+    qlc   = var(pm, :qlc, nw)[i]
+
+    con(pm, :power_factor, nw)[i] = @constraint(pm.model, field(system, :loads, :pf)[i]*plc - qlc == 0.0)
+
 end
 
 
