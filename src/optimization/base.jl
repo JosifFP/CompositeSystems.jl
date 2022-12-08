@@ -135,8 +135,7 @@ abstract type AbstractNFAModel <: AbstractDCPModel end
 struct NFAPowerModel <: AbstractNFAModel @pm_fields end
 
 abstract type AbstractLPACModel <: AbstractPowerModel end
-abstract type AbstractLPACCModel <: AbstractLPACModel end
-struct LPACCPowerModel <: AbstractLPACCModel @pm_fields end
+struct LPACCPowerModel <: AbstractLPACModel @pm_fields end
 
 abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
 struct PM_DCPPowerModel <: PM_AbstractDCPModel @pm_fields end
@@ -182,11 +181,10 @@ end
 
 
 "Constructor for an AbstractPowerModel modeling object"
-function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractDCPowerModel}
+function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractPowerModel}
     
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()
-    #method == DCMPPowerModel && @error("method $(method) not supported yet. DCPPowerModel method was built")
     return M(model, topology, var, con)
 
 end
@@ -203,9 +201,9 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_var_container!(pm.var, :plc, field(system, :loads, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
 
-        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
-        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys))
-        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys))
+        add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
 
@@ -241,12 +239,16 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :cs, field(pm.topology, :buspairs))
         add_var_container!(pm.var, :plc, field(system, :loads, :keys))
         add_var_container!(pm.var, :qlc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
 
-        add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
-        add_con_container!(pm.con, :ohms_yt_from, field(system, :branches, :keys))
-        add_con_container!(pm.con, :ohms_yt_to, field(system, :branches, :keys))
+        add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
+        add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_q, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_q, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
 

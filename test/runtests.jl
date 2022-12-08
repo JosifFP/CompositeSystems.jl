@@ -9,7 +9,6 @@ import BenchmarkTools: @btime
 using Test
 
 @testset "Contingency Solver: split network situations" begin
-    CompositeSystems.silence()
     include("test_opf.jl")
 end;
 

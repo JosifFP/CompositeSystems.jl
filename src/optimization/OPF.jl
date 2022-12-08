@@ -39,11 +39,11 @@
 
     include("base.jl")
     include("utils.jl")
-    include("vars_shared.jl")
-    include("cons_shared.jl")
+    include("shared_variables.jl")
+    include("shared_constraints.jl")
+    include("shared_updates.jl")
     include("dc.jl")
     include("lpac.jl")
-    include("updates.jl")
     include("build.jl")
 
 end

@@ -6,7 +6,7 @@ function update_var_gen_power(pm::AbstractPowerModel, system::SystemModel, state
 end
 
 ""
-function update_var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     pg = var(pm, :pg, 1)
 
@@ -17,10 +17,6 @@ function update_var_gen_power_real(pm::AbstractDCPowerModel, system::SystemModel
 
 end
 
-"Model ignores reactive power flows"
-function update_var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-end
-
 "Defines DC or AC power flow variables p to represent the active power flow for each branch"
 function update_var_branch_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     update_var_branch_power_real(pm, system, states, t)
@@ -28,7 +24,7 @@ function update_var_branch_power(pm::AbstractPowerModel, system::SystemModel, st
 end
 
 ""
-function update_var_branch_power_real(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     p = var(pm, :p, 1)
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
@@ -45,10 +41,6 @@ function update_var_branch_power_real(pm::AbstractDCPowerModel, system::SystemMo
         JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
     end
 
-end
-
-"DC models ignore reactive power flows"
-function update_var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
 end
 
 "Defines load curtailment variables p to represent the active power flow for each branch"
@@ -69,10 +61,8 @@ function update_var_load_curtailment_real(pm::AbstractPowerModel, system::System
 
 end
 
-"Model ignores reactive power flows"
-function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-end
 
+#***************************************************** STORAGE VAR UPDATES *************************************************************************
 
 "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
 function update_var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
@@ -131,7 +121,7 @@ function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemMode
 end
 
 ""
-function update_constraint_storage(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_con_storage(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
 
     for i in field(system, :storages, :keys)
@@ -144,42 +134,4 @@ end
 
 
 
-#***************************************************** CONSTRAINTS *************************************************************************
-""
-function update_constraint_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    for i in field(system, :buses, :keys)
-        loads_nodes = topology(pm, :loads_nodes)[i]
-        shunts_nodes = topology(pm, :shunts_nodes)[i]
-
-        JuMP.set_normalized_rhs(con(pm, :power_balance, 1)[i], 
-            sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
-            + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,t] for k in shunts_nodes]))*1.0^2
-        )
-    end
-
-    return
-
-end
-
-""
-function update_constraint_voltage_angle_diff(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    for l in field(system, :branches, :keys)
-
-        f_bus = field(system, :branches, :f_bus)[l]
-        t_bus = field(system, :branches, :t_bus)[l]    
-        buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
-        if field(states, :branches)[l,t] ≠ 0
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], buspair[3])
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l], buspair[2])
-        else
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[l], Inf)
-            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[l],-Inf)
-        end
-
-    end
-
-    return
-
-end
+#***************************************************UPDATES CONSTRAINTS ****************************************************************

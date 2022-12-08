@@ -74,6 +74,13 @@ function container_spec(array::T, timesteps::UnitRange{Int}) where T <: Abstract
 end
 
 ""
+function container_spec(dictionary::Dict{Tuple{Int, Int}, Any}, timesteps::UnitRange{Int})
+    tmp = DenseAxisArray{Dict}(undef, [i for i in timesteps])
+    cont = fill!(tmp, dictionary)
+    return cont
+end
+
+""
 function container_spec(dictionary::Dict{Tuple{Int, Int, Int}, Any}, timesteps::UnitRange{Int})
     tmp = DenseAxisArray{Dict}(undef, [i for i in timesteps])
     cont = fill!(tmp, dictionary)
@@ -104,6 +111,16 @@ function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::V
     con_container = container_spec(value, timesteps)
     _assign_container!(container, con_key, con_container)
     return
+end
+
+""
+function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, dict_keys::Dict{Tuple{Int, Int}, Union{Missing, Vector{Float16}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = Dict{Tuple{Int, Int}, Any}(((i,j), undef) for (i,j) in keys(dict_keys))
+    var_container = container_spec(value, timesteps)
+    _assign_container!(container, var_key, var_container)
+    return var_container
+
 end
 
 ""
@@ -312,7 +329,7 @@ function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) whe
     reset_var_container!(var(pm, :va), field(system, :buses, :keys))
     reset_var_container!(var(pm, :plc), field(system, :loads, :keys))
     reset_var_container!(var(pm, :p), topology(pm, :arcs))
-    reset_con_container!(con(pm, :power_balance), field(system, :buses, :keys))
+    reset_con_container!(con(pm, :power_balance_p), field(system, :buses, :keys))
     reset_con_container!(con(pm, :ohms_yt_from), field(system, :branches, :keys))
     reset_con_container!(con(pm, :ohms_yt_to), field(system, :branches, :keys))
     reset_con_container!(con(pm, :voltage_angle_diff_upper), field(system, :branches, :keys))
@@ -459,4 +476,17 @@ function calc_branch_t(branches::Branches, i::Int)
     tr = field(branches, :tap)[i] .* cos.(field(branches, :shift)[i])
     ti = field(branches, :tap)[i] .* sin.(field(branches, :shift)[i])
     return tr, ti
+end
+
+"checks of any of the given keys are missing from the given dict"
+function _check_missing_keys(dict, keys, type)
+    missing = []
+    for key in keys
+        if !haskey(dict, key)
+            push!(missing, key)
+        end
+    end
+    if length(missing) > 0
+        @error("the formulation $(type) requires the following varible(s) $(keys) but the $(missing) variable(s) were not found in the model")
+    end
 end

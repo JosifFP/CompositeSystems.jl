@@ -23,21 +23,24 @@ Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
 #Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
 #Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
 
-
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
+    #powermodel = OPF.NFAPowerModel
+    #powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
-    powermodel = OPF.DCMPPowerModel
+    #powermodel = OPF.DCPLLPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
 system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
-method = SequentialMCS(samples=250, seed=100, threaded=true)
+#method = SequentialMCS(samples=250, seed=100, threaded=true)
+method = SequentialMCS(samples=50, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)

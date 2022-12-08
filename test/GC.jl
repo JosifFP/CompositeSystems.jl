@@ -28,7 +28,7 @@
 
 "OPF"
     #for i in field(system, :buses, :keys)
-    #    update_constraint_power_balance(pm, system, states, i, t)
+    #    update_con_power_balance(pm, system, states, i, t)
     #end
     
     # JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
@@ -37,16 +37,16 @@
 
     # for i in field(system, :branches, :keys)
     #     if field(states, :branches)[i,t] ≠ 0
-    #         constraint_ohms_yt(pm, system, i)
-    #         constraint_voltage_angle_diff(pm, system, i)
+    #         con_ohms_yt(pm, system, i)
+    #         con_voltage_angle_difference(pm, system, i)
     #     end
     # end   
 
     # if t > 1
     #     for i in field(system, :branches, :keys)
     #         if field(states, :branches)[i,t] ≠ 0 && field(states, :branches)[i,t-1] == 0
-    #             constraint_ohms_yt(pm, system, i)
-    #             constraint_voltage_angle_diff(pm, system, i)
+    #             con_ohms_yt(pm, system, i)
+    #             con_voltage_angle_difference(pm, system, i)
     #         elseif field(states, :branches)[i,t] == 0 && field(states, :branches)[i,t-1] ≠ 0
     #             JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1)[i])
     #             JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1)[i])
@@ -61,8 +61,8 @@
 
     #     for i in field(system, :branches, :keys)
     #         if field(states, :branches)[i,t] ≠ 0
-    #             constraint_ohms_yt(pm, system, i)
-    #             constraint_voltage_angle_diff(pm, system, i)
+    #             con_ohms_yt(pm, system, i)
+    #             con_voltage_angle_difference(pm, system, i)
     #         end
     #     end     
     # end   
@@ -428,8 +428,8 @@
 
     #     for i in field(system, :branches, :keys)
     #         if field(states, :branches)[i,t] ≠ 0
-    #             constraint_ohms_yt(pm, system, i)
-    #             constraint_voltage_angle_diff(pm, system, i)
+    #             con_ohms_yt(pm, system, i)
+    #             con_voltage_angle_difference(pm, system, i)
     #         end
     #     end
     # end
@@ -469,17 +469,17 @@
 #     # Add Constraints
 #     # ---------------
 #     for i in field(system, :ref_buses)
-#         constraint_theta_ref(pm, i, nw=t)
+#         con_theta_ref(pm, i, nw=t)
 #     end
 
 #     for i in assetgrouplist(topology(pm, :buses_idxs))
-#         constraint_power_balance(pm, system, i, t)
+#         con_power_balance(pm, system, i, t)
 #     end
 
 #     for i in assetgrouplist(topology(pm, :branches_idxs))
-#         constraint_ohms_yt(pm, system, i, nw=t)
-#         constraint_voltage_angle_diff(pm, system, i, nw=t)
-#         #constraint_thermal_limits(pm, system, i, t)
+#         con_ohms_yt(pm, system, i, nw=t)
+#         con_voltage_angle_difference(pm, system, i, nw=t)
+#         #con_thermal_limits(pm, system, i, t)
 #     end
 #     objective_min_load_curtailment(pm, system, nw=t)
 #     return
@@ -489,7 +489,7 @@
 # JuMP.delete(pm.model, con(pm, :power_balance, 1).data)
 
 # for i in field(system, :buses, :keys)
-#     constraint_power_balance(pm, system, i, t)
+#     con_power_balance(pm, system, i, t)
 # end
 
 
@@ -500,7 +500,7 @@
 #"Needs to be fixed/updated"
 
 #"DC LINES "
-# function constraint_dcline_power_losses(pm::AbstractDCPowerModel, i::Int)
+# function con_dcline_power_losses(pm::AbstractDCPowerModel, i::Int)
 #     dcline = ref(pm, :dcline, i)
 #     f_bus = dcline["f_bus"]
 #     t_bus = dcline["t_bus"]
@@ -509,7 +509,7 @@
 #     loss0 = dcline["loss0"]
 #     loss1 = dcline["loss1"]
 
-#     _constraint_dcline_power_losses(pm, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
+#     _con_dcline_power_losses(pm, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
 # end
 
 # """
@@ -519,7 +519,7 @@
 # p_fr + p_to == loss0 + p_fr * loss1
 # ```
 # """
-# function _constraint_dcline_power_losses(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
+# function _con_dcline_power_losses(pm::AbstractDCPowerModel, f_bus, t_bus, f_idx, t_idx, loss0, loss1)
 #     p_fr = var(pm, :p_dc, f_idx)
 #     p_to = var(pm, :p_dc, t_idx)
 
@@ -527,7 +527,7 @@
 # end
 
 # "Fixed Power Factor"
-# function constraint_power_factor(pm::AbstractACPowerModel)
+# function con_power_factor(pm::AbstractACPowerModel)
 
 #     z_demand = var(pm, :z_demand)
 #     plc = var(pm, :plc)
@@ -539,7 +539,7 @@
 # end
 
 # ""
-# function constraint_voltage_magnitude_diff(pm::AbstractDCPowerModel, i::Int)
+# function con_voltage_magnitude_diff(pm::AbstractDCPowerModel, i::Int)
 
 #     branch = ref(pm, :branch, i)
 #     f_bus = branch["f_bus"]
@@ -553,13 +553,13 @@
 #     b_sh_fr = branch["b_fr"]
 #     tm = branch["tap"]
 
-#     _constraint_voltage_magnitude_difference(pm, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
+#     _con_voltage_magnitude_difference(pm, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
 # end
 
 # """
 # Defines voltage drop over a branch, linking from and to side voltage magnitude
 # """
-# function _constraint_voltage_magnitude_difference(pm::AbstractDCPowerModel, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
+# function _con_voltage_magnitude_difference(pm::AbstractDCPowerModel, i, f_bus, t_bus, f_idx, t_idx, r, x, g_sh_fr, b_sh_fr, tm)
 #     p_fr = var(pm, :p, f_idx)
 #     #q_fr = var(pm, n, :q, f_idx)
 #     q_fr = 0
@@ -583,8 +583,8 @@
 #     #add_con_container!(pm.con, :voltage_angle_diff_lower, assetgrouplist(topology(pm, :branches_idxs)))
 
 #     for i in assetgrouplist(topology(pm, :branches_idxs))
-#         constraint_ohms_yt(pm, system, i)
-#         #constraint_voltage_angle_diff(pm, system, i)
+#         con_ohms_yt(pm, system, i)
+#         #con_voltage_angle_difference(pm, system, i)
 #     end
 # end
 
@@ -598,7 +598,7 @@
 #     # Add Constraints
 #     # ---------------
 #     for i in assetgrouplist(topology(pm, :buses_idxs))
-#         constraint_power_balance(pm, system, i, t)
+#         con_power_balance(pm, system, i, t)
 #     end
 
 #     objective_min_load_curtailment(pm, system)
@@ -969,7 +969,7 @@
 #     # Add Constraints
 #     # ---------------
 #     for i in field(system, :buses, :keys)
-#         constraint_power_balance(pm, system, i, t)
+#         con_power_balance(pm, system, i, t)
 #     end
     
 #     return
@@ -982,7 +982,7 @@
 
 #     update_var_gen_power(pm, system, states, t)
 #     update_var_branch_power(pm, system, states, t)
-#     update_constraint_power_balance(pm, system, states, t)
+#     update_con_power_balance(pm, system, states, t)
 #     return
 
 # end
@@ -1025,7 +1025,7 @@
 #     update_var_branch_power(pm, system, states, t)
 #     update_var_load_curtailment(pm, system, states, t)
 #     #update_var_storage_power_mi(pm, system, states, t)
-#     update_constraint_power_balance(pm, system, states, t)
+#     update_con_power_balance(pm, system, states, t)
     
 #     if any(i -> i==4,view(states.buses, :, t)) == true || any(i -> i==4,view(states.buses, :, t-1)) == true
 
@@ -1033,15 +1033,15 @@
 #         add_con_container!(pm.con, :power_balance, field(system, :buses, :keys))
 
 #         for i in assetgrouplist(topology(pm, :buses_idxs))
-#             constraint_power_balance(pm, system, i, t)
+#             con_power_balance(pm, system, i, t)
 #         end
 
 #     else
-#         update_constraint_power_balance(pm, system, states, t)
+#         update_con_power_balance(pm, system, states, t)
 #     end
 
-#     update_constraint_voltage_angle_diff(pm, system, states, t)
-#     update_constraint_storage(pm, system, states, t)
+#     update_con_voltage_angle_differenceerence(pm, system, states, t)
+#     update_con_storage(pm, system, states, t)
 
 
 #     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
@@ -1050,7 +1050,7 @@
 #         add_con_container!(pm.con, :ohms_yt_from, assetgrouplist(topology(pm, :branches_idxs)))
 
 #         for i in assetgrouplist(topology(pm, :branches_idxs))
-#             constraint_ohms_yt(pm, system, i)
+#             con_ohms_yt(pm, system, i)
 #         end  
     
 #     end

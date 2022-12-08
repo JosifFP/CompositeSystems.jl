@@ -1,4 +1,4 @@
-
+#***************************************************** VARIABLES *************************************************************************
 ""
 function var_bus_voltage(pm::AbstractLPACModel, system::SystemModel; kwargs...)
     var_bus_voltage_angle(pm, system; kwargs...)
@@ -24,7 +24,7 @@ end
 ""
 function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    cs = var(pm, :cs)[nw] = @variable(pm.model, [keys(topology(pm, :buspairs))], start=1.0)
+    cs = var(pm, :cs)[nw] = @variable(pm.model, [keys(topology(pm, :buspairs))], start=1.0, container = Dict)
 
     if bounded
         for (bp, buspair) in topology(pm, :buspairs)
@@ -50,68 +50,9 @@ function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=
 
 end
 
+#***************************************************** CONSTRAINTS *************************************************************************
 ""
-function var_gen_power_imaginary(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
-
-    if bounded
-        for l in assetgrouplist(topology(pm, :generators_idxs))
-            JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l])
-            JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l])
-        end
-    end
-
-end
-
-""
-function var_gen_power_imaginary(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
-
-    if bounded
-        for l in field(system, :generators, :keys)
-            JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l]*field(states, :generators)[l,t])
-            JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l]*field(states, :generators)[l,t])
-        end
-    end
-
-end
-
-""
-function var_storage_power_imaginary(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    qs = var(pm, :qs)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
-
-    if bounded
-        for i in assetgrouplist(topology(pm, :storages_idxs))
-            JuMP.set_lower_bound(qs[i], max(-field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmin)[i]))
-            JuMP.set_upper_bound(qs[i], min(field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmax)[i]))
-        end
-    end
-
-end
-
-""
-function var_storage_power_imaginary(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
-
-    qs = var(pm, :qs)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
-
-    if bounded
-        for i in field(system, :storages, :keys)
-            JuMP.set_lower_bound(qs[i], max(-field(system, :storages, :thermal_rating)[i],
-                field(system, :storages, :qmin)[i])*field(states, :storages)[i,t]
-            )
-            JuMP.set_upper_bound(qs[i], min(field(system, :storages, :thermal_rating)[i],
-            field(system, :storages, :qmax)[i])*field(states, :storages)[i,t]
-            )
-        end
-    end
-end
-
-
-""
-function constraint_model_voltage(pm::AbstractLPACModel, system::SystemModel, n::Int)
+function _con_model_voltage(pm::AbstractLPACModel, system::SystemModel, n::Int)
 
     _check_missing_keys(pm.var, [:va,:cs], typeof(pm))
 
@@ -127,15 +68,72 @@ function constraint_model_voltage(pm::AbstractLPACModel, system::SystemModel, n:
    end
 end
 
-"checks of any of the given keys are missing from the given dict"
-function _check_missing_keys(dict, keys, type)
-    missing = []
-    for key in keys
-        if !haskey(dict, key)
-            push!(missing, key)
-        end
-    end
-    if length(missing) > 0
-        @error("the formulation $(type) requires the following varible(s) $(keys) but the $(missing) variable(s) were not found in the model")
-    end
+""
+function _con_power_balance(
+    pm::AbstractLPACModel, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
+    generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int},
+    bus_pd::Vector{Float16}, bus_qd::Vector{Float16}, bus_gs::Vector{Float16}, bus_bs::Vector{Float16})
+
+    phi  = var(pm, :phi, nw)
+    p    = var(pm, :p, nw)
+    q    = var(pm, :q, nw)
+    pg   = var(pm, :pg, nw)
+    qg   = var(pm, :qg, nw)
+    plc   = var(pm, :plc, nw)
+    qlc   = var(pm, :qlc, nw)
+    ps   = var(pm, :ps, nw)
+    qs   = var(pm, :qs, nw)
+
+    exp_p = @expression(pm.model,
+        sum(pg[g] for g in generators_nodes)
+        + sum(plc[m] for m in loads_nodes)
+        - sum(p[a] for a in bus_arcs)
+        - sum(ps[s] for s in storages_nodes)
+    )
+
+    exp_q = @expression(pm.model,
+    sum(qg[g] for g in generators_nodes)
+    + sum(qlc[m] for m in loads_nodes)
+    - sum(q[a] for a in bus_arcs)
+    - sum(qs[s] for s in storages_nodes)
+    )
+
+    JuMP.drop_zeros!(exp_p)
+    JuMP.drop_zeros!(exp_q)
+    con(pm, :power_balance_p, nw)[i] = @constraint(pm.model, exp_p == sum(pd for pd in bus_pd) + sum(gs for gs in bus_gs)*(1.0 + 2*phi[i]))
+    con(pm, :power_balance_q, nw)[i] = @constraint(pm.model, exp_q == sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0 + 2*phi[i]))
+
 end
+
+
+"AC Line Flow Constraints"
+function _con_ohms_yt_from(pm::AbstractLPACModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr_to)
+
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    q_fr  = var(pm, :q, nw)[i, f_bus, t_bus]
+    phi_fr = var(pm, :phi, nw)[f_bus]
+    phi_to = var(pm, :phi, nw)[t_bus]
+    cs     = var(pm, :cs, nw)[(f_bus, t_bus)]
+
+    con(pm, :ohms_yt_from_p, nw)[i] = @constraint(pm.model, p_fr ==  (g+g_fr)/tm^2*(1.0 + 2*phi_fr) + (-g*tr+b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr-g*ti)/tm^2*(va_fr_to))
+    con(pm, :ohms_yt_from_q, nw)[i] = @constraint(pm.model, q_fr == -(b+b_fr)/tm^2*(1.0 + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(va_fr_to))
+
+end
+
+"""
+Creates Ohms constraints (yt post fix indicates that Y and T values are in rectangular form)
+"""
+function _con_ohms_yt_to(pm::AbstractLPACModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr_to)
+
+    p_to  = var(pm, :p, nw)[i, t_bus, f_bus]
+    q_to  = var(pm, :q, nw)[i, t_bus, f_bus]
+    phi_fr = var(pm, :phi, nw)[f_bus]
+    phi_to = var(pm, :phi, nw)[t_bus]
+    cs     = var(pm, :cs, nw)[(f_bus, t_bus)]
+
+    con(pm, :ohms_yt_to_p, nw)[i] = @constraint(pm.model, p_to ==  (g+g_to)*(1.0 + 2*phi_to) + (-g*tr-b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr+g*ti)/tm^2*-(va_fr_to))
+    con(pm, :ohms_yt_to_q, nw)[i] = @constraint(pm.model, q_to == -(b+b_to)*(1.0 + 2*phi_to) - (-b*tr+g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr-b*ti)/tm^2*-(va_fr_to))
+
+end
+
+#***************************************************** UPDATES *************************************************************************

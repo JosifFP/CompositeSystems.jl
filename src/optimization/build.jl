@@ -18,26 +18,30 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
     # Add Constraints
     # ---------------
 
-    constraint_model_voltage(pm, system)
+    con_model_voltage(pm, system)
 
     for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i)
+        con_theta_ref(pm, system, i)
+    end
+
+    for i in assetgrouplist(topology(pm, :loads_idxs))
+        con_power_factor(pm, system, i)
     end
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
-        constraint_power_balance(pm, system, i, t)
+        con_power_balance(pm, system, i, t)
     end
 
     for i in assetgrouplist(topology(pm, :storages_idxs))
-        constraint_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
-        constraint_storage_complementarity_mi(pm, system, i)
-        constraint_storage_losses(pm, system, i)
-        constraint_storage_thermal_limit(pm, system, i)
+        con_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
+        con_storage_complementarity_mi(pm, system, i)
+        con_storage_losses(pm, system, i)
+        con_storage_thermal_limit(pm, system, i)
     end
 
     for i in assetgrouplist(topology(pm, :branches_idxs))
-        constraint_ohms_yt(pm, system, i)
-        constraint_voltage_angle_diff(pm, system, i)
+        con_ohms_yt(pm, system, i)
+        con_voltage_angle_difference(pm, system, i)
     end
 
     return
@@ -59,17 +63,21 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     # Add Constraints
     # ---------------
     for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i)
+        con_theta_ref(pm, system, i)
+    end
+
+    for i in field(system, :loads, :keys)
+        con_power_factor(pm, system, i)
     end
 
     for i in field(system, :buses, :keys)
-        constraint_power_balance(pm, system, i, t)
+        con_power_balance(pm, system, i, t)
     end
 
     for i in field(system, :branches, :keys)
         if field(states, :branches)[i,t] ≠ 0
-            constraint_ohms_yt(pm, system, i)
-            constraint_voltage_angle_diff(pm, system, i)
+            con_ohms_yt(pm, system, i)
+            con_voltage_angle_difference(pm, system, i)
         end
     end
 
@@ -92,26 +100,30 @@ function build_method_stor!(pm::AbstractPowerModel, system::SystemModel, states:
     # Add Constraints
     # ---------------
     for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i)
+        con_theta_ref(pm, system, i)
+    end
+
+    for i in field(system, :loads, :keys)
+        con_power_factor(pm, system, i)
     end
 
     for i in field(system, :buses, :keys)
-        constraint_power_balance(pm, system, i, t)
+        con_power_balance(pm, system, i, t)
     end
     
     for i in field(system, :storages, :keys)
         if field(states, :storages)[i,t] ≠ 0
-            constraint_storage_state(pm, system, states, i, t)
-            constraint_storage_complementarity_mi(pm, system, i)
-            constraint_storage_losses(pm, system, i)
-            constraint_storage_thermal_limit(pm, system, i)
+            con_storage_state(pm, system, states, i, t)
+            con_storage_complementarity_mi(pm, system, i)
+            con_storage_losses(pm, system, i)
+            con_storage_thermal_limit(pm, system, i)
         end
     end
 
     for i in field(system, :branches, :keys)
         if field(states, :branches)[i,t] ≠ 0
-            constraint_ohms_yt(pm, system, i)
-            constraint_voltage_angle_diff(pm, system, i)
+            con_ohms_yt(pm, system, i)
+            con_voltage_angle_difference(pm, system, i)
         end
     end
 
@@ -135,25 +147,41 @@ function build_opf!(pm::AbstractDCPowerModel, system::SystemModel, t)
     # Add Constraints
     # ---------------
     for i in field(system, :ref_buses)
-        constraint_theta_ref(pm, i)
+        con_theta_ref(pm, system, i)
+    end
+
+    for i in assetgrouplist(topology(pm, :loads_idxs))
+        con_power_factor(pm, system, i)
     end
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
-        constraint_power_balance(pm, system, i, t)
+        con_power_balance(pm, system, i, t)
     end
 
     for i in assetgrouplist(topology(pm, :storages_idxs))
-        constraint_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
-        constraint_storage_complementarity_mi(pm, system, i)
-        constraint_storage_losses(pm, system, i)
-        constraint_storage_thermal_limit(pm, system, i)
+        con_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
+        con_storage_complementarity_mi(pm, system, i)
+        con_storage_losses(pm, system, i)
+        con_storage_thermal_limit(pm, system, i)
     end
 
     for i in assetgrouplist(topology(pm, :branches_idxs))
-        constraint_ohms_yt(pm, system, i)
-        constraint_voltage_angle_diff(pm, system, i)
+        con_ohms_yt(pm, system, i)
+        con_voltage_angle_difference(pm, system, i)
     end
 
+    return
+
+end
+
+"Load Minimization version of DCOPF"
+function update_method!(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    update_var_gen_power(pm, system, states, t)
+    update_var_branch_power(pm, system, states, t)
+    update_var_load_curtailment(pm, system, states, t)
+    update_con_power_balance(pm, system, states, t)
+    update_con_storage(pm, system, states, t)
     return
 
 end
@@ -165,21 +193,19 @@ function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::S
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
-    update_constraint_power_balance(pm, system, states, t)
+    update_con_power_balance(pm, system, states, t)
     #update_var_storage_power_mi(pm, system, states, t)
-    update_constraint_storage(pm, system, states, t)
+    update_con_storage(pm, system, states, t)
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
-
+        
         active_branches = assetgrouplist(topology(pm, :branches_idxs))
-        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-        add_con_container!(pm.con, :ohms_yt_from, active_branches)
-
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
+        add_con_container!(pm.con, :ohms_yt_from_p, active_branches)
         for i in active_branches
-            constraint_ohms_yt(pm, system, i)
+            con_ohms_yt(pm, system, i)
         end
     end
-    
     return
 
 end
@@ -191,30 +217,57 @@ function update_method!(pm::AbstractDCPLLModel, system::SystemModel, states::Sys
     update_var_gen_power(pm, system, states, t)
     update_var_branch_power(pm, system, states, t)
     update_var_load_curtailment(pm, system, states, t)
-    update_constraint_power_balance(pm, system, states, t)
+    update_con_power_balance(pm, system, states, t)
     #update_var_storage_power_mi(pm, system, states, t)
-    update_constraint_storage(pm, system, states, t)
+    update_con_storage(pm, system, states, t)
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
 
         active_branches = assetgrouplist(topology(pm, :branches_idxs))
-
-        JuMP.delete(pm.model, con(pm, :ohms_yt_from, 1).data)
-        JuMP.delete(pm.model, con(pm, :ohms_yt_to, 1).data)
-        add_con_container!(pm.con, :ohms_yt_from, active_branches)
-        add_con_container!(pm.con, :ohms_yt_to, active_branches)
-
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
+        JuMP.delete(pm.model, con(pm, :ohms_yt_to_p, 1).data)
+        add_con_container!(pm.con, :ohms_yt_from_p, active_branches)
+        add_con_container!(pm.con, :ohms_yt_to_p, active_branches)
         for i in active_branches
-            constraint_ohms_yt(pm, system, i)
+            con_ohms_yt(pm, system, i)
         end
     end
+    return
+
+end
+
+"Load Minimization version of ACOPF"
+function update_method!(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
     
+    update_var_gen_power(pm, system, states, t)
+    update_var_branch_power(pm, system, states, t)
+    update_var_load_curtailment(pm, system, states, t)
+    update_con_power_balance(pm, system, states, t)
+    update_con_storage(pm, system, states, t)
+
+    if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
+
+        active_branches = assetgrouplist(topology(pm, :branches_idxs))
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
+        JuMP.delete(pm.model, con(pm, :ohms_yt_to_p, 1).data)
+        JuMP.delete(pm.model, con(pm, :ohms_yt_from_q, 1).data)
+        JuMP.delete(pm.model, con(pm, :ohms_yt_to_q, 1).data)
+
+        add_con_container!(pm.con, :ohms_yt_from_p, active_branches)
+        add_con_container!(pm.con, :ohms_yt_to_p, active_branches)
+        add_con_container!(pm.con, :ohms_yt_from_q, active_branches)
+        add_con_container!(pm.con, :ohms_yt_to_q, active_branches)
+
+        for i in active_branches
+            con_ohms_yt(pm, system, i)
+        end
+    end
     return
 
 end
 
 ""
-function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
+function objective_min_fuel_and_flow_cost(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
 
     gen_cost = Dict{Int, Any}()
     gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
@@ -240,7 +293,7 @@ function objective_min_fuel_and_flow_cost(pm::AbstractDCPowerModel, system::Syst
 end
 
 ""
-function objective_min_gen_stor_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
+function objective_min_gen_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
 
     gen_cost = Dict{Int, Any}()
     gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
@@ -268,7 +321,7 @@ function objective_min_gen_stor_load_curtailment(pm::AbstractDCPowerModel, syste
 end
 
 ""
-function objective_min_stor_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
+function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
 
     fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
@@ -277,14 +330,14 @@ function objective_min_stor_load_curtailment(pm::AbstractDCPowerModel, system::S
 end
 
 ""
-function objective_min_load_curtailment(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
+function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
 
     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
     return @objective(pm.model, MIN_SENSE, fd)
     
 end
 
-function optimize_method!(pm::AbstractDCPowerModel)
+function optimize_method!(pm::AbstractPowerModel)
 
     #optimize!(model; ignore_optimize_hook = true)
     _ = JuMP.optimize!(pm.model)
@@ -293,7 +346,7 @@ function optimize_method!(pm::AbstractDCPowerModel)
 end
 
 ""
-function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
+function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
     plc = build_sol_values(var(pm, :plc, nw))
     se = build_sol_values(var(pm, :se, nw))
@@ -315,7 +368,6 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end
-
     return
 
 end

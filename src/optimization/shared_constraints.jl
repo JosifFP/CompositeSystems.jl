@@ -1,7 +1,7 @@
 
-### Voltage Constraints ###
+#***************************************************** CONSTRAINTS *************************************************************************
 "Fix the voltage angle to zero at the reference bus"
-function constraint_theta_ref(pm::AbstractPowerModel, i::Int; nw::Int=1)
+function con_theta_ref(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
     fix(var(pm, :va, nw)[i], 0, force = true)
 end
 
@@ -10,12 +10,16 @@ This constraint captures problem agnostic constraints that are used to link
 the model's voltage variables together, in addition to the standard problem
 formulation constraints.
 """
-function constraint_model_voltage(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
-    constraint_model_voltage(pm, system, nw)
+function con_model_voltage(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
+    _con_model_voltage(pm, system, nw)
+end
+
+"do nothing, most models to not require any model-specific voltage constraint"
+function _con_model_voltage(pm::AbstractPowerModel, system::SystemModel, n)
 end
 
 "Nodal power balance constraints"
-function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
+function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i,:]))
     generators_nodes = topology(pm, :generators_nodes)[i]
@@ -23,11 +27,27 @@ function constraint_power_balance(pm::AbstractPowerModel, system::SystemModel, i
     shunts_nodes = topology(pm, :shunts_nodes)[i]
     storages_nodes = topology(pm, :storages_nodes)[i]
 
-    _constraint_power_balance(pm, system, i, t, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes)
+    bus_pd = Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
+    bus_qd = Float16.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
+    bus_gs = Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
+    bus_bs = Float16.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+
+    _con_power_balance(pm, system, i, t, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
+
+end
+
+"Polar Form"
+function _con_voltage_angle_differenceerence(pm::AbstractPolarModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+    
+    va_fr = var(pm, :va, nw)[f_bus]
+    va_to = var(pm, :va, nw)[t_bus]
+    con(pm, :voltage_angle_diff_upper, nw)[i] = @constraint(pm.model, va_fr - va_to <= angmax)
+    con(pm, :voltage_angle_diff_lower, nw)[i] = @constraint(pm.model, va_fr - va_to >= angmin)
+
 end
 
 "Branch - Ohm's Law Constraints"
-function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
@@ -36,13 +56,18 @@ function constraint_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int;
     tm = field(system, :branches, :tap)[i]
     va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
 
-    _constraint_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
-    _constraint_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, tr, ti, tm, va_fr_to)
+    g_fr = field(system, :branches, :g_fr)[i]
+    b_fr = field(system, :branches, :b_fr)[i]
+    g_to = field(system, :branches, :g_to)[i]
+    b_to = field(system, :branches, :b_to)[i]
+
+    _con_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr_to)
+    _con_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr_to)
 
 end
 
 "Branch - Phase Angle Difference Constraints "
-function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_voltage_angle_difference(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
@@ -50,16 +75,16 @@ function constraint_voltage_angle_diff(pm::AbstractPowerModel, system::SystemMod
     
     if !ismissing(buspair)
     #if !ismissing(buspair) && Int(buspair[1]) == i
-        _constraint_voltage_angle_diff(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
+        _con_voltage_angle_differenceerence(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
     end
 
 end
 
 """
-constraint_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
+con_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
 Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel.
 """
-function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[i] 
     t_bus = field(system, :branches, :t_bus)[i]
@@ -68,28 +93,21 @@ function constraint_thermal_limits(pm::AbstractPowerModel, system::SystemModel, 
     p_fr = var(pm, :p, nw)[f_idx]
 
     if hasfield(Branches, :rate_a)
-        _constraint_thermal_limit_from(pm, nw, f_idx, p_fr, field(system, :branches, :rate_a)[i])
-        _constraint_thermal_limit_to(pm, nw, t_idx, p_fr, field(system, :branches, :rate_a)[i])
+        _con_thermal_limit_from(pm, nw, f_idx, p_fr, field(system, :branches, :rate_a)[i])
+        _con_thermal_limit_to(pm, nw, t_idx, p_fr, field(system, :branches, :rate_a)[i])
     end
 
 end
 
-
-"Fixed Power Factor"
-function constraint_power_factor(ref::Dict{Symbol,Any}, model::Model)
-    for i in keys(ref[:load])
-        JuMP.@constraint(model, model[:z_demand][i]*model[:plc][i] - model[:qlc][i] == 0.0)      
-    end
+"Fix Load Power Factor"
+function con_power_factor(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+    fix(var(pm, :z_demand, nw)[i], field(system, :loads, :pf)[i], force = true)
 end
 
 
-
-
-#********************************************************************************************************************************
-
-### Storage Constraints ###
+#***************************************************** STORAGE CONSTRAINTS ************************************************************************
 ""
-function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i::Int; nw::Int=1) where {N,L,T<:Period}
+function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i::Int; nw::Int=1) where {N,L,T<:Period}
 
     energy = field(system, :storages, :energy)[i]
     charge_eff = field(system, :storages, :charge_efficiency)[i]
@@ -99,11 +117,11 @@ function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,
         @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
     end
 
-    _constraint_storage_state_initial(pm, nw, i, energy, charge_eff, discharge_eff, L)
+    _con_storage_state_initial(pm, nw, i, energy, charge_eff, discharge_eff, L)
 end
 
 ""
-function _constraint_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
+function _con_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
 
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
@@ -113,7 +131,7 @@ function _constraint_storage_state_initial(pm::AbstractPowerModel, n::Int, i::In
 end
 
 ""
-function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, states::SystemStates, i::Int, t::Int; nw::Int=1) where {N,L,T<:Period}
+function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, states::SystemStates, i::Int, t::Int; nw::Int=1) where {N,L,T<:Period}
 
     charge_eff = field(system, :storages, :charge_efficiency)[i]
     discharge_eff = field(system, :storages, :discharge_efficiency)[i]
@@ -141,7 +159,7 @@ function constraint_storage_state(pm::AbstractPowerModel, system::SystemModel{N,
 end
 
 ""
-function constraint_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     charge_ub = field(system, :storages, :charge_rating)[i]
     discharge_ub = field(system, :storages, :discharge_rating)[i]
@@ -158,7 +176,7 @@ function constraint_storage_complementarity_mi(pm::AbstractPowerModel, system::S
 end
 
 ""
-function constraint_storage_losses(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_storage_losses(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     storage_bus = field(system, :storages, :buses)[i]
     storage_r = field(system, :storages, :r)[i]
@@ -166,12 +184,12 @@ function constraint_storage_losses(pm::AbstractPowerModel, system::SystemModel, 
     p_loss = field(system, :storages, :ploss)[i]
     q_loss = field(system, :storages, :qloss)[i]
 
-    _constraint_storage_losses(pm, nw, i, storage_bus, storage_r, storage_x, p_loss, q_loss)
+    _con_storage_losses(pm, nw, i, storage_bus, storage_r, storage_x, p_loss, q_loss)
 end
 
 ""
-function constraint_storage_thermal_limit(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_storage_thermal_limit(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     thermal_rating = field(system, :storages, :thermal_rating)[i]
-    _constraint_storage_thermal_limit(pm, nw, i, thermal_rating)
+    _con_storage_thermal_limit(pm, nw, i, thermal_rating)
 end
