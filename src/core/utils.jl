@@ -93,6 +93,7 @@ following basic network model requirements.
 - there exactly one phase angle reference bus
 - generation cost functions are polynomial
 - all branches have explicit thermal limits
+- Network in per-unit.
 """
 function DataSanityCheck(pm_data::Dict{String, <:Any})
 
@@ -107,6 +108,20 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     # make a copy of data so that modifications do not change the input data
     data = deepcopy(pm_data)
 
+    PowerModels.make_per_unit!(data)
+
+    # ensure that branch components always have a rate_a value
+    PowerModels.calc_thermal_limits!(data)
+
+    #checks that each branch has non-negative thermal ratings and removes zero thermal ratings.
+    PowerModels.correct_thermal_limits!(data)
+
+    #checks that all buses are unique and other components link to valid buses.
+    PowerModels.check_connectivity(data)
+
+    #checks that each branch has a reasonable transformer parameters.
+    PowerModels.correct_transformer_parameters!(data)
+
     # TODO transform PWL costs into linear costs
     for (i,gen) in data["gen"]
         if get(gen, "cost_model", 2) ≠ 2
@@ -114,12 +129,12 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
         end
     end
 
+    "throws warnings if cost functions are malformed"
+    PowerModels.correct_cost_functions!(data)
+
     PowerModels.standardize_cost_terms!(data, order=1)
 
-    # ensure that branch components always have a rate_a value
-    PowerModels.calc_thermal_limits!(data)
-
-    PowerModels.make_per_unit!(data)
+    PowerModels.simplify_cost_terms!(data)
 
     PowerModels.simplify_network!(data)
 

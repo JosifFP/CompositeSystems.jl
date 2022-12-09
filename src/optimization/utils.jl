@@ -339,7 +339,7 @@ function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) whe
 end
 
 ""
-function reset_model!(pm::AbstractDCPowerModel, states::SystemStates, settings::Settings, s)
+function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Settings, s)
 
     if iszero(s%10) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)

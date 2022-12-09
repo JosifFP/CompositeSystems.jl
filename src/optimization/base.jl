@@ -206,6 +206,8 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
         add_var_container!(pm.var, :se, field(system, :storages, :keys))
@@ -252,6 +254,8 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :ohms_yt_to_q, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
         add_var_container!(pm.var, :qs, field(system, :storages, :keys))

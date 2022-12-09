@@ -14,10 +14,6 @@ function con_model_voltage(pm::AbstractPowerModel, system::SystemModel; nw::Int=
     _con_model_voltage(pm, system, nw)
 end
 
-"do nothing, most models to not require any model-specific voltage constraint"
-function _con_model_voltage(pm::AbstractPowerModel, system::SystemModel, n)
-end
-
 "Nodal power balance constraints"
 function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
@@ -37,7 +33,7 @@ function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, 
 end
 
 "Polar Form"
-function _con_voltage_angle_differenceerence(pm::AbstractPolarModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+function _con_voltage_angle_difference(pm::AbstractPolarModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
     
     va_fr = var(pm, :va, nw)[f_bus]
     va_to = var(pm, :va, nw)[t_bus]
@@ -75,27 +71,42 @@ function con_voltage_angle_difference(pm::AbstractPowerModel, system::SystemMode
     
     if !ismissing(buspair)
     #if !ismissing(buspair) && Int(buspair[1]) == i
-        _con_voltage_angle_differenceerence(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
+        _con_voltage_angle_difference(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
     end
 
 end
 
-"""
-con_thermal_limit_from(pm::AbstractDCPowerModel, n::Int, i::Int)
-Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel.
-"""
+"Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel."
 function con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[i] 
     t_bus = field(system, :branches, :t_bus)[i]
     f_idx = (i, f_bus, t_bus)
     t_idx = (i, t_bus, f_bus)
-    p_fr = var(pm, :p, nw)[f_idx]
 
     if hasfield(Branches, :rate_a)
-        _con_thermal_limit_from(pm, nw, f_idx, p_fr, field(system, :branches, :rate_a)[i])
-        _con_thermal_limit_to(pm, nw, t_idx, p_fr, field(system, :branches, :rate_a)[i])
+        _con_thermal_limit_from(pm, nw, i, f_idx, field(system, :branches, :rate_a)[i])
+        _con_thermal_limit_to(pm, nw, i, t_idx, field(system, :branches, :rate_a)[i])
     end
+
+end
+
+# Generic thermal limit constraint
+"`p[f_idx]^2 + q[f_idx]^2 <= rate_a^2`"
+function _con_thermal_limit_from(pm::AbstractPowerModel, n::Int, i::Int, f_idx, rate_a)
+
+    p_fr = var(pm, :p, n)[f_idx]
+    q_fr = var(pm, :q, n)[f_idx]
+    con(pm, :thermal_limit_from, n)[i] = @constraint(pm.model, p_fr^2 + q_fr^2 <= rate_a^2)
+    
+end
+
+"`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
+function _con_thermal_limit_to(pm::AbstractPowerModel, n::Int, i::Int, t_idx, rate_a)
+    
+    p_to = var(pm, :p, n)[t_idx]
+    q_to = var(pm, :q, n)[t_idx]
+    con(pm, :thermal_limit_to, n)[i] = @constraint(pm.model, p_to^2 + q_to^2 <= rate_a^2)
 
 end
 

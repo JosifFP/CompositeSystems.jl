@@ -3,7 +3,7 @@ import CompositeSystems.BaseModule
 import CompositeSystems.OPF
 import CompositeSystems.CompositeAdequacy
 import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
-import JuMP: termination_status
+import JuMP: termination_status, @expression
 import PowerModels
 import BenchmarkTools: @btime
 using Test
@@ -18,20 +18,27 @@ settings = CompositeSystems.Settings(
 RawFile = "test/data/RBTS/Base/RBTS.m"
 ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
 system = BaseModule.SystemModel(RawFile, ReliabilityFile)
-
-CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
+#CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
 pm = OPF.PowerModel(settings.powermodel, OPF.Topology(system), model)
 OPF.initialize_pm_containers!(pm, system; timeseries=false)
-systemstates = OPF.SystemStates(system, available=true)
+states = OPF.SystemStates(system, available=true)
+nw=1
+t=1
 #CompositeSystems.field(systemstates, :branches)[3,t] = 0
 #CompositeSystems.field(systemstates, :branches)[4,t] = 0
 #CompositeSystems.field(systemstates, :branches)[8,t] = 0
 #systemstates.system[t] = 0
-t=1
-CompositeAdequacy.solve!(pm, system, systemstates, t)
+CompositeAdequacy.solve!(pm, system, states, t)
+println(pm.model)
+pm.model
+
+
+
 OPF.build_sol_values(OPF.var(pm, :pg, t))
 OPF.build_sol_values(OPF.var(pm, :qg, t))
+
+sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
 
 sum(system.loads.pd)
 
@@ -40,6 +47,14 @@ PowerModels.standardize_cost_terms!(data, order=1)
 result = PowerModels.run_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
 result["solution"]
 result["solution"]["gen"]
+
+pmi = PowerModels.instantiate_model(data, PowerModels.LPACCPowerModel, PowerModels.build_opf)
+pmi.model
+println(pmi.model)
+
+
+
+
 
 
 @test isapprox(sum(systemstates.plc[:]), 0.150; atol = 1e-3)

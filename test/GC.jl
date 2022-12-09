@@ -1040,7 +1040,7 @@
 #         update_con_power_balance(pm, system, states, t)
 #     end
 
-#     update_con_voltage_angle_differenceerence(pm, system, states, t)
+#     update_con_voltage_angle_difference(pm, system, states, t)
 #     update_con_storage(pm, system, states, t)
 
 

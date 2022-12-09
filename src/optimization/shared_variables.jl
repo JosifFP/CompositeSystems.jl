@@ -8,7 +8,7 @@ end
 
 ""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-    var(pm, :va)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
+    var(pm, :va)[nw] = @variable(pm.model, va[assetgrouplist(topology(pm, :buses_idxs))])
     #var(pm, :va)[nw] = @variable(pm.model, [field(system, :buses, :keys)])
 end
 
@@ -27,7 +27,7 @@ end
 ""
 function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    pg = var(pm, :pg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
+    pg = var(pm, :pg)[nw] = @variable(pm.model, pg[assetgrouplist(topology(pm, :generators_idxs))])
 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
@@ -41,7 +41,7 @@ end
 ""
 function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
-    pg = var(pm, :pg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
+    pg = var(pm, :pg)[nw] = @variable(pm.model, pg[field(system, :generators, :keys)])
 
     if bounded
         for l in field(system, :generators, :keys)
@@ -55,7 +55,7 @@ end
 ""
 function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
+    qg = var(pm, :qg)[nw] = @variable(pm.model, qg[assetgrouplist(topology(pm, :generators_idxs))])
 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
@@ -69,7 +69,7 @@ end
 ""
 function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [field(system, :generators, :keys)])
+    qg = var(pm, :qg)[nw] = @variable(pm.model, qg[field(system, :generators, :keys)])
 
     if bounded
         for l in field(system, :generators, :keys)
@@ -96,7 +96,7 @@ end
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    p = var(pm, :p)[nw] = @variable(pm.model, [arcs])
+    p = var(pm, :p)[nw] = @variable(pm.model, p[arcs])
 
     if bounded
         for (l,i,j) in arcs
@@ -111,7 +111,7 @@ end
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    p = var(pm, :p)[nw] = @variable(pm.model, [arcs], container = Dict)
+    p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -126,7 +126,7 @@ end
 function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    q = var(pm, :q)[nw] = @variable(pm.model, [arcs], container = Dict)
+    q = var(pm, :q)[nw] = @variable(pm.model, q[arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -141,7 +141,7 @@ end
 function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    q = var(pm, :q)[nw] = @variable(pm.model, [arcs], container = Dict)
+    q = var(pm, :q)[nw] = @variable(pm.model, q[arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -161,7 +161,7 @@ end
 ""
 function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 
-    plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
+    plc = var(pm, :plc)[nw] = @variable(pm.model, plc[field(system, :loads, :keys)], start =0.0)
     #plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
     #for l in assetgrouplist(topology(pm, :loads_idxs))
 
@@ -177,7 +177,7 @@ end
 ""
 function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 
-    qlc = var(pm, :qlc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
+    qlc = var(pm, :qlc)[nw] = @variable(pm.model, qlc[field(system, :loads, :keys)], start =0.0)
 
     if bounded
         for l in field(system, :loads, :keys)

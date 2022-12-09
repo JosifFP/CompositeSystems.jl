@@ -129,8 +129,8 @@ settings = CompositeSystems.Settings(
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-3)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
-        println(pg)
-        println(values(OPF.build_sol_values(OPF.var(pm, :va, t))).*180/pi)
+        #println(pg)
+        #println(values(OPF.build_sol_values(OPF.var(pm, :va, t))).*180/pi)
         OPF.empty_model!(pm)
         
     end
