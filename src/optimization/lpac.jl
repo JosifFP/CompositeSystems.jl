@@ -24,27 +24,30 @@ end
 ""
 function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    cs = var(pm, :cs)[nw] = @variable(pm.model, cs[keys(topology(pm, :buspairs))], start=1.0, container = Dict)
+    buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+    cs = var(pm, :cs)[nw] = @variable(pm.model, cs[buspairs], start=1.0, container = Dict)
 
     if bounded
         for (bp, buspair) in topology(pm, :buspairs)
-            angmin = buspair[2]
-            angmax = buspair[3]
-            if angmin >= 0
-                cos_max = cos(angmin)
-                cos_min = cos(angmax)
-            end
-            if angmax <= 0
-                cos_max = cos(angmax)
-                cos_min = cos(angmin)
-            end
-            if angmin < 0 && angmax > 0
-                cos_max = 1.0
-                cos_min = min(cos(angmin), cos(angmax))
-            end
+            if !ismissing(buspair)
+                angmin = buspair[2]
+                angmax = buspair[3]
+                if angmin >= 0
+                    cos_max = cos(angmin)
+                    cos_min = cos(angmax)
+                end
+                if angmax <= 0
+                    cos_max = cos(angmax)
+                    cos_min = cos(angmin)
+                end
+                if angmin < 0 && angmax > 0
+                    cos_max = 1.0
+                    cos_min = min(cos(angmin), cos(angmax))
+                end
 
-            JuMP.set_lower_bound(cs[bp], cos_min)
-            JuMP.set_upper_bound(cs[bp], cos_max)
+                JuMP.set_lower_bound(cs[bp], cos_min)
+                JuMP.set_upper_bound(cs[bp], cos_max)
+            end
         end
     end
 
@@ -60,11 +63,13 @@ function _con_model_voltage(pm::AbstractLPACModel, system::SystemModel, n::Int)
     cs = var(pm, :cs, n)
 
     for (bp, buspair) in topology(pm, :buspairs)
-        i,j = bp
-        angmin = buspair[2]
-        angmax = buspair[3]
-        vad_max = max(abs(angmin), abs(angmax))
-        JuMP.@constraint(pm.model, cs[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(t[i] - t[j])^2)
+        if !ismissing(buspair)
+            i,j = bp
+            angmin = buspair[2]
+            angmax = buspair[3]
+            vad_max = max(abs(angmin), abs(angmax))
+            JuMP.@constraint(pm.model, cs[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(t[i] - t[j])^2)
+        end
    end
 end
 
@@ -72,7 +77,7 @@ end
 function _con_power_balance(
     pm::AbstractLPACModel, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
     generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int},
-    bus_pd::Vector{Float16}, bus_qd::Vector{Float16}, bus_gs::Vector{Float16}, bus_bs::Vector{Float16})
+    bus_pd::Vector{Float32}, bus_qd::Vector{Float32}, bus_gs::Vector{Float32}, bus_bs::Vector{Float32})
 
     phi  = var(pm, :phi, nw)
     p    = var(pm, :p, nw)
@@ -140,10 +145,10 @@ function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, st
     phi  = var(pm, :phi, 1)
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
-    bus_pd = Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-    bus_qd = Float16.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
-    bus_gs = Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
-    bus_bs = Float16.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
+    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
 
     JuMP.set_normalized_coefficient(con(pm, :power_balance_p, 1)[i], phi[i], -sum(gs for gs in bus_gs)*2)
     JuMP.set_normalized_coefficient(con(pm, :power_balance_q, 1)[i], phi[i], -sum(bs for bs in bus_bs)*2)

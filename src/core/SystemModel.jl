@@ -9,7 +9,7 @@ struct SystemModel{N,L,T<:Period}
     branches::Branches
     shunts::Shunts
     ref_buses::Vector{Int}
-    baseMVA::Float16
+    baseMVA::Float32
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
@@ -21,7 +21,7 @@ struct SystemModel{N,L,T<:Period}
         branches::Branches,
         shunts::Shunts,
         ref_buses::Vector{Int},
-        baseMVA::Float16,
+        baseMVA::Float32,
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period}
     

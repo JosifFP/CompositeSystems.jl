@@ -59,7 +59,7 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     var_load_curtailment(pm, system, t)
 
     #objective_min_load_curtailment(pm, system)
-    objective_min_gen_stor_load_curtailment(pm, system)
+    objective_min_stor_load_curtailment(pm, system)
 
     # Add Constraints
     # ---------------
@@ -74,7 +74,9 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, states::Syst
     end
 
     for i in field(system, :buses, :keys)
-        con_power_balance(pm, system, i, t)
+        #if field(system, :buses, :bus_type)[i] != 4
+            con_power_balance(pm, system, i, t)
+        #end
     end
 
     for i in field(system, :branches, :keys)
@@ -140,7 +142,7 @@ end
 
 
 ""
-function build_opf!(pm::AbstractDCPowerModel, system::SystemModel, t)
+function _build_opf!(pm::AbstractPowerModel, system::SystemModel, t)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
@@ -427,7 +429,7 @@ function optimize_method!(pm::AbstractPowerModel)
 end
 
 ""
-function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
+function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
     plc = build_sol_values(var(pm, :plc, nw))
     se = build_sol_values(var(pm, :se, nw))
@@ -438,6 +440,38 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
                 get!(plc, i, field(system, :loads, :pd)[i,t])
             end
             states.plc[i,t] = abs.(getindex(plc, i))
+        end
+        for i in field(system, :storages, :keys)
+            if haskey(se, i) == false
+                get!(se, i, 0.0)
+            end
+            states.se[i,t] = getindex(se, i)
+        end
+        #if sum(states.plc[:,t]) > 0  println("t=$(t), PLC = $(sum(states.plc[:,t]))")  end
+    else
+        println("not solved, t=$(t), status=$(termination_status(pm.model))")        
+    end
+    return
+
+end
+
+""
+function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
+
+    plc = build_sol_values(var(pm, :plc, nw))
+    qlc = build_sol_values(var(pm, :qlc, nw))
+    se = build_sol_values(var(pm, :se, nw))
+
+    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
+        for i in field(system, :loads, :keys)
+            if haskey(plc, i) == false
+                get!(plc, i, field(system, :loads, :pd)[i,t])
+            end
+            if haskey(qlc, i) == false
+                get!(qlc, i, field(system, :loads, :pd)[i,t]*field(system, :loads, :pf)[i])
+            end
+            states.plc[i,t] = abs.(getindex(plc, i))
+            states.qlc[i,t] = abs.(getindex(qlc, i))
         end
         for i in field(system, :storages, :keys)
             if haskey(se, i) == false

@@ -8,12 +8,8 @@ Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
 
 Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
 Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
-
 TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
 
-ipopt_optimizer_3
-gurobi_optimizer_1
-juniper_optimizer_1
 #DCMPPowerModel
 #DCPLLPowerModel
 settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode=JuMP.AUTOMATIC, powermodel=OPF.DCPLLPowerModel)
@@ -38,9 +34,9 @@ function run()
     t=1
     system.loads.pd[:,t] = system.loads.pd[:,t]*1.25
     CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
-    #println(Float16.(systemstates.se[t]*100))
-    #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
-    #println(Float16.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
+    #println(Float32.(systemstates.se[t]*100))
+    #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
+    #println(Float32.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
     println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
 
     for t in 2:24
@@ -58,11 +54,11 @@ function run()
         #OPF.build_result!(pm, system, systemstates, t)
         CompositeAdequacy.update!(pm, system, systemstates, t)
         CompositeAdequacy.resolve!(pm, system, systemstates, t)
-        #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
-        #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
-        #println(Float16.(systemstates.se[t]*100))
-        #println(Float16.(systemstates.plc[:,t]*100))
-        #println(Float16.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
+        #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
+        #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
+        #println(Float32.(systemstates.se[t]*100))
+        #println(Float32.(systemstates.plc[:,t]*100))
+        #println(Float32.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
         println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
         #OPF.empty_model!(pm)
     end

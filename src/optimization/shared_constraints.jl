@@ -23,10 +23,10 @@ function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, 
     shunts_nodes = topology(pm, :shunts_nodes)[i]
     storages_nodes = topology(pm, :storages_nodes)[i]
 
-    bus_pd = Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-    bus_qd = Float16.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
-    bus_gs = Float16.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
-    bus_bs = Float16.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
+    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
 
     _con_power_balance(pm, system, i, t, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
 

@@ -111,7 +111,7 @@ end
 function _con_power_balance(
     pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
     generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int},
-    bus_pd::Vector{Float16}, bus_qd::Vector{Float16}, bus_gs::Vector{Float16}, bus_bs::Vector{Float16})
+    bus_pd::Vector{Float32}, bus_qd::Vector{Float32}, bus_gs::Vector{Float32}, bus_bs::Vector{Float32})
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -293,8 +293,8 @@ function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel,
     shunts_nodes = topology(pm, :shunts_nodes)[i]
 
     JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], 
-        sum(pd for pd in Float16.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
-        + sum(gs for gs in Float16.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,t] for k in shunts_nodes]))*1.0^2
+        sum(pd for pd in Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes]))
+        + sum(gs for gs in Float32.([field(system, :shunts, :gs)[k]*field(states, :branches)[k,t] for k in shunts_nodes]))*1.0^2
     )
 
     return
@@ -311,12 +311,14 @@ function update_con_voltage_angle_difference(pm::AbstractDCPowerModel, system::S
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]    
     buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
-    if field(states, :branches)[i,t] ≠ 0
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[i], buspair[3])
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[i], buspair[2])
-    else
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[i], Inf)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[i],-Inf)
+    if !ismissing(buspair)
+        if field(states, :branches)[i,t] ≠ 0
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[i], buspair[3])
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[i], buspair[2])
+        else
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[i], Inf)
+            JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[i],-Inf)
+        end
     end
     return
 

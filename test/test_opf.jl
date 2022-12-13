@@ -24,7 +24,8 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :generators)[8,t] = 0
         CompositeSystems.field(systemstates, :generators)[9,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.update_topology!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc), 0.35; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0.35; atol = 1e-3)
@@ -42,7 +43,7 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :branches)[4,t] = 0
         CompositeSystems.field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.1503; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0.1503; atol = 1e-3)
@@ -61,7 +62,7 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :branches)[5,t] = 0
         CompositeSystems.field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.4; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-3)
@@ -79,7 +80,7 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :branches)[4,t] = 0
         CompositeSystems.field(systemstates, :branches)[8,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+       OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.150; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0.150; atol = 1e-3)
@@ -100,7 +101,7 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :generators)[8,t] = 0
         CompositeSystems.field(systemstates, :generators)[11,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+       OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.35; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0.35; atol = 1e-3)
@@ -120,7 +121,7 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :generators)[2,t] = 0
         CompositeSystems.field(systemstates, :generators)[3,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+       OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.748; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0.748; atol = 1e-3)
@@ -158,7 +159,7 @@ end
         CompositeSystems.field(systemstates, :branches)[12,t] = 0
         CompositeSystems.field(systemstates, :branches)[13,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
 
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
@@ -188,7 +189,7 @@ end
         CompositeSystems.field(systemstates, :branches)[4,t] = 0
         CompositeSystems.field(systemstates, :branches)[10,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
 
         @test isapprox(sum(systemstates.plc[:]), 0.411; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
@@ -218,7 +219,7 @@ end
         CompositeSystems.field(systemstates, :branches)[8,t] = 0
         CompositeSystems.field(systemstates, :branches)[10,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
 
         @test isapprox(sum(systemstates.plc[:]), 1.151; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
@@ -248,7 +249,7 @@ end
         CompositeSystems.field(systemstates, :branches)[19,t] = 0
         CompositeSystems.field(systemstates, :branches)[29,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
 
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
@@ -278,7 +279,7 @@ end
         CompositeSystems.field(systemstates, :branches)[23,t] = 0
         CompositeSystems.field(systemstates, :branches)[29,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 1.65; atol = 1e-2)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-3)
@@ -307,8 +308,8 @@ end
         CompositeSystems.field(systemstates, :branches)[26,t] = 0
         CompositeSystems.field(systemstates, :branches)[28,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
-        @test isapprox(sum(systemstates.plc[:]), 2.125; atol = 1e-3)
+        OPF.solve!(pm, system, systemstates, t)
+        @test isapprox(sum(systemstates.plc[:]), 2.12; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[3,t], 0; atol = 1e-3)
@@ -320,7 +321,7 @@ end
         @test isapprox(systemstates.plc[9,t], 1.75; atol = 1e-3)
         @test isapprox(systemstates.plc[10,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[11,t], 0; atol = 1e-3)
-        @test isapprox(systemstates.plc[12,t], 0.374; atol = 1e-3)
+        @test isapprox(systemstates.plc[12,t], 0.37; atol = 1e-3)
         @test isapprox(systemstates.plc[13,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[14,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-3)
@@ -336,7 +337,7 @@ end
         CompositeSystems.field(systemstates, :branches)[36,t] = 0
         CompositeSystems.field(systemstates, :branches)[37,t] = 0
         systemstates.system[t] = 0
-        CompositeAdequacy.solve!(pm, system, systemstates, t)
+        OPF.solve!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 3.09; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-3)

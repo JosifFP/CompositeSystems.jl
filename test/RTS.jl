@@ -8,7 +8,7 @@ module RTS
     CurrentDir = pwd()
 
     network = Dict{Symbol, Any}(BaseModule.BuildNetwork(RawFile))
-    baseMVA = Float16(getindex(network, :baseMVA))
+    baseMVA = Float32(getindex(network, :baseMVA))
 
     files = readdir(ReliabilityDataDir; join=false)
     cd(ReliabilityDataDir)
@@ -36,7 +36,7 @@ module RTS
         data = BaseModule.container(network, Shunts)
         shunts = Shunts(data[:keys], data[:buses], data[:bs], data[:gs], data[:status])
     else
-        shunts = Shunts(Int[], Int[], Float16[], Float16[], Vector{Bool}())
+        shunts = Shunts(Int[], Int[], Float32[], Float32[], Vector{Bool}())
     end
 
     if has[:generators]
@@ -55,13 +55,13 @@ module RTS
     if has[:storages]
     else
         storages = Storages{8736,1,Hour}(
-            Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-            Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float64[], Float64[], Vector{Bool}())
+            Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
+            Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float64[], Float64[], Vector{Bool}())
     end
 
     generatorstorages = GeneratorStorages{8736,1,Hour}(
-        Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-        Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Float64[], Float64[], Vector{Bool}()
+        Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
+        Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Float64[], Float64[], Vector{Bool}()
     )
 
     cd(CurrentDir)

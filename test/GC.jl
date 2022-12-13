@@ -129,7 +129,7 @@
 #     model::AbstractModel
 #     topology::Topology
 #     var::Variables
-#     sol::Matrix{Float16}
+#     sol::Matrix{Float32}
 
 # end
 
@@ -300,7 +300,7 @@
 #     model::AbstractModel
 #     topology::Topology
 #     var::Variables
-#     sol::Matrix{Float16}
+#     sol::Matrix{Float32}
 
 # end
 
@@ -946,8 +946,8 @@
 #     @inbounds generatorstorages = Array{Bool, 1}(undef, length(system.generatorstorages))
 #     @inbounds generatorstorages_nexttransition = Array{Int, 1}(undef, length(system.generatorstorages))
 
-#     @inbounds storages_energy = Array{Float16, 1}(undef, length(system.storages))
-#     @inbounds generatorstorages_energy = Array{Float16, 1}(undef, length(system.generatorstorages))
+#     @inbounds storages_energy = Array{Float32, 1}(undef, length(system.storages))
+#     @inbounds generatorstorages_energy = Array{Float32, 1}(undef, length(system.generatorstorages))
     
 #     @inbounds sys = [true]
 
@@ -987,7 +987,7 @@
 
 # end
 
-# Peak = Array{Float16, 2}(undef, 1, N)
+# Peak = Array{Float32, 2}(undef, 1, N)
 # for t in 1:N
 #     if iszero((t+23)%24)
 #         for k in t:t+23
@@ -1245,7 +1245,7 @@ end
 #     key_order_series = sortperm(container_key)
 #     container_data = container(network, asset)
 
-#     tmp_cost = Dict(Int(dict_core[:key][i]) => Float16(dict_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dict_core[:key]))
+#     tmp_cost = Dict(Int(dict_core[:key][i]) => Float32(dict_core[Symbol("customerloss[USD/MWh]")][i]) for i in eachindex(dict_core[:key]))
 #     for (i,load) in network[:load]
 #         get!(load, "cost", tmp_cost[i])
 #     end
@@ -1261,14 +1261,14 @@ end
 #             if in(container_key).(i) == false
 #                 setindex!(dict_timeseries, [container_data[:pd][i] for k in 1:N]*baseMVA, i)
 #             end
-#             #get!(dict_timeseries_qd, i, Float16.(dict_timeseries_pd[i]*powerfactor))
+#             #get!(dict_timeseries_qd, i, Float32.(dict_timeseries_pd[i]*powerfactor))
 #         end
 #         container_key = [i for i in keys(dict_timeseries)]
 #         key_order_series = sortperm(container_key)
 #         @assert length(container_key) == length(container_data[:keys])
 #     end
 
-#     container_timeseries = [Float16.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
+#     container_timeseries = [Float32.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
 #     container_data[:pd] = reduce(vcat,transpose.(container_timeseries[key_order_series]))
 
 #     return container_data
@@ -1319,7 +1319,7 @@ end
 #         @assert length(container_key) == length(container_data[:keys])
 #     end
 
-#     container_timeseries = [Float16.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
+#     container_timeseries = [Float32.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
 
 #     container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
 #     container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))

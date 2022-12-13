@@ -55,9 +55,8 @@ function assess(
         end
 
         for t in 2:N
-            #println("t=$(t)")
+            #println("t=$(t), branch=$(systemstates.branches[:,t]), gens=$(systemstates.generators[:,t])")
             update!(pm, system, systemstates, t)
-            resolve!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
@@ -73,6 +72,7 @@ end
 ""
 function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
 
+    initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
     initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
     initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
     initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
@@ -104,42 +104,14 @@ end
 
 ""
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-        
-    #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
-    #update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs)) 
-    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))
-
-    #if all(view(field(states, :branches),:,t)) == false 
-        #simplify!(system, states, pm.topology, t)
-    #end
-    # update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
-    return
-
-end
-
-function resolve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
+    
+    update_topology!(pm, system, states, t)
     update_method!(pm, system, states, t)
     optimize_method!(pm)
     build_result!(pm, system, states, t)
-    
     return
 
 end
-
-""
-function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    build_method!(pm, system, states, t)
-    optimize_method!(pm)
-    build_result!(pm, system, states, t)
-    return
-
-end
-
-
-#update_energy!(states.stors_energy, system.storages, t)
-#update_energy!(states.genstors_energy, system.generatorstorages, t)
 
 #include("result_report.jl")
 include("result_shortfall.jl")

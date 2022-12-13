@@ -182,7 +182,7 @@ struct ShortfallSamplesResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: Abstr
 
     loads::Vector{Int}
     timestamps::StepRange{ZonedDateTime,T}
-    shortfall::Array{Float16,3} # r x t x s
+    shortfall::Array{Float32,3} # r x t x s
 
 end
 

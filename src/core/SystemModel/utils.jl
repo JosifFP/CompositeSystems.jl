@@ -29,9 +29,9 @@ bus_fields = [
     ("zone", Int),
     ("bus_type", Int),
     ("bus_i", Int),
-    ("vmax", Float16),
-    ("vmin", Float16),
-    ("base_kv", Float16),
+    ("vmax", Float32),
+    ("vmin", Float32),
+    ("base_kv", Float32),
     ("va", Float32),
     ("vm", Float32)
 ]
@@ -39,13 +39,13 @@ bus_fields = [
 const gen_fields = [
     ("index", Int),
     ("gen_bus", Int),
-    ("pg", Float16), 
-    ("qg", Float16),
-    ("vg", Float16),
-    ("pmax", Float16), 
-    ("pmin", Float16),
-    ("qmax", Float16), 
-    ("qmin", Float16),
+    ("pg", Float32), 
+    ("qg", Float32),
+    ("vg", Float32),
+    ("pmax", Float32), 
+    ("pmin", Float32),
+    ("qmax", Float32), 
+    ("qmin", Float32),
     ("mbase", Int),
     ("cost", Vector{Any}),
     ("λ", Float64),
@@ -57,19 +57,19 @@ const branch_fields = [
     ("index", Int),
     ("f_bus", Int),
     ("t_bus", Int),
-    ("rate_a", Float16),
-    ("rate_b", Float16),
-    ("br_r", Float16), 
-    ("br_x", Float16),
-    ("b_fr", Float16), 
-    ("b_to", Float16),
-    ("g_fr", Float16), 
-    ("g_to", Float16),
-    ("shift", Float16),
-    ("angmin", Float16), 
-    ("angmax", Float16),
+    ("rate_a", Float32),
+    ("rate_b", Float32),
+    ("br_r", Float32), 
+    ("br_x", Float32),
+    ("b_fr", Float32), 
+    ("b_to", Float32),
+    ("g_fr", Float32), 
+    ("g_to", Float32),
+    ("shift", Float32),
+    ("angmin", Float32), 
+    ("angmax", Float32),
     ("transformer", Bool),
-    ("tap", Float16),
+    ("tap", Float32),
     ("λ", Float64),
     ("μ", Float64),
     ("br_status", Bool)
@@ -78,39 +78,39 @@ const branch_fields = [
 const shunt_fields = [
     ("index", Int),
     ("shunt_bus", Int),
-    ("bs", Float16),
-    ("gs", Float16),
+    ("bs", Float32),
+    ("gs", Float32),
     ("status", Bool)
 ]
 
 const load_fields = [
     ("index", Int),
     ("load_bus", Int),
-    ("pd", Float16),
-    ("qd", Float16),
-    ("pf", Float16),
-    ("cost", Float16),
+    ("pd", Float32),
+    ("qd", Float32),
+    ("pf", Float32),
+    ("cost", Float32),
     ("status", Bool)
 ]
 
 const storage_fields = [
     ("index", Int),
     ("storage_bus", Int),
-    ("ps", Float16),
-    ("qs", Float16),
-    ("energy", Float16),
-    ("energy_rating", Float16),
-    ("charge_rating", Float16),
-    ("discharge_rating", Float16),
-    ("charge_efficiency", Float16),
-    ("discharge_efficiency", Float16),    
-    ("thermal_rating", Float16),
-    ("qmax", Float16),
-    ("qmin", Float16),
-    ("r", Float16),
-    ("x", Float16),
-    ("p_loss", Float16),
-    ("q_loss", Float16),
+    ("ps", Float32),
+    ("qs", Float32),
+    ("energy", Float32),
+    ("energy_rating", Float32),
+    ("charge_rating", Float32),
+    ("discharge_rating", Float32),
+    ("charge_efficiency", Float32),
+    ("discharge_efficiency", Float32),    
+    ("thermal_rating", Float32),
+    ("qmax", Float32),
+    ("qmin", Float32),
+    ("r", Float32),
+    ("x", Float32),
+    ("p_loss", Float32),
+    ("q_loss", Float32),
     ("λ", Float64),
     ("μ", Float64),
     ("status", Bool)
@@ -119,12 +119,12 @@ const storage_fields = [
 const CompositeSystems_fields = [
     ("λ", Float64),
     ("μ", Float64),
-    ("cost", Float16)
+    ("cost", Float32)
 ]
 
 const r_gen = [
     ("bus", Int),
-    ("pmax", Float16),
+    ("pmax", Float32),
     ("λ", Float64),
     ("mttr", Float64),
     ("μ", Float64),
@@ -133,7 +133,7 @@ const r_gen = [
 
 const r_storage = [
     ("bus", Int),
-    ("energy_rating", Float16),
+    ("energy_rating", Float32),
     ("λ", Float64),
     ("mttr", Float64),
     ("μ", Float64),
@@ -151,7 +151,7 @@ const r_branch = [
 
 const loadcost = [
     ("bus_i", Int),
-    ("cost", Float16),
+    ("cost", Float32),
     ("index", Int)
 ]
 
@@ -265,7 +265,7 @@ end
 
 
 "Returns network data container with reliability_data and timeseries_data merged"
-function merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float16}}, SP::StaticParameters{N}) where {N}
+function merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float32}}, SP::StaticParameters{N}) where {N}
 
     get!(network, :timeseries_load, timeseries_data)
     return _merge_CompositeSystems_data!(network, reliability_data, SP)
@@ -337,7 +337,7 @@ end
 "Extracts time-series load data from excel file"
 function extract_timeseriesload(file::String)
 
-    dict_timeseries = Dict{Int, Vector{Float16}}()
+    dict_timeseries = Dict{Int, Vector{Float32}}()
     dict_core = Dict{Symbol, Any}()
     
     XLSX.openxlsx(file, enable_cache=false) do io
@@ -354,7 +354,7 @@ function extract_timeseriesload(file::String)
                 dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
                 for i in eachindex(dtable.column_labels)
                     if i > 1
-                        get!(dict_timeseries, parse(Int, String(dtable.column_labels[i])), Float16.(dtable.data[i]))
+                        get!(dict_timeseries, parse(Int, String(dtable.column_labels[i])), Float32.(dtable.data[i]))
                     end
                 end
             end
@@ -373,7 +373,7 @@ function extract_timeseriesload(file::String)
 end
 
 ""
-function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vector{Float16}}, baseMVA::Float16)
+function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vector{Float32}}, baseMVA::Float32)
 
     if length(index_keys) ≠ length(collect(keys(timeseries_load)))
         @error("Time-series Load data file does not match length of load in network data file")
@@ -381,8 +381,8 @@ function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vecto
 
     key_order_series = sortperm(collect(keys(timeseries_load)))
 
-    container_timeseries = [Float16.(timeseries_load[i]/baseMVA) for i in keys(timeseries_load)]
-    array::Array{Float16} = reduce(vcat,transpose.(container_timeseries[key_order_series]))
+    container_timeseries = [Float32.(timeseries_load[i]/baseMVA) for i in keys(timeseries_load)]
+    array::Array{Float32} = reduce(vcat,transpose.(container_timeseries[key_order_series]))
 
     return array
 
@@ -395,9 +395,9 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert haskey(ref[:bus],k) === true
         @assert Int.(ref[:bus][k]["bus_i"]) == buses.bus_i[k]
         @assert Int.(ref[:bus][k]["bus_type"]) == buses.bus_type[k]
-        @assert Float16.(ref[:bus][k]["vmax"]) == buses.vmax[k]
-        @assert Float16.(ref[:bus][k]["vmin"]) == buses.vmin[k]
-        @assert Float16.(ref[:bus][k]["base_kv"]) == buses.base_kv[k]
+        @assert Float32.(ref[:bus][k]["vmax"]) == buses.vmax[k]
+        @assert Float32.(ref[:bus][k]["vmin"]) == buses.vmin[k]
+        @assert Float32.(ref[:bus][k]["base_kv"]) == buses.base_kv[k]
         @assert Float32.(ref[:bus][k]["va"]) == buses.va[k]
         @assert Float32.(ref[:bus][k]["vm"]) == buses.vm[k]
     end
@@ -406,12 +406,12 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert haskey(ref[:gen],k) == true
         @assert Int.(ref[:gen][k]["index"]) == generators.keys[k]
         @assert Int.(ref[:gen][k]["gen_bus"]) == generators.buses[k]
-        @assert Float16.(ref[:gen][k]["qg"]) == generators.qg[k]
-        @assert Float16.(ref[:gen][k]["vg"]) == generators.vg[k]
-        @assert Float16.(ref[:gen][k]["pmax"]) == generators.pmax[k]
-        @assert Float16.(ref[:gen][k]["pmin"]) == generators.pmin[k]
-        @assert Float16.(ref[:gen][k]["qmax"]) == generators.qmax[k]
-        @assert Float16.(ref[:gen][k]["qmin"]) == generators.qmin[k]
+        @assert Float32.(ref[:gen][k]["qg"]) == generators.qg[k]
+        @assert Float32.(ref[:gen][k]["vg"]) == generators.vg[k]
+        @assert Float32.(ref[:gen][k]["pmax"]) == generators.pmax[k]
+        @assert Float32.(ref[:gen][k]["pmin"]) == generators.pmin[k]
+        @assert Float32.(ref[:gen][k]["qmax"]) == generators.qmax[k]
+        @assert Float32.(ref[:gen][k]["qmin"]) == generators.qmin[k]
         @assert Int.(ref[:gen][k]["mbase"]) == generators.mbase[k]
         @assert Bool.(ref[:gen][k]["gen_status"]) == generators.status[k]
     end
@@ -420,7 +420,7 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert haskey(ref[:load],k) == true
         @assert Int.(ref[:load][k]["index"]) == loads.keys[k]
         @assert Int.(ref[:load][k]["load_bus"]) == loads.buses[k]
-        @assert Float16.(ref[:load][k]["qd"]) == loads.qd[k]
+        @assert Float32.(ref[:load][k]["qd"]) == loads.qd[k]
         @assert Bool.(ref[:load][k]["status"]) == loads.status[k]
     end
     
@@ -429,19 +429,19 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert Int.(ref[:branch][k]["index"]) == branches.keys[k]
         @assert Int.(ref[:branch][k]["f_bus"]) == branches.f_bus[k]
         @assert Int.(ref[:branch][k]["t_bus"]) == branches.t_bus[k]
-        @assert Float16.(ref[:branch][k]["rate_a"]) == branches.rate_a[k]
-        @assert Float16.(ref[:branch][k]["rate_b"]) == branches.rate_b[k]
-        @assert Float16.(ref[:branch][k]["br_r"]) == branches.r[k]
-        @assert Float16.(ref[:branch][k]["br_x"]) == branches.x[k]
-        @assert Float16.(ref[:branch][k]["b_fr"]) == branches.b_fr[k]
-        @assert Float16.(ref[:branch][k]["b_to"]) == branches.b_to[k]
-        @assert Float16.(ref[:branch][k]["g_fr"]) == branches.g_fr[k]
-        @assert Float16.(ref[:branch][k]["g_to"]) == branches.g_to[k]
-        @assert Float16.(ref[:branch][k]["shift"]) == branches.shift[k]
-        @assert Float16.(ref[:branch][k]["angmin"]) == branches.angmin[k]
-        @assert Float16.(ref[:branch][k]["angmax"]) == branches.angmax[k]
+        @assert Float32.(ref[:branch][k]["rate_a"]) == branches.rate_a[k]
+        @assert Float32.(ref[:branch][k]["rate_b"]) == branches.rate_b[k]
+        @assert Float32.(ref[:branch][k]["br_r"]) == branches.r[k]
+        @assert Float32.(ref[:branch][k]["br_x"]) == branches.x[k]
+        @assert Float32.(ref[:branch][k]["b_fr"]) == branches.b_fr[k]
+        @assert Float32.(ref[:branch][k]["b_to"]) == branches.b_to[k]
+        @assert Float32.(ref[:branch][k]["g_fr"]) == branches.g_fr[k]
+        @assert Float32.(ref[:branch][k]["g_to"]) == branches.g_to[k]
+        @assert Float32.(ref[:branch][k]["shift"]) == branches.shift[k]
+        @assert Float32.(ref[:branch][k]["angmin"]) == branches.angmin[k]
+        @assert Float32.(ref[:branch][k]["angmax"]) == branches.angmax[k]
         @assert Bool.(ref[:branch][k]["transformer"]) == branches.transformer[k]
-        @assert Float16.(ref[:branch][k]["tap"]) == branches.tap[k]
+        @assert Float32.(ref[:branch][k]["tap"]) == branches.tap[k]
         @assert Bool.(ref[:branch][k]["br_status"]) == branches.status[k]
     end
     
@@ -449,8 +449,8 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert haskey(ref[:shunt],k) == true
         @assert Int.(ref[:shunt][k]["index"]) == shunts.keys[k]
         @assert Int.(ref[:shunt][k]["shunt_bus"]) == shunts.buses[k]
-        @assert Float16.(ref[:shunt][k]["bs"]) == shunts.bs[k]
-        @assert Float16.(ref[:shunt][k]["gs"]) == shunts.gs[k]
+        @assert Float32.(ref[:shunt][k]["bs"]) == shunts.bs[k]
+        @assert Float32.(ref[:shunt][k]["gs"]) == shunts.gs[k]
         @assert Bool.(ref[:shunt][k]["status"]) == shunts.status[k]
     end
 

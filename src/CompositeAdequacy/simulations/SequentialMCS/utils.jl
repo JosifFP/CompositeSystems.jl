@@ -23,6 +23,24 @@ function initialize_availability!(
 end
 
 ""
+function initialize_availability!(
+    rng::AbstractRNG,
+    availability::Matrix{Int},
+    asset::Buses, N::Int)
+    
+    bus_type = field(asset, :bus_type)
+
+    for j in 1:N
+        for i in eachindex(asset.keys)
+            availability[i,j] = bus_type[i]
+        end
+    end
+
+    return availability
+    
+end
+
+""
 function cycles!(
     sequence::AbstractArray{Bool}, rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
 
@@ -61,7 +79,7 @@ function initialize_availability_system!(states::SystemStates, gens::Generators,
 
     @inbounds for t in 1:N
 
-        total_gen::Float16 = gens_sum(field(gens, :pmax), filter(k -> field(states, :generators)[k,t], field(gens, :keys)))
+        total_gen::Float32 = gens_sum(field(gens, :pmax), filter(k -> field(states, :generators)[k,t], field(gens, :keys)))
 
         if all(view(field(states, :branches),:,t)) == false
             states.system[t] = false
@@ -78,7 +96,7 @@ function initialize_availability_system!(states::SystemStates, gens::Generators,
 end
 
 ""
-function gens_sum(v_pmax::Vector{Float16}, active_keys::Vector{Int})
+function gens_sum(v_pmax::Vector{Float32}, active_keys::Vector{Int})
     return sum(v_pmax[i] for i in active_keys)
 end
 

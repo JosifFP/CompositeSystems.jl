@@ -19,7 +19,7 @@ struct Topology
     arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Union{Missing,Vector{Float16}}}
+    buspairs::Dict{Tuple{Int, Int}, Union{Missing,Vector{Float32}}}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -273,6 +273,55 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
     end
 
+    return
+
+end
+
+""
+function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    build_method!(pm, system, states, t)
+    optimize_method!(pm)
+    build_result!(pm, system, states, t)
+    return
+end
+
+""
+function empty_model!(pm::AbstractDCPowerModel)
+    JuMP.empty!(pm.model)
+    MOIU.reset_optimizer(pm.model)
+    return
+end
+
+""
+function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Settings, s)
+
+    if iszero(s%10) && settings.optimizer == Ipopt
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+    elseif iszero(s%50) && settings.optimizer == Gurobi
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
+
+    fill!(field(states, :plc), 0.0)
+    fill!(field(states, :qlc), 0.0)
+    fill!(field(states, :se), 0.0)
+    return
+
+end
+
+""
+function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
+    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+    
+    if all(view(field(states, :branches),:,t)) == false
+        update_idxs!(filter(i->states.generators[i,t], field(system, :generators, :keys)), topology(pm, :generators_idxs))
+        update_idxs!(filter(i->states.shunts[i,t], field(system, :shunts, :keys)), topology(pm, :shunts_idxs)) 
+        simplify!(system, states, pm.topology, t)
+    end
+    #update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
     return
 
 end

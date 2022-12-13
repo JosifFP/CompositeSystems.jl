@@ -64,7 +64,7 @@ function accumulator(
     unservedload_busperiod = [meanvariance() for _ in 1:nloads, _ in 1:N]
 
     unservedload_total_currentsim = 0
-    unservedload_bus_currentsim = zeros(Float16, nloads)
+    unservedload_bus_currentsim = zeros(Float32, nloads)
 
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,

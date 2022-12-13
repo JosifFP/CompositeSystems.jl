@@ -26,8 +26,7 @@
 
         #functions
         PowerModel, build_method!, build_method_stor!, update_method!, build_result!, optimize_method!, field,
-        var, con, topology, update_idxs!,  update_arcs!, add_con_container!, add_var_container!,
-        add_sol_container!, reset_model!, initialize_pm_containers!, JumpModel, simplify!,
+        var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, JumpModel,
 
         #optimizationcontainers
         Topology,

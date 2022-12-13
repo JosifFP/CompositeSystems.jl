@@ -13,6 +13,7 @@ struct SystemStates <: AbstractState
     se::Matrix{Float64}
     gse::Matrix{Float64}
     plc::Matrix{Float64}
+    qlc::Matrix{Float64}
     system::Vector{Bool}
     #loads_nexttransition::Vector{Int}
     #branches_nexttransition::Vector{Int}
@@ -28,7 +29,7 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     bus_type = field(system, :buses, :bus_type)
     buses = Array{Int, 2}(undef, length(system.buses), N)
 
-    @inbounds for j in 1:N
+    for j in 1:N
         for i in eachindex(system.buses.keys)
             buses[i,j] = bus_type[i]
         end
@@ -48,21 +49,19 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     #generatorstorages_nexttransition = Int[]
 
     se = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
-
     gse = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
-
     plc = Array{Float64, 2}(undef, length(system.loads), N)
-    
+    qlc = Array{Float64, 2}(undef, length(system.loads), N)
     sys = Array{Bool, 1}(undef, N)
 
     fill!(loads, 1)
     fill!(se, 0)
     fill!(gse, 0)
     fill!(plc, 0)
+    fill!(qlc, 0)
     fill!(sys, 1)
 
     if available==true
-        fill!(buses, 1)
         fill!(loads, 1)
         fill!(branches, 1)
         fill!(shunts, 1)
@@ -71,6 +70,6 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
         fill!(generatorstorages, 1)
     end
 
-    return SystemStates(buses, loads, branches, shunts, generators, storages, generatorstorages, se, gse, plc, sys)
+    return SystemStates(buses, loads, branches, shunts, generators, storages, generatorstorages, se, gse, plc, qlc, sys)
     
 end

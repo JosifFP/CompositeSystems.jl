@@ -26,7 +26,7 @@ function SystemModel(RawFile::String, ReliabilityFile::String, TimeSeriesFile::S
 end
 
 ""
-function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::Dict{Int, Vector{Float16}}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
+function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::Dict{Int, Vector{Float32}}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
 
     #load network data
     network = BuildNetwork(RawFile)
@@ -40,7 +40,7 @@ end
 ""
 function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
 
-    baseMVA::Float16 = Float16(network[:baseMVA])
+    baseMVA::Float32 = Float32(network[:baseMVA])
     network_bus::Dict{Int, Any} = network[:bus]
     network_branch::Dict{Int, Any} = network[:branch]
     network_shunt::Dict{Int, Any} = network[:shunt]
@@ -102,7 +102,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["status"]
         )
     else
-        shunts = Shunts(Int[], Int[], Float16[], Float16[], Vector{Bool}())
+        shunts = Shunts(Int[], Int[], Float32[], Float32[], Vector{Bool}())
     end
 
     if has[:generators]
@@ -142,7 +142,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             )
 
         else
-            timeseries_load::Dict{Int64, Vector{Float16}} = network[:timeseries_load]
+            timeseries_load::Dict{Int64, Vector{Float32}} = network[:timeseries_load]
             timeseries_pd = convert_array(data["index"], timeseries_load, baseMVA)
             loads = Loads{N,L,T}(
                 data["index"], 
@@ -184,8 +184,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
     else
         storages = Storages{N,L,T}(
-            Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-            Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float64[], Float64[], Vector{Bool}())
+            Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
+            Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float64[], Float64[], Vector{Bool}())
     end
     
     if has[:dclines]
@@ -198,8 +198,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
 
     generatorstorages = GeneratorStorages{N,L,T}(
-        Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-        Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Float64[], Float64[], Vector{Bool}())
+        Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
+        Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Float64[], Float64[], Vector{Bool}())
 
 
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
