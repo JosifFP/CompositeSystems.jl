@@ -39,7 +39,7 @@ timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
 system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
 
-method = SequentialMCS(samples=250, seed=100, threaded=true)
+method = SequentialMCS(samples=2000, seed=100, threaded=true)
 #method = SequentialMCS(samples=250, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
