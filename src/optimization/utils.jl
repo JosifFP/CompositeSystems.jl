@@ -407,7 +407,7 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
                     states.buses[i,t] = 4
                     changed = true
                     #println("buses=$(states.buses[:,t]), incident_active_edge")
-                    @info("deactivating bus $(i) due to dangling bus without generation, load or storage")
+                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
                 end
             end
         end
