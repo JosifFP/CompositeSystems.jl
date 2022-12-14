@@ -2,7 +2,7 @@ import CompositeSystems
 import CompositeSystems.BaseModule
 import CompositeSystems.OPF
 import CompositeSystems.CompositeAdequacy
-import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP,HiGHS
+import PowerModels, Ipopt, BenchmarkTools, JuMP
 import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime

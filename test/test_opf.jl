@@ -12,8 +12,8 @@ settings = CompositeSystems.Settings(
     system = BaseModule.SystemModel(RawFile, ReliabilityFile)
 
     CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
-    model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = OPF.PowerModel(settings.powermodel, OPF.Topology(system), model)
+    model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
+    pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
     OPF.initialize_pm_containers!(pm, system; timeseries=false)
     t=1
 
@@ -122,9 +122,9 @@ settings = CompositeSystems.Settings(
         CompositeSystems.field(systemstates, :generators)[3,t] = 0
         systemstates.system[t] = 0
        OPF.solve!(pm, system, systemstates, t)
-        @test isapprox(sum(systemstates.plc[:]), 0.748; atol = 1e-3)
+        @test isapprox(sum(systemstates.plc[:]), 0.7045; atol = 1e-3)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-3)
-        @test isapprox(systemstates.plc[2,t], 0.748; atol = 1e-3)
+        @test isapprox(systemstates.plc[2,t], 0.7045; atol = 1e-3)
         @test isapprox(systemstates.plc[3,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-3)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-3)
@@ -149,8 +149,8 @@ end
         7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6
     ]
     
-    model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = OPF.PowerModel(settings.powermodel, OPF.Topology(system), model)
+    model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
+    pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
     OPF.initialize_pm_containers!(pm, system; timeseries=false)
     t=1
     

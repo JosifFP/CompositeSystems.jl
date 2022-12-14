@@ -7,7 +7,7 @@ module RTS
     BaseModule.silence()
     CurrentDir = pwd()
 
-    network = Dict{Symbol, Any}(BaseModule.BuildNetwork(RawFile))
+    network = Dict{Symbol, Any}(BaseModule.build_network(RawFile))
     baseMVA = Float32(getindex(network, :baseMVA))
 
     files = readdir(ReliabilityDataDir; join=false)

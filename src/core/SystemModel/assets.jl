@@ -190,11 +190,12 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     qd::Vector{Float32} # Reactive power in per unit
     pf::Vector{Float32} # Power factor
     cost::Vector{Float32}
+    firm_load::Vector{Float32} #Percentage of the total load designated as firm load. The difference corresponds to curtailable load that is interrupted first with no cost.
     status::Vector{Bool}
 
     function Loads{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float32}, 
-        qd::Vector{Float32}, pf::Vector{Float32}, cost::Vector{Float32}, status::Vector{Bool}
+        keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float32}, qd::Vector{Float32}, 
+        pf::Vector{Float32}, cost::Vector{Float32}, firm_load::Vector{Float32}, status::Vector{Bool}
         ) where {N,L,T}
 
         nloads = length(keys)
@@ -205,9 +206,10 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert all(pd .>= 0)
         @assert length(pf) == (nloads)
         @assert length(cost) == (nloads)
+        @assert length(firm_load) == (nloads)
         @assert length(status) == (nloads)
 
-        new{N,L,T}(Int.(keys), Int.(buses), pd, Float32.(qd), Float32.(pf), Float32.(cost), Bool.(status))
+        new{N,L,T}(Int.(keys), Int.(buses), pd, Float32.(qd), Float32.(pf), Float32.(cost), Float32.(firm_load), Bool.(status))
     end
 
 end
@@ -219,6 +221,7 @@ Base.:(==)(x::T, y::T) where {T <: Loads} =
     x.qd == y.qd &&
     x.pf == y.pf &&
     x.cost == y.cost &&
+    x.firm_load == y.firm_load &&
     x.status == y.status
 #
 
@@ -517,4 +520,35 @@ Base.:(==)(x::T, y::T) where {T <: Shunts} =
     x.bs == y.bs &&
     x.gs == y.gs &&
     x.status == y.status
+#
+
+struct Interfaces <: AbstractAssets #Circuits on a common right-of-way or a common tower.
+
+    keys::Vector{Int}
+    f_bus::Vector{Int} #buses_from
+    t_bus::Vector{Int} #buses_to
+    λ::Vector{Float64} #Failure rate in failures per year
+    μ::Vector{Float64} #Repair rate in hours per year
+
+    function Interfaces(
+        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, λ::Vector{Float64}, μ::Vector{Float64}
+    )
+
+        ninterfaces = length(keys)
+        @assert allunique(keys)
+        @assert length(f_bus) == (ninterfaces)
+        @assert length(t_bus) == (ninterfaces)
+        @assert length(λ) == (ninterfaces)
+        @assert length(μ) == (ninterfaces)
+        new(Int.(keys), Int.(f_bus), Int.(t_bus), Float64.(λ), Float64.(μ))
+    end
+
+end
+
+Base.:(==)(x::T, y::T) where {T <: Interfaces} =
+    x.keys == y.keys &&
+    x.f_bus == y.f_bus &&
+    x.t_bus == y.t_bus &&
+    x.λ == y.λ &&
+    x.μ == y.μ
 #

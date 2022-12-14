@@ -23,7 +23,7 @@ const pm_component_status_inactive = Dict(
 )
 
 ""
-function BuildNetwork(RawFile::String; replace=false, export_file=false, export_filetype::String="")
+function build_network(RawFile::String; replace=false, export_file=false, export_filetype::String="")
     network = open(RawFile) do io
 
         pm_data = parse_model(io, split(lowercase(RawFile), '.')[end])
@@ -98,11 +98,11 @@ following basic network model requirements.
 function DataSanityCheck(pm_data::Dict{String, <:Any})
 
     if InfrastructureModels.ismultiinfrastructure(pm_data)
-        @error("BuildNetwork function does not support multiinfrastructure data")
+        @error("build_network function does not support multiinfrastructure data")
     end
 
     if InfrastructureModels.ismultinetwork(pm_data)
-        @error("BuildNetwork function does not support multinetwork data")
+        @error("build_network function does not support multinetwork data")
     end
 
     # make a copy of data so that modifications do not change the input data

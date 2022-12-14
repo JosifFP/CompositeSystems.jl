@@ -35,12 +35,12 @@ function assess(
 ) where {N}
 
     systemstates = SystemStates(system)
-    model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = PowerModel(settings.powermodel, Topology(system), model)
+    model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
+    pm = abstract_model(settings.powermodel, Topology(system), model)
 
     #model for non-contingency states
-    #ncmodel = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    #ncpm = PowerModel(settings.powermodel, Topology(system), ncmodel)
+    #ncmodel = jump_model(settings.modelmode, deepcopy(settings.optimizer))
+    #ncpm = abstract_model(settings.powermodel, Topology(system), ncmodel)
 
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE

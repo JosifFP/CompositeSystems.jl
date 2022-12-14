@@ -4,7 +4,7 @@ Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on dis
 function SystemModel(RawFile::String, ReliabilityFile::String)
 
     #load network data
-    network = BuildNetwork(RawFile)
+    network = build_network(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
     SParametrics = StaticParameters{1,1,Hour}()
     get!(network, :timeseries_load, "")
@@ -17,7 +17,7 @@ end
 function SystemModel(RawFile::String, ReliabilityFile::String, TimeSeriesFile::String)
 
     #load network data
-    network = BuildNetwork(RawFile)
+    network = build_network(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
     timeseries_data, SParametrics = extract_timeseriesload(TimeSeriesFile)
     merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
@@ -29,7 +29,7 @@ end
 function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::Dict{Int, Vector{Float32}}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
 
     #load network data
-    network = BuildNetwork(RawFile)
+    network = build_network(RawFile)
     reliability_data = parse_reliability_data(ReliabilityFile)
     merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
     return _SystemModel(network, SParametrics)
@@ -126,11 +126,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     end
     
     if has[:loads]
-        
         data = container(network_load, load_fields)
-
         if isempty(network[:timeseries_load])
-
             loads = Loads{N,L,T}(
                 data["index"], 
                 data["load_bus"], 

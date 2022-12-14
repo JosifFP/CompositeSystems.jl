@@ -8,6 +8,7 @@ struct SystemModel{N,L,T<:Period}
     buses::Buses
     branches::Branches
     shunts::Shunts
+    interfaces::Interfaces
     ref_buses::Vector{Int}
     baseMVA::Float32
     timestamps::StepRange{ZonedDateTime,T}
@@ -20,6 +21,7 @@ struct SystemModel{N,L,T<:Period}
         buses::Buses,
         branches::Branches,
         shunts::Shunts,
+        interfaces::Interfaces,
         ref_buses::Vector{Int},
         baseMVA::Float32,
         timestamps::StepRange{ZonedDateTime,T}
@@ -30,7 +32,7 @@ struct SystemModel{N,L,T<:Period}
         @assert length(timestamps) == N
     end
 
-    new{N,L,T}(loads, generators, storages, generatorstorages, buses, branches, shunts, ref_buses, baseMVA, timestamps)
+    new{N,L,T}(loads, generators, storages, generatorstorages, buses, branches, shunts, interfaces, ref_buses, baseMVA, timestamps)
     end
 
 end
@@ -43,6 +45,7 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.buses == y.buses &&
     x.branches == y.branches &&
     x.shunts == y.shunts &&
+    x.interfaces == y.interfaces &&
     x.ref_buses == y.ref_buses &&
     x.baseMVA == y.baseMVA &&
     x.timestamps == y.timestamps

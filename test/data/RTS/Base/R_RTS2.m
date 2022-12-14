@@ -6,7 +6,7 @@ mpc.version = '2';
 
 %% generator reliability data
 %	bus	pmax	λ		mttr
-mpc.reliability_gen = [
+mpc.gen = [
 	1	20		19.47	50;
 	1	20		19.47	50;
 	1	76		4.47	40;
@@ -44,7 +44,7 @@ mpc.reliability_gen = [
 
 %% branch reliability data
 %    f_bus	t_bus	λ	mttr    
-mpc.reliability_branch = [
+mpc.branch = [
 	1	2	0.24	16;
 	1	3	0.51	10;
 	1	5	0.33	10;

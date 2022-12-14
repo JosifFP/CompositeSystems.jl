@@ -161,27 +161,27 @@ struct Settings
 end
 
 ""
-function JumpModel(modelmode::JuMP.ModelMode, optimizer)
+function jump_model(modelmode::JuMP.ModelMode, optimizer)
 
     if modelmode == JuMP.AUTOMATIC
-        jumpmodel = Model(optimizer; add_bridges = false)
+        jump_model = Model(optimizer; add_bridges = false)
     elseif modelmode == JuMP.DIRECT
         @error("Mode not supported")
-        jumpmodel = direct_model(optimizer)
+        jump_model = direct_model(optimizer)
     else
         @warn("Manual Mode not supported")
     end
 
-    JuMP.set_string_names_on_creation(jumpmodel, false)
-    JuMP.set_silent(jumpmodel)
+    JuMP.set_string_names_on_creation(jump_model, false)
+    JuMP.set_silent(jump_model)
 
-    return jumpmodel
+    return jump_model
     
 end
 
 
 "Constructor for an AbstractPowerModel modeling object"
-function PowerModel(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractPowerModel}
+function abstract_model(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractPowerModel}
     
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()

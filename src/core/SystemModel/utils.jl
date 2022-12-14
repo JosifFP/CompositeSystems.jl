@@ -127,7 +127,7 @@ const r_gen = [
     ("pmax", Float32),
     ("λ", Float64),
     ("mttr", Float64),
-    ("μ", Float64),
+    #("μ", Float64),
     ("index", Int)
 ]
 
@@ -136,7 +136,7 @@ const r_storage = [
     ("energy_rating", Float32),
     ("λ", Float64),
     ("mttr", Float64),
-    ("μ", Float64),
+    #("μ", Float64),
     ("index", Int)
 ]
 
@@ -145,13 +145,17 @@ const r_branch = [
     ("t_bus", Int),
     ("λ", Float64),
     ("mttr", Float64),
-    ("μ", Float64),
+    #("μ", Float64),
+    ("common_mode", Int),
+    ("common_λ", Float64),
+    ("common_mttr", Float64),
     ("index", Int)
 ]
 
-const loadcost = [
+const r_load = [
     ("bus_i", Int),
     ("cost", Float32),
+    ("firm_load", Float32),
     ("index", Int)
 ]
 
@@ -198,16 +202,16 @@ function _parse_reliability_data(matlab_data::Dict{String, Any})
 
     case = Dict{String,Any}()
 
-    if haskey(matlab_data, "mpc.reliability_gen")
+    if haskey(matlab_data, "mpc.gen")
         gens = []
-        for (i, gen_row) in enumerate(matlab_data["mpc.reliability_gen"])
+        for (i, gen_row) in enumerate(matlab_data["mpc.gen"])
             gen_data = InfrastructureModels.row_to_typed_dict(gen_row, r_gen)
             gen_data["index"] = i
             push!(gens, gen_data)
         end
-        case["reliability_gen"] = gens
+        case["gen"] = gens
     else
-        @error(string("no reliability_gen data found in matpower file.  The file seems to be missing \"mpc.reliability_gen = [...];\""))
+        @error(string("no gen data found in matpower file.  The file seems to be missing \"mpc.gen = [...];\""))
     end
 
     if haskey(matlab_data, "mpc.reliability_storage")
@@ -220,27 +224,27 @@ function _parse_reliability_data(matlab_data::Dict{String, Any})
         case["reliability_storage"] = stors
     end
 
-    if haskey(matlab_data, "mpc.reliability_branch")
+    if haskey(matlab_data, "mpc.branch")
         branches = []
-        for (i, branch_row) in enumerate(matlab_data["mpc.reliability_branch"])
+        for (i, branch_row) in enumerate(matlab_data["mpc.branch"])
             branch_data = InfrastructureModels.row_to_typed_dict(branch_row, r_branch)
             branch_data["index"] = i
             push!(branches, branch_data)
         end
-        case["reliability_branch"] = branches
+        case["branch"] = branches
     else
         @error(string("no branch table found in matpower file.  The file seems to be missing \"mpc.branch = [...];\""))
     end
 
     
-    if haskey(matlab_data, "mpc.load_cost")
-        load_cost = []
-        for (i, loadcost_row) in enumerate(matlab_data["mpc.load_cost"])
-            loadcost_data = InfrastructureModels.row_to_typed_dict(loadcost_row, loadcost)
+    if haskey(matlab_data, "mpc.load")
+        loads = []
+        for (i, loads_row) in enumerate(matlab_data["mpc.load"])
+            loadcost_data = InfrastructureModels.row_to_typed_dict(loads_row, r_load)
             loadcost_data["index"] = i
-            push!(load_cost, loadcost_data)
+            push!(loads, loadcost_data)
         end
-        case["load_cost"] = load_cost
+        case["load"] = loads
 
     end
 
@@ -277,13 +281,13 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
 
     for (k,v) in network[:gen]
         i = string(k)
-        if haskey(reliability_data["reliability_gen"], i) 
-            if v["gen_bus"] == reliability_data["reliability_gen"][i]["bus"] && 
-            v["pmax"]*v["mbase"] == reliability_data["reliability_gen"][i]["pmax"]
+        if haskey(reliability_data["gen"], i) 
+            if v["gen_bus"] == reliability_data["gen"][i]["bus"] && 
+            v["pmax"]*v["mbase"] == reliability_data["gen"][i]["pmax"]
 
-            get!(v, "λ", reliability_data["reliability_gen"][i]["λ"])
-            if reliability_data["reliability_gen"][i]["mttr"] ≠ 0.0
-                get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
+            get!(v, "λ", reliability_data["gen"][i]["λ"])
+            if reliability_data["gen"][i]["mttr"] ≠ 0.0
+                get!(v, "μ", Float64.(N/reliability_data["gen"][i]["mttr"]))
             else
                 get!(v, "μ", 0)
             end
@@ -302,7 +306,7 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
 
                 get!(v, "λ", reliability_data["reliability_storage"][i]["λ"])
                 if reliability_data["reliability_storage"][i]["mttr"] ≠ 0.0
-                    get!(v, "μ", Float64.(N/reliability_data["reliability_gen"][i]["mttr"]))
+                    get!(v, "μ", Float64.(N/reliability_data["gen"][i]["mttr"]))
                 else
                     get!(v, "μ", 0)
                 end
@@ -314,10 +318,14 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
     
     for (k,v) in network[:branch]
         i = string(k)
-        if haskey(reliability_data["reliability_branch"], i)
-            get!(v, "λ", reliability_data["reliability_branch"][i]["λ"])
-            if reliability_data["reliability_branch"][i]["mttr"] ≠ 0.0
-                get!(v, "μ", Float64.(N/reliability_data["reliability_branch"][i]["mttr"]))
+        if haskey(reliability_data["branch"], i)
+            get!(v, "λ", reliability_data["branch"][i]["λ"])
+            get!(v, "common_mode", reliability_data["branch"][i]["common_mode"])
+            get!(v, "common_λ", reliability_data["branch"][i]["common_λ"])
+            get!(v, "common_μ", reliability_data["branch"][i]["common_μ"])
+
+            if reliability_data["branch"][i]["mttr"] ≠ 0.0
+                get!(v, "μ", Float64.(N/reliability_data["branch"][i]["mttr"]))
             else
                 get!(v, "μ", 0)
             end
@@ -326,8 +334,9 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
     
     for (k,v) in network[:load]
         i = string(k)
-        if haskey(reliability_data["load_cost"], i) && v["load_bus"] == reliability_data["load_cost"][i]["bus_i"]
-            get!(v, "cost", reliability_data["load_cost"][i]["cost"])
+        if haskey(reliability_data["load"], i) && v["load_bus"] == reliability_data["load"][i]["bus_i"]
+            get!(v, "cost", reliability_data["load"][i]["cost"])
+            get!(v, "firm_load", reliability_data["load"][i]["firm_load"])
         end
     end
 

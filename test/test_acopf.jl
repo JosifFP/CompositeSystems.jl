@@ -20,9 +20,9 @@ settings = CompositeSystems.Settings(
     powermodel = OPF.LPACCPowerModel
 )
 
-RawFile = "test/data/RBTS/Base/RBTS.m"
-ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
-TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
+RawFile = "test/data/RTS/Base/RTS.m"
+ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
+TimeSeriesFile = "test/data/RTS/Loads_system.xlsx"
 
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
@@ -36,8 +36,15 @@ Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds c
 
 method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 states = CompositeAdequacy.SystemStates(system)
-model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-pm = OPF.PowerModel(settings.powermodel, OPF.Topology(system), model)
+model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
+pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
+
+
+pm.topology.buspairs
+
+
+
+
 recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 CompositeAdequacy.seed!(rng, (method.seed, 1))

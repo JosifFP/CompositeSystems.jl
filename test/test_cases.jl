@@ -7,19 +7,15 @@ import PowerModels
 import BenchmarkTools: @btime
 #using ProfileView, Profile
 
-
 include("solvers.jl")
 TimeSeriesFile = "test/data/RBTS/Loads_system.xlsx"
 
 Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS3.m"
-
+Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
 #Base_RawFile = "test/data/RTS/Base/RTS.m"
 #Base_ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
-
 #Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
 #Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
-
 #Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
 #Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
 
@@ -29,11 +25,21 @@ settings = CompositeSystems.Settings(
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    #powermodel = OPF.DCPPowerModel
+    powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
-    powermodel = OPF.DCPLLPowerModel
+    #powermodel = OPF.DCPLLPowerModel
     #powermodel = OPF.LPACCPowerModel
 )
+
+network = build_network(Base_RawFile)
+reliability_data = BaseModule.parse_reliability_data(Base_ReliabilityFile)
+
+@show reliability_data["branch"]["1"]
+
+
+
+
+
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
@@ -50,8 +56,8 @@ CompositeSystems.EUE.(shortfall)
 
 
 
-model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-pm = PowerModel(settings.powermodel, Topology(system), model)
+model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
+pm = abstract_model(settings.powermodel, Topology(system), model)
 
 pm.topology.buspairs
 
