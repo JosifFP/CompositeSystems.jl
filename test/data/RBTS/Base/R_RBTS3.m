@@ -37,9 +37,9 @@ mpc.branch = [
 %% load cost data
 %  bus_i  cost firm_load
 mpc.load_cost = [		
-	2	1000	1	
-	3	1000	1		
-	4	1000	1			
-	5	1000	1		
-	6	1000	1			
+	2	1000	0.8	
+	3	1000	0.8			
+	4	1000	0.8				
+	5	1000	0.8			
+	6	1000	0.8				
 ];
