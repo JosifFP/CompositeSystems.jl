@@ -8,7 +8,7 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-TimeSeriesFile = "test/data/RBTS/Loads_system.xlsx"
+TimeSeriesFile = "test/data/RBTS/Loads_buses.xlsx"
 
 Base_RawFile = "test/data/RBTS/Base/RBTS.m"
 Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
@@ -25,21 +25,11 @@ settings = CompositeSystems.Settings(
     #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    powermodel = OPF.DCPPowerModel
+    #powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
-
-network = build_network(Base_RawFile)
-reliability_data = BaseModule.parse_reliability_data(Base_ReliabilityFile)
-
-@show reliability_data["branch"]["1"]
-
-
-
-
-
 
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
@@ -50,19 +40,15 @@ method = SequentialMCS(samples=250, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)
-CompositeSystems.EUE.(shortfall, system.loads.keys)
+CompositeSystems.EENS.(shortfall, system.loads.keys)
 CompositeSystems.LOLE.(shortfall)
-CompositeSystems.EUE.(shortfall)
+CompositeSystems.EENS.(shortfall)
 
 
+(system.branches.keys[]...)
 
 model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
 pm = abstract_model(settings.powermodel, Topology(system), model)
-
-pm.topology.buspairs
-
-system.branches.λ[10,:]
-system.branches.μ[10,:]
 systemstates = SystemStates(system)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 CompositeAdequacy.seed!(rng, (method.seed, 1))

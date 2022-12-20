@@ -25,6 +25,26 @@ end
 ""
 function initialize_availability!(
     rng::AbstractRNG,
+    availability::Matrix{Bool},
+    asset::Interfaces, N::Int)
+
+    for i in asset.keys
+        sequence = view(availability, i, :)
+        fill!(sequence, 1)
+        λ = asset.λ[i]/N
+        μ = asset.μ[i]/N
+        if λ ≠ 0.0
+            cycles!(sequence, rng, λ, μ, N)
+        end
+    end
+
+    return availability
+    
+end
+
+""
+function initialize_availability!(
+    rng::AbstractRNG,
     availability::Matrix{Int},
     asset::Buses, N::Int)
     
@@ -75,18 +95,30 @@ function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
 end
 
 ""
-function initialize_availability_system!(states::SystemStates, gens::Generators, loads::Loads, N::Int)
+function initialize_availability_system!(states::SystemStates, system::SystemModel, N::Int)
+
+    
 
     @inbounds for t in 1:N
 
-        total_gen::Float32 = gens_sum(field(gens, :pmax), filter(k -> field(states, :generators)[k,t], field(gens, :keys)))
+        total_gen::Float32 = gens_sum(field(system, :generators, :pmax), filter(k -> field(states, :generators)[k,t], field(system, :generators, :keys)))
+
+        if all(view(field(states, :interfaces),:,t)) == false
+            for k in field(system, :branches, :keys)
+                if field(system, :branches, :common_mode)[k] ≠ 0
+                    if states.interfaces[field(system, :branches, :common_mode)[k],t] == false
+                        states.branches[k,t] = false
+                    end
+                end
+            end
+        end    
 
         if all(view(field(states, :branches),:,t)) == false
             states.system[t] = false
         else
-            if sum(view(field(loads, :pd), :, t)) >= total_gen
+            if sum(view(field(system, :loads, :pd), :, t)) >= total_gen
                 states.system[t] = false
-            elseif count(view(field(states, :generators),:,t)) < length(gens)
+            elseif count(view(field(states, :generators),:,t)) < length(system.generators)
                 states.system[t] = false
             end
 

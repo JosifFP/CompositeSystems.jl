@@ -74,6 +74,11 @@ subunits(::Type{MWh}) = (MW, Hour)
 subunits(::Type{GWh}) = (GW, Hour)
 subunits(::Type{TWh}) = (TW, Hour)
 
+subunits(::Type{kW}) = (kW)
+subunits(::Type{MW}) = (MW)
+subunits(::Type{GW}) = (GW)
+subunits(::Type{TW}) = (TW)
+
 energyunits = Dict(
     unitsymbol(T) => T
     for T in [kWh, MWh, GWh, TWh])
@@ -88,6 +93,13 @@ function conversionfactor(F::Type{<:EnergyUnit}, T::Type{<:EnergyUnit})
 
     return powerconversion * timeconversion
 
+end
+
+function conversionfactor(
+    L::Int, P::Type{<:PowerUnit}, B::Float32)
+    to_power = subunits(P)
+    powerconversion = conversionfactor(P, to_power)
+    return powerconversion * B
 end
 
 function conversionfactor(

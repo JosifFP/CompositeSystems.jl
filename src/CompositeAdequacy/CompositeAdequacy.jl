@@ -22,7 +22,7 @@
         assess, SimulationSpec,
         
         # Metrics
-        ReliabilityMetric, LOLE, EUE, val, stderror,
+        ReliabilityMetric, LOLE, EENS, EDNS, val, stderror,
 
         # Simulation specification
         SequentialMCS, NonSequentialMCS, PreContingencies, accumulator,

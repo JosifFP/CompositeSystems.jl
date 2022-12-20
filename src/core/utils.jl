@@ -341,11 +341,5 @@ end
 "Extract a field from a composite value by name or position."
 field(system::SystemModel, field::Symbol) = getfield(system, field)
 field(system::SystemModel, field::Symbol, subfield::Symbol) = getfield(getfield(system, field), subfield)
-
-field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
-field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
-field(branches::Branches, subfield::Symbol) = getfield(branches, subfield)
-field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
-field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
-field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
-field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
+field(abstractassets::AbstractAssets, subfield::Symbol) = getfield(abstractassets, subfield)
+field(abstractassets::TimeSeriesAssets, subfield::Symbol) = getfield(abstractassets, subfield)

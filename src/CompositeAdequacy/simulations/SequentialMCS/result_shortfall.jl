@@ -158,9 +158,10 @@ function finalize(
     nsamples = first(acc.unservedload_total.stats).n
     P = BaseModule.powerunits["MW"]
     E = BaseModule.energyunits["MWh"]
-    p2e = conversionfactor(L,T,P,E,system.baseMVA)
+    #pu2p = conversionfactor(L,P,system.baseMVA)
+    pu2e = conversionfactor(L,T,P,E,system.baseMVA)
 
-    return ShortfallResult{N,L,T,E}(
+    return ShortfallResult{N,L,T,P,E}(
         nsamples, 
         field(system, :loads, :keys), 
         field(system, :timestamps),
@@ -172,11 +173,11 @@ function finalize(
         ep_period_std,
         ep_busperiod_mean, 
         ep_busperiod_std,
-        p2e*ue_busperiod_mean, 
-        p2e*ue_total_std,
-        p2e*ue_bus_std, 
-        p2e*ue_period_std, 
-        p2e*ue_busperiod_std)
+        pu2e*ue_busperiod_mean, 
+        pu2e*ue_total_std,
+        pu2e*ue_bus_std, 
+        pu2e*ue_period_std, 
+        pu2e*ue_busperiod_std)
 end
 
 # ShortfallSamples
@@ -232,9 +233,10 @@ function finalize(
 
     P = BaseModule.powerunits["MW"]
     E = BaseModule.energyunits["MWh"]
-    p2e = conversionfactor(L,T,P,E)
-    return ShortfallSamplesResult{N,L,T,P,E}(
-        system.loads.keys, system.timestamps, p2e*acc.shortfall)
+    pu2p = conversionfactor(L,P,system.baseMVA)
+    pu2e = conversionfactor(L,T,P,E,system.baseMVA)
+
+    return ShortfallSamplesResult{N,L,T,P,E}(system.loads.keys, system.timestamps, pu2p*acc.shortfall,pu2e*acc.shortfall)
 
 end
 

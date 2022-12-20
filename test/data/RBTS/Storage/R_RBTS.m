@@ -22,7 +22,7 @@ mpc.gen = [
 
 %% storage reliability data
 %	bus	energy_rating	λ	mttr
-mpc.reliability_storage = [
+mpc.storage = [
 	6	40.0	0	0;
 ];
 

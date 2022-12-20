@@ -43,6 +43,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     baseMVA::Float32 = Float32(network[:baseMVA])
     network_bus::Dict{Int, Any} = network[:bus]
     network_branch::Dict{Int, Any} = network[:branch]
+    network_interface::Dict{Int, Any} = network[:interface]
     network_shunt::Dict{Int, Any} = network[:shunt]
     network_gen::Dict{Int, Any} = network[:gen]
     network_load::Dict{Int, Any} = network[:load]
@@ -51,7 +52,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     has = has_asset(network)
     
     if has[:buses]
-
         data = container(network_bus, bus_fields)
         buses = Buses(
             data["index"], 
@@ -67,12 +67,12 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     end
 
     if has[:branches]
-        
         data = container(network_branch, branch_fields)
         branches = Branches(
             data["index"], 
             data["f_bus"], 
-            data["t_bus"], 
+            data["t_bus"],
+            data["common_mode"],
             data["rate_a"], 
             data["rate_b"], 
             data["br_r"], 
@@ -105,6 +105,19 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
         shunts = Shunts(Int[], Int[], Float32[], Float32[], Vector{Bool}())
     end
 
+    if has[:interfaces]
+        data = container(network_interface, interface_fields)
+        interfaces = Interfaces(
+            data["index"], 
+            data["f_bus"], 
+            data["t_bus"], 
+            data["λ"], 
+            data["μ"]
+        )
+    else
+        interfaces = Interfaces(Int[], Int[], Int[], Float64[], Float64[])
+    end
+
     if has[:generators]
         data = container(network_gen, gen_fields)
         generators = Generators{N,L,T}(
@@ -135,6 +148,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
                 data["qd"],
                 data["pf"],
                 data["cost"],
+                data["firm_load"],
                 data["status"]
             )
 
@@ -148,6 +162,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
                 data["qd"],
                 data["pf"],
                 data["cost"],
+                data["firm_load"],
                 data["status"]
             )
         end
@@ -204,7 +219,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
     ref_buses = slack_buses(buses)
 
-    return SystemModel(loads, generators, storages, generatorstorages, buses, branches, shunts, ref_buses, baseMVA, SParametrics.timestamps)
+    return SystemModel(loads, generators, storages, generatorstorages, buses, branches, shunts, interfaces, ref_buses, baseMVA, SParametrics.timestamps)
     
 end
 
@@ -236,6 +251,7 @@ function has_asset(network::Dict{Symbol,Any})
         :generators => haskey(network, :gen) && isempty(network[:gen]) == false,
         :storages => haskey(network, :storage) && isempty(network[:storage]) == false,
         :branches => haskey(network, :branch) && isempty(network[:branch]) == false,
+        :interfaces => haskey(network, :interface) && isempty(network[:interface]) == false,
         :dclines => haskey(network, :dcline) && isempty(network[:dcline]) == false,
         :switches => haskey(network, :switch) && isempty(network[:switch]) == false,
         :shunts => haskey(network, :shunt) && isempty(network[:shunt]) == false,

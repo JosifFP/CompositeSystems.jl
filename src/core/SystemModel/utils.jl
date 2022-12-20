@@ -57,6 +57,7 @@ const branch_fields = [
     ("index", Int),
     ("f_bus", Int),
     ("t_bus", Int),
+    ("common_mode", Int),
     ("rate_a", Float32),
     ("rate_b", Float32),
     ("br_r", Float32), 
@@ -83,6 +84,14 @@ const shunt_fields = [
     ("status", Bool)
 ]
 
+const interface_fields = [
+    ("index", Int),
+    ("f_bus", Int),
+    ("t_bus", Int),
+    ("λ", Float64),
+    ("μ", Float64),
+]
+
 const load_fields = [
     ("index", Int),
     ("load_bus", Int),
@@ -90,6 +99,7 @@ const load_fields = [
     ("qd", Float32),
     ("pf", Float32),
     ("cost", Float32),
+    ("firm_load", Float32),
     ("status", Bool)
 ]
 
@@ -214,14 +224,14 @@ function _parse_reliability_data(matlab_data::Dict{String, Any})
         @error(string("no gen data found in matpower file.  The file seems to be missing \"mpc.gen = [...];\""))
     end
 
-    if haskey(matlab_data, "mpc.reliability_storage")
+    if haskey(matlab_data, "mpc.storage")
         stors = []
-        for (i, storage_row) in enumerate(matlab_data["mpc.reliability_storage"])
+        for (i, storage_row) in enumerate(matlab_data["mpc.storage"])
             storage_data = InfrastructureModels.row_to_typed_dict(storage_row, r_storage)
             storage_data["index"] = i
             push!(stors, storage_data)
         end
-        case["reliability_storage"] = stors
+        case["storage"] = stors
     end
 
     if haskey(matlab_data, "mpc.branch")
@@ -299,13 +309,13 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
 
     for (k,v) in network[:storage]
         i = string(k)
-        if haskey(reliability_data["reliability_storage"], i)
+        if haskey(reliability_data["storage"], i)
 
-            if v["storage_bus"] == reliability_data["reliability_storage"][i]["bus"] && 
-            v["energy_rating"]*network[:baseMVA] == reliability_data["reliability_storage"][i]["energy_rating"]
+            if v["storage_bus"] == reliability_data["storage"][i]["bus"] && 
+            v["energy_rating"]*network[:baseMVA] == reliability_data["storage"][i]["energy_rating"]
 
-                get!(v, "λ", reliability_data["reliability_storage"][i]["λ"])
-                if reliability_data["reliability_storage"][i]["mttr"] ≠ 0.0
+                get!(v, "λ", reliability_data["storage"][i]["λ"])
+                if reliability_data["storage"][i]["mttr"] ≠ 0.0
                     get!(v, "μ", Float64.(N/reliability_data["gen"][i]["mttr"]))
                 else
                     get!(v, "μ", 0)
@@ -319,11 +329,8 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
     for (k,v) in network[:branch]
         i = string(k)
         if haskey(reliability_data["branch"], i)
-            get!(v, "λ", reliability_data["branch"][i]["λ"])
             get!(v, "common_mode", reliability_data["branch"][i]["common_mode"])
-            get!(v, "common_λ", reliability_data["branch"][i]["common_λ"])
-            get!(v, "common_μ", reliability_data["branch"][i]["common_μ"])
-
+            get!(v, "λ", reliability_data["branch"][i]["λ"])
             if reliability_data["branch"][i]["mttr"] ≠ 0.0
                 get!(v, "μ", Float64.(N/reliability_data["branch"][i]["mttr"]))
             else
@@ -340,7 +347,29 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
         end
     end
 
+    network[:interface] = Dict{Int, Any}()
+
+    for (k,v) in reliability_data["branch"]
+        if v["common_mode"] ≠ 0
+            if !haskey(network[:interface], v["common_mode"])
+                if reliability_data["branch"][k]["common_mttr"] ≠ 0.0
+                    common_μ = Float64.(N/reliability_data["branch"][k]["common_mttr"])
+                else
+                    common_μ = 0.0
+                end
+                get!(network[:interface], v["common_mode"], 
+                    Dict("index"=>v["common_mode"], "f_bus"=> v["f_bus"], "t_bus"=> v["t_bus"], "λ"=> v["common_λ"], "μ"=> common_μ, "br_1"=>parse(Int, k))
+                )
+            
+            elseif haskey(network[:interface], v["common_mode"]) && !haskey(v, "br_2")
+                get!(network[:interface][v["common_mode"]], "br_2", parse(Int, k))
+            else
+                @error("Interfaces only supports two transmission lines")
+            end
+        end
+    end
     return network
+
 end
 
 "Extracts time-series load data from excel file"

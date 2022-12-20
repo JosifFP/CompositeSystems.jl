@@ -19,7 +19,7 @@ struct Topology
     arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
-    buspairs::Dict{Tuple{Int, Int}, Union{Missing,Vector{Float32}}}
+    buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Float32}}}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -199,6 +199,7 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_var_container!(pm.var, :pg, field(system, :generators, :keys))
         add_var_container!(pm.var, :va, field(system, :buses, :keys))
         add_var_container!(pm.var, :plc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :c_plc, field(system, :loads, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
 
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
@@ -241,11 +242,14 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :cs, field(pm.topology, :buspairs))
         add_var_container!(pm.var, :plc, field(system, :loads, :keys))
         add_var_container!(pm.var, :qlc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :c_plc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :c_qlc, field(system, :loads, :keys))
         add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
 
         add_con_container!(pm.con, :power_factor, field(system, :loads, :keys))
+        add_con_container!(pm.con, :c_power_factor, field(system, :loads, :keys))
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
         add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))

@@ -407,6 +407,7 @@ struct Branches <: AbstractAssets
     keys::Vector{Int}
     f_bus::Vector{Int} #buses_from
     t_bus::Vector{Int} #buses_to
+    common_mode::Vector{Int}
     rate_a::Vector{Float32} #Long term rating or Rate_A
     rate_b::Vector{Float32} #Short term rating or Rate_B
     r::Vector{Float32} #Resistance values
@@ -425,8 +426,8 @@ struct Branches <: AbstractAssets
     status::Vector{Bool}
 
     function Branches(
-        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, rate_a::Vector{Float32}, 
-        rate_b::Vector{Float32}, r::Vector{Float32}, x::Vector{Float32}, 
+        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, common_mode::Vector{Int}, 
+        rate_a::Vector{Float32}, rate_b::Vector{Float32}, r::Vector{Float32}, x::Vector{Float32}, 
         b_fr::Vector{Float32}, b_to::Vector{Float32}, g_fr::Vector{Float32}, g_to::Vector{Float32}, 
         shift::Vector{Float32}, angmin::Vector{Float32}, angmax::Vector{Float32}, transformer::Vector{Bool}, 
         tap::Vector{Float32}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
@@ -436,6 +437,7 @@ struct Branches <: AbstractAssets
         @assert allunique(keys)
         @assert length(f_bus) == (nbranches)
         @assert length(t_bus) == (nbranches)
+        @assert length(common_mode) == (nbranches)
         @assert length(rate_a) == (nbranches)
         @assert length(rate_b) == (nbranches)
         @assert length(r) == (nbranches)
@@ -458,7 +460,7 @@ struct Branches <: AbstractAssets
         @assert all(x .>= 0)
 
         new(
-            Int.(keys), Int.(f_bus), Int.(t_bus), Float32.(rate_a), Float32.(rate_b),
+            Int.(keys), Int.(f_bus), Int.(t_bus), Int.(common_mode), Float32.(rate_a), Float32.(rate_b),
             Float32.(r), Float32.(x), Float32.(b_fr), Float32.(b_to), Float32.(g_fr), 
             Float32.(g_to), Float32.(shift), Float32.(angmin), Float32.(angmax),
             Bool.(transformer), Float32.(tap), Float64.(λ), Float64.(μ), Bool.(status))
@@ -470,6 +472,7 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
     x.keys == y.keys &&
     x.f_bus == y.f_bus &&
     x.t_bus == y.t_bus &&
+    x.common_mode == y.common_mode &&
     x.rate_a == y.rate_a &&
     x.rate_b == y.rate_b &&
     x.r == y.r &&
@@ -498,8 +501,7 @@ struct Shunts <: AbstractAssets
     status::Vector{Bool}
 
     function Shunts(
-        keys::Vector{Int}, buses::Vector{Int}, bs::Vector{Float32}, 
-        gs::Vector{Float32}, status::Vector{Bool}
+        keys::Vector{Int}, buses::Vector{Int}, bs::Vector{Float32}, gs::Vector{Float32}, status::Vector{Bool}
     )
 
         nshunts = length(keys)

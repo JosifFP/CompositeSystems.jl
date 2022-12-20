@@ -97,51 +97,73 @@ end
 Base.isapprox(x::ReliabilityMetric, y::ReliabilityMetric) =
         isapprox(val(x), val(y)) && isapprox(stderror(x), stderror(y))
 
-# Loss-of-Load Expectation
+# Expected Duration of Load Curtailments
 
 struct LOLE{N,L,T<:Period} <: ReliabilityMetric
 
-    lole::MeanEstimate
+    LOLE::MeanEstimate
 
-    function LOLE{N,L,T}(lole::MeanEstimate) where {N,L,T<:Period}
-        val(lole) >= 0 || throw(DomainError(val,
+    function LOLE{N,L,T}(LOLE::MeanEstimate) where {N,L,T<:Period}
+        val(LOLE) >= 0 || throw(DomainError(val,
             "$val is not a valid expected count of event-periods"))
-        new{N,L,T}(lole)
+        new{N,L,T}(LOLE)
     end
 
 end
 
-val(x::LOLE) = val(x.lole)
-stderror(x::LOLE) = stderror(x.lole)
+val(x::LOLE) = val(x.LOLE)
+stderror(x::LOLE) = stderror(x.LOLE)
 
 function Base.show(io::IO, x::LOLE{N,L,T}) where {N,L,T}
 
     t_symbol = unitsymbol(T)
-    print(io, "LOLE = ", x.lole, " event-",
+    print(io, "LOLE = ", x.LOLE, " event-",
           L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")", "/",
           N*L == 1 ? "" : N*L, t_symbol)
 
 end
 
-# Expected Unserved Energy
-struct EUE{N,L,T<:Period,E<:EnergyUnit} <: ReliabilityMetric
+# Expected Energy Not Supplied
+struct EENS{N,L,T<:Period,E<:EnergyUnit} <: ReliabilityMetric
 
-    eue::MeanEstimate
+    EENS::MeanEstimate
 
-    function EUE{N,L,T,E}(eue::MeanEstimate) where {N,L,T<:Period,E<:EnergyUnit}
-        val(eue) >= 0 || throw(DomainError(
+    function EENS{N,L,T,E}(EENS::MeanEstimate) where {N,L,T<:Period,E<:EnergyUnit}
+        val(EENS) >= 0 || throw(DomainError(
             "$val is not a valid unserved energy expectation"))
-        new{N,L,T,E}(eue)
+        new{N,L,T,E}(EENS)
     end
 
 end
 
-val(x::EUE) = val(x.eue)
-stderror(x::EUE) = stderror(x.eue)
+val(x::EENS) = val(x.EENS)
+stderror(x::EENS) = stderror(x.EENS)
 
-function Base.show(io::IO, x::EUE{N,L,T,E}) where {N,L,T,E}
+function Base.show(io::IO, x::EENS{N,L,T,E}) where {N,L,T,E}
 
-    print(io, "EUE = ", x.eue, " ",
+    print(io, "EENS = ", x.EENS, " ",
         unitsymbol(E), "/", N*L == 1 ? "" : N*L, unitsymbol(T))
+
+end
+
+
+struct EDNS{N,L,T<:Period,P<:PowerUnit} <: ReliabilityMetric
+
+    EDNS::MeanEstimate
+
+    function EDNS{N,L,T,P}(EDNS::MeanEstimate) where {N,L,T<:Period,P<:PowerUnit}
+        val(EDNS) >= 0 || throw(DomainError(
+            "$val is not a valid unserved energy expectation"))
+        new{N,L,T,P}(EDNS)
+    end
+
+end
+
+val(x::EDNS) = val(x.EDNS)
+stderror(x::EDNS) = stderror(x.EDNS)
+
+function Base.show(io::IO, x::EDNS{N,L,T,P}) where {N,L,T,P}
+
+    print(io, "EDNS = ", x.EDNS, " ", unitsymbol(P))
 
 end
