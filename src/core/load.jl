@@ -86,8 +86,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["angmax"], 
             data["transformer"],
             data["tap"],
-            data["λ"], 
-            data["μ"],
+            data["λ_updn"], 
+            data["μ_updn"],
             data["br_status"]
         )
     end
@@ -111,8 +111,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["index"], 
             data["f_bus"], 
             data["t_bus"], 
-            data["λ"], 
-            data["μ"]
+            data["λ_updn"], 
+            data["μ_updn"]
         )
     else
         interfaces = Interfaces(Int[], Int[], Int[], Float64[], Float64[])
@@ -131,9 +131,13 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["qmax"], 
             data["qmin"], 
             data["mbase"], 
-            data["cost"], 
-            data["λ"],
-            data["μ"],
+            data["cost"],
+            data["state_model"],
+            data["λ_updn"],
+            data["μ_updn"],
+            data["λ_upde"],
+            data["μ_upde"],
+            data["pde"],
             data["gen_status"]
         )
     end
@@ -189,8 +193,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["x"],
             data["p_loss"],
             data["q_loss"],
-            data["λ"],
-            data["μ"],
+            data["λ_updn"],
+            data["μ_updn"],
             data["status"],
         )
 

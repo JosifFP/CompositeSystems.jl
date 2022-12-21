@@ -5,7 +5,7 @@ mpc.version = '2';
 %%-----  Reliability Data  -----%%
 
 %% generator reliability data
-%	bus	pmax	λ	mttr
+%	bus	pmax	λ	μ
 mpc.gen = [
 	1	40	6	45;
 	1	40	6	45;
@@ -21,7 +21,7 @@ mpc.gen = [
 ];
 
 %% branch reliability data
-%    f_bus	t_bus	λ	mttr    
+%    f_bus	t_bus	λ	μ    
 mpc.branch = [
 	1	3	1.5	10;								
 	2	4	5.0	10;									

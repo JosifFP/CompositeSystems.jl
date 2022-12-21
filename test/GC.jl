@@ -1282,19 +1282,19 @@ end
 #     container_data = container(network, asset)
 #     key_order_core = sortperm(container_data[:keys])
 
-#     container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
-#     container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
+#     container_λ_updn = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
+#     container_μ_updn = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
 
 #     for i in 1:length(values(dict_core[Symbol("repairtime[hrs]")]))
 #         if values(dict_core[Symbol("repairtime[hrs]")])[i]≠0.0
-#             container_μ[i] = Float64.(N/values(dict_core[Symbol("repairtime[hrs]")])[i])
+#             container_μ_updn[i] = Float64.(N/values(dict_core[Symbol("repairtime[hrs]")])[i])
 #         else
-#             container_μ[i] = 0.0
+#             container_μ_updn[i] = 0.0
 #         end
 #     end
 
-#     container_data[:λ] = deepcopy(container_λ[key_order_core])
-#     container_data[:μ] = deepcopy(container_μ[key_order_core])
+#     container_data[:λ_updn] = deepcopy(container_λ_updn[key_order_core])
+#     container_data[:μ_updn] = deepcopy(container_μ_updn[key_order_core])
 
 #     return container_data
 
@@ -1321,22 +1321,22 @@ end
 
 #     container_timeseries = [Float32.(dict_timeseries[i]/baseMVA) for i in keys(dict_timeseries)]
 
-#     container_λ = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
-#     container_μ = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
+#     container_λ_updn = Float64.(values(dict_core[Symbol("failurerate[f/year]")]))
+#     container_μ_updn = Vector{Float64}(undef, length(values(dict_core[Symbol("repairtime[hrs]")])))
 
 #     for i in 1:length(values(dict_core[Symbol("repairtime[hrs]")]))
 #         if values(dict_core[Symbol("repairtime[hrs]")])[i]≠0.0
-#             container_μ[i] = Float64.(8736/values(dict_core[Symbol("repairtime[hrs]")])[i])
+#             container_μ_updn[i] = Float64.(8736/values(dict_core[Symbol("repairtime[hrs]")])[i])
 #         else
-#             container_μ[i] = 0.0
+#             container_μ_updn[i] = 0.0
 #         end
 #     end
 
 #     key_order_core = sortperm(container_data[:keys])
 
 #     container_data[:pg] = reduce(vcat,transpose.(container_timeseries[key_order_series]))
-#     container_data[:λ] = deepcopy(container_λ[key_order_core])
-#     container_data[:μ] = deepcopy(container_μ[key_order_core])
+#     container_data[:λ_updn] = deepcopy(container_λ_updn[key_order_core])
+#     container_data[:μ_updn] = deepcopy(container_μ_updn[key_order_core])
 
 #     return container_data
 

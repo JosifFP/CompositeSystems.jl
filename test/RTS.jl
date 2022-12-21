@@ -29,7 +29,7 @@ module RTS
         branches = Branches(
             data[:keys], data[:f_bus], data[:t_bus], data[:rate_a], data[:rate_b], data[:r], 
             data[:x], data[:b_fr], data[:b_to], data[:g_fr], data[:g_to], data[:shift], 
-            data[:angmin], data[:angmax], data[:transformer], data[:tap], data[:λ], data[:μ], data[:status])
+            data[:angmin], data[:angmax], data[:transformer], data[:tap], data[:λ_updn], data[:μ_updn], data[:status])
     end
 
     if has[:shunts]
@@ -43,7 +43,7 @@ module RTS
         data = BaseModule.container(network, Generators)
         generators = Generators{8736,1,Hour}(
             data[:keys], data[:buses], data[:pg], data[:qg], data[:vg], data[:pmax], data[:pmin], 
-            data[:qmax], data[:qmin], data[:mbase], data[:cost], data[:λ], data[:μ], data[:status])
+            data[:qmax], data[:qmin], data[:mbase], data[:cost], data[:λ_updn], data[:μ_updn], data[:status])
     end
 
     if has[:loads]

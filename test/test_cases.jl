@@ -30,12 +30,11 @@ settings = CompositeSystems.Settings(
     #powermodel = OPF.DCPLLPowerModel
     powermodel = OPF.LPACCPowerModel
 )
-
+method = SequentialMCS(samples=1, seed=100, threaded=true)
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
 system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
-
-method = SequentialMCS(samples=500, seed=100, threaded=true)
+method = SequentialMCS(samples=250, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)
@@ -44,7 +43,11 @@ CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
 
 
-(system.branches.keys[]...)
+
+
+
+sum(val.(CompositeSystems.EENS.(shortfall, system.loads.keys)))
+
 
 model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
 pm = abstract_model(settings.powermodel, Topology(system), model)
@@ -53,6 +56,20 @@ rng = CompositeAdequacy.Philox4x((0, 0), 10)
 CompositeAdequacy.seed!(rng, (method.seed, 1))
 CompositeAdequacy.initialize_states!(rng, systemstates, system)
 
-y = systemstates.branches[10,:]
+a = systemstates.generators[1,:]
+b = systemstates.generators_de[1,:]
 using Plots
-plot(1:8736, y)
+plot(1:8736, a)
+plot(1:8736, b)
+
+a = systemstates.generators[2,:]
+b = systemstates.generators_de[2,:]
+using Plots
+plot(1:8736, a)
+plot(1:8736, b)
+
+a = systemstates.generators[3,:]
+b = systemstates.generators_de[3,:]
+using Plots
+plot(1:8736, a)
+plot(1:8736, b)

@@ -48,7 +48,7 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMCS, ::Shortfall
 ) where {N}
 
-    nloads = length(sys.loads.keys)
+    nloads = length(sys.loads)
 
     periodsdropped_total = meanvariance()
     periodsdropped_bus = [meanvariance() for _ in 1:nloads]
@@ -85,7 +85,7 @@ function record!(
     totalshortfall = 0
     isshortfall = false
 
-    for r in eachindex(acc.periodsdropped_bus)
+    for r in eachindex(view(field(states, :plc), :, t))
 
         busshortfall = field(states, :plc)[r,t]
         isbusshortfall = sum(busshortfall) > 1e-6

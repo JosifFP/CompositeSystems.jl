@@ -2,20 +2,71 @@
 function initialize_availability!(
     rng::AbstractRNG,
     availability::Matrix{Bool},
-    asset::AbstractAssets, N::Int)
+    availability_de::Matrix{Float32},
+    asset::Generators, N::Int)
 
-    if field(asset, :status) ≠ false
-        for i in asset.keys
+    for i in asset.keys
+
+        if asset.status[i] ≠ false
+
             sequence = view(availability, i, :)
+            sequence_de = view(availability_de, i, :)
             fill!(sequence, 1)
-            λ = asset.λ[i]/N
-            μ = asset.μ[i]/N
-            if λ ≠ 0.0
-                cycles!(sequence, rng, λ, μ, N)
+            fill!(sequence_de, 1)
+            λ_updn = asset.λ_updn[i]/N
+            μ_updn = asset.μ_updn[i]/N
+        
+            if asset.state_model[i] == 3
+
+                λ_upde = asset.λ_upde[i]/N
+                μ_upde = asset.μ_upde[i]/N
+                pde = asset.pde[i]
+
+                if λ_updn ≠ 0.0 && λ_upde ≠ 0.0
+                    cycles!(sequence_de, pde, rng, λ_updn, μ_updn, λ_upde, μ_upde, N)
+                end
+
+                for k = 1:N
+                    if sequence_de[k] > 0.0 && sequence_de[k] < 1.0
+                        sequence[k] = true
+                    elseif sequence_de[k] == 0.0
+                        sequence[k] = false
+                    end
+                end
+
+            else
+                
+                if λ_updn ≠ 0.0
+                    cycles!(sequence, rng, λ_updn, μ_updn, N)
+                    sequence_de .= Float32.(sequence)
+                end
+
             end
         end
-    else
-        fill!(availability, 0)
+    end
+
+    return availability, availability_de
+    
+end
+
+""
+function initialize_availability!(
+    rng::AbstractRNG,
+    availability::Matrix{Bool},
+    asset::AbstractAssets, N::Int)
+
+    for i in asset.keys
+        if asset.status[i] ≠ false
+            sequence = view(availability, i, :)
+            fill!(sequence, 1)
+            λ_updn = asset.λ_updn[i]/N
+            μ_updn = asset.μ_updn[i]/N
+            if λ_updn ≠ 0.0
+                cycles!(sequence, rng, λ_updn, μ_updn, N)
+            end
+        else
+            fill!(sequence, 0)
+        end
     end
 
     return availability
@@ -31,10 +82,10 @@ function initialize_availability!(
     for i in asset.keys
         sequence = view(availability, i, :)
         fill!(sequence, 1)
-        λ = asset.λ[i]/N
-        μ = asset.μ[i]/N
-        if λ ≠ 0.0
-            cycles!(sequence, rng, λ, μ, N)
+        λ_updn = asset.λ_updn[i]/N
+        μ_updn = asset.μ_updn[i]/N
+        if λ_updn ≠ 0.0
+            cycles!(sequence, rng, λ_updn, μ_updn, N)
         end
     end
 
@@ -62,18 +113,63 @@ end
 
 ""
 function cycles!(
-    sequence::AbstractArray{Bool}, rng::AbstractRNG, λ::Float64, μ::Float64, N::Int)
+    sequence_de::AbstractArray{Float32}, pde::Float32,
+    rng::AbstractRNG, λ_updn::Float64, μ_updn::Float64, λ_upde::Float64, μ_upde::Float64, N::Int)
 
-    (ttf,ttr) = T(rng,λ,μ)
+    (ttf_updn,ttr_updn) = T(rng,λ_updn,μ_updn)
+    (ttf_upde,ttr_upde) = T(rng,λ_upde,μ_upde)
+
     i=Int(1)
 
-    if i + ttf > N - ttr && i + ttf < N ttr = N - ttf - i end
+    if i + ttf_updn > N - ttf_updn && i + ttf_updn < N 
+        ttr_updn = N - ttf_updn - i 
+    end
+    if i + ttf_upde > N - ttf_upde && i + ttf_upde < N 
+        ttr_upde = N - ttf_upde - i 
+    end
 
-    @inbounds while i + ttf + ttr  <= N
-        @inbounds sequence[i+ttf+1 : i+ttf+ttr] = [false for _ in i+ttf+1 : i+ttf+ttr]
+    ttf = min(ttf_updn, ttf_upde)
+    ttr = min(ttr_updn, ttr_upde)
+    derated = false
+
+    while i + ttf + ttr  <= N
+
+        ttf = min(ttf_updn, ttf_upde)
+        ttr = min(ttr_updn, ttr_upde)
+
+        if ttf==ttf_updn
+            sequence_de[i+ttf+1 : i+ttf+ttr] = [0 for _ in i+ttf+1 : i+ttf+ttr]
+            if ttr==ttr_upde
+                derated = true
+            else
+                derated = false
+            end
+        else
+            sequence_de[i+ttf+1 : i+ttf+ttr] = [pde for _ in i+ttf+1 : i+ttf+ttr]
+            if ttr==ttr_upde
+                derated = true
+            else
+                derated = false
+            end
+        end
+
         i = i + ttf + ttr
-        (ttf,ttr) = T(rng,λ,μ)
-        if i + ttf + ttr  >= N && i + ttf < N ttr = N - ttf - i end
+
+        (ttf_updn,ttr_updn) = T(rng,λ_updn,μ_updn)
+        (ttf_upde,ttr_upde) = T(rng,λ_upde,μ_upde)
+        ttf = min(ttf_updn, ttf_upde)
+        ttr = min(ttr_updn, ttr_upde)
+
+        if i + ttf + ttr > N && i + ttf < N 
+            ttr_updn = N - ttf - i
+            ttr_upde = N - ttf - i
+            ttr = N - ttf - i
+        end
+
+        if i + ttf <= N && derated == true
+            sequence_de[i+1 : i+ttf] = [pde for _ in i+1 : i+ttf]
+        end
+
     end
 
     return
@@ -81,14 +177,40 @@ function cycles!(
 end
 
 ""
-function T(rng, λ::Float64, μ::Float64)::Tuple{Int,Int}
+function cycles!(sequence::AbstractArray{Bool}, rng::AbstractRNG, λ_updn::Float64, μ_updn::Float64, N::Int)
+
+    (ttf,ttr) = T(rng,λ_updn,μ_updn)
+    i=Int(1)
+    if i + ttf > N - ttr && i + ttf < N 
+        ttr = N - ttf - i 
+    end
+
+    while i + ttf + ttr  <= N
+
+        sequence[i+ttf+1 : i+ttf+ttr] = [false for _ in i+ttf+1 : i+ttf+ttr]
+
+        i = i + ttf + ttr
+
+        (ttf,ttr) = T(rng,λ_updn,μ_updn)
+
+        if i + ttf + ttr > N && i + ttf < N 
+            ttr = N - ttf - i 
+        end
+
+    end
+    return
+
+end
+
+""
+function T(rng, λ_updn::Float64, μ_updn::Float64)::Tuple{Int,Int}
     
-    ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
-    ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
+    ttf = (x->trunc(Int, x)).((-1/λ_updn)log(rand(rng)))
+    ttr = (y->trunc(Int, y)).((-1/μ_updn)log(rand(rng)))
 
     while ttf == 0.0 || ttr == 0.0
-        ttf = (x->trunc(Int, x)).((-1/λ)log(rand(rng)))
-        ttr = (y->trunc(Int, y)).((-1/μ)log(rand(rng)))
+        ttf = (x->trunc(Int, x)).((-1/λ_updn)log(rand(rng)))
+        ttr = (y->trunc(Int, y)).((-1/μ_updn)log(rand(rng)))
     end
 
     return ttf,ttr
@@ -97,11 +219,9 @@ end
 ""
 function initialize_availability_system!(states::SystemStates, system::SystemModel, N::Int)
 
-    
+    for t in 1:N
 
-    @inbounds for t in 1:N
-
-        total_gen::Float32 = gens_sum(field(system, :generators, :pmax), filter(k -> field(states, :generators)[k,t], field(system, :generators, :keys)))
+        total_gen::Float32 = sum(field(system, :generators, :pmax).*field(states, :generators_de)[:,t])
 
         if all(view(field(states, :interfaces),:,t)) == false
             for k in field(system, :branches, :keys)
@@ -118,80 +238,17 @@ function initialize_availability_system!(states::SystemStates, system::SystemMod
         else
             if sum(view(field(system, :loads, :pd), :, t)) >= total_gen
                 states.system[t] = false
-            elseif count(view(field(states, :generators),:,t)) < length(system.generators)
+            elseif sum(view(field(states, :generators_de), :, t)) < length(system.generators)
                 states.system[t] = false
             end
-
         end
     end
 
 end
 
-""
-function gens_sum(v_pmax::Vector{Float32}, active_keys::Vector{Int})
-    return sum(v_pmax[i] for i in active_keys)
-end
-
-
-# ----------------------------------------------------------------------------------------------------------
-# function available_capacity(
-#     availability::Vector{Bool},
-#     branches::Branches,
-#     idxs::UnitRange{Int}, t::Int
-# )
-
-#     avcap_forward = 0
-#     avcap_backward = 0
-
-#     for i in idxs
-#         if availability[i]
-#             avcap_forward += branches.forward_capacity[i, t]
-#             avcap_backward += branches.backward_capacity[i, t]
-#         end
-#     end
-
-#     return avcap_forward, avcap_backward
-
-# end
-
-# function available_capacity(
-#     availability::Vector{Bool},
-#     gens::Generators,
-#     idxs::UnitRange{Int}, t::Int
-# )
-
-#     caps = gens.capacity
-#     avcap = 0
-
-#     for i in idxs
-#         availability[i] && (avcap += caps[i, t])
-#     end
-
-#     return avcap
-
-# end
-
-# function update_energy!(
-#     stors_energy::Vector{Int},
-#     stors::AbstractAssets,
-#     t::Int
-# )
-
-#     for i in 1:length(stors_energy)
-
-#         soc = stors_energy[i]
-#         #efficiency = stors.carryover_efficiency[i,t]
-#         efficiency = 1.0
-#         maxenergy = stors.energy_capacity[i,t]
-
-#         # Decay SoC
-#         soc = round(Int, soc * efficiency)
-
-#         # Shed SoC above current energy limit
-#         stors_energy[i] = min(soc, maxenergy)
-
-#     end
-
+# ""
+# function gens_sum(v_pmax::Vector{Float32}, active_keys::Vector{Int})
+#     return sum(v_pmax[i] for i in active_keys)
 # end
 
 # ""

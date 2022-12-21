@@ -10,7 +10,7 @@ function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, 
 
     pg = var(pm, :pg, 1)
     for l in eachindex(field(system, :generators, :keys))
-        JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+        JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators_de)[l,t])
         JuMP.set_lower_bound(pg[l], 0.0)
     end
 
@@ -21,8 +21,8 @@ function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemMo
 
     qg = var(pm, :qg, 1)
     for l in eachindex(field(system, :generators, :keys))
-        JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l]*field(states, :generators)[l,t])
-        JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l]*field(states, :generators)[l,t])
+        JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l]*field(states, :generators_de)[l,t])
+        JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l]*field(states, :generators_de)[l,t])
     end
 
 end

@@ -407,9 +407,8 @@ end
 function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
 
     fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
-    f_fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*field(system, :loads, :firm_load)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-    c_fd = @expression(pm.model, sum(1100*(field(system, :loads, :firm_load)[i]-1.0)*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-    return @objective(pm.model, MIN_SENSE, f_fd+c_fd+fe)
+    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
+    return @objective(pm.model, MIN_SENSE, fd+fe)
     
 end
 
@@ -448,7 +447,9 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
             end
             states.se[i,t] = getindex(se, i)
         end
-        #if sum(states.plc[:,t]) > 0  && states.branches[9,t] == false
+        #if sum(states.plc[:,t]) > 0
+        #    println("t=$(t), plc = $(states.plc[:,t])")
+        #end
         #if sum(states.plc[5,t]) > 0
          #   println("t=$(t), plc = $(states.plc[:,t]), branches = $(states.branches[:,t]), gens = $(states.generators[:,t])")  end
     else

@@ -117,7 +117,7 @@ stderror(x::LOLE) = stderror(x.LOLE)
 function Base.show(io::IO, x::LOLE{N,L,T}) where {N,L,T}
 
     t_symbol = unitsymbol(T)
-    print(io, "LOLE = ", x.LOLE, " event-",
+    print(io, "LOLE = ", x.LOLE, " ",
           L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")", "/",
           N*L == 1 ? "" : N*L, t_symbol)
 

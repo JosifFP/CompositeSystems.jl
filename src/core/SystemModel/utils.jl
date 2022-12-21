@@ -48,8 +48,12 @@ const gen_fields = [
     ("qmin", Float32),
     ("mbase", Int),
     ("cost", Vector{Any}),
-    ("λ", Float64),
-    ("μ", Float64),
+    ("state_model", Int),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
+    ("λ_upde", Float64),
+    ("μ_upde", Float64),
+    ("pde", Float32),
     ("gen_status", Bool)
 ]
 
@@ -71,8 +75,8 @@ const branch_fields = [
     ("angmax", Float32),
     ("transformer", Bool),
     ("tap", Float32),
-    ("λ", Float64),
-    ("μ", Float64),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
     ("br_status", Bool)
 ]
 
@@ -88,8 +92,8 @@ const interface_fields = [
     ("index", Int),
     ("f_bus", Int),
     ("t_bus", Int),
-    ("λ", Float64),
-    ("μ", Float64),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
 ]
 
 const load_fields = [
@@ -121,44 +125,45 @@ const storage_fields = [
     ("x", Float32),
     ("p_loss", Float32),
     ("q_loss", Float32),
-    ("λ", Float64),
-    ("μ", Float64),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
     ("status", Bool)
 ]
 
 const CompositeSystems_fields = [
-    ("λ", Float64),
-    ("μ", Float64),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
     ("cost", Float32)
 ]
 
 const r_gen = [
     ("bus", Int),
     ("pmax", Float32),
-    ("λ", Float64),
-    ("mttr", Float64),
-    #("μ", Float64),
+    ("state_model", Float32),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
+    ("λ_upde", Float64),
+    ("μ_upde", Float64),
+    ("pde", Float32),
     ("index", Int)
 ]
 
 const r_storage = [
     ("bus", Int),
     ("energy_rating", Float32),
-    ("λ", Float64),
-    ("mttr", Float64),
-    #("μ", Float64),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
     ("index", Int)
 ]
 
 const r_branch = [
     ("f_bus", Int),
     ("t_bus", Int),
-    ("λ", Float64),
-    ("mttr", Float64),
-    #("μ", Float64),
+    ("λ_updn", Float64),
+    ("μ_updn", Float64),
     ("common_mode", Int),
-    ("common_λ", Float64),
-    ("common_mttr", Float64),
+    ("λ_common", Float64),
+    ("μ_common", Float64),
     ("index", Int)
 ]
 
@@ -292,18 +297,16 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
     for (k,v) in network[:gen]
         i = string(k)
         if haskey(reliability_data["gen"], i) 
-            if v["gen_bus"] == reliability_data["gen"][i]["bus"] && 
-            v["pmax"]*v["mbase"] == reliability_data["gen"][i]["pmax"]
-
-            get!(v, "λ", reliability_data["gen"][i]["λ"])
-            if reliability_data["gen"][i]["mttr"] ≠ 0.0
-                get!(v, "μ", Float64.(N/reliability_data["gen"][i]["mttr"]))
+            if v["gen_bus"] == reliability_data["gen"][i]["bus"] && v["pmax"]*v["mbase"] == reliability_data["gen"][i]["pmax"]
+                get!(v, "state_model", reliability_data["gen"][i]["state_model"])
+                get!(v, "λ_updn", reliability_data["gen"][i]["λ_updn"])
+                get!(v, "μ_updn", reliability_data["gen"][i]["μ_updn"])
+                get!(v, "λ_upde", reliability_data["gen"][i]["λ_upde"])
+                get!(v, "μ_upde", reliability_data["gen"][i]["μ_upde"])
+                get!(v, "pde", reliability_data["gen"][i]["pde"])
             else
-                get!(v, "μ", 0)
+                @error("Generation reliability data does differ from network data")
             end
-        else
-            @error("Storage reliability data does differ from network data")
-        end
         end
     end
 
@@ -313,13 +316,8 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
 
             if v["storage_bus"] == reliability_data["storage"][i]["bus"] && 
             v["energy_rating"]*network[:baseMVA] == reliability_data["storage"][i]["energy_rating"]
-
-                get!(v, "λ", reliability_data["storage"][i]["λ"])
-                if reliability_data["storage"][i]["mttr"] ≠ 0.0
-                    get!(v, "μ", Float64.(N/reliability_data["gen"][i]["mttr"]))
-                else
-                    get!(v, "μ", 0)
-                end
+                get!(v, "λ_updn", reliability_data["storage"][i]["λ_updn"])
+                get!(v, "μ_updn", reliability_data["storage"][i]["μ_updn"])
             else
                 @error("Storage reliability data does differ from network data")
             end
@@ -330,12 +328,8 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
         i = string(k)
         if haskey(reliability_data["branch"], i)
             get!(v, "common_mode", reliability_data["branch"][i]["common_mode"])
-            get!(v, "λ", reliability_data["branch"][i]["λ"])
-            if reliability_data["branch"][i]["mttr"] ≠ 0.0
-                get!(v, "μ", Float64.(N/reliability_data["branch"][i]["mttr"]))
-            else
-                get!(v, "μ", 0)
-            end
+            get!(v, "λ_updn", reliability_data["branch"][i]["λ_updn"])
+            get!(v, "μ_updn", reliability_data["branch"][i]["μ_updn"])
         end
     end
     
@@ -352,13 +346,11 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
     for (k,v) in reliability_data["branch"]
         if v["common_mode"] ≠ 0
             if !haskey(network[:interface], v["common_mode"])
-                if reliability_data["branch"][k]["common_mttr"] ≠ 0.0
-                    common_μ = Float64.(N/reliability_data["branch"][k]["common_mttr"])
-                else
-                    common_μ = 0.0
-                end
+
                 get!(network[:interface], v["common_mode"], 
-                    Dict("index"=>v["common_mode"], "f_bus"=> v["f_bus"], "t_bus"=> v["t_bus"], "λ"=> v["common_λ"], "μ"=> common_μ, "br_1"=>parse(Int, k))
+                    Dict("index"=>v["common_mode"], "f_bus"=> v["f_bus"], 
+                    "t_bus"=> v["t_bus"], "λ_updn"=> v["λ_common"], 
+                    "μ_updn"=> v["μ_common"], "br_1"=>parse(Int, k))
                 )
             
             elseif haskey(network[:interface], v["common_mode"]) && !haskey(v, "br_2")
