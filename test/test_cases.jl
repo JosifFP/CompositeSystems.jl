@@ -8,10 +8,10 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-TimeSeriesFile = "test/data/RBTS/Loads_buses.xlsx"
+TimeSeriesFile = "test/data/RBTS/Loads_system.xlsx"
 
 Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
+Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
 #Base_RawFile = "test/data/RTS/Base/RTS.m"
 #Base_ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
 #Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
@@ -26,26 +26,21 @@ settings = CompositeSystems.Settings(
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    #powermodel = OPF.DCMPPowerModel
+    powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 method = SequentialMCS(samples=1, seed=100, threaded=true)
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
 #system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
 system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=250, seed=100, threaded=true)
-@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
+method = SequentialMCS(samples=2000, seed=100, threaded=true)
+#@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)
 CompositeSystems.EENS.(shortfall, system.loads.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
-
-
-
-
-
 sum(val.(CompositeSystems.EENS.(shortfall, system.loads.keys)))
 
 
@@ -53,7 +48,7 @@ model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
 pm = abstract_model(settings.powermodel, Topology(system), model)
 systemstates = SystemStates(system)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
-CompositeAdequacy.seed!(rng, (method.seed, 1))
+CompositeAdequacy.seed!(rng, (method.seed, 1000))
 CompositeAdequacy.initialize_states!(rng, systemstates, system)
 
 a = systemstates.generators[1,:]
