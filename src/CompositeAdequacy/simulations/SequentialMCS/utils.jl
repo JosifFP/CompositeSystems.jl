@@ -137,7 +137,6 @@ function cycles!(
 
         ttf = min(ttf_updn, ttf_upde)
         ttr = min(ttr_updn, ttr_upde)
-        println("i=$(i), ttr=$(ttr), ttf=$(ttf)")
 
         if ttf==ttf_updn
             sequence_de[i+ttf+1 : i+ttf+ttr] = [0 for _ in i+ttf+1 : i+ttf+ttr]
@@ -160,7 +159,6 @@ function cycles!(
         ttr = min(ttr_updn, ttr_upde)
 
         if i + ttr <= N && derated_up == true
-            println("derated_up, ttr_upde=$(ttr_upde), ttr_updn=$(ttr_updn)")
             sequence_de[i+1 : i+ttr] = [pde for _ in i+1 : i+ttr]
             i = i + ttr
             (ttf_updn,ttr_updn) = T(rng,λ_updn,μ_updn)
