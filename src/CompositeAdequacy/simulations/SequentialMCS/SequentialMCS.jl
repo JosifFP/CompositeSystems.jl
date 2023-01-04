@@ -51,8 +51,6 @@ function assess(
         end
 
         for t in 2:N
-            #println("t=$(t)")
-            println("t=$(t), branch=$(systemstates.branches[:,t]), gens=$(systemstates.generators[:,t])")
             update!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
@@ -84,13 +82,7 @@ end
 function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; results::Bool=false)
 
     initialize_pm_containers!(pm, system; timeseries=false)
-
-    if length(system.storages) > 0
-        build_method_stor!(pm, system, 1)
-    else
-        build_method!(pm, system, 1)
-    end
-    
+    build_method!(pm, system, 1)
     optimize_method!(pm)
 
     if results == true

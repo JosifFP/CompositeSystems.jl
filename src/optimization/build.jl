@@ -17,54 +17,6 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
 
     # Add Constraints
     # ---------------
-
-    con_model_voltage(pm, system)
-
-    for i in field(system, :ref_buses)
-        con_theta_ref(pm, system, i)
-    end
-
-    for i in assetgrouplist(topology(pm, :loads_idxs))
-        con_power_factor(pm, system, i)
-    end
-
-    for i in assetgrouplist(topology(pm, :buses_idxs))
-        con_power_balance(pm, system, i, t)
-    end
-
-    for i in assetgrouplist(topology(pm, :storages_idxs))
-        con_storage_state(pm, system, i) # Model only considers initial stored energy (1 period).
-        con_storage_complementarity_mi(pm, system, i)
-        con_storage_losses(pm, system, i)
-        con_storage_thermal_limit(pm, system, i)
-    end
-
-    for i in assetgrouplist(topology(pm, :branches_idxs))
-        con_ohms_yt(pm, system, i)
-        con_voltage_angle_difference(pm, system, i)
-        con_thermal_limits(pm, system, i)
-    end
-
-    return
-
-end
-
-"Load Minimization version of OPF"
-function build_method_stor!(pm::AbstractPowerModel, system::SystemModel, t)
-
-    # Add Optimization and State Variables
-    var_bus_voltage(pm, system)
-    var_gen_power(pm, system)
-    var_branch_power(pm, system)
-    var_load_curtailment(pm, system, t)
-    var_storage_power_mi(pm, system)
-
-    objective_min_stor_load_curtailment(pm, system)
-
-    # Add Constraints
-    # ---------------
-    con_model_voltage(pm, system)
-    
     for i in field(system, :ref_buses)
         con_theta_ref(pm, system, i)
     end
@@ -84,9 +36,16 @@ function build_method_stor!(pm::AbstractPowerModel, system::SystemModel, t)
         con_storage_thermal_limit(pm, system, i)
     end
 
-    for i in assetgrouplist(topology(pm, :branches_idxs))
+    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+    active_branches = assetgrouplist(topology(pm, :branches_idxs))
+
+    for bp in active_buspairs
+        con_model_voltage(pm, bp)
+        con_voltage_angle_difference(pm, bp)
+    end
+
+    for i in active_branches
         con_ohms_yt(pm, system, i)
-        con_voltage_angle_difference(pm, system, i)
         con_thermal_limits(pm, system, i)
     end
 
@@ -97,7 +56,7 @@ end
 "Classic OPF from PowerModels.jl."
 function solve_opf(system::SystemModel, powermodel::Type, optimizer::MOI.OptimizerWithAttributes)
 
-    model = jump_model(JuMP.AUTOMATIC, optimizer,  string_names=true)
+    model = jump_model(JuMP.AUTOMATIC, optimizer)
     pm = abstract_model(powermodel, OPF.Topology(system), model)
     initialize_pm_containers!(pm, system; timeseries=false)
     build_opf!(pm, system)
@@ -120,9 +79,6 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 
     # Add Constraints
     # ---------------
-
-    con_model_voltage(pm, system)
-
     for i in field(system, :ref_buses)
         con_theta_ref(pm, system, i)
     end
@@ -138,9 +94,16 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
         con_storage_thermal_limit(pm, system, i)
     end
 
-    for i in assetgrouplist(topology(pm, :branches_idxs))
+    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+    active_branches = assetgrouplist(topology(pm, :branches_idxs))
+
+    for bp in active_buspairs
+        con_model_voltage(pm, bp)
+        con_voltage_angle_difference(pm, bp)
+    end
+
+    for i in active_branches
         con_ohms_yt(pm, system, i)
-        con_voltage_angle_difference(pm, system, i)
         con_thermal_limits(pm, system, i)
     end
 
@@ -151,19 +114,21 @@ end
 ""
 function update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
-    update_topology!(pm, system, states, t)
-    update_var_bus_voltage(pm, system, states, t)
-    update_var_gen_power(pm, system, states, t)
+    _update_topology!(pm, system, states, t)
+
+    for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
 
     for arc in field(system, :arcs)
         update_var_branch_power_real(pm, system, states, arc, t)
         update_var_branch_power_imaginary(pm, system, states, arc, t)
     end
 
-    reset_con_model_voltage(pm, system)
-    con_model_voltage(pm, system)
-
     for i in field(system, :buses, :keys)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance_nolc(pm, system, states, i, t)
     end
     
@@ -173,11 +138,24 @@ function update_opf!(pm::AbstractPowerModel, system::SystemModel, states::System
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
-        update_con_voltage_angle_difference(pm, system, states, i, t)
     end
 
-    reset_con_ohms_yt(pm, system)
-    for i in assetgrouplist(topology(pm, :branches_idxs))
+    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+    active_branches = assetgrouplist(topology(pm, :branches_idxs))
+
+    reset_con_model_voltage(pm, active_buspairs)
+    reset_con_ohms_yt(pm, active_branches)
+    #reset_con_voltage_angle_difference(pm, active_buspairs)
+
+    for (bp,buspair) in topology(pm, :buspairs)
+        update_var_buspair_cosine(pm, bp)
+        update_con_voltage_angle_difference(pm, bp)
+        if !ismissing(buspair)
+            con_model_voltage(pm, bp)
+        end
+    end
+
+    for i in active_branches
         con_ohms_yt(pm, system, i)
     end
 
@@ -188,9 +166,11 @@ end
 
 "Updates OPF formulation with Load Curtailment variables and constraints"
 function update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    
-    update_var_bus_voltage(pm, system, states, t)
-    update_var_gen_power(pm, system, states, t)
+
+    for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
 
     for arc in field(system, :arcs)
         update_var_branch_power_real(pm, system, states, arc, t)
@@ -202,10 +182,9 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
         update_var_load_curtailment_imaginary(pm, system, states, i, t)
     end
 
-    #reset_con_model_voltage(pm, system)
-    #con_model_voltage(pm, system)
-
     for i in field(system, :buses, :keys)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
     end
     
@@ -215,12 +194,26 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
-        update_con_voltage_angle_difference(pm, system, states, i, t)
     end
 
-    if t > 1 && (all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true)
-        reset_con_ohms_yt(pm, system)
-        for i in assetgrouplist(topology(pm, :branches_idxs))
+    if all(states.branches[:,t]) ≠ true || all(states.branches[:,t-1]) ≠ true
+        
+        active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+        active_branches = assetgrouplist(topology(pm, :branches_idxs))
+    
+        reset_con_model_voltage(pm, active_buspairs)
+        reset_con_ohms_yt(pm, active_branches)
+        #reset_con_voltage_angle_difference(pm, active_buspairs)
+    
+        for (bp,buspair) in topology(pm, :buspairs)
+            update_var_buspair_cosine(pm, bp)
+            #update_con_voltage_angle_difference(pm, bp)
+            if !ismissing(buspair)
+                con_model_voltage(pm, bp)
+            end
+        end
+        
+        for i in active_branches
             con_ohms_yt(pm, system, i)
         end
     end
@@ -230,9 +223,11 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 end
 
 function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    
-    update_var_bus_voltage(pm, system, states, t)
-    update_var_gen_power(pm, system, states, t)
+
+    for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
 
     for arc in field(system, :arcs)
         update_var_branch_power_real(pm, system, states, arc, t)
@@ -244,10 +239,9 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
         update_var_load_curtailment_imaginary(pm, system, states, i, t)
     end
 
-    #reset_con_model_voltage(pm, system)
-    #con_model_voltage(pm, system)
-
     for i in field(system, :buses, :keys)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
     end
     
@@ -257,15 +251,30 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
-        update_con_voltage_angle_difference(pm, system, states, i, t)
     end
 
     if  all(view(states.branches,:,t)) ≠ true
-        reset_con_ohms_yt(pm, system)
-        for i in assetgrouplist(topology(pm, :branches_idxs))
+        
+        active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+        active_branches = assetgrouplist(topology(pm, :branches_idxs))
+    
+        reset_con_model_voltage(pm, active_buspairs)
+        reset_con_ohms_yt(pm, active_branches)
+        #reset_con_voltage_angle_difference(pm, active_buspairs)
+    
+        for (bp,buspair) in topology(pm, :buspairs)
+            update_var_buspair_cosine(pm, bp)
+            #update_con_voltage_angle_difference(pm, bp)
+            if !ismissing(buspair)
+                con_model_voltage(pm, bp)
+            end
+        end
+    
+        for i in active_branches
             con_ohms_yt(pm, system, i)
         end
     end
+
     return
 
 end
@@ -376,6 +385,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
     if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
         for i in field(system, :loads, :keys)
             if haskey(plc, i) == false
+                println("hello")
                 get!(plc, i, field(system, :loads, :pd)[i,t])
             end
             states.plc[i,t] = abs.(getindex(plc, i))
@@ -389,8 +399,12 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
         #if sum(states.plc[:,t]) > 0
         #    println("t=$(t), plc = $(states.plc[:,t])")
         #end
-        #if sum(states.plc[5,t]) > 0
-         #   println("t=$(t), plc = $(states.plc[:,t]), branches = $(states.branches[:,t]), gens = $(states.generators[:,t])")  end
+        #if sum(states.plc[:,t]) > 0
+        #    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+        #    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+        #    pg = sum(values(build_sol_values(var(pm, :pg, nw))))
+        #    println("t=$(t), plc = $(states.plc[:,t]), branches = $(states.branches[:,t]), pg = $(pg)")  
+        #end
     else
         println("not solved, t=$(t), status=$(termination_status(pm.model))")        
     end

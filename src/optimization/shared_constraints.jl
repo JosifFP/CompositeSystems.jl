@@ -11,8 +11,8 @@ This constraint captures problem agnostic constraints that are used to link
 the model's voltage variables together, in addition to the standard problem
 formulation constraints.
 """
-function con_model_voltage(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
-    _con_model_voltage(pm, system, nw)
+function con_model_voltage(pm::AbstractPowerModel, bp::Tuple{Int,Int}; nw::Int=1)
+    _con_model_voltage(pm, bp, nw)
 end
 
 "Nodal power balance constraints"
@@ -73,24 +73,16 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::In
 end
 
 "Branch - Phase Angle Difference Constraints "
-function con_voltage_angle_difference(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_voltage_angle_difference(pm::AbstractPowerModel, bp::Tuple{Int,Int}; nw::Int=1)
 
-    f_bus = field(system, :branches, :f_bus)[i]
-    t_bus = field(system, :branches, :t_bus)[i]
-    buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
-    
-    if !ismissing(buspair)
-        if !ismissing(buspair) && Int(buspair[1]) == i
-            _con_voltage_angle_difference(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
-        end
-    end
+    f_bus,t_bus = bp
+    buspair = topology(pm, :buspairs)[bp]
+    _con_voltage_angle_difference(pm, nw, f_bus, t_bus, buspair[2], buspair[3])
 
 end
 
-
-
 "Polar Form"
-function _con_voltage_angle_difference(pm::AbstractPolarModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+function _con_voltage_angle_difference(pm::AbstractPolarModels, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
     
     va_fr = var(pm, :va, nw)[f_bus]
     va_to = var(pm, :va, nw)[t_bus]
@@ -104,11 +96,12 @@ function con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int;
 
     f_bus = field(system, :branches, :f_bus)[i] 
     t_bus = field(system, :branches, :t_bus)[i]
+    rate_a = field(system, :branches, :rate_a)[i]
     f_idx = (i, f_bus, t_bus)
     t_idx = (i, t_bus, f_bus)
 
-    _con_thermal_limit_from(pm, nw, i, f_idx, field(system, :branches, :rate_a)[i])
-    _con_thermal_limit_to(pm, nw, i, t_idx, field(system, :branches, :rate_a)[i])
+    _con_thermal_limit_from(pm, nw, i, f_idx, rate_a)
+    _con_thermal_limit_to(pm, nw, i, t_idx, rate_a)
 
 end
 
@@ -136,7 +129,6 @@ function con_power_factor(pm::AbstractPowerModel, system::SystemModel, i::Int; n
     #fix(var(pm, :z_demand, nw)[i], field(system, :loads, :pf)[i], force = true)
     plc   = var(pm, :plc, nw)[i]
     qlc   = var(pm, :qlc, nw)[i]
-
     con(pm, :power_factor, nw)[i] = @constraint(pm.model, field(system, :loads, :pf)[i]*plc - qlc == 0.0)
 
 end
@@ -150,7 +142,7 @@ function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i
     charge_eff = field(system, :storages, :charge_efficiency)[i]
     discharge_eff = field(system, :storages, :discharge_efficiency)[i]
 
-    if L==1 && T != Hour
+    if L==1 && T ≠ Hour
         @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
     end
 

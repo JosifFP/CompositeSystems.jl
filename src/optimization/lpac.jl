@@ -9,10 +9,9 @@ end
 ""
 function var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    phi = var(pm, :phi)[nw] = @variable(pm.model, phi[assetgrouplist(topology(pm, :buses_idxs))])
+    phi = var(pm, :phi)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :buses_idxs))])
 
     if bounded
-        #for i in field(system, :buses, :keys)
         for i in assetgrouplist(topology(pm, :buses_idxs))
             JuMP.set_lower_bound(phi[i], field(system, :buses, :vmin)[i] - 1.0)
             JuMP.set_upper_bound(phi[i], field(system, :buses, :vmax)[i] - 1.0)
@@ -25,7 +24,7 @@ end
 function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    cs = var(pm, :cs)[nw] = @variable(pm.model, cs[buspairs], start=1.0, container = Dict)
+    cs = var(pm, :cs)[nw] = @variable(pm.model, [buspairs], start=1.0, container = Dict)
 
     if bounded
         for (bp, buspair) in topology(pm, :buspairs)
@@ -55,22 +54,18 @@ end
 
 #***************************************************** CONSTRAINTS *************************************************************************
 ""
-function _con_model_voltage(pm::AbstractLPACModel, system::SystemModel, n::Int)
+function _con_model_voltage(pm::AbstractLPACModel, bp::Tuple{Int,Int}, n::Int)
 
-    _check_missing_keys(pm.var, [:va,:cs], typeof(pm))
+    #_check_missing_keys(pm.var, [:va,:cs], typeof(pm))
+    #t = var(pm, :va, n)
+    #cs = var(pm, :cs, n)
+    buspair = topology(pm, :buspairs)[bp]
+    i,j = bp
+    angmin = buspair[2]
+    angmax = buspair[3]
+    vad_max = max(abs(angmin), abs(angmax))
+    con(pm, :model_voltage, n)[bp] = JuMP.@constraint(pm.model, var(pm, :cs, n)[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(var(pm, :va, n)[i] - var(pm, :va, n)[j])^2)
 
-    t = var(pm, :va, n)
-    cs = var(pm, :cs, n)
-
-    for (bp, buspair) in topology(pm, :buspairs)
-        if !ismissing(buspair)
-            i,j = bp
-            angmin = buspair[2]
-            angmax = buspair[3]
-            vad_max = max(abs(angmin), abs(angmax))
-            con(pm, :model_voltage, n)[bp] = JuMP.@constraint(pm.model, cs[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(t[i] - t[j])^2)
-        end
-   end
 end
 
 ""
@@ -177,44 +172,39 @@ function _con_ohms_yt_to(pm::AbstractLPACModel, i::Int, nw::Int, f_bus::Int, t_b
 end
 
 #***************************************************** UPDATES *************************************************************************
+
 ""
-function update_var_bus_voltage(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
-    update_var_bus_voltage_angle(pm, system, states, t)
-    update_var_bus_voltage_magnitude(pm, system, states, t)
-    update_var_buspair_cosine(pm, system, states, t)
+function update_var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 end
 
 ""
-function update_var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
-end
-
-""
-function update_var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
+function update_var_buspair_cosine(pm::AbstractLPACModel, bp::Tuple{Int,Int})
 
     cs = var(pm, :cs, 1)
-    for (bp, buspair) in topology(pm, :buspairs)
-        if !ismissing(buspair)
-            angmin = buspair[2]
-            angmax = buspair[3]
-            if angmin >= 0
-                cos_max = cos(angmin)
-                cos_min = cos(angmax)
-            end
-            if angmax <= 0
-                cos_max = cos(angmax)
-                cos_min = cos(angmin)
-            end
-            if angmin < 0 && angmax > 0
-                cos_max = 1.0
-                cos_min = min(cos(angmin), cos(angmax))
-            end
-            JuMP.set_lower_bound(cs[bp], cos_min)
-            JuMP.set_upper_bound(cs[bp], cos_max)
-        else
-            JuMP.set_lower_bound(cs[bp], 0)
-            JuMP.set_upper_bound(cs[bp], 0)   
+    buspair = topology(pm, :buspairs)[bp]
+
+    if !ismissing(buspair)
+        angmin = buspair[2]
+        angmax = buspair[3]
+        if angmin >= 0
+            cos_max = cos(angmin)
+            cos_min = cos(angmax)
         end
+        if angmax <= 0
+            cos_max = cos(angmax)
+            cos_min = cos(angmin)
+        end
+        if angmin < 0 && angmax > 0
+            cos_max = 1.0
+            cos_min = min(cos(angmin), cos(angmax))
+        end
+        JuMP.set_lower_bound(cs[bp], cos_min)
+        JuMP.set_upper_bound(cs[bp], cos_max)
+    else
+        JuMP.set_lower_bound(cs[bp], 0)
+        JuMP.set_upper_bound(cs[bp], 0)   
     end
+    
 end
 
 ""
@@ -225,15 +215,15 @@ function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, st
     shunts_nodes = topology(pm, :shunts_nodes)[i]
     bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
     bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k]*field(states, :shunts)[k,t] for k in shunts_nodes])
-    bus_bs = Float32.([field(system, :shunts, :bs)[k]*field(states, :shunts)[k,t] for k in shunts_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes if field(states, :shunts)[k,t] == true])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes if field(states, :shunts)[k,t] == true])
 
     JuMP.set_normalized_coefficient(con(pm, :power_balance_p, 1)[i], phi[i], -sum(gs for gs in bus_gs)*2)
     JuMP.set_normalized_coefficient(con(pm, :power_balance_q, 1)[i], phi[i], +sum(bs for bs in bus_bs)*2)
 
     JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*(1.0))
     JuMP.set_normalized_rhs(con(pm, :power_balance_q, 1)[i], -sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0))
-
+        
 end
 
 ""
@@ -257,9 +247,7 @@ function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemMode
 end
 
 ""
-function reset_con_ohms_yt(pm::AbstractLPACModel, system::SystemModel)
-
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
+function reset_con_ohms_yt(pm::AbstractLPACModel, active_branches::Vector{Int})
     JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
     JuMP.delete(pm.model, con(pm, :ohms_yt_to_p, 1).data)
     JuMP.delete(pm.model, con(pm, :ohms_yt_from_q, 1).data)
@@ -268,16 +256,12 @@ function reset_con_ohms_yt(pm::AbstractLPACModel, system::SystemModel)
     add_con_container!(pm.con, :ohms_yt_to_p, active_branches)
     add_con_container!(pm.con, :ohms_yt_from_q, active_branches)
     add_con_container!(pm.con, :ohms_yt_to_q, active_branches)
-
 end
 
 ""
-function reset_con_model_voltage(pm::AbstractLPACModel, system::SystemModel)
-
-    buspair = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+function reset_con_model_voltage(pm::AbstractLPACModel, buspair::Vector{Tuple{Int, Int}})
     JuMP.delete(pm.model, con(pm, :model_voltage, 1).data)
     add_con_container!(pm.con, :model_voltage, buspair)
-
 end
 
 

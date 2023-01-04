@@ -14,7 +14,7 @@ struct SystemModel{N,L,T<:Period}
     arcs_from::Vector{Tuple{Int, Int, Int}}
     arcs_to::Vector{Tuple{Int, Int, Int}}
     arcs::Vector{Tuple{Int, Int, Int}}
-    buspairs::Dict{Tuple{Int, Int}, Vector{Float32}}
+    buspairs::Dict{Tuple{Int, Int}, Vector{Any}}
 
     baseMVA::Float32
     timestamps::StepRange{ZonedDateTime,T}
@@ -32,12 +32,12 @@ struct SystemModel{N,L,T<:Period}
         arcs_from::Vector{Tuple{Int, Int, Int}},
         arcs_to::Vector{Tuple{Int, Int, Int}},
         arcs::Vector{Tuple{Int, Int, Int}},
-        buspairs::Dict{Tuple{Int, Int}, Vector{Float32}},
+        buspairs::Dict{Tuple{Int, Int}, Vector{Any}},
         baseMVA::Float32,
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period}
     
-    if timestamps !== nothing
+    if timestamps ≠ nothing
         @assert step(timestamps) == T(L)
         @assert length(timestamps) == N
     end

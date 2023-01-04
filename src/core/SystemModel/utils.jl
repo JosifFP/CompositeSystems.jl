@@ -585,16 +585,18 @@ end
 function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
  
     buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
-    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_branch = Dict((bp, Int[]) for bp in buspair_indexes)
     bp_angmin = Dict((bp, -Inf32) for bp in buspair_indexes)
     bp_angmax = Dict((bp,  Inf32) for bp in buspair_indexes)
+    #bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
     
     for l in branch_lookup
         i = branches.f_bus[l]
         j = branches.t_bus[l]
         bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
         bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
-        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+        push!(bp_branch[(i,j)], l)
+        #bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
     end
     
     buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)

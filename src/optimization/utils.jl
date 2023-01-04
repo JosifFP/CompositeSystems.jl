@@ -141,13 +141,12 @@ function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::V
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, dict_keys::Dict{Tuple{Int, Int}, Union{Missing, Vector{Float32}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, dict_keys::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = Dict{Tuple{Int, Int}, Any}(((i,j), undef) for (i,j) in keys(dict_keys))
     var_container = container_spec(value, timesteps)
     _assign_container!(container, var_key, var_container)
     return var_container
-
 end
 
 ""
@@ -274,11 +273,10 @@ end
 ""
 function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states::Matrix{Bool}, t::Int)
     
-    states = view(asset_states, :, t)
     key_branches = assetgrouplist(topology(pm, :branches_idxs))
 
     for i in eachindex(key_branches)
-        if states[i] == false
+        if asset_states[i,t] == false
             topology(pm, :arcs_from)[i] = missing
             topology(pm, :arcs_to)[i] = missing
         else
@@ -315,7 +313,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
     while changed
         changed = false
         for i in field(system, :buses, :keys)
-            if states.buses[i,t] != 4
+            if states.buses[i,t] ≠ 4
                 incident_active_edge = 0
                 busarcs_i = topology(pm, :busarcs)[i]
                 if length(busarcs_i) > 0
@@ -335,7 +333,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 
         if changed
             for i in field(system, :branches, :keys)
-                if states.branches[i,t] != 0
+                if states.branches[i,t] ≠ 0
                     f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
                     t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
                     if f_bus == 4 || t_bus == 4
@@ -379,7 +377,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
     end
 
     for i in field(system, :branches, :keys)
-        if states.branches[i,t] != 0
+        if states.branches[i,t] ≠ 0
             f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
             t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
             if f_bus == 4 || t_bus == 4
@@ -397,22 +395,22 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
     for i in field(system, :buses, :keys)
         if states.buses[i,t] == 4
             for k in topology(pm, :loads_nodes)[i]
-                if states.loads[k,t] != 0
+                if states.loads[k,t] ≠ 0
                     states.loads[k,t] = 0
                 end
             end
             for k in topology(pm, :shunts_nodes)[i]
-                if states.shunts[k,t] != 0
+                if states.shunts[k,t] ≠ 0
                     states.shunts[k,t] = 0
                 end
             end
             for k in topology(pm, :generators_nodes)[i]
-                if states.generators[k,t] != 0
+                if states.generators[k,t] ≠ 0
                     states.generators[k,t] = 0
                 end
             end
             for k in topology(pm, :storages_nodes)[i]
-                if states.storages[k,t] != 0
+                if states.storages[k,t] ≠ 0
                     states.storages[k,t] = 0
                 end
             end
@@ -472,7 +470,7 @@ end
 ""
 function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
-    update_topology!(pm, system, states, t)
+    _update_topology!(pm, system, states, t)
     _update_method!(pm, system, states, t)
     optimize_method!(pm)
     build_result!(pm, system, states, t)

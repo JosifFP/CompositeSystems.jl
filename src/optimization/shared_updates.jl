@@ -1,59 +1,32 @@
 #***************************************************** VARIABLES *************************************************************************
-""
-function update_var_bus_voltage(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_var_bus_voltage_angle(pm, system, states, t)
-    update_var_bus_voltage_magnitude(pm, system, states, t)
-end
 
 ""
-function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
     
-    va = var(pm, :va, 1)
+    va_i = var(pm, :va, 1)[i]
 
-    for i in field(system, :buses, :keys)
-        if field(states, :buses)[i,t] == 4
-            JuMP.set_upper_bound(va[i], 0.0)
-            JuMP.set_lower_bound(va[i], 0.0)
-        elseif field(states, :buses)[i,t] != 3
-            if JuMP.has_upper_bound(va[i]) && JuMP.has_lower_bound(va[i]) 
-                JuMP.delete_upper_bound(va[i])
-                JuMP.delete_lower_bound(va[i])
-            end
+    if field(states, :buses)[i,t] == 4
+        JuMP.set_upper_bound(va_i, 0.0)
+        JuMP.set_lower_bound(va_i, 0.0)
+    else
+        if JuMP.has_upper_bound(va_i) && JuMP.has_lower_bound(va_i) 
+            JuMP.delete_upper_bound(va_i)
+            JuMP.delete_lower_bound(va_i)
         end
     end
 
 end
 
-"Do  nothing"
-function update_var_bus_voltage_magnitude(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+""
+function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+    JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators_de)[i,t])
+    #JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators_de)[i,t])
 end
 
 ""
-function update_var_gen_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_var_gen_power_real(pm, system, states, t)
-    update_var_gen_power_imaginary(pm, system, states, t)
-end
-
-""
-function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    pg = var(pm, :pg, 1)
-    for l in field(system, :generators, :keys)
-        JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators_de)[l,t])
-        JuMP.set_lower_bound(pg[l], field(system, :generators, :pmin)[l]*field(states, :generators_de)[l,t])
-    end
-
-end
-
-""
-function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    qg = var(pm, :qg, 1)
-    for l in field(system, :generators, :keys)
-        JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l]*field(states, :generators_de)[l,t])
-        JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l]*field(states, :generators_de)[l,t])
-    end
-
+function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+    JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators_de)[i,t])
+    JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators_de)[i,t])
 end
 
 ""
@@ -117,6 +90,10 @@ function update_var_load_curtailment_imaginary(pm::AbstractPowerModel, system::S
 
 end
 
+""
+function update_var_buspair_cosine(pm::AbstractPowerModel, bp::Tuple{Int,Int})
+end
+
 #***************************************************** STORAGE VAR UPDATES *************************************************************************
 ""
 function update_con_storage(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
@@ -175,24 +152,30 @@ function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, 
 end
 
 ""
-function update_con_voltage_angle_difference(pm::AbstractPolarModels, system::SystemModel, states::SystemStates, i::Int, t::Int)
+function update_con_voltage_angle_difference(pm::AbstractPolarModels, bp::Tuple{Int,Int}; nw::Int=1)
 
-    f_bus = field(system, :branches, :f_bus)[i]
-    t_bus = field(system, :branches, :t_bus)[i]    
-    buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
-
+    f_bus,t_bus = bp
+    buspair = topology(pm, :buspairs)[bp]
     if !ismissing(buspair)
         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[(f_bus, t_bus)], buspair[3])
         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[(f_bus, t_bus)], buspair[2])
     else
         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, 1)[(f_bus, t_bus)], Inf)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[(f_bus, t_bus)],-Inf)        
+        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, 1)[(f_bus, t_bus)],-Inf)
     end
-
-    return
 
 end
 
 ""
-function reset_con_model_voltage(pm::AbstractPowerModel, system::SystemModel)
+function reset_con_voltage_angle_difference(pm::AbstractPolarModels, buspair::Vector{Tuple{Int, Int}})
+
+    JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
+    JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
+    add_con_container!(pm.con, :voltage_angle_diff_upper, buspair)
+    add_con_container!(pm.con, :voltage_angle_diff_lower, buspair)
+
+end
+
+""
+function reset_con_model_voltage(pm::AbstractPowerModel, buspair::Vector{Tuple{Int, Int}})
 end

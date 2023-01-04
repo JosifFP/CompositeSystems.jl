@@ -8,7 +8,7 @@ end
 
 ""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-    var(pm, :va)[nw] = @variable(pm.model, va[field(system, :buses, :keys)])
+    var(pm, :va)[nw] = @variable(pm.model, va[assetgrouplist(topology(pm, :buses_idxs))])
 end
 
 ""
@@ -25,7 +25,8 @@ function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
             JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-            JuMP.set_lower_bound(pg[l], field(system, :generators, :pmin)[l])
+            JuMP.set_lower_bound(pg[l], 0.0)
+            #JuMP.set_lower_bound(pg[l], field(system, :generators, :pmin)[l])
         end
     end
 
@@ -34,7 +35,7 @@ end
 ""
 function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    qg = var(pm, :qg)[nw] = @variable(pm.model, qg[assetgrouplist(topology(pm, :generators_idxs))])
+    qg = var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
@@ -55,7 +56,7 @@ end
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
+    p = var(pm, :p)[nw] = @variable(pm.model, [arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -70,7 +71,7 @@ end
 function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    q = var(pm, :q)[nw] = @variable(pm.model, q[arcs], container = Dict)
+    q = var(pm, :q)[nw] = @variable(pm.model, [arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -88,35 +89,13 @@ function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::In
 end
 
 ""
-function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel; kwargs...)
-    var_load_curtailment_real(pm, system; kwargs...)
-    var_load_curtailment_imaginary(pm, system; kwargs...)
-end
-
-""
 function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
-
-    plc = var(pm, :plc)[nw] = @variable(pm.model, plc[field(system, :loads, :keys)], start =0.0)
-    #plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
-    #for l in assetgrouplist(topology(pm, :loads_idxs))
-
-    if bounded
-        for l in field(system, :loads, :keys)
-            JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
-            JuMP.set_lower_bound(plc[l],0.0)
-        end
-    end
-
-end
-
-""
-function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     plc = var(pm, :plc)[nw] = @variable(pm.model, plc[assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
     if bounded
         for l in assetgrouplist(topology(pm, :loads_idxs))
-            JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l])
+            JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
             JuMP.set_lower_bound(plc[l],0.0)
         end
     end
@@ -126,36 +105,15 @@ end
 ""
 function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 
-    qlc = var(pm, :qlc)[nw] = @variable(pm.model, qlc[field(system, :loads, :keys)], start =0.0)
+    qlc = var(pm, :qlc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
     if bounded
-        for l in field(system, :loads, :keys)
+        for l in assetgrouplist(topology(pm, :loads_idxs))
             JuMP.set_upper_bound(qlc[l], field(system, :loads, :pd)[l,t]*field(system, :loads, :pf)[l])
             JuMP.set_lower_bound(qlc[l],0.0)
         end
     end
 
-end
-
-""
-function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    qlc = var(pm, :plc)[nw] = @variable(pm.model, qlc[assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
-
-    if bounded
-        for l in assetgrouplist(topology(pm, :loads_idxs))
-            JuMP.set_upper_bound(qlc[l], field(system, :loads, :pd)[l]*field(system, :loads, :pf)[l])
-            JuMP.set_lower_bound(qlc[l],0.0)
-        end
-    end
-
-end
-
-""
-function var_load_power_factor_range(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
-
-    var(pm, :z_demand)[nw] = @variable(pm.model, [field(system, :loads, :keys)], lower_bound = 0, upper_bound = 1)
-    return
 end
 
 #**************************************************** STORAGE VARIABLES ************************************************************************

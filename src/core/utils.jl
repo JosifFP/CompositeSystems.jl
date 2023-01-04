@@ -202,7 +202,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
 
     #add load power factors
     for (i,load) in data["load"]
-        if load["pd"] > 0.0 || load["qd"] != 0.0
+        if load["pd"] > 0.0 || load["qd"] ≠ 0.0
             get!(load, "pf", load["qd"]/load["pd"])
         end
     end

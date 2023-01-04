@@ -25,7 +25,7 @@
         Settings,
 
         #functions
-        solve_opf, abstract_model, build_method!, build_method_stor!, update_method!, build_result!, optimize_method!, field,
+        solve_opf, abstract_model, build_method!, update_method!, build_result!, optimize_method!, field,
         var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, jump_model,
 
         #optimizationcontainers

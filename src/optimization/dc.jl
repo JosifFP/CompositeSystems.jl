@@ -55,7 +55,7 @@ end
 
 #***************************************************** CONSTRAINTS *************************************************************************
 "do nothing, most models to not require any model-specific voltage constraint"
-function _con_model_voltage(pm::AbstractDCPowerModel, system::SystemModel, n::Int)
+function _con_model_voltage(pm::AbstractDCPowerModel, bp::Tuple{Int,Int}, n::Int)
 end
 
 "Nothing to do, no voltage angle variables"
@@ -64,10 +64,6 @@ end
 
 "Model ignores reactive power flows"
 function con_power_factor(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
-end
-
-"do nothing."
-function _con_model_voltage(pm::AbstractDCPowerModel, n::Int)
 end
 
 ""
@@ -160,7 +156,7 @@ function _con_ohms_yt_to(pm::AbstractDCPLLModel, i::Int, nw::Int, f_bus::Int, t_
 end
 
 "Nothing to do, no voltage angle variables"
-function con_voltage_angle_difference(pm::AbstractNFAModel, system::SystemModel, i::Int; nw::Int=1)
+function con_voltage_angle_difference(pm::AbstractNFAModel, bp::Tuple{Int,Int}; nw::Int=1)
 end
 
 "Nothing to do, no voltage angle variables"
@@ -233,13 +229,16 @@ end
 
 
 #***************************************************** UPDATES *************************************************************************
+""
+function update_var_bus_voltage_angle(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+end
 
-"Do  nothing"
-function update_var_bus_voltage_magnitude(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+"Do nothing"
+function update_var_bus_voltage_magnitude(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 end
 
 "Model ignores reactive power flows"
-function update_var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 end
 
 "DC models ignore reactive power flows"
@@ -261,7 +260,8 @@ function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel,
     shunts_nodes = topology(pm, :shunts_nodes)[i]
     
     bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k]*field(states, :shunts)[k,t] for k in shunts_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes if field(states, :shunts)[k,t] == true])
+
 
     JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
     return
@@ -274,8 +274,8 @@ function update_con_power_balance_nolc(pm::AbstractDCPowerModel, system::SystemM
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t]*field(states, :loads)[k,t] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k]*field(states, :shunts)[k,t] for k in shunts_nodes])
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes if field(states, :loads)[k,t] == true])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes if field(states, :shunts)[k,t] == true])
 
     JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
     return
@@ -287,21 +287,27 @@ function update_con_thermal_limits(pm::AbstractDCPowerModel, system::SystemModel
 end
 
 ""
-function reset_con_ohms_yt(pm::AbstractDCPModel, system::SystemModel)
-
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
-    JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
-    add_con_container!(pm.con, :ohms_yt_from_p, active_branches)
-
+function update_con_voltage_angle_difference(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 end
 
 ""
-function reset_con_ohms_yt(pm::AbstractDCPLLModel, system::SystemModel)
+function reset_con_ohms_yt(pm::AbstractNFAModel, active_branches::Vector{Int})
+end
 
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
+""
+function reset_con_ohms_yt(pm::AbstractDCPModel, active_branches::Vector{Int})
+    JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
+    add_con_container!(pm.con, :ohms_yt_from_p, active_branches)
+end
+
+""
+function reset_con_ohms_yt(pm::AbstractDCPLLModel, active_branches::Vector{Int})
     JuMP.delete(pm.model, con(pm, :ohms_yt_from_p, 1).data)
     JuMP.delete(pm.model, con(pm, :ohms_yt_to_p, 1).data)
     add_con_container!(pm.con, :ohms_yt_from_p, active_branches)
     add_con_container!(pm.con, :ohms_yt_to_p, active_branches)
+end
 
+""
+function reset_con_voltage_angle_difference(pm::AbstractNFAModel, buspair::Vector{Tuple{Int, Int}})
 end
