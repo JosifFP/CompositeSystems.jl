@@ -6,8 +6,8 @@ struct SystemStates <: AbstractState
     buses::Matrix{Int}
     loads::Matrix{Bool}
     branches::Matrix{Bool}
+    commonbranches::Matrix{Bool}
     shunts::Matrix{Bool}
-    interfaces::Matrix{Bool}
     generators::Matrix{Bool}
     generators_de::Matrix{Float32}
     storages::Matrix{Bool}
@@ -43,8 +43,8 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     #branches_nexttransition = Int[]
     shunts = Array{Bool, 2}(undef, length(system.shunts), N)
     #shunts_nexttransition = Int[]
-    interfaces = Array{Bool, 2}(undef, length(system.interfaces), N)
-    #interfaces_nexttransition = Int[]
+    commonbranches = Array{Bool, 2}(undef, length(system.commonbranches), N)
+    #CommonBranches_nexttransition = Int[]
     generators = Array{Bool, 2}(undef, length(system.generators), N)
     generators_de = Array{Float32, 2}(undef, length(system.generators), N)
     #generators_nexttransition = Int[]
@@ -67,16 +67,15 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     fill!(sys, 1)
 
     if available==true
-        fill!(loads, 1)
         fill!(branches, 1)
+        fill!(commonbranches, 1)
         fill!(shunts, 1)
-        fill!(interfaces, 1)
         fill!(generators, 1)
         fill!(generators_de, 1)
         fill!(storages, 1)
         fill!(generatorstorages, 1)
     end
 
-    return SystemStates(buses, loads, branches, shunts, interfaces, generators, generators_de, storages, generatorstorages, se, gse, plc, qlc, sys)
+    return SystemStates(buses, loads, branches, commonbranches, shunts, generators, generators_de, storages, generatorstorages, se, gse, plc, qlc, sys)
     
 end

@@ -23,12 +23,12 @@ const pm_component_status_inactive = Dict(
 )
 
 ""
-function build_network(RawFile::String; replace=false, export_file=false, export_filetype::String="")
-    network = open(RawFile) do io
+function build_network(rawfile::String; replace::Bool=false, export_file::Bool=false, export_filetype::String="", symbol::Bool=true)
+    network = open(rawfile) do io
 
-        pm_data = parse_model(io, split(lowercase(RawFile), '.')[end])
+        pm_data = parse_model(io, split(lowercase(rawfile), '.')[end])
 
-        @warn("DataSanityCheck process changes/updates the network topology and input data
+        Memento.warn(_LOGGER, "DataSanityCheck process changes/updates the network topology and input data
             (for more details, please read InfrastructureModels and PowerModels printed messages). 
             To create/export a new file, type export_filetype = true. 
             Extension/filetype can be also specified using export_filetype=(string).
@@ -39,26 +39,22 @@ function build_network(RawFile::String; replace=false, export_file=false, export
         if export_file
 
             if isempty(export_filetype)
-                export_filetype = split(lowercase(RawFile), '.')[end]
+                export_filetype = split(lowercase(rawfile), '.')[end]
             end
-
-            file = RawFile[1:findlast(==('.'), RawFile)-1]
+            file = rawfile[1:findlast(==('.'), rawfile)-1]
             new_file = file*"_CompositeSystems_"*format(now(),"HHMMSS")*"."*export_filetype
             @info("A new file: $(new_file) has been created.")
             PowerModels.export_file(new_file, data)
-            return  Dict{Symbol, Any}(ref_initialize!(data))
 
-        elseif !export_file && !replace
-
-            return Dict{Symbol, Any}(ref_initialize!(data))
-
-        else !export_file && replace
-
-            PowerModels.export_file(RawFile, data)
-            return Dict{Symbol, Any}(ref_initialize!(data))
-
+        elseif !export_file && replace
+            PowerModels.export_file(rawfile, data)
         end
 
+        if symbol == true
+            return  Dict{Symbol, Any}(ref_initialize!(data))
+        else
+            return  Dict{String, Any}(data)
+        end
     end
 
     return network
@@ -139,7 +135,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     PowerModels.simplify_network!(data)
 
     # ensure single connected component.
-    PowerModels.select_largest_component!(data)
+    #PowerModels.select_largest_component!(data)
 
     # ensure there is exactly one reference bus
     ref_buses = Set{Int}()
@@ -211,7 +207,8 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
         end
     end
 
-    get!(pm_data, "CompositeSystems_sanity_check", true)
+    data["commonbranch"] = Dict{Int, Any}()
+    get!(data, "Sanity_check", true)
 
     return data
 

@@ -2,9 +2,9 @@
 This structure ensures that the type instability of parametrics N and L are out of SystemModel structure and functions.
 To be improved/enhanced.
 """
-struct StaticParameters{N,L,T}
+struct static_parameters{N,L,T}
     timestamps::StepRange{ZonedDateTime,T}
-    function StaticParameters{N,L,T}(;start_timestamp::Union{Nothing, DateTime}=nothing, timezone::Union{Nothing, String}=nothing) where {N,L,T<:Period}
+    function static_parameters{N,L,T}(start_timestamp::Union{Nothing, DateTime}, timezone::Union{Nothing, String}) where {N,L,T<:Period}
 
         if isnothing(start_timestamp) && isnothing(timezone)
             @warn "No time zone data provided - defaulting to UTC. To specify a " *
@@ -46,7 +46,7 @@ const gen_fields = [
     ("pmin", Float32),
     ("qmax", Float32), 
     ("qmin", Float32),
-    ("mbase", Int),
+    ("mbase", Float32),
     ("cost", Vector{Any}),
     ("state_model", Int),
     ("λ_updn", Float64),
@@ -88,7 +88,7 @@ const shunt_fields = [
     ("status", Bool)
 ]
 
-const interface_fields = [
+const commonbranch_fields = [
     ("index", Int),
     ("f_bus", Int),
     ("t_bus", Int),
@@ -130,16 +130,24 @@ const storage_fields = [
     ("status", Bool)
 ]
 
-const CompositeSystems_fields = [
+const compositesystems_fields = [
+    ("state_model", Int),
     ("λ_updn", Float64),
     ("μ_updn", Float64),
+    ("common_mode", Int),
+    ("λ_common", Float64),
+    ("μ_common", Float64),
+    ("λ_upde", Float64),
+    ("μ_upde", Float64),
+    ("firm_load", Float32),
+    ("pde", Float32),
     ("cost", Float32)
 ]
 
 const r_gen = [
     ("bus", Int),
     ("pmax", Float32),
-    ("state_model", Float32),
+    ("state_model", Int),
     ("λ_updn", Float64),
     ("μ_updn", Float64),
     ("λ_upde", Float64),
@@ -177,13 +185,16 @@ const r_load = [
 ""
 function container(dict::Dict{Int, <:Any}, type::Vector{Tuple{String, DataType}})
 
-    dict =  deepcopy(dict)
     for (_,v) in dict
         for i in eachindex(type)
             if haskey(v, type[i][1]) == true
                 v[type[i][1]] = type[i][2](v[type[i][1]])
-            elseif type[i] in CompositeSystems_fields
+            elseif type[i] in compositesystems_fields
                 get!(v, type[i][1], type[i][2](0))
+            else
+                if type[i][1] == "rate_a" || type[i][1] == "rate_b"
+                    get!(v, type[i][1], Inf32)
+                end
             end
         end
     end
@@ -201,11 +212,11 @@ function container(dict::Dict{Int, <:Any}, type::Vector{Tuple{String, DataType}}
 end
 
 ""
-function parse_reliability_data(file::String)
+function extract_reliability_data(file::String)
 
     reliability_data = open(file) do io
         matlab_data = InfrastructureModels.parse_matlab_string(read(io, String))
-        reliability_data = _parse_reliability_data(matlab_data)
+        reliability_data = _extract_reliability_data(matlab_data)
     end
 
     return Dict{String, Any}(reliability_data)
@@ -213,7 +224,7 @@ function parse_reliability_data(file::String)
 end
 
 ""
-function _parse_reliability_data(matlab_data::Dict{String, Any})
+function _extract_reliability_data(matlab_data::Dict{String, Any})
 
     case = Dict{String,Any}()
 
@@ -282,17 +293,20 @@ function _parse_reliability_data(matlab_data::Dict{String, Any})
 
 end
 
-
 "Returns network data container with reliability_data and timeseries_data merged"
-function merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float32}}, SP::StaticParameters{N}) where {N}
-
+function merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float32}})
     get!(network, :timeseries_load, timeseries_data)
-    return _merge_CompositeSystems_data!(network, reliability_data, SP)
+    return _merge_compositesystems_data!(network, reliability_data)
+end
 
+"Returns network data container with reliability_data"
+function merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any})
+    get!(network, :timeseries_load, "")
+    return _merge_compositesystems_data!(network, reliability_data)
 end
 
 "Returns network data container with reliability_data and timeseries_data merged"
-function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, SP::StaticParameters{N}) where {N}
+function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any})
 
     for (k,v) in network[:gen]
         i = string(k)
@@ -307,13 +321,14 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
             else
                 @error("Generation reliability data does differ from network data")
             end
+        else
+            @error("Insufficient generation reliability data provided")
         end
     end
 
     for (k,v) in network[:storage]
         i = string(k)
         if haskey(reliability_data["storage"], i)
-
             if v["storage_bus"] == reliability_data["storage"][i]["bus"] && 
             v["energy_rating"]*network[:baseMVA] == reliability_data["storage"][i]["energy_rating"]
                 get!(v, "λ_updn", reliability_data["storage"][i]["λ_updn"])
@@ -321,6 +336,8 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
             else
                 @error("Storage reliability data does differ from network data")
             end
+        else
+            @error("Insufficient storage reliability data provided")
         end
     end
     
@@ -330,6 +347,8 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
             get!(v, "common_mode", reliability_data["branch"][i]["common_mode"])
             get!(v, "λ_updn", reliability_data["branch"][i]["λ_updn"])
             get!(v, "μ_updn", reliability_data["branch"][i]["μ_updn"])
+        else
+            @error("Insufficient transmission reliability data provided")
         end
     end
     
@@ -341,22 +360,20 @@ function _merge_CompositeSystems_data!(network::Dict{Symbol, Any}, reliability_d
         end
     end
 
-    network[:interface] = Dict{Int, Any}()
-
     for (k,v) in reliability_data["branch"]
         if v["common_mode"] ≠ 0
-            if !haskey(network[:interface], v["common_mode"])
+            if !haskey(network[:commonbranch], v["common_mode"])
 
-                get!(network[:interface], v["common_mode"], 
+                get!(network[:commonbranch], v["common_mode"], 
                     Dict("index"=>v["common_mode"], "f_bus"=> v["f_bus"], 
                     "t_bus"=> v["t_bus"], "λ_updn"=> v["λ_common"], 
                     "μ_updn"=> v["μ_common"], "br_1"=>parse(Int, k))
                 )
             
-            elseif haskey(network[:interface], v["common_mode"]) && !haskey(v, "br_2")
-                get!(network[:interface][v["common_mode"]], "br_2", parse(Int, k))
+            elseif haskey(network[:commonbranch], v["common_mode"]) && !haskey(v, "br_2")
+                get!(network[:commonbranch][v["common_mode"]], "br_2", parse(Int, k))
             else
-                @error("Interfaces only supports two transmission lines")
+                @error("CommonBranches only supports two transmission lines between common buses")
             end
         end
     end
@@ -396,7 +413,7 @@ function extract_timeseriesload(file::String)
     L::Int = dict_core[:timestep_length][1]
     start_timestamp::DateTime = dict_core[:start_timestamp][1]
     timezone::String = dict_core[:timezone][1]
-    SP = StaticParameters{N,L,T}(start_timestamp=start_timestamp, timezone=timezone)
+    SP = static_parameters{N,L,T}(start_timestamp, timezone)
 
     return dict_timeseries, SP
 
@@ -442,7 +459,7 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert Float32.(ref[:gen][k]["pmin"]) == generators.pmin[k]
         @assert Float32.(ref[:gen][k]["qmax"]) == generators.qmax[k]
         @assert Float32.(ref[:gen][k]["qmin"]) == generators.qmin[k]
-        @assert Int.(ref[:gen][k]["mbase"]) == generators.mbase[k]
+        @assert Float32.(ref[:gen][k]["mbase"]) == generators.mbase[k]
         @assert Bool.(ref[:gen][k]["gen_status"]) == generators.status[k]
     end
     
@@ -561,5 +578,37 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
         #     @warn( "active dcline $(i) is connected to inactive bus $(dcline["t_bus"])")
         # end
     end
+
+end
+
+""
+function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
+ 
+    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf32) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf32) for bp in buspair_indexes)
+    
+    for l in branch_lookup
+        i = branches.f_bus[l]
+        j = branches.t_bus[l]
+        bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
+        bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
+        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+    end
+    
+    buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
+        #"tap"=>Float32(branches.tap[bp_branch[(i,j)]]),
+        #"vm_fr_min"=>Float32(field(buses, :vmin)[i]),
+        #"vm_fr_max"=>Float32(field(buses, :vmax)[i]),
+        #"vm_to_min"=>Float32(field(buses, :vmin)[j]),
+        #"vm_to_max"=>Float32(field(buses, :vmax)[j]),
+    
+    # add optional parameters
+    #for bp in buspair_indexes
+    #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
+    #end
+    
+    return buspairs
 
 end

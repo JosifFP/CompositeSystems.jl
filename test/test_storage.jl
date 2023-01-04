@@ -3,22 +3,22 @@ import PowerModels, JuMP
 using Test
 import CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
 import InfrastructureModels
-Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS2.m"
+rawfile = "test/data/RBTS/Base/RBTS.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS2.m"
 
-Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
-Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
-TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
+Storage_rawfile = "test/data/RBTS/Storage/RBTS.m"
+Storage_reliabilityfile = "test/data/RBTS/Storage/R_RBTS.m"
+timeseriesfile = "test/data/RBTS/Loads.xlsx"
 
 #DCMPPowerModel
 #DCPLLPowerModel
 settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode=JuMP.AUTOMATIC, powermodel=OPF.DCPLLPowerModel)
 
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
-timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
+timeseries_load, SParametrics = BaseModule.extract_timeseriesload(timeseriesfile)
 
-system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
-#system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
+system = BaseModule.SystemModel(Storage_rawfile, Storage_reliabilityfile, timeseries_load, SParametrics)
+#system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseries_load, SParametrics)
 
 run()
 

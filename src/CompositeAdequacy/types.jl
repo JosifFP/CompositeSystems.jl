@@ -8,11 +8,6 @@ abstract type Result{
     T <: Period, # Units of each simulation timestep
 } end
 
-#AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
-#AbstractActivePowerModel = Union{AbstractDCPModel, DCPPowerModel, AbstractDCMPPModel, AbstractNFAModel, NFAPowerModel,DCPLLPowerModel}
-#AbstractWModels = Union{AbstractWRModels, AbstractBFModel}
-
-
 "Definition of SequentialMCS method"
 struct SequentialMCS <: SimulationSpec
 

@@ -18,7 +18,7 @@ struct Topology
     arcs_from::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
-    busarcs::Matrix{Union{Missing, Tuple{Int, Int, Int}}}
+    busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Float32}}}
 
     function Topology(system::SystemModel{N}) where {N}
@@ -28,56 +28,39 @@ struct Topology
 
         key_loads = filter(i->field(system, :loads, :status)[i], field(system, :loads, :keys))
         loads_idxs = makeidxlist(key_loads, length(system.loads))
-        tmp = Dict((i, Int[]) for i in key_buses)
-        loads_nodes = bus_asset!(tmp, key_loads, field(system, :loads, :buses))
+        loads_nodes = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(loads_nodes, key_loads, field(system, :loads, :buses))
 
         key_shunts = filter(i->field(system, :shunts, :status)[i], field(system, :shunts, :keys))
         shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
-        tmp = Dict((i, Int[]) for i in key_buses)
-        shunts_nodes = bus_asset!(tmp, key_shunts, field(system, :shunts, :buses))
+        shunts_nodes = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(shunts_nodes, key_shunts, field(system, :shunts, :buses))
 
         key_generators = filter(i->field(system, :generators, :status)[i], field(system, :generators, :keys))
         generators_idxs = makeidxlist(key_generators, length(system.generators))
-        tmp = Dict((i, Int[]) for i in key_buses)
-        generators_nodes = bus_asset!(tmp, key_generators, field(system, :generators, :buses))
+        generators_nodes = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(generators_nodes, key_generators, field(system, :generators, :buses))
 
         key_storages = filter(i->field(system, :storages, :status)[i], field(system, :storages, :keys))
         storages_idxs = makeidxlist(key_storages, length(system.storages))
-        tmp = Dict((i, Int[]) for i in key_buses)
-        storages_nodes = bus_asset!(tmp, key_storages, field(system, :storages, :buses))
+        storages_nodes = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(storages_nodes, key_storages, field(system, :storages, :buses))
 
         key_generatorstorages = filter(i->field(system, :generatorstorages, :status)[i], field(system, :generatorstorages, :keys))
         generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
-        tmp = Dict((i, Int[]) for i in key_buses)
-        generatorstorages_nodes = bus_asset!(tmp, key_generatorstorages, field(system, :generatorstorages, :buses))
+        generatorstorages_nodes = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(generatorstorages_nodes, key_generatorstorages, field(system, :generatorstorages, :buses))
 
         key_branches = filter(i->field(system, :branches, :status)[i], field(system, :branches, :keys))
         branches_idxs = makeidxlist(key_branches, length(system.branches))
 
-        Nodes = length(system.buses)
-        Edges = length(system.branches)
-
-        A = Array{Union{Missing,Tuple{Int,Int,Int}}, 2}(undef, Nodes, Edges)
-
-        f_bus = field(system, :branches, :f_bus)
-        t_bus = field(system, :branches, :t_bus)
-        keys = field(system, :branches, :keys)
-
-        for j in keys
-            for i in field(system, :branches, :keys)
-                if f_bus[j]==i
-                    A[i,j] = (j, f_bus[j], t_bus[j])
-                elseif t_bus[j]==i
-                    A[i,j] = (j, t_bus[j], f_bus[j])
-                end
-            end
-        end
-
-        arcs_from = filter(i -> i[2] < i[3], skipmissing(A))
-        arcs_to = filter(i -> i[2] > i[3], skipmissing(A))
+        arcs_from = deepcopy(system.arcs_from)
+        arcs_to = deepcopy(system.arcs_to)
         arcs = [arcs_from; arcs_to]
+        buspairs = deepcopy(system.buspairs)
 
-        buspairs = calc_buspair_parameters(field(system, :branches), keys)
+        busarcs = Dict((i, Tuple{Int, Int, Int}[]) for i in eachindex(key_buses))
+        bus_asset!(busarcs, arcs)
 
         return new(
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
@@ -85,7 +68,7 @@ struct Topology
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
             generatorstorages_idxs::Vector{UnitRange{Int}}, 
             loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
-            arcs_from, arcs_to, arcs, A, buspairs)
+            arcs_from, arcs_to, arcs, busarcs, buspairs)
     end
 
 end
@@ -141,7 +124,7 @@ abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
 struct PM_DCPPowerModel <: PM_AbstractDCPModel @pm_fields end
 
 AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
-AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPModel}
+AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPowerModel}
 
 ""
 struct Settings
@@ -161,7 +144,7 @@ struct Settings
 end
 
 ""
-function jump_model(modelmode::JuMP.ModelMode, optimizer)
+function jump_model(modelmode::JuMP.ModelMode, optimizer; string_names = false)
 
     if modelmode == JuMP.AUTOMATIC
         jump_model = Model(optimizer; add_bridges = false)
@@ -172,7 +155,10 @@ function jump_model(modelmode::JuMP.ModelMode, optimizer)
         @warn("Manual Mode not supported")
     end
 
-    JuMP.set_string_names_on_creation(jump_model, false)
+    if string_names == false
+        JuMP.set_string_names_on_creation(jump_model, false)
+    end
+
     JuMP.set_silent(jump_model)
 
     return jump_model
@@ -182,7 +168,7 @@ end
 
 "Constructor for an AbstractPowerModel modeling object"
 function abstract_model(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractPowerModel}
-    
+
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()
     return M(model, topology, var, con)
@@ -205,8 +191,9 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
-        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
-        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :model_voltage, keys(field(system, :buspairs)))
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
@@ -256,8 +243,9 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_from_q, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_q, field(system, :branches, :keys))
-        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
-        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :model_voltage, keys(field(system, :buspairs)))
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
@@ -282,14 +270,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
 end
 
 ""
-function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    build_method!(pm, system, states, t)
-    optimize_method!(pm)
-    build_result!(pm, system, states, t)
-    return
-end
-
-""
 function empty_model!(pm::AbstractDCPowerModel)
     JuMP.empty!(pm.model)
     MOIU.reset_optimizer(pm.model)
@@ -301,7 +281,7 @@ function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Se
 
     if iszero(s%10) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    elseif iszero(s%50) && settings.optimizer == Gurobi
+    elseif iszero(s%30) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     else
         MOIU.reset_optimizer(pm.model)
@@ -319,13 +299,23 @@ function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::S
 
     update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
     update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+
+    update_idxs!(
+        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
+        topology(pm, :generators_idxs), topology(pm, :generators_nodes), field(system, :generators, :buses)
+    )
     
-    if all(view(field(states, :branches),:,t)) == false
-        update_idxs!(filter(i->states.generators[i,t], field(system, :generators, :keys)), topology(pm, :generators_idxs))
-        update_idxs!(filter(i->states.shunts[i,t], field(system, :shunts, :keys)), topology(pm, :shunts_idxs)) 
-        simplify!(system, states, pm.topology, t)
+    update_idxs!(
+        filter(i->states.shunts[i,t], field(system, :shunts, :keys)),
+        topology(pm, :shunts_idxs), topology(pm, :shunts_nodes), field(system, :shunts, :buses)
+    )
+    
+    if all(view(field(states, :branches),:,t)) == false 
+        simplify!(pm, system, states, t)
     end
-    #update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+
+    update_arcs!(pm, system, states.branches, t)
+    
     return
 
 end

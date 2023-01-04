@@ -27,9 +27,8 @@ function initialize_availability!(
                 end
 
                 for k = 1:N
-                    if sequence_de[k] > 0.0 && sequence_de[k] < 1.0
-                        sequence[k] = false
-                    elseif sequence_de[k] == 0.0
+                    #if sequence_de[k] > 0.0 && sequence_de[k] < 1.0 #sequence[k] = false
+                    if sequence_de[k] == 0.0
                         sequence[k] = false
                     end
                 end
@@ -77,7 +76,7 @@ end
 function initialize_availability!(
     rng::AbstractRNG,
     availability::Matrix{Bool},
-    asset::Interfaces, N::Int)
+    asset::CommonBranches, N::Int)
 
     for i in asset.keys
         sequence = view(availability, i, :)
@@ -227,10 +226,10 @@ function initialize_availability_system!(states::SystemStates, system::SystemMod
 
         total_gen::Float32 = sum(field(system, :generators, :pmax).*field(states, :generators_de)[:,t])
 
-        if all(view(field(states, :interfaces),:,t)) == false
+        if all(view(field(states, :commonbranches),:,t)) == false
             for k in field(system, :branches, :keys)
                 if field(system, :branches, :common_mode)[k] ≠ 0
-                    if states.interfaces[field(system, :branches, :common_mode)[k],t] == false
+                    if states.commonbranches[field(system, :branches, :common_mode)[k],t] == false
                         states.branches[k,t] = false
                     end
                 end

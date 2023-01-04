@@ -38,10 +38,6 @@ function assess(
     model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
     pm = abstract_model(settings.powermodel, Topology(system), model)
 
-    #model for non-contingency states
-    #ncmodel = jump_model(settings.modelmode, deepcopy(settings.optimizer))
-    #ncpm = abstract_model(settings.powermodel, Topology(system), ncmodel)
-
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
@@ -55,7 +51,8 @@ function assess(
         end
 
         for t in 2:N
-            #println("t=$(t), branch=$(systemstates.branches[:,t]), gens=$(systemstates.generators[:,t])")
+            #println("t=$(t)")
+            println("t=$(t), branch=$(systemstates.branches[:,t]), gens=$(systemstates.generators[:,t])")
             update!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
@@ -74,7 +71,7 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
 
     initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
     initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
-    initialize_availability!(rng, field(states, :interfaces), field(system, :interfaces), N)
+    initialize_availability!(rng, field(states, :commonbranches), field(system, :commonbranches), N)
     initialize_availability!(rng, field(states, :generators),field(states, :generators_de), field(system, :generators), N)
     initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
     initialize_availability_system!(states, system, N)
@@ -89,9 +86,9 @@ function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, sta
     initialize_pm_containers!(pm, system; timeseries=false)
 
     if length(system.storages) > 0
-        build_method_stor!(pm, system, states, 1)
+        build_method_stor!(pm, system, 1)
     else
-        build_method!(pm, system, states, 1)
+        build_method!(pm, system, 1)
     end
     
     optimize_method!(pm)

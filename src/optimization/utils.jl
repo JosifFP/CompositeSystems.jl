@@ -30,6 +30,7 @@ topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol, nw::Int) = get
 var(pm::AbstractPowerModel) = getfield(pm, :var)
 var(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :var), field)
 var(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :var), field), nw)
+var(pm::AbstractPowerModel, field::Symbol, ::Colon) = getindex(getindex(getfield(pm, :var), field), 1)
 
 con(pm::AbstractPowerModel) = getfield(pm, :con)
 con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :con), field)
@@ -44,11 +45,19 @@ BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield
 BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
 
 ""
-function bus_asset!(tmp::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, bus_assets::Vector{Int})
+function bus_asset!(asset_dict_nodes::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, asset_buses::Vector{Int})
     for k in key_assets
-        push!(tmp[bus_assets[k]], k)
+        push!(asset_dict_nodes[asset_buses[k]], k)
     end
-    return tmp
+    return asset_dict_nodes
+end
+
+""
+function bus_asset!(busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}})
+    for (l,i,j) in arcs
+        push!(busarcs[i], (l,i,j))
+    end
+    return busarcs
 end
 
 """
@@ -106,6 +115,24 @@ end
 
 ""
 function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(JuMP.ConstraintRef, keys)
+    con_container = container_spec(value, timesteps)
+    _assign_container!(container, con_key, con_container)
+    return
+end
+
+""
+function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Base.KeySet{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(JuMP.ConstraintRef, keys)
+    con_container = container_spec(value, timesteps)
+    _assign_container!(container, con_key, con_container)
+    return
+end
+
+""
+function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
     con_container = container_spec(value, timesteps)
@@ -175,83 +202,6 @@ function calc_connected_components(topology::Topology, branches::Branches)
 end
 
 ""
-function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
- 
-    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
-    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
-    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
-    
-    for l in branch_lookup
-        i = branches.f_bus[l]
-        j = branches.t_bus[l]
-        bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
-        bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
-        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
-    end
-    
-    buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
-        #"tap"=>Float32(branches.tap[bp_branch[(i,j)]]),
-        #"vm_fr_min"=>Float32(field(buses, :vmin)[i]),
-        #"vm_fr_max"=>Float32(field(buses, :vmax)[i]),
-        #"vm_to_min"=>Float32(field(buses, :vmin)[j]),
-        #"vm_to_max"=>Float32(field(buses, :vmax)[j]),
-    
-    # add optional parameters
-    #for bp in buspair_indexes
-    #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
-    #end
-    
-    return buspairs
-
-end
-
-"compute bus pair level data, can be run on data or ref data structures"
-function calc_buspair_parameters(buses, branches)
-
-    bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
-    branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 && 
-        haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
-    buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
-    bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
-    bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
-
-    for (l,branch) in branch_lookup
-        i = branch["f_bus"]
-        j = branch["t_bus"]
-        bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
-        bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
-        bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
-    end
-
-    buspairs = Dict((i,j) => Dict(
-        "branch"=>bp_branch[(i,j)],
-        "angmin"=>bp_angmin[(i,j)],
-        "angmax"=>bp_angmax[(i,j)],
-        "tap"=>branch_lookup[bp_branch[(i,j)]]["tap"],
-        #"vm_fr_min"=>bus_lookup[i]["vmin"],
-        #"vm_fr_max"=>bus_lookup[i]["vmax"],
-        #"vm_to_min"=>bus_lookup[j]["vmin"],
-        #"vm_to_max"=>bus_lookup[j]["vmax"]
-        ) for (i,j) in buspair_indexes
-    )
-
-    # add optional parameters
-    for bp in buspair_indexes
-        branch = branch_lookup[bp_branch[bp]]
-        if haskey(branch, "rate_a")
-            buspairs[bp]["rate_a"] = branch["rate_a"]
-        end
-        if haskey(branch, "c_rating_a")
-            buspairs[bp]["c_rating_a"] = branch["c_rating_a"]
-        end
-    end
-
-    return buspairs
-end
-
-""
 function Base.getproperty(e::AbstractPowerModel, s::Symbol) 
     if s === :model 
         getfield(e, :model)::JuMP.Model
@@ -281,11 +231,9 @@ end
 function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}=1:1) where {T <: Dict}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
-
     for i in timesteps
         container[i] = value
     end
-
     return
 end
 
@@ -293,11 +241,9 @@ end
 function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.VariableRef, keys)
-
     for i in timesteps
         container[i] = value
     end
-
     return
 end
 
@@ -305,35 +251,10 @@ end
 function reset_con_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
-
     for i in timesteps
         container[i] = value
     end
-
     return
-end
-
-""
-function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) where {N}
-
-    reset_var_container!(var(pm, :pg), field(system, :generators, :keys))
-    reset_var_container!(var(pm, :va), field(system, :buses, :keys))
-    reset_var_container!(var(pm, :plc), field(system, :loads, :keys))
-    reset_var_container!(var(pm, :p), topology(pm, :arcs))
-    reset_con_container!(con(pm, :power_balance_p), field(system, :buses, :keys))
-    reset_con_container!(con(pm, :ohms_yt_from), field(system, :branches, :keys))
-    reset_con_container!(con(pm, :ohms_yt_to), field(system, :branches, :keys))
-    reset_con_container!(con(pm, :voltage_angle_diff_upper), field(system, :branches, :keys))
-    reset_con_container!(con(pm, :voltage_angle_diff_lower), field(system, :branches, :keys))
-    return
-
-end
-
-""
-function update_asset_nodes!(key_assets::Vector{Int}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
-    @inbounds for k in key_assets
-        push!(bus_assets[buses[k]], k)
-    end
 end
 
 ""
@@ -342,53 +263,53 @@ function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int
 end
 
 "Update asset_idxs and asset_nodes"
-function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, bus_assets::Dict{Int, Vector{Int}}, buses::Vector{Int})
-    
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, asset_dict_nodes::Dict{Int, Vector{Int}}, asset_buses::Vector{Int})
+
     assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
-    map!(x -> Int[], bus_assets)
-    update_asset_nodes!(key_assets, bus_assets, buses)
+    map!(x -> Int[], asset_dict_nodes)
+    bus_asset!(asset_dict_nodes, key_assets, asset_buses)
 
 end
 
 ""
-function update_arcs!(branches::Branches, actual_topology::Topology, initial_topology::Topology, asset_states::Matrix{Bool}, t::Int)
+function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states::Matrix{Bool}, t::Int)
     
-    state = view(asset_states, :, t)
-    
-    for i in eachindex(state)
+    states = view(asset_states, :, t)
+    key_branches = assetgrouplist(topology(pm, :branches_idxs))
 
-        f_bus = field(branches, :f_bus)[i]
-        t_bus = field(branches, :t_bus)[i]
-
-        if state[i] == false
-            field(actual_topology, :busarcs)[:,i] = Array{Missing}(undef, size(field(actual_topology, :busarcs),1))
-            field(actual_topology, :arcs_from)[i] = missing
-            field(actual_topology, :arcs_to)[i] = missing
-            field(actual_topology, :buspairs)[(f_bus, t_bus)] = missing
+    for i in eachindex(key_branches)
+        if states[i] == false
+            topology(pm, :arcs_from)[i] = missing
+            topology(pm, :arcs_to)[i] = missing
         else
-            field(actual_topology, :busarcs)[:,i] = field(initial_topology, :busarcs)[:,i]
-            field(actual_topology, :arcs_from)[i] = field(initial_topology, :arcs_from)[i]
-            field(actual_topology, :arcs_to)[i] = field(initial_topology, :arcs_to)[i]
-            field(actual_topology, :buspairs)[(f_bus, t_bus)] = field(initial_topology, :buspairs)[(f_bus, t_bus)]
+            topology(pm, :arcs_from)[i] = field(system, :arcs_from)[i]
+            topology(pm, :arcs_to)[i] = field(system, :arcs_to)[i]
         end
     end
    
-    field(actual_topology, :arcs)[:] = [field(actual_topology, :arcs_from); field(actual_topology, :arcs_to)]
+    topology(pm, :arcs)[:] = [topology(pm, :arcs_from); topology(pm, :arcs_to)]
+
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+    map!(x -> Int[], topology(pm, :busarcs))
+    bus_asset!(topology(pm, :busarcs), arcs)
+
+    buspairs = BaseModule.calc_buspair_parameters(field(system, :branches), key_branches)
+    for (i,j) in eachindex(field(system, :buspairs))
+        if !haskey(buspairs,(i,j))
+            topology(pm, :buspairs)[(i,j)] = missing
+        else
+            topology(pm, :buspairs)[(i,j)] = buspairs[(i,j)]
+        end
+    end
     return
 
 end
 
 ""
-function simplify!(system::SystemModel, states::SystemStates, topology::Topology, t::Int)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    #if t>=2856 && t<=2863 println("buses=$(states.buses[:,t]), hello") end
     revised = false
-    busarcs = deepcopy(field(topology, :busarcs))
-    for i in field(system, :branches, :keys)
-        if states.branches[i,t] == false
-            busarcs[:,i] = Array{Missing}(undef, size(field(topology, :busarcs),1))
-        end
-    end
+    update_arcs!(pm, system, states.branches, t)
 
     changed = true
     while changed
@@ -396,14 +317,14 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
         for i in field(system, :buses, :keys)
             if states.buses[i,t] != 4
                 incident_active_edge = 0
-                busarcs_i = filter(!ismissing, skipmissing(busarcs[i,:]))
+                busarcs_i = topology(pm, :busarcs)[i]
                 if length(busarcs_i) > 0
-                    incident_branch_count = sum([0; [field(states, :branches)[l,t] for (l,i,j) in busarcs_i]])
+                    incident_branch_count = sum([0; [states.branches[l,t] for (l,i,j) in busarcs_i]])
                     incident_active_edge = incident_branch_count
                 end
-                if incident_active_edge == 1 && length(topology.generators_nodes[i]) == 0 && 
-                    length(topology.loads_nodes[i]) == 0 && length(topology.storages_nodes[i]) == 0 &&
-                    length(topology.shunts_nodes[i]) == 0
+                if incident_active_edge == 1 && length(topology(pm, :generators_nodes)[i]) == 0 && 
+                    length(topology(pm, :loads_nodes)[i]) == 0 && length(topology(pm, :storages_nodes)[i]) == 0 &&
+                    length(topology(pm, :shunts_nodes)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                     #println("buses=$(states.buses[:,t]), incident_active_edge")
@@ -415,19 +336,19 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
         if changed
             for i in field(system, :branches, :keys)
                 if states.branches[i,t] != 0
-                    f_bus = field(states, :buses)[system.branches.f_bus[i], t]
-                    t_bus = field(states, :buses)[system.branches.t_bus[i], t]
+                    f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
+                    t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
                     if f_bus == 4 || t_bus == 4
                         states.branches[i,t] = 0
                     end
                 end
             end
-            update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), getfield(topology, :buses_idxs))
-            update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), getfield(topology, :branches_idxs))
+            update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+            update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
         end
     end
 
-    ccs = OPF.calc_connected_components(topology, system.branches)
+    ccs = OPF.calc_connected_components(pm.topology, field(system, :branches))
 
     for cc in ccs
         cc_active_loads = [0]
@@ -436,10 +357,10 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
         cc_active_strg = [0]
 
         for i in cc
-            cc_active_loads = push!(cc_active_loads, length(topology.loads_nodes[i]))
-            cc_active_shunts = push!(cc_active_shunts, length(topology.shunts_nodes[i]))
-            cc_active_gens = push!(cc_active_gens, length(topology.generators_nodes[i]))
-            cc_active_strg = push!(cc_active_strg, length(topology.storages_nodes[i]))
+            cc_active_loads = push!(cc_active_loads, length(topology(pm, :loads_nodes)[i]))
+            cc_active_shunts = push!(cc_active_shunts, length(topology(pm, :shunts_nodes)[i]))
+            cc_active_gens = push!(cc_active_gens, length(topology(pm, :generators_nodes)[i]))
+            cc_active_strg = push!(cc_active_strg, length(topology(pm, :storages_nodes)[i]))
         end
 
         active_load_count = sum(cc_active_loads)
@@ -451,6 +372,7 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
             #@info("deactivating connected component $(cc) due to isolation without generation, load or storage")
             for i in cc
                 states.buses[i,t] = 4
+                changed = true
                 #println("buses=$(states.buses[:,t])")
             end
         end
@@ -458,8 +380,8 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
 
     for i in field(system, :branches, :keys)
         if states.branches[i,t] != 0
-            f_bus = field(states, :buses)[system.branches.f_bus[i], t]
-            t_bus = field(states, :buses)[system.branches.t_bus[i], t]
+            f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
+            t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
             if f_bus == 4 || t_bus == 4
                 states.branches[i,t] = 0
                 revised = true
@@ -469,7 +391,34 @@ function simplify!(system::SystemModel, states::SystemStates, topology::Topology
         end
     end
     
-    if revised == true update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), getfield(topology, :branches_idxs)) end
+    if revised == true update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs)) end
+    if changed == true  update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs)) end
+
+    for i in field(system, :buses, :keys)
+        if states.buses[i,t] == 4
+            for k in topology(pm, :loads_nodes)[i]
+                if states.loads[k,t] != 0
+                    states.loads[k,t] = 0
+                end
+            end
+            for k in topology(pm, :shunts_nodes)[i]
+                if states.shunts[k,t] != 0
+                    states.shunts[k,t] = 0
+                end
+            end
+            for k in topology(pm, :generators_nodes)[i]
+                if states.generators[k,t] != 0
+                    states.generators[k,t] = 0
+                end
+            end
+            for k in topology(pm, :storages_nodes)[i]
+                if states.storages[k,t] != 0
+                    states.storages[k,t] = 0
+                end
+            end
+        end
+    end
+
     return
 
 end
@@ -508,4 +457,25 @@ function _phi_to_vm(solution::Dict)
         get!(vm, i, 1.0 + phi)
     end
     return vm
+end
+
+""
+function objective_value(opf_model::Model)
+    obj_val = NaN
+    try
+        obj_val = JuMP.objective_value(opf_model)
+    catch
+    end
+    return obj_val
+end
+
+""
+function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    update_topology!(pm, system, states, t)
+    _update_method!(pm, system, states, t)
+    optimize_method!(pm)
+    build_result!(pm, system, states, t)
+    return
+
 end

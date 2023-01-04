@@ -1,4 +1,3 @@
-
 abstract type AbstractAssets end
 abstract type TimeSeriesAssets{N,L,T<:Period} <: AbstractAssets end
 
@@ -35,7 +34,7 @@ struct Buses <: AbstractAssets
         @assert length(va) == (nbuses)
         @assert length(vm) == (nbuses)
         @assert all(vm .> 0)
-        @assert all(base_kv .> 0)
+        @assert all(base_kv .>= 0)
 
         new(keys, Int.(zone), Int.(bus_type), Int.(bus_i), Float32.(vmax), Float32.(vmin), Float32.(base_kv), Float32.(va), Float32.(vm))
     end
@@ -72,7 +71,7 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     pmin::Vector{Float32}
     qmax::Vector{Float32}
     qmin::Vector{Float32}
-    mbase::Vector{Int}
+    mbase::Vector{Float32}
     cost::Vector{<:Any}
     state_model::Vector{Int}
     λ_updn::Vector{Float64}
@@ -87,7 +86,7 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         pg::VecOrMat{Float32}, qg::Vector{Float32}, 
         vg::Vector{Float32}, pmax::Vector{Float32}, pmin::Vector{Float32}, 
         qmax::Vector{Float32}, qmin::Vector{Float32},
-        mbase::Vector{Int}, cost::Vector{<:Any},  state_model::Vector{Int},
+        mbase::Vector{Float32}, cost::Vector{<:Any},  state_model::Vector{Int},
         λ_updn::Vector{Float64}, μ_updn::Vector{Float64}, 
         λ_upde::Vector{Float64}, μ_upde::Vector{Float64}, 
         pde::Vector{Float32}, status::Vector{Bool}
@@ -118,7 +117,7 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         new{N,L,T}(
             Int.(keys), Int.(buses), pg, Float32.(qg), Float32.(vg), 
             Float32.(pmax), Float32.(pmin), Float32.(qmax), Float32.(qmin), 
-            Int.(mbase), cost, Int.(state_model), Float64.(λ_updn), Float64.(μ_updn),
+            Float32.(mbase), cost, Int.(state_model), Float64.(λ_updn), Float64.(μ_updn),
             Float64.(λ_upde), Float64.(μ_upde), Float32.(pde), Bool.(status)
         )
     end
@@ -170,7 +169,7 @@ function Base.vcat(gs::G...) where {N,L,T,G <: Generators{N,L,T}}
     pmin = Vector{Float32}(undef, ngens)
     qmax = Vector{Float32}(undef, ngens)
     qmin = Vector{Float32}(undef, ngens)
-    mbase = Vector{Bool}(undef, ngens)
+    mbase = Vector{Float32}(undef, ngens)
     cost = Vector{Any}(undef, ngens)
     state_model = Vector{Any}(undef, ngens)
     λ_updn = Vector{Float64}(undef, ngens)
@@ -551,7 +550,7 @@ Base.:(==)(x::T, y::T) where {T <: Shunts} =
     x.status == y.status
 #
 
-struct Interfaces <: AbstractAssets #Circuits on a common right-of-way or a common tower.
+struct CommonBranches <: AbstractAssets #Circuits on a common right-of-way or a common tower.
 
     keys::Vector{Int}
     f_bus::Vector{Int} #buses_from
@@ -559,22 +558,22 @@ struct Interfaces <: AbstractAssets #Circuits on a common right-of-way or a comm
     λ_updn::Vector{Float64} #Failure rate in failures per year
     μ_updn::Vector{Float64} #Repair rate in hours per year
 
-    function Interfaces(
+    function CommonBranches(
         keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, λ_updn::Vector{Float64}, μ_updn::Vector{Float64}
     )
 
-        ninterfaces = length(keys)
+        ncommonbranches = length(keys)
         @assert allunique(keys)
-        @assert length(f_bus) == (ninterfaces)
-        @assert length(t_bus) == (ninterfaces)
-        @assert length(λ_updn) == (ninterfaces)
-        @assert length(μ_updn) == (ninterfaces)
+        @assert length(f_bus) == (ncommonbranches)
+        @assert length(t_bus) == (ncommonbranches)
+        @assert length(λ_updn) == (ncommonbranches)
+        @assert length(μ_updn) == (ncommonbranches)
         new(Int.(keys), Int.(f_bus), Int.(t_bus), Float64.(λ_updn), Float64.(μ_updn))
     end
 
 end
 
-Base.:(==)(x::T, y::T) where {T <: Interfaces} =
+Base.:(==)(x::T, y::T) where {T <: CommonBranches} =
     x.keys == y.keys &&
     x.f_bus == y.f_bus &&
     x.t_bus == y.t_bus &&

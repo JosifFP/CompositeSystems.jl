@@ -2,7 +2,8 @@
 #***************************************************** CONSTRAINTS *************************************************************************
 "Fix the voltage angle to zero at the reference bus"
 function con_theta_ref(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
-    fix(var(pm, :va, nw)[i], 0, force = true)
+    JuMP.fix(var(pm, :va, nw)[i], 0, force = true)
+    #@constraint(pm.model, var(pm, :va, nw)[i] == 0)
 end
 
 """
@@ -17,7 +18,8 @@ end
 "Nodal power balance constraints"
 function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
-    bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i,:]))
+    #bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i]))
+    bus_arcs = topology(pm, :busarcs)[i]
     generators_nodes = topology(pm, :generators_nodes)[i]
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
@@ -28,17 +30,25 @@ function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, 
     bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
     bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
 
-    _con_power_balance(pm, system, i, t, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
+    _con_power_balance(pm, system, i, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
 
 end
 
-"Polar Form"
-function _con_voltage_angle_difference(pm::AbstractPolarModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
-    
-    va_fr = var(pm, :va, nw)[f_bus]
-    va_to = var(pm, :va, nw)[t_bus]
-    con(pm, :voltage_angle_diff_upper, nw)[i] = @constraint(pm.model, va_fr - va_to <= angmax)
-    con(pm, :voltage_angle_diff_lower, nw)[i] = @constraint(pm.model, va_fr - va_to >= angmin)
+"Nodal power balance constraints without load curtailment variables"
+function con_power_balance_nolc(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+
+    bus_arcs = topology(pm, :busarcs)[i]
+    generators_nodes = topology(pm, :generators_nodes)[i]
+    loads_nodes = topology(pm, :loads_nodes)[i]
+    shunts_nodes = topology(pm, :shunts_nodes)[i]
+    storages_nodes = topology(pm, :storages_nodes)[i]
+
+    bus_pd = Float32.([field(system, :loads, :pd)[k] for k in loads_nodes])
+    bus_qd = Float32.([field(system, :loads, :pd)[k]*field(system, :loads, :pf)[k] for k in loads_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+
+    _con_power_balance_nolc(pm, system, i, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
 
 end
 
@@ -70,9 +80,22 @@ function con_voltage_angle_difference(pm::AbstractPowerModel, system::SystemMode
     buspair = topology(pm, :buspairs)[(f_bus, t_bus)]
     
     if !ismissing(buspair)
-    #if !ismissing(buspair) && Int(buspair[1]) == i
-        _con_voltage_angle_difference(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
+        if !ismissing(buspair) && Int(buspair[1]) == i
+            _con_voltage_angle_difference(pm, i, nw, f_bus, t_bus, buspair[2], buspair[3])
+        end
     end
+
+end
+
+
+
+"Polar Form"
+function _con_voltage_angle_difference(pm::AbstractPolarModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, angmin, angmax)
+    
+    va_fr = var(pm, :va, nw)[f_bus]
+    va_to = var(pm, :va, nw)[t_bus]
+    con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)] = @constraint(pm.model, va_fr - va_to <= angmax)
+    con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)] = @constraint(pm.model, va_fr - va_to >= angmin)
 
 end
 
@@ -84,10 +107,8 @@ function con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, i::Int;
     f_idx = (i, f_bus, t_bus)
     t_idx = (i, t_bus, f_bus)
 
-    if hasfield(Branches, :rate_a)
-        _con_thermal_limit_from(pm, nw, i, f_idx, field(system, :branches, :rate_a)[i])
-        _con_thermal_limit_to(pm, nw, i, t_idx, field(system, :branches, :rate_a)[i])
-    end
+    _con_thermal_limit_from(pm, nw, i, f_idx, field(system, :branches, :rate_a)[i])
+    _con_thermal_limit_to(pm, nw, i, t_idx, field(system, :branches, :rate_a)[i])
 
 end
 
@@ -144,34 +165,6 @@ function _con_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, ener
     se = var(pm, :se, n)[i]
 
     con(pm, :storage_state, n)[i] = @constraint(pm.model, se - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
-end
-
-""
-function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, states::SystemStates, i::Int, t::Int; nw::Int=1) where {N,L,T<:Period}
-
-    charge_eff = field(system, :storages, :charge_efficiency)[i]
-    discharge_eff = field(system, :storages, :discharge_efficiency)[i]
-
-    if L==1 && T != Hour
-        @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
-    end
-
-    sc_2 = var(pm, :sc, nw)[i]
-    sd_2 = var(pm, :sd, nw)[i]
-    se_2 = var(pm, :se, nw)[i]
-
-    if t == 1
-        se_1 = field(system, :storages, :energy)[i]
-    else
-        se_1 = field(states, :se)[i,t-1]
-    end
-
-    if field(states, :storages)[i,t] == true
-        con(pm, :storage_state, nw)[i] = @constraint(pm.model, se_2 - L*(charge_eff*sc_2 - sd_2/discharge_eff) == se_1) #se_2 - se_1 == L*(charge_eff*sc_2 - sd_2/discharge_eff)
-    else
-        con(pm, :storage_state, nw)[i] = @constraint(pm.model, se_2 == se_1)
-    end
-
 end
 
 ""

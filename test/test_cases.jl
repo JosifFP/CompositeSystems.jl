@@ -8,48 +8,70 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-TimeSeriesFile = "test/data/RBTS/Loads_buses.xlsx"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
 
-Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
-#Base_RawFile = "test/data/RTS/Base/RTS.m"
-#Base_ReliabilityFile = "test/data/RTS/Base/R_RTS.m"
-#Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
-#Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
-#Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
-#Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
+rawfile = "test/data/RBTS/Base/RBTS.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+#rawfile = "test/data/RTS/Base/RTS.m"
+#Base_reliabilityfile = "test/data/RTS/Base/R_RTS.m"
+#Storage_rawfile = "test/data/RBTS/Storage/RBTS.m"
+#Storage_reliabilityfile = "test/data/RBTS/Storage/R_RBTS.m"
+#Case1_rawfile = "test/data/RBTS/Case1/RBTS.m"
+#Case1_reliabilityfile = "test/data/RBTS/Case1/R_RBTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
-    #juniper_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    powermodel = OPF.DCMPPowerModel
+    #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
-method = SequentialMCS(samples=1, seed=100, threaded=true)
-timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
-#system = BaseModule.SystemModel(Case1_RawFile, Case1_ReliabilityFile, timeseries_load, SParametrics)
-system = BaseModule.SystemModel(Base_RawFile, Base_ReliabilityFile, timeseries_load, SParametrics)
-method = SequentialMCS(samples=2000, seed=100, threaded=true)
+
+system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+method = SequentialMCS(samples=20, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)
 CompositeSystems.EENS.(shortfall, system.loads.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
+
+
+
+
+threads = Base.Threads.nthreads()
+sampleseeds = Channel{Int}(2*threads)
+results = CompositeAdequacy.resultchannel(method, resultspecs, threads)
+Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
+states = CompositeAdequacy.SystemStates(system)
+model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
+pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
+
+recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+s=1
+
+CompositeAdequacy.seed!(rng, (method.seed, s))
+CompositeAdequacy.initialize_states!(rng, states, system)
+
+if OPF.is_empty(pm.model.moi_backend)
+    CompositeAdequacy.initialize_powermodel!(pm, system, states)
+end
+
+JuMP.termination_status(pm.model)
+JuMP.primal_status(pm.model)
+JuMP.solution_summary(pm.model, verbose=false)
+sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
+sum(system.loads.pd[:,1])
+
+
+
 sum(val.(CompositeSystems.EENS.(shortfall, system.loads.keys)))
 
-
-model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
-pm = abstract_model(settings.powermodel, Topology(system), model)
-systemstates = SystemStates(system)
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-CompositeAdequacy.seed!(rng, (method.seed, 1000))
-CompositeAdequacy.initialize_states!(rng, systemstates, system)
 
 a = systemstates.generators[1,:]
 b = systemstates.generators_de[1,:]

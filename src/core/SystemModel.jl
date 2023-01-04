@@ -7,9 +7,15 @@ struct SystemModel{N,L,T<:Period}
     generatorstorages::GeneratorStorages{N,L,T}
     buses::Buses
     branches::Branches
+    commonbranches::CommonBranches
     shunts::Shunts
-    interfaces::Interfaces
+
     ref_buses::Vector{Int}
+    arcs_from::Vector{Tuple{Int, Int, Int}}
+    arcs_to::Vector{Tuple{Int, Int, Int}}
+    arcs::Vector{Tuple{Int, Int, Int}}
+    buspairs::Dict{Tuple{Int, Int}, Vector{Float32}}
+
     baseMVA::Float32
     timestamps::StepRange{ZonedDateTime,T}
 
@@ -20,9 +26,13 @@ struct SystemModel{N,L,T<:Period}
         generatorstorages::GeneratorStorages{N,L,T},
         buses::Buses,
         branches::Branches,
+        commonbranches::CommonBranches,
         shunts::Shunts,
-        interfaces::Interfaces,
         ref_buses::Vector{Int},
+        arcs_from::Vector{Tuple{Int, Int, Int}},
+        arcs_to::Vector{Tuple{Int, Int, Int}},
+        arcs::Vector{Tuple{Int, Int, Int}},
+        buspairs::Dict{Tuple{Int, Int}, Vector{Float32}},
         baseMVA::Float32,
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period}
@@ -32,7 +42,9 @@ struct SystemModel{N,L,T<:Period}
         @assert length(timestamps) == N
     end
 
-    new{N,L,T}(loads, generators, storages, generatorstorages, buses, branches, shunts, interfaces, ref_buses, baseMVA, timestamps)
+    new{N,L,T}(
+        loads, generators, storages, generatorstorages, buses, branches, commonbranches, shunts, 
+        ref_buses, arcs_from, arcs_to, arcs, buspairs, baseMVA, timestamps)
     end
 
 end
@@ -44,9 +56,13 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.generatorstorages == y.generatorstorages &&
     x.buses == y.buses &&
     x.branches == y.branches &&
+    x.commonbranches == y.commonbranches &&
     x.shunts == y.shunts &&
-    x.interfaces == y.interfaces &&
     x.ref_buses == y.ref_buses &&
+    x.arcs_from == y.arcs_from &&
+    x.arcs_to == y.arcs_to &&
+    x.arcs == y.arcs &&
+    x.buspairs == y.buspairs &&
     x.baseMVA == y.baseMVA &&
     x.timestamps == y.timestamps
 

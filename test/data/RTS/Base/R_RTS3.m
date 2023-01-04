@@ -1,6 +1,5 @@
-%% MATPOWER Case Format : Version 2
+%% MATPOWER Case Format
 function mpc = RTS
-mpc.version = '2';
 
 %%-----  Reliability Data  -----%%
 

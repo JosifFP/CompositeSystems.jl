@@ -1341,3 +1341,436 @@ end
 #     return container_data
 
 # end
+
+
+# ""
+# function reset_containers!(pm::AbstractDCPowerModel, system::SystemModel{N}) where {N}
+
+#     reset_var_container!(var(pm, :pg), field(system, :generators, :keys))
+#     reset_var_container!(var(pm, :va), field(system, :buses, :keys))
+#     reset_var_container!(var(pm, :plc), field(system, :loads, :keys))
+#     reset_var_container!(var(pm, :p), topology(pm, :arcs))
+#     reset_con_container!(con(pm, :power_balance_p), field(system, :buses, :keys))
+#     reset_con_container!(con(pm, :ohms_yt_from), field(system, :branches, :keys))
+#     reset_con_container!(con(pm, :ohms_yt_to), field(system, :branches, :keys))
+#     reset_con_container!(con(pm, :voltage_angle_diff_upper), field(system, :branches, :keys))
+#     reset_con_container!(con(pm, :voltage_angle_diff_lower), field(system, :branches, :keys))
+#     return
+
+# end
+
+# "compute bus pair level data, can be run on data or ref data structures"
+# function calc_buspair_parameters(buses, branches)
+
+#     bus_lookup = Dict(bus["index"] => bus for (i,bus) in buses if bus["bus_type"] ≠ 4)
+#     branch_lookup = Dict(branch["index"] => branch for (i,branch) in branches if branch["br_status"] == 1 && 
+#         haskey(bus_lookup, branch["f_bus"]) && haskey(bus_lookup, branch["t_bus"]))
+#     buspair_indexes = Set((branch["f_bus"], branch["t_bus"]) for (i,branch) in branch_lookup)
+#     bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+#     bp_angmin = Dict((bp, -Inf) for bp in buspair_indexes)
+#     bp_angmax = Dict((bp,  Inf) for bp in buspair_indexes)
+
+#     for (l,branch) in branch_lookup
+#         i = branch["f_bus"]
+#         j = branch["t_bus"]
+#         bp_angmin[(i,j)] = max(bp_angmin[(i,j)], branch["angmin"])
+#         bp_angmax[(i,j)] = min(bp_angmax[(i,j)], branch["angmax"])
+#         bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
+#     end
+
+#     buspairs = Dict((i,j) => Dict(
+#         "branch"=>bp_branch[(i,j)],
+#         "angmin"=>bp_angmin[(i,j)],
+#         "angmax"=>bp_angmax[(i,j)],
+#         "tap"=>branch_lookup[bp_branch[(i,j)]]["tap"],
+#         #"vm_fr_min"=>bus_lookup[i]["vmin"],
+#         #"vm_fr_max"=>bus_lookup[i]["vmax"],
+#         #"vm_to_min"=>bus_lookup[j]["vmin"],
+#         #"vm_to_max"=>bus_lookup[j]["vmax"]
+#         ) for (i,j) in buspair_indexes
+#     )
+
+#     # add optional parameters
+#     for bp in buspair_indexes
+#         branch = branch_lookup[bp_branch[bp]]
+#         if haskey(branch, "rate_a")
+#             buspairs[bp]["rate_a"] = branch["rate_a"]
+#         end
+#         if haskey(branch, "c_rating_a")
+#             buspairs[bp]["c_rating_a"] = branch["c_rating_a"]
+#         end
+#     end
+
+#     return buspairs
+# end
+
+
+# ""
+# function bus_asset!(busarcs::Dict{Int, Vector{Union{Missing, Tuple{Int, Int, Int}}}}, arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}, asset_states::Matrix{Bool}, t::Int)
+    
+#     for (l,i,j) in arcs
+#         if asset_states[l,t] == 0
+#             push!(busarcs[i], missing)
+#         else
+#             push!(busarcs[i], (l,i,j))
+#         end
+#     end
+#     return busarcs
+# end
+
+# "Load Minimization version of OPF"
+# function build_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t)
+
+#     # Add Optimization and State Variables
+#     var_bus_voltage(pm, system)
+#     var_gen_power(pm, system, states, t)
+#     var_branch_power(pm, system, states, t)
+#     var_load_curtailment(pm, system, t)
+
+#     #objective_min_load_curtailment(pm, system)
+#     objective_min_stor_load_curtailment(pm, system)
+
+#     # Add Constraints
+#     # ---------------
+#     con_model_voltage(pm, system)
+
+#     for i in field(system, :ref_buses)
+#         con_theta_ref(pm, system, i)
+#     end
+
+#     for i in field(system, :loads, :keys)
+#         con_power_factor(pm, system, i)
+#     end
+
+#     for i in field(system, :buses, :keys)
+#         #if field(system, :buses, :bus_type)[i] != 4
+#             con_power_balance(pm, system, i, t)
+#         #end
+#     end
+
+#     for i in field(system, :branches, :keys)
+#         if field(states, :branches)[i,t] ≠ 0
+#             con_ohms_yt(pm, system, i)
+#             con_voltage_angle_difference(pm, system, i)
+#             con_thermal_limits(pm, system, i)
+#         end
+#     end
+
+#     return
+
+# end
+
+
+""
+function var_gen_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; kwargs...)
+    var_gen_power_real(pm, system, states, t; kwargs...)
+    var_gen_power_imaginary(pm, system, states, t; kwargs...)
+end
+
+
+""
+function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    pg = var(pm, :pg)[nw] = @variable(pm.model, pg[field(system, :generators, :keys)])
+
+    if bounded
+        for l in field(system, :generators, :keys)
+            JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l]*field(states, :generators)[l,t])
+            JuMP.set_lower_bound(pg[l], 0.0)
+        end
+    end
+
+end
+
+""
+function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    qg = var(pm, :qg)[nw] = @variable(pm.model, qg[field(system, :generators, :keys)])
+
+    if bounded
+        for l in field(system, :generators, :keys)
+            JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l]*field(states, :generators)[l,t])
+            JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l]*field(states, :generators)[l,t])
+        end
+    end
+
+end
+
+"Defines DC or AC power flow variables p to represent the active power flow for each branch"
+function var_branch_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; kwargs...)
+    var_branch_power_real(pm, system, states, t; kwargs...)
+    var_branch_power_imaginary(pm, system, states, t; kwargs...)
+end
+
+""
+function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    arcs = field(system, :arcs)
+    p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
+
+    if bounded
+        for (l,i,j) in arcs
+            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+        end
+    end
+
+end
+
+""
+function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+    q = var(pm, :q)[nw] = @variable(pm.model, q[arcs], container = Dict)
+
+    if bounded
+        for (l,i,j) in arcs
+            JuMP.set_lower_bound(q[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+            JuMP.set_upper_bound(q[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+        end
+    end
+end
+
+"variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
+function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; kwargs...)
+    var_storage_power_real(pm, system, states, t; kwargs...)
+    var_storage_power_imaginary(pm, system, states, t; kwargs...)
+    var_storage_power_control_imaginary(pm, system, states, t; kwargs...)
+    var_storage_energy(pm, system, states, t; kwargs...)
+    var_storage_charge(pm, system, states, t; kwargs...)
+    var_storage_discharge(pm, system, states, t; kwargs...)
+    var_storage_complementary_indicator(pm, system, states, t; kwargs...)
+end
+
+""
+function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+    
+    ps = var(pm, :ps)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+            JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+        end
+    end
+
+end
+
+""
+function var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    qs = var(pm, :qs)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(qs[i], max(-field(system, :storages, :thermal_rating)[i],
+                field(system, :storages, :qmin)[i])*field(states, :storages)[i,t]
+            )
+            JuMP.set_upper_bound(qs[i], min(field(system, :storages, :thermal_rating)[i],
+            field(system, :storages, :qmax)[i])*field(states, :storages)[i,t]
+            )
+        end
+    end
+end
+
+""
+function var_storage_power_control_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    qsc = var(pm, :qsc)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(qsc[i], max(-field(system, :storages, :thermal_rating)[i],
+                field(system, :storages, :qmin)[i])*field(states, :storages)[i,t]
+            )
+            JuMP.set_upper_bound(qsc[i], min(field(system, :storages, :thermal_rating)[i],
+            field(system, :storages, :qmax)[i])*field(states, :storages)[i,t]
+            )
+        end
+    end
+end
+
+""
+function var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    se = var(pm, :se)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(se[i], 0)
+            JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
+        end
+    end
+
+end
+
+""
+function var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    sc = var(pm, :sc)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(sc[i], 0)
+            JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i]*field(states, :storages)[i,t])
+        end
+    end
+
+end
+
+""
+function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    sd = var(pm, :sd)[nw] = @variable(pm.model, [field(system, :storages, :keys)])
+
+    if bounded
+        for i in field(system, :storages, :keys)
+            JuMP.set_lower_bound(sd[i], 0)
+            JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i]*field(states, :storages)[i,t])
+        end
+    end
+
+end
+
+""
+function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    if bounded
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], binary = true)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], binary = true)
+
+    else
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], lower_bound = 0, upper_bound = 1)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [field(system, :storages, :keys)], lower_bound = 0, upper_bound = 1)
+    end
+
+end
+
+"Nodal power balance constraints"
+function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+
+    bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i]))
+    generators_nodes = topology(pm, :generators_nodes)[i]
+    loads_nodes = topology(pm, :loads_nodes)[i]
+    shunts_nodes = topology(pm, :shunts_nodes)[i]
+    storages_nodes = topology(pm, :storages_nodes)[i]
+
+    bus_pd = Float32.([field(system, :loads, :pd)[k] for k in loads_nodes])
+    bus_qd = Float32.([field(system, :loads, :pd)[k]*field(system, :loads, :pf)[k] for k in loads_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+
+    _con_power_balance(pm, system, i, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
+
+end
+
+
+""
+function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, states::SystemStates, i::Int, t::Int; nw::Int=1) where {N,L,T<:Period}
+
+    charge_eff = field(system, :storages, :charge_efficiency)[i]
+    discharge_eff = field(system, :storages, :discharge_efficiency)[i]
+
+    if L==1 && T != Hour
+        @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
+    end
+
+    sc_2 = var(pm, :sc, nw)[i]
+    sd_2 = var(pm, :sd, nw)[i]
+    se_2 = var(pm, :se, nw)[i]
+
+    if t == 1
+        se_1 = field(system, :storages, :energy)[i]
+    else
+        se_1 = field(states, :se)[i,t-1]
+    end
+
+    if field(states, :storages)[i,t] == true
+        con(pm, :storage_state, nw)[i] = @constraint(pm.model, se_2 - L*(charge_eff*sc_2 - sd_2/discharge_eff) == se_1) #se_2 - se_1 == L*(charge_eff*sc_2 - sd_2/discharge_eff)
+    else
+        con(pm, :storage_state, nw)[i] = @constraint(pm.model, se_2 == se_1)
+    end
+
+end
+
+"Model ignores reactive power flows"
+function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+end
+
+""
+function var_branch_power_real(pm::AbstractAPLossLessModels, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+
+    p = @variable(pm.model, p[topology(pm, :arcs_from)])
+
+    if bounded
+        for (l,i,j) in  topology(pm, :arcs_from)
+            JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+            JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+        end
+    end
+
+    # this explicit type erasure is necessary
+    var(pm, :p)[nw] = merge(
+        Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from)), 
+        Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in topology(pm, :arcs_from))
+    )
+end
+
+
+"DC models ignore reactive power flows"
+function var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+end
+
+"Model ignores reactive power flows"
+function var_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+end
+
+"do nothing by default but some formulations require this"
+function var_storage_power_control_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1, bounded::Bool=true)
+end
+
+"Defines DC or AC power flow variables p to represent the active power flow for each branch"
+function update_var_branch_power(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    update_var_branch_power_real(pm, system, states, t)
+    update_var_branch_power_imaginary(pm, system, states, t)
+end
+
+""
+function update_var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    p = var(pm, :p, 1)
+    arcs = field(system, :arcs)
+
+    for (l,i,j) in arcs
+        if typeof(p[(l,i,j)]) == JuMP.AffExpr
+            p_var = first(keys(p[(l,i,j)].terms))
+        elseif typeof(p[(l,i,j)]) == JuMP.VariableRef
+            p_var = p[(l,i,j)]
+        else
+            @error("Expression $(typeof(p[(l,i,j)])) not supported")
+        end
+        JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+        JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+    end
+
+end
+
+""
+function update_var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    q = var(pm, :q, 1)
+    arcs = field(system, :arcs) #arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+
+    for (l,i,j) in arcs
+        if typeof(q[(l,i,j)]) ==JuMP.AffExpr
+            q_var = first(keys(q[(l,i,j)].terms))
+        elseif typeof(q[(l,i,j)]) ==JuMP.VariableRef
+            q_var = q[(l,i,j)]
+        else
+            @error("Expression $(typeof(q[(l,i,j)])) not supported")
+        end
+        JuMP.set_lower_bound(q_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+        JuMP.set_upper_bound(q_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+    end
+
+end

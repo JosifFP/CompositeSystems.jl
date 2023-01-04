@@ -3,11 +3,11 @@ module RTS
     import CompositeSystems: BaseModuleModule, Branches, Buses, Shunts, Loads, Generators, Storages
 
     ReliabilityDataDir = "C:/Users/jfiguero/.julia/dev/CompositeSystems/test/data/RTS"
-    RawFile = "C:/Users/jfiguero/.julia/dev/CompositeSystems/test/data/RTS.m"
+    rawfile = "C:/Users/jfiguero/.julia/dev/CompositeSystems/test/data/RTS.m"
     BaseModule.silence()
     CurrentDir = pwd()
 
-    network = Dict{Symbol, Any}(BaseModule.build_network(RawFile))
+    network = Dict{Symbol, Any}(BaseModule.build_network(rawfile))
     baseMVA = Float32(getindex(network, :baseMVA))
 
     files = readdir(ReliabilityDataDir; join=false)
