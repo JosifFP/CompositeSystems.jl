@@ -3,15 +3,15 @@
 ""
 function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
     
-    va_i = var(pm, :va, 1)[i]
-
-    if field(states, :buses)[i,t] == 4
-        JuMP.set_upper_bound(va_i, 0.0)
-        JuMP.set_lower_bound(va_i, 0.0)
-    else
-        if JuMP.has_upper_bound(va_i) && JuMP.has_lower_bound(va_i) 
-            JuMP.delete_upper_bound(va_i)
-            JuMP.delete_lower_bound(va_i)
+    if field(system, :buses, :bus_type)[i] != 3
+        if field(states, :buses)[i,t] == 4
+            JuMP.set_upper_bound(var(pm, :va, 1)[i], 0)
+            JuMP.set_lower_bound(var(pm, :va, 1)[i], 0.0)
+        else
+            if JuMP.has_upper_bound(var(pm, :va, 1)[i]) && JuMP.has_lower_bound(var(pm, :va, 1)[i]) 
+                JuMP.delete_upper_bound(var(pm, :va, 1)[i])
+                JuMP.delete_lower_bound(var(pm, :va, 1)[i])
+            end
         end
     end
 

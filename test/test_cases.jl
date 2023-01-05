@@ -8,7 +8,7 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+timeseriesfile = "test/data/RBTS/Loads_buses.xlsx"
 rawfile = "test/data/RBTS/Base/RBTS.m"
 Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
@@ -22,19 +22,25 @@ settings = CompositeSystems.Settings(
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    powermodel = OPF.DCMPPowerModel
+    #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=400, seed=100, threaded=true)
+method = SequentialMCS(samples=1000, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
+
 
 CompositeSystems.LOLE.(shortfall, system.loads.keys)
 CompositeSystems.EENS.(shortfall, system.loads.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
+
+
+
+
+
 
 
 
@@ -46,7 +52,6 @@ method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 states = CompositeAdequacy.SystemStates(system)
 model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
 pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
-
 
 recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
