@@ -10,19 +10,16 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
     var_bus_voltage(pm, system)
     var_gen_power(pm, system)
     var_branch_power(pm, system)
-    var_load_curtailment(pm, system, t)
+    var_load_power_factor(pm, system, t)
+    var_shunt_admittance_factor(pm, system, t)
     var_storage_power_mi(pm, system)
 
-    objective_min_stor_load_curtailment(pm, system)
+    objective_min_stor_load_curtailment(pm, system, t)
 
     # Add Constraints
     # ---------------
     for i in field(system, :ref_buses)
         con_theta_ref(pm, system, i)
-    end
-
-    for i in assetgrouplist(topology(pm, :loads_idxs))
-        con_power_factor(pm, system, i)
     end
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
@@ -56,7 +53,7 @@ end
 "Classic OPF from PowerModels.jl."
 function solve_opf(system::SystemModel, powermodel::Type, optimizer::MOI.OptimizerWithAttributes)
 
-    model = jump_model(JuMP.AUTOMATIC, optimizer)
+    model = jump_model(JuMP.AUTOMATIC, optimizer, string_names = true)
     pm = abstract_model(powermodel, OPF.Topology(system), model)
     initialize_pm_containers!(pm, system; timeseries=false)
     build_opf!(pm, system)
@@ -71,7 +68,7 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 
     # Add Optimization and State Variables
     var_bus_voltage(pm, system)
-    var_gen_power(pm, system)
+    var_gen_power(pm, system, force_pmin=true)
     var_branch_power(pm, system)
     var_storage_power_mi(pm, system)
 
@@ -117,7 +114,7 @@ function update_opf!(pm::AbstractPowerModel, system::SystemModel, states::System
     _update_topology!(pm, system, states, t)
 
     for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, t)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
         update_var_gen_power_imaginary(pm, system, states, i, t)
     end
 
@@ -177,12 +174,8 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
         update_var_branch_power_imaginary(pm, system, states, arc, t)
     end
 
-    for i in field(system, :loads, :keys)
-        update_var_load_curtailment_real(pm, system, states, i, t)
-        update_var_load_curtailment_imaginary(pm, system, states, i, t)
-    end
-
     for i in field(system, :buses, :keys)
+        update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
@@ -225,7 +218,7 @@ end
 function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, t)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
         update_var_gen_power_imaginary(pm, system, states, i, t)
     end
 
@@ -234,12 +227,8 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
         update_var_branch_power_imaginary(pm, system, states, arc, t)
     end
 
-    for i in field(system, :loads, :keys)
-        update_var_load_curtailment_real(pm, system, states, i, t)
-        update_var_load_curtailment_imaginary(pm, system, states, i, t)
-    end
-
     for i in field(system, :buses, :keys)
+        update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
@@ -253,7 +242,7 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
         update_con_thermal_limits(pm, system, states, i, t)
     end
 
-    if  all(view(states.branches,:,t)) ≠ true
+    if all(states.branches[:,t]) ≠ true
         
         active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
         active_branches = assetgrouplist(topology(pm, :branches_idxs))
@@ -269,7 +258,7 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
                 con_model_voltage(pm, bp)
             end
         end
-    
+        
         for i in active_branches
             con_ohms_yt(pm, system, i)
         end
@@ -285,8 +274,8 @@ function objective_min_fuel_and_flow_cost(pm::AbstractPowerModel, system::System
     gen_cost = Dict{Int, Any}()
     gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
 
-    for i in system.generators.keys
-        cost = reverse(system.generators.cost[i])
+    for i in field(system, :generators, :keys)
+        cost = reverse(field(system, :generators, :cost)[i])
         pg = var(pm, :pg, nw)[i]
         if length(cost) == 1
             gen_cost[i] = @expression(pm.model, cost[1])
@@ -300,71 +289,38 @@ function objective_min_fuel_and_flow_cost(pm::AbstractPowerModel, system::System
     end
 
     fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+
     return JuMP.@objective(pm.model, MIN_SENSE, fg)
     
 end
 
 ""
-function objective_min_gen_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
+function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    gen_cost = Dict{Int, Any}()
-    gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
-
-    for i in system.generators.keys
-        cost = field(system, :generators, :cost)[i]
-        pg = var(pm, :pg, nw)[i]
-        if length(cost) == 1
-            gen_cost[i] = @expression(pm.model, cost[1])
-        elseif length(cost) == 2
-            gen_cost[i] = @expression(pm.model, cost[1]*pg + cost[2])
-        elseif length(cost) == 3
-
-            gen_cost[i] = @expression(pm.model, cost[1]*0.0 + cost[2]*pg + cost[3])
-
-            # This linearization is not supported by Gurobi, due to RotatedSecondOrderCone.
-            # pmin = field(system, :generators, :pmin)[i]
-            # pmax = field(system, :generators, :pmax)[i]
-            # pg_sqr_ub = max(pmin^2, pmax^2)
-            # pg_sqr_lb = 0.0
-            # if pmin > 0.0
-            #     pg_sqr_lb = pmin^2
-            # end
-            # if pmax < 0.0
-            #     pg_sqr_lb = pmax^2
-            # end
-            #pg_sqr = @variable(pm.model, lower_bound = pg_sqr_lb, upper_bound = pg_sqr_ub, start = 0.0)
-            #@constraint(pm.model, [0.5, pg_sqr, pg] in JuMP.RotatedSecondOrderCone())
-            #gen_cost[i] = @expression(pm.model,cost[1]*pg_sqr + cost[2]*pg + cost[3])
-
-        else
-            #@error("Nonlinear problems not supported. Length=$(length(cost)), $(cost)")
-            gen_cost[i] = 0.0
-        end
+    load_cost = Dict{Int, Any}()
+    bus_load = Dict{Int, Any}()
+    for i in field(system, :buses, :keys)
+        bus_load[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :loads_nodes)[i]); init=0)
+        load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
     end
 
-    stor_cost = minimum(system.loads.cost)*0.5
-    fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
-    fe = @expression(pm.model, stor_cost*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
-    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-    
-    @objective(pm.model, MIN_SENSE, fg+fd+fe)
-    
-end
-
-""
-function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
-
+    fd = @expression(pm.model, sum(load_cost[i] for i in field(system, :buses, :keys)))
     fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
-    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-    return @objective(pm.model, MIN_SENSE, fd+fe)
+    return @objective(pm.model, MIN_SENSE, fd + fe)
     
 end
 
 ""
-function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
+function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :plc, nw)[i] for i in field(system, :loads, :keys)))
-    return @objective(pm.model, MIN_SENSE, fd)
+    load_cost = Dict{Int, Any}()
+    bus_load = Dict{Int, Any}()
+    for i in field(system, :buses, :keys)
+        bus_load[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :loads_nodes)[i]); init=0)
+        load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
+    end
+
+    return @objective(pm.model, MIN_SENSE, sum(load_cost[i] for i in field(system, :buses, :keys)))
     
 end
 
@@ -379,21 +335,19 @@ end
 ""
 function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
-    plc = build_sol_values(var(pm, :plc, nw))
-    se = build_sol_values(var(pm, :se, nw))
-
     if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
-        for i in field(system, :loads, :keys)
-            if haskey(plc, i) == false
-                println("hello")
-                get!(plc, i, field(system, :loads, :pd)[i,t])
-            end
-            states.plc[i,t] = abs.(getindex(plc, i))
+
+        plc = build_sol_values(var(pm, :z_demand, nw))
+        se = build_sol_values(var(pm, :se, nw))
+    
+        for i in field(system, :buses, :keys)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            !haskey(plc, i) && get!(plc, i, bus_pd)
+            states.plc[i,t] = bus_pd*(1 - getindex(plc, i))
         end
+
         for i in field(system, :storages, :keys)
-            if haskey(se, i) == false
-                get!(se, i, 0.0)
-            end
+            haskey(se, i) == false && get!(se, i, 0.0)
             states.se[i,t] = getindex(se, i)
         end
         #if sum(states.plc[:,t]) > 0
@@ -406,7 +360,8 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
         #    println("t=$(t), plc = $(states.plc[:,t]), branches = $(states.branches[:,t]), pg = $(pg)")  
         #end
     else
-        println("not solved, t=$(t), status=$(termination_status(pm.model))")        
+        println("not solved, t=$(t), status=$(termination_status(pm.model))")
+        @assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
     end
     return
 
@@ -415,30 +370,34 @@ end
 ""
 function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
-    plc = build_sol_values(var(pm, :plc, nw))
-    qlc = build_sol_values(var(pm, :qlc, nw))
-    se = build_sol_values(var(pm, :se, nw))
-
     if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
+
+        plc = build_sol_values(var(pm, :z_demand, nw))
+        se = build_sol_values(var(pm, :se, nw))
+
         for i in field(system, :loads, :keys)
-            if haskey(plc, i) == false
-                get!(plc, i, field(system, :loads, :pd)[i,t])
+
+            for i in field(system, :buses, :keys)
+
+                bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+                bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+
+                !haskey(plc, i) && get!(plc, i, bus_pd)
+                states.plc[i,t] = bus_pd*(1 - getindex(plc, i))
+                states.qlc[i,t] = bus_qd*(1 - getindex(plc, i))
             end
-            if haskey(qlc, i) == false
-                get!(qlc, i, field(system, :loads, :pd)[i,t]*field(system, :loads, :pf)[i])
+    
+            for i in field(system, :storages, :keys)
+                haskey(se, i) == false && get!(se, i, 0.0)
+                states.se[i,t] = getindex(se, i)
             end
-            states.plc[i,t] = abs.(getindex(plc, i))
-            states.qlc[i,t] = abs.(getindex(qlc, i))
-        end
-        for i in field(system, :storages, :keys)
-            if haskey(se, i) == false
-                get!(se, i, 0.0)
-            end
-            states.se[i,t] = getindex(se, i)
+
         end
         #if sum(states.plc[:,t]) > 0  println("t=$(t), PLC = $(sum(states.plc[:,t]))")  end
     else
-        println("not solved, t=$(t), status=$(termination_status(pm.model))")        
+        println("not solved, t=$(t), status=$(termination_status(pm.model))")
+        println("t=$(t), branches = $(states.branches[:,t]), pg = $(states.generators[:,t])") 
+        @assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"       
     end
     return
 

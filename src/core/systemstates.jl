@@ -38,28 +38,22 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     end
 
     loads = Array{Bool, 2}(undef, length(system.loads), N)
-    #loads_nexttransition = Int[]
     branches = Array{Bool, 2}(undef, length(system.branches), N)
-    #branches_nexttransition = Int[]
     shunts = Array{Bool, 2}(undef, length(system.shunts), N)
-    #shunts_nexttransition = Int[]
     commonbranches = Array{Bool, 2}(undef, length(system.commonbranches), N)
-    #CommonBranches_nexttransition = Int[]
     generators = Array{Bool, 2}(undef, length(system.generators), N)
     generators_de = Array{Float32, 2}(undef, length(system.generators), N)
-    #generators_nexttransition = Int[]
     storages = Array{Bool, 2}(undef, length(system.storages), N)
-    #storages_nexttransition = Int[]
     generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
-    #generatorstorages_nexttransition = Int[]
+    sys = Array{Bool, 1}(undef, N)
 
     se = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
     gse = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
-    plc = Array{Float64, 2}(undef, length(system.loads), N)
-    qlc = Array{Float64, 2}(undef, length(system.loads), N)
-    sys = Array{Bool, 1}(undef, N)
+    plc = Array{Float64, 2}(undef, length(system.buses), N)
+    qlc = Array{Float64, 2}(undef, length(system.buses), N)
 
     fill!(loads, 1)
+    fill!(shunts, 1)
     fill!(se, 0)
     fill!(gse, 0)
     fill!(plc, 0)

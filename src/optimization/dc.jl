@@ -9,7 +9,7 @@ function var_bus_voltage_magnitude(pm::AbstractDCPowerModel, system::SystemModel
 end
 
 "Model ignores reactive power flows"
-function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_gen_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true, force_pmin::Bool=false)
 end
 
 ""
@@ -31,14 +31,11 @@ function var_branch_power_real(pm::AbstractAPLossLessModels, system::SystemModel
         Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), p[(l,i,j)]) for (l,i,j) in arcs_from), 
         Dict{Tuple{Int, Int, Int}, Any}(((l,j,i), -1.0*p[(l,i,j)]) for (l,i,j) in arcs_from)
     )
+
 end
 
 "DC models ignore reactive power flows"
 function var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-end
-
-"DC models ignore reactive power flows"
-function var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 end
 
 "DC models ignore reactive power flows"
@@ -62,52 +59,46 @@ end
 function con_theta_ref(pm::AbstractNFAModel, system::SystemModel, i::Int; nw::Int=1)
 end
 
-"Model ignores reactive power flows"
-function con_power_factor(pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
-end
-
 ""
 function _con_power_balance(
     pm::AbstractDCPowerModel, system::SystemModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
-    generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int},
-    bus_pd::Vector{Float32}, bus_qd::Vector{Float32}, bus_gs::Vector{Float32}, bus_bs::Vector{Float32})
+    bus_gens::Vector{Int}, bus_loads::Vector{Int}, bus_shunts::Vector{Int}, bus_storage::Vector{Int},
+    bus_pd, bus_qd, bus_gs, bus_bs)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
-    plc   = var(pm, :plc, nw)
+    z_demand   = var(pm, :z_demand, nw)
+    z_shunt   = var(pm, :z_shunt, nw)
     ps   = var(pm, :ps, nw)
 
     exp_p = @expression(pm.model,
     sum(p[a] for a in bus_arcs)
-    + sum(ps[s] for s in storages_nodes)
-    - sum(pg[g] for g in generators_nodes)
-    - sum(plc[m] for m in loads_nodes)     
-    )
+    + sum(ps[s] for s in bus_storage)
+    - sum(pg[g] for g in bus_gens)
+    + sum(pd for pd in bus_pd)*z_demand[i]
+    + sum(gs*z_shunt[v] for (v,gs) in bus_gs)*1.0^2    
+    )#JuMP.drop_zeros!(exp_p)
 
-    JuMP.drop_zeros!(exp_p)
-    con(pm, :power_balance_p, nw)[i] = @constraint(pm.model, exp_p == -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
+    con(pm, :power_balance_p, nw)[i] = @constraint(pm.model, exp_p == 0.0)
     
 end
 
 ""
 function _con_power_balance_nolc(
     pm::AbstractDCPowerModel, system::SystemModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
-    generators_nodes::Vector{Int}, loads_nodes::Vector{Int}, shunts_nodes::Vector{Int}, storages_nodes::Vector{Int},
-    bus_pd::Vector{Float32}, bus_qd::Vector{Float32}, bus_gs::Vector{Float32}, bus_bs::Vector{Float32})
+    bus_gens::Vector{Int}, bus_loads::Vector{Int}, bus_shunts::Vector{Int}, bus_storage::Vector{Int},
+    bus_pd, bus_qd, bus_gs, bus_bs)
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
-    #plc   = var(pm, :plc, nw)
     ps   = var(pm, :ps, nw)
    
     exp_p = @expression(pm.model,
     sum(p[a] for a in bus_arcs)
-    + sum(ps[s] for s in storages_nodes)
-    - sum(pg[g] for g in generators_nodes)
-    #- sum(plc[m] for m in loads_nodes)     
+    + sum(ps[s] for s in bus_storage)
+    - sum(pg[g] for g in bus_gens)
     )
 
-    #JuMP.drop_zeros!(exp_p)
     con(pm, :power_balance_p, nw)[i] = @constraint(pm.model, exp_p == -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
     
 end
@@ -245,10 +236,6 @@ end
 function update_var_branch_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, arc::Tuple{Int, Int, Int}, t::Int)
 end
 
-"Model ignores reactive power flows"
-function update_var_load_curtailment_imaginary(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
-end
-
 #************************************************** STORAGE VAR UPDATES ****************************************************************
 
 
@@ -256,14 +243,17 @@ end
 ""
 function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 
-    loads_nodes = topology(pm, :loads_nodes)[i]
-    shunts_nodes = topology(pm, :shunts_nodes)[i]
+    z_demand   = var(pm, :z_demand, 1)
+    z_shunt   = var(pm, :z_shunt, 1)
+    bus_loads = topology(pm, :loads_nodes)[i]
+    bus_shunts = topology(pm, :shunts_nodes)[i]
+
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
+    bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in bus_shunts)
+
+    JuMP.set_normalized_coefficient(con(pm, :power_balance_p, 1)[i], z_demand[i], sum(pd for pd in bus_pd))
+    #JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(gs for gs in bus_gs)*1.0^2)
     
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes if field(states, :shunts)[k,t] == true])
-
-
-    JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
     return
 
 end
@@ -273,9 +263,8 @@ function update_con_power_balance_nolc(pm::AbstractDCPowerModel, system::SystemM
 
     loads_nodes = topology(pm, :loads_nodes)[i]
     shunts_nodes = topology(pm, :shunts_nodes)[i]
-
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes if field(states, :loads)[k,t] == true])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes if field(states, :shunts)[k,t] == true])
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
 
     JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
     return

@@ -24,10 +24,11 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
         OPF._update!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc), 0.35; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[2,t], 0.35; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.35; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.5; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -40,10 +41,11 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
         OPF._update!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.150; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[2,t], 0.150; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.150; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
         @test isapprox(pg, 1.7; atol = 1e-2)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -59,8 +61,9 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[4,t], 0.2; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0.2; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0.2; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -73,8 +76,8 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
         OPF._update!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.150; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[2,t], 0.150; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.150; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, t))))
@@ -94,8 +97,8 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
         OPF._update!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.35; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[2,t], 0.35; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.35; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -114,8 +117,8 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
         OPF._update!(pm, system, systemstates, t)
         @test isapprox(sum(systemstates.plc[:]), 0.7045; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[2,t], 0.7045; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.7045; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -169,6 +172,13 @@ end
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -197,6 +207,13 @@ end
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -225,6 +242,13 @@ end
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -253,6 +277,13 @@ end
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -281,6 +312,13 @@ end
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -303,12 +341,19 @@ end
         @test isapprox(systemstates.plc[9,t], 1.75; atol = 1e-4)
         @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[12,t], 0.37; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0.37; atol = 1e-4)
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -335,8 +380,15 @@ end
         @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[16,t], 1.81; atol = 1e-4)
-        @test isapprox(systemstates.plc[17,t], 1.28; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 1.81; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 1.28; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 

@@ -281,15 +281,15 @@
 #     if timeseries == true
 #         reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:N)
 #         reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:N)
-#         reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:N)
+#         reset_object_container!(var(pm, :z_demand), field(system, :loads, :keys), timesteps=1:N)
 #         reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:N)
 #     else
 #         reset_object_container!(var(pm, :pg), field(system, :generators, :keys), timesteps=1:1)
 #         reset_object_container!(var(pm, :va), field(system, :buses, :keys), timesteps=1:1)
-#         reset_object_container!(var(pm, :plc), field(system, :loads, :keys), timesteps=1:1)
+#         reset_object_container!(var(pm, :z_demand), field(system, :loads, :keys), timesteps=1:1)
 #         reset_object_container!(var(pm, :p), topology(pm, :arcs), timesteps=1:1)
 #     end 
-#     fill!(sol(pm, :plc), 0.0)
+#     fill!(sol(pm, :z_demand), 0.0)
 
 #     return
 # end
@@ -462,7 +462,7 @@
 #     var_bus_voltage(pm, system, nw=t, idxs=true)
 #     var_gen_power(pm, system, nw=t, idxs=true)
 #     var_branch_power(pm, system, nw=t, idxs=true)
-#     var_load_curtailment(pm, system, nw=t, idxs=true)
+#     var_load_power_factor(pm, system, nw=t, idxs=true)
 #     #variable_storage_power_mi(pm)
 #     #var_dcline_power(pm)
 
@@ -530,7 +530,7 @@
 # function con_power_factor(pm::AbstractACPowerModel)
 
 #     z_demand = var(pm, :z_demand)
-#     plc = var(pm, :plc)
+#     plc = var(pm, :z_demand)
 #     q_lc = var(pm, :q_lc)
     
 #     for (l,_) in ref(pm, :load)
@@ -593,7 +593,7 @@
  
 #     var_gen_power(pm, system)
 #     var_branch_power(pm, system)
-#     var_load_curtailment(pm, system, t)
+#     var_load_power_factor(pm, system, t)
 
 #     # Add Constraints
 #     # ---------------
@@ -785,13 +785,13 @@
 # end
 
 # "Defines load curtailment variables p to represent the active power flow for each branch"
-# function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel; kwargs...)
+# function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel; kwargs...)
 #     var_load_curtailment_real(pm, system; kwargs...)
 #     var_load_curtailment_imaginary(pm, system; kwargs...)
 # end
 
 # "Defines load curtailment variables p to represent the active power flow for each branch"
-# function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+# function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
 #     var_load_curtailment_real(pm, system, t; kwargs...)
 #     var_load_curtailment_imaginary(pm, system, t; kwargs...)
 # end
@@ -800,7 +800,7 @@
 # function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true, idxs::Bool=false)
 
 #     if !idxs
-#         plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
+#         plc = var(pm, :z_demand)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
 
 #         for l in eachindex(field(system, :loads, :keys))
 #             JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
@@ -809,7 +809,7 @@
 
 #     else
 
-#         plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
+#         plc = var(pm, :z_demand)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
 #         for l in assetgrouplist(topology(pm, :loads_idxs))
 #             JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,nw])
@@ -823,7 +823,7 @@
 # ""
 # function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 
-#     plc = var(pm, :plc)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
+#     plc = var(pm, :z_demand)[nw] = @variable(pm.model, [field(system, :loads, :keys)], start =0.0)
 
 #     for l in eachindex(field(system, :loads, :keys))
 #         JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
@@ -902,7 +902,7 @@
 # end
 
 # "Defines load curtailment variables p to represent the active power flow for each branch"
-# function update_var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+# function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 #     update_var_load_curtailment_real(pm, system, states, t)
 #     update_var_load_curtailment_imaginary(pm, system, states, t)
 # end
@@ -911,7 +911,7 @@
 # ""
 # function update_var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-#     plc = var(pm, :plc, 1)
+#     plc = var(pm, :z_demand, 1)
 #     for l in eachindex(field(system, :loads, :keys))
 #         JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t]*field(states, :loads)[l,t])
 #         JuMP.set_lower_bound(plc[l],0.0)
@@ -1023,7 +1023,7 @@
 
 #     update_var_gen_power(pm, system, states, t)
 #     update_var_branch_power(pm, system, states, t)
-#     update_var_load_curtailment(pm, system, states, t)
+#     update_var_load_power_factor(pm, system, states, t)
 #     #update_var_storage_power_mi(pm, system, states, t)
 #     update_con_power_balance(pm, system, states, t)
     
@@ -1348,7 +1348,7 @@ end
 
 #     reset_var_container!(var(pm, :pg), field(system, :generators, :keys))
 #     reset_var_container!(var(pm, :va), field(system, :buses, :keys))
-#     reset_var_container!(var(pm, :plc), field(system, :loads, :keys))
+#     reset_var_container!(var(pm, :z_demand), field(system, :loads, :keys))
 #     reset_var_container!(var(pm, :p), topology(pm, :arcs))
 #     reset_con_container!(con(pm, :power_balance_p), field(system, :buses, :keys))
 #     reset_con_container!(con(pm, :ohms_yt_from), field(system, :branches, :keys))
@@ -1425,7 +1425,7 @@ end
 #     var_bus_voltage(pm, system)
 #     var_gen_power(pm, system, states, t)
 #     var_branch_power(pm, system, states, t)
-#     var_load_curtailment(pm, system, t)
+#     var_load_power_factor(pm, system, t)
 
 #     #objective_min_load_curtailment(pm, system)
 #     objective_min_stor_load_curtailment(pm, system)
@@ -1872,7 +1872,7 @@ JuMP.solution_summary(pm.model, verbose=false)
         #    println("t=$(t), plc = $(states.plc[:,t]), branches = $(states.branches[:,t]), pg = $(pg)")  
         #end
 
-# function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
+# function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
 #     var_load_curtailment_real(pm, system, t; kwargs...)
 #     var_load_curtailment_imaginary(pm, system, t; kwargs...)
 # end
@@ -1880,7 +1880,7 @@ JuMP.solution_summary(pm.model, verbose=false)
 # ""
 # function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
 
-#     plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
+#     plc = var(pm, :z_demand)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
 #     if bounded
 #         for l in assetgrouplist(topology(pm, :loads_idxs))
@@ -1894,7 +1894,7 @@ JuMP.solution_summary(pm.model, verbose=false)
 # ""
 # function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-#     plc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
+#     plc = var(pm, :z_demand)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
 #     if bounded
 #         for l in assetgrouplist(topology(pm, :loads_idxs))
@@ -1908,7 +1908,7 @@ JuMP.solution_summary(pm.model, verbose=false)
 # ""
 # function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-#     qlc = var(pm, :plc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
+#     qlc = var(pm, :z_demand)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
 
 #     if bounded
 #         for l in assetgrouplist(topology(pm, :loads_idxs))
@@ -1924,4 +1924,111 @@ JuMP.solution_summary(pm.model, verbose=false)
 
 #     var(pm, :z_demand)[nw] = @variable(pm.model, [field(system, :loads, :keys)], lower_bound = 0, upper_bound = 1)
 #     return
+# end
+
+
+# ""
+# function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
+
+#     qlc = var(pm, :qlc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
+
+#     if bounded
+#         for l in assetgrouplist(topology(pm, :loads_idxs))
+#             JuMP.set_upper_bound(qlc[l], field(system, :loads, :pd)[l,t]*field(system, :loads, :pf)[l])
+#             JuMP.set_lower_bound(qlc[l],0.0)
+#         end
+#     end
+
+# end
+
+# ""
+# function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
+
+#     var(pm, :z_demand)[nw] = @variable(pm.model, z_demand[assetgrouplist(topology(pm, :loads_idxs))], 
+#     upper_bound = 1,
+#     lower_bound = 0,
+#     start =1.0)
+
+# end
+
+
+# function update_var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+
+#     JuMP.set_upper_bound(var(pm, :qlc, 1)[i], field(system, :loads, :pd)[i,t]*field(system, :loads, :pf)[i])
+
+#     if field(states, :loads)[i,t] == false
+#         JuMP.set_lower_bound(var(pm, :qlc, 1)[i], field(system, :loads, :pd)[i,t]*field(system, :loads, :pf)[i])
+#     else
+#         JuMP.set_lower_bound(var(pm, :qlc, 1)[i],0.0)
+#     end
+
+# end
+
+# "Fix Load Power Factor"
+# function con_power_factor(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+#     #fix(var(pm, :z_demand, nw)[i], field(system, :loads, :pf)[i], force = true)
+#     plc   = var(pm, :z_demand, nw)[i]
+#     qlc   = var(pm, :qlc, nw)[i]
+#     con(pm, :power_factor, nw)[i] = @constraint(pm.model, field(system, :loads, :pf)[i]*plc - qlc == 0.0)
+
+# end
+
+# ""
+# function objective_min_gen_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
+
+#     gen_cost = Dict{Int, Any}()
+#     gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
+
+#     for i in system.generators.keys
+#         cost = field(system, :generators, :cost)[i]
+#         pg = var(pm, :pg, nw)[i]
+#         if length(cost) == 1
+#             gen_cost[i] = @expression(pm.model, cost[1])
+#         elseif length(cost) == 2
+#             gen_cost[i] = @expression(pm.model, cost[1]*pg + cost[2])
+#         elseif length(cost) == 3
+
+#             gen_cost[i] = @expression(pm.model, cost[1]*0.0 + cost[2]*pg + cost[3])
+
+#             # This linearization is not supported by Gurobi, due to RotatedSecondOrderCone.
+#             # pmin = field(system, :generators, :pmin)[i]
+#             # pmax = field(system, :generators, :pmax)[i]
+#             # pg_sqr_ub = max(pmin^2, pmax^2)
+#             # pg_sqr_lb = 0.0
+#             # if pmin > 0.0
+#             #     pg_sqr_lb = pmin^2
+#             # end
+#             # if pmax < 0.0
+#             #     pg_sqr_lb = pmax^2
+#             # end
+#             #pg_sqr = @variable(pm.model, lower_bound = pg_sqr_lb, upper_bound = pg_sqr_ub, start = 0.0)
+#             #@constraint(pm.model, [0.5, pg_sqr, pg] in JuMP.RotatedSecondOrderCone())
+#             #gen_cost[i] = @expression(pm.model,cost[1]*pg_sqr + cost[2]*pg + cost[3])
+
+#         else
+#             #@error("Nonlinear problems not supported. Length=$(length(cost)), $(cost)")
+#             gen_cost[i] = 0.0
+#         end
+#     end
+
+#     stor_cost = minimum(system.loads.cost)*0.5
+#     fg = @expression(pm.model, sum(gen_cost[i] for i in eachindex(gen_idxs)))
+#     fe = @expression(pm.model, stor_cost*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
+#     fd = @expression(pm.model, sum(field(system, :loads, :cost)[i]*var(pm, :z_demand, nw)[i] for i in field(system, :loads, :keys)))
+    
+#     @objective(pm.model, MIN_SENSE, fg+fd+fe)
+    
+# end
+
+# ""
+# function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+
+#     JuMP.set_upper_bound(var(pm, :z_demand, 1)[i], field(system, :loads, :pd)[i,t])
+
+#     if field(states, :loads)[i,t] == false
+#         JuMP.set_lower_bound(var(pm, :z_demand, 1)[i],field(system, :loads, :pd)[i,t])
+#     else
+#         JuMP.set_lower_bound(var(pm, :z_demand, 1)[i],0.0)
+#     end
+
 # end

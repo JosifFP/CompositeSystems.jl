@@ -18,24 +18,27 @@ function var_gen_power(pm::AbstractPowerModel, system::SystemModel; kwargs...)
 end
 
 ""
-function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true, force_pmin::Bool=false)
 
     pg = var(pm, :pg)[nw] = @variable(pm.model, pg[assetgrouplist(topology(pm, :generators_idxs))])
 
     if bounded
-        for l in assetgrouplist(topology(pm, :generators_idxs))
-            JuMP.set_upper_bound(pg[l], field(system, :generators, :pmax)[l])
-            JuMP.set_lower_bound(pg[l], 0.0)
-            #JuMP.set_lower_bound(pg[l], field(system, :generators, :pmin)[l])
+        for i in assetgrouplist(topology(pm, :generators_idxs))
+            JuMP.set_upper_bound(pg[i], field(system, :generators, :pmax)[i])
+            if force_pmin
+                JuMP.set_lower_bound(pg[i], field(system, :generators, :pmin)[i])
+            else
+                JuMP.set_lower_bound(pg[i], 0.0)
+            end
         end
     end
 
 end
 
 ""
-function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true, force_pmin::Bool=false)
 
-    qg = var(pm, :qg)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :generators_idxs))])
+    qg = var(pm, :qg)[nw] = @variable(pm.model, qg[assetgrouplist(topology(pm, :generators_idxs))])
 
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
@@ -56,7 +59,7 @@ end
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    p = var(pm, :p)[nw] = @variable(pm.model, [arcs], container = Dict)
+    p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -71,7 +74,7 @@ end
 function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    q = var(pm, :q)[nw] = @variable(pm.model, [arcs], container = Dict)
+    q = var(pm, :q)[nw] = @variable(pm.model, q[arcs], container = Dict)
 
     if bounded
         for (l,i,j) in arcs
@@ -82,39 +85,27 @@ function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel;
 
 end
 
+"Defines load power factor variables to represent the active power flow for each branch"
+function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
+
+    z_demand = var(pm, :z_demand)[nw] = @variable(pm.model, z_demand[assetgrouplist(topology(pm, :buses_idxs))], start =1.0)
+
+    for i in assetgrouplist(topology(pm, :buses_idxs))
+        JuMP.set_lower_bound(z_demand[i], 0)
+        if isempty(topology(pm, :loads_nodes)[i])
+            JuMP.set_upper_bound(z_demand[i], 0)
+        else
+            JuMP.set_upper_bound(z_demand[i], 1)
+        end
+    end
+    
+end
+
 "Defines load curtailment variables p to represent the active power flow for each branch"
-function var_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; kwargs...)
-    var_load_curtailment_real(pm, system, t; kwargs...)
-    var_load_curtailment_imaginary(pm, system, t; kwargs...)
+function var_shunt_admittance_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
+    var(pm, :z_shunt)[nw] = @variable(pm.model, z_shunt[assetgrouplist(topology(pm, :shunts_idxs))], binary = true, start =1.0)
 end
 
-""
-function var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
-
-    plc = var(pm, :plc)[nw] = @variable(pm.model, plc[assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
-
-    if bounded
-        for l in assetgrouplist(topology(pm, :loads_idxs))
-            JuMP.set_upper_bound(plc[l], field(system, :loads, :pd)[l,t])
-            JuMP.set_lower_bound(plc[l],0.0)
-        end
-    end
-
-end
-
-""
-function var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, bounded::Bool=true)
-
-    qlc = var(pm, :qlc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :loads_idxs))], start =0.0)
-
-    if bounded
-        for l in assetgrouplist(topology(pm, :loads_idxs))
-            JuMP.set_upper_bound(qlc[l], field(system, :loads, :pd)[l,t]*field(system, :loads, :pf)[l])
-            JuMP.set_lower_bound(qlc[l],0.0)
-        end
-    end
-
-end
 
 #**************************************************** STORAGE VARIABLES ************************************************************************
 "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"
@@ -131,7 +122,7 @@ end
 ""
 function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     
-    ps = var(pm, :ps)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+    ps = var(pm, :ps)[nw] = @variable(pm.model, ps[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -145,7 +136,7 @@ end
 ""
 function var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    qs = var(pm, :qs)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+    qs = var(pm, :qs)[nw] = @variable(pm.model, qs[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -163,7 +154,7 @@ of the device.
 """
 function var_storage_power_control_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    qsc = var(pm, :qsc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+    qsc = var(pm, :qsc)[nw] = @variable(pm.model, qsc[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -176,7 +167,7 @@ end
 ""
 function var_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    se = var(pm, :se)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+    se = var(pm, :se)[nw] = @variable(pm.model, se[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -190,7 +181,7 @@ end
 ""
 function var_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    sc = var(pm, :sc)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+    sc = var(pm, :sc)[nw] = @variable(pm.model, sc[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -204,7 +195,7 @@ end
 ""
 function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    sd = var(pm, :sd)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))])
+    sd = var(pm, :sd)[nw] = @variable(pm.model, sd[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))

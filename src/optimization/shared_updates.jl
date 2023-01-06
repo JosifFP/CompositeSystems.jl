@@ -18,9 +18,16 @@ function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemMode
 end
 
 ""
-function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; force_pmin=false)
+
     JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators_de)[i,t])
-    #JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators_de)[i,t])
+    
+    if force_pmin
+        JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators_de)[i,t])
+    else
+        JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
+    end
+
 end
 
 ""
@@ -66,32 +73,18 @@ function update_var_branch_power_imaginary(pm::AbstractPowerModel, system::Syste
 end
 
 ""
-function update_var_load_curtailment_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
-
-    JuMP.set_upper_bound(var(pm, :plc, 1)[i], field(system, :loads, :pd)[i,t])
-
-    if field(states, :loads)[i,t] == false
-        JuMP.set_lower_bound(var(pm, :plc, 1)[i],field(system, :loads, :pd)[i,t])
-    else
-        JuMP.set_lower_bound(var(pm, :plc, 1)[i],0.0)
-    end
-
-end
-
-function update_var_load_curtailment_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
-
-    JuMP.set_upper_bound(var(pm, :qlc, 1)[i], field(system, :loads, :pd)[i,t]*field(system, :loads, :pf)[i])
-
-    if field(states, :loads)[i,t] == false
-        JuMP.set_lower_bound(var(pm, :qlc, 1)[i], field(system, :loads, :pd)[i,t]*field(system, :loads, :pf)[i])
-    else
-        JuMP.set_lower_bound(var(pm, :qlc, 1)[i],0.0)
-    end
-
-end
-
-""
 function update_var_buspair_cosine(pm::AbstractPowerModel, bp::Tuple{Int,Int})
+end
+
+"Defines load power factor variables to represent curtailed load in objective function"
+function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+
+    if isempty(topology(pm, :loads_nodes)[i])
+        JuMP.set_upper_bound(var(pm, :z_demand, 1)[i], 0)
+    else
+        JuMP.set_upper_bound(var(pm, :z_demand, 1)[i], 1)
+    end
+    
 end
 
 #***************************************************** STORAGE VAR UPDATES *************************************************************************

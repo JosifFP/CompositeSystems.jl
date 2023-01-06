@@ -48,7 +48,7 @@ function accumulator(
     sys::SystemModel{N}, ::SequentialMCS, ::Shortfall
 ) where {N}
 
-    nloads = length(sys.loads)
+    nloads = length(sys.buses)
 
     periodsdropped_total = meanvariance()
     periodsdropped_bus = [meanvariance() for _ in 1:nloads]
@@ -163,7 +163,7 @@ function finalize(
 
     return ShortfallResult{N,L,T,P,E}(
         nsamples, 
-        field(system, :loads, :keys), 
+        field(system, :buses, :keys), 
         field(system, :timestamps),
         ep_total_mean, 
         ep_total_std, 
@@ -204,7 +204,7 @@ function accumulator(
     sys::SystemModel{N}, simspec::SequentialMCS, ::ShortfallSamples
 ) where {N}
 
-    nloads = length(sys.loads.keys)
+    nloads = length(sys.buses.keys)
     shortfall = zeros(Int, nloads, N, simspec.nsamples)
 
     return SMCShortfallSamplesAccumulator(shortfall)
@@ -218,7 +218,7 @@ function record!(
 ) where {N,L,T}
 
     for r in field(system, :loads, :keys)
-        acc.shortfall[r,t,sampleid] = field(system, :loads, :plc)[r]
+        acc.shortfall[r,t,sampleid] = field(system, :loads, :z_demand)[r]
     end
     return
 
@@ -236,7 +236,7 @@ function finalize(
     pu2p = conversionfactor(L,P,system.baseMVA)
     pu2e = conversionfactor(L,T,P,E,system.baseMVA)
 
-    return ShortfallSamplesResult{N,L,T,P,E}(system.loads.keys, system.timestamps, pu2p*acc.shortfall,pu2e*acc.shortfall)
+    return ShortfallSamplesResult{N,L,T,P,E}(system.buses.keys, system.timestamps, pu2p*acc.shortfall,pu2e*acc.shortfall)
 
 end
 
@@ -247,7 +247,7 @@ end
 #     #sampleid::Int
 # )
 
-#     nloads = size(sol(pm, :plc), 1)
+#     nloads = size(sol(pm, :z_demand), 1)
 
 #     for t in 1:N
 
@@ -256,7 +256,7 @@ end
 
 #         @inbounds for r in eachindex(acc.periodsdropped_bus)
 
-#             busshortfall = sol(pm, :plc)[r,t]
+#             busshortfall = sol(pm, :z_demand)[r,t]
 #             isbusshortfall = busshortfall > 0
     
 #             fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)

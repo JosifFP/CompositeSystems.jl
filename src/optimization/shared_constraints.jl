@@ -20,17 +20,18 @@ function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, 
 
     #bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i]))
     bus_arcs = topology(pm, :busarcs)[i]
-    generators_nodes = topology(pm, :generators_nodes)[i]
-    loads_nodes = topology(pm, :loads_nodes)[i]
-    shunts_nodes = topology(pm, :shunts_nodes)[i]
-    storages_nodes = topology(pm, :storages_nodes)[i]
+    bus_gens = topology(pm, :generators_nodes)[i]
+    bus_loads = topology(pm, :loads_nodes)[i]
+    bus_shunts = topology(pm, :shunts_nodes)[i]
+    bus_storage = topology(pm, :storages_nodes)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
-    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
+    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads])
 
-    _con_power_balance(pm, system, i, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
+    bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in bus_shunts)
+    bus_bs = Dict{Int, Float32}(k => field(system, :shunts, :bs)[k] for k in bus_shunts)
+
+    _con_power_balance(pm, system, i, nw, bus_arcs, bus_gens, bus_loads, bus_shunts, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
 
 end
 
@@ -44,7 +45,7 @@ function con_power_balance_nolc(pm::AbstractPowerModel, system::SystemModel, i::
     storages_nodes = topology(pm, :storages_nodes)[i]
 
     bus_pd = Float32.([field(system, :loads, :pd)[k] for k in loads_nodes])
-    bus_qd = Float32.([field(system, :loads, :pd)[k]*field(system, :loads, :pf)[k] for k in loads_nodes])
+    bus_qd = Float32.([field(system, :loads, :qd)[k] for k in loads_nodes])
     bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
     bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
 
@@ -121,15 +122,6 @@ function _con_thermal_limit_to(pm::AbstractPowerModel, n::Int, i::Int, t_idx, ra
     p_to = var(pm, :p, n)[t_idx]
     q_to = var(pm, :q, n)[t_idx]
     con(pm, :thermal_limit_to, n)[i] = @constraint(pm.model, p_to^2 + q_to^2 <= rate_a^2)
-
-end
-
-"Fix Load Power Factor"
-function con_power_factor(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
-    #fix(var(pm, :z_demand, nw)[i], field(system, :loads, :pf)[i], force = true)
-    plc   = var(pm, :plc, nw)[i]
-    qlc   = var(pm, :qlc, nw)[i]
-    con(pm, :power_factor, nw)[i] = @constraint(pm.model, field(system, :loads, :pf)[i]*plc - qlc == 0.0)
 
 end
 

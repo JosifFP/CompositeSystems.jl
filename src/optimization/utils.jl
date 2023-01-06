@@ -306,10 +306,12 @@ end
 ""
 function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    revised = false
+    update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
 
+    revised = false
     changed = true
+
     while changed
         changed = false
         for i in field(system, :buses, :keys)
@@ -317,7 +319,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                 incident_active_edge = 0
                 busarcs_i = topology(pm, :busarcs)[i]
                 if length(busarcs_i) > 0
-                    incident_branch_count = sum([0; [states.branches[l,t] for (l,i,j) in busarcs_i]])
+                    incident_branch_count = sum([0; [states.branches[l,t] for (l,u,v) in busarcs_i]])
                     incident_active_edge = incident_branch_count
                 end
                 if incident_active_edge == 1 && length(topology(pm, :generators_nodes)[i]) == 0 && 
@@ -325,24 +327,27 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     length(topology(pm, :shunts_nodes)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
-                    #println("buses=$(states.buses[:,t]), incident_active_edge")
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
                 end
             end
         end
 
         if changed
+
             for i in field(system, :branches, :keys)
                 if states.branches[i,t] ≠ 0
                     f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
                     t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
                     if f_bus == 4 || t_bus == 4
                         states.branches[i,t] = 0
+                        revised = true
                     end
                 end
             end
-            update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
-            update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
+
+            revised == true && update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
+            changed == true && update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+
         end
     end
 
@@ -371,7 +376,6 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
             for i in cc
                 states.buses[i,t] = 4
                 changed = true
-                #println("buses=$(states.buses[:,t])")
             end
         end
     end
@@ -382,15 +386,12 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
             t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
             if f_bus == 4 || t_bus == 4
                 states.branches[i,t] = 0
-                revised = true
-                #println("deactivating branch $(i) due to dangling bus without generation, load or storage. 
-                #t=$(t), States=$(states.branches[:,t]), buses=$(states.buses[:,t])")
+                #revised = true
             end
         end
     end
     
-    if revised == true update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs)) end
-    if changed == true  update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs)) end
+    changed == true && update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
 
     for i in field(system, :buses, :keys)
         if states.buses[i,t] == 4
@@ -418,6 +419,34 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
     end
 
     return
+
+end
+
+""
+function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
+    
+    update_idxs!(
+        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
+        topology(pm, :generators_idxs), topology(pm, :generators_nodes), field(system, :generators, :buses)
+    )
+
+    update_idxs!(
+        filter(i->states.storages[i,t], field(system, :storages, :keys)), 
+        topology(pm, :storages_idxs), topology(pm, :storages_nodes), field(system, :storages, :buses)
+    )
+
+    update_idxs!(
+        filter(i->states.loads[i,t], field(system, :loads, :keys)), 
+        topology(pm, :loads_idxs), topology(pm, :loads_nodes), field(system, :loads, :buses)
+    )
+
+    update_idxs!(
+        filter(i->states.shunts[i,t], field(system, :shunts, :keys)), 
+        topology(pm, :shunts_idxs), topology(pm, :shunts_nodes), field(system, :shunts, :buses)
+    )
 
 end
 

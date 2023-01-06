@@ -85,9 +85,8 @@ function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, sta
     build_method!(pm, system, 1)
     optimize_method!(pm)
 
-    if results == true
-        build_result!(pm, system, states, 1)
-    end
+    results == true && build_result!(pm, system, states, 1)
+    return
 
 end
 

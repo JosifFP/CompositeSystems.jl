@@ -2,7 +2,7 @@
 
     using ..BaseModule
     import LinearAlgebra: pinv
-    import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE, is_empty
+    import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE, MAX_SENSE, is_empty
     import MathOptInterface.Utilities: reset_optimizer
     import Ipopt, Juniper, HiGHS, Gurobi
     import InfrastructureModels: InfrastructureModels, @def

@@ -8,13 +8,13 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/RBTS/Loads_buses.xlsx"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
 rawfile = "test/data/RBTS/Base/RBTS.m"
 Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
-#timeseriesfile = "test/data/RTS/Loads_system.xlsx"
+#timeseriesfile = "test/data/RTS/Loads_buses.xlsx"
 #rawfile = "test/data/RTS/Base/RTS.m"
-#Base_reliabilityfile = "test/data/RTS/Base/R_RTS.m"
+#Base_reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
@@ -22,18 +22,17 @@ settings = CompositeSystems.Settings(
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    #powermodel = OPF.DCMPPowerModel
+    powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=2000, seed=100, threaded=true)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
-
-CompositeSystems.LOLE.(shortfall, system.loads.keys)
-CompositeSystems.EENS.(shortfall, system.loads.keys)
+CompositeSystems.LOLE.(shortfall, system.buses.keys)
+CompositeSystems.EENS.(shortfall, system.buses.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
 
@@ -117,11 +116,11 @@ JuMP.termination_status(pm.model)
 JuMP.primal_status(pm.model)
 JuMP.solution_summary(pm.model, verbose=false)
 sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
-sum(system.loads.pd[:,1])
+sum(system.buses.pd[:,1])
 
 
 
-sum(val.(CompositeSystems.EENS.(shortfall, system.loads.keys)))
+sum(val.(CompositeSystems.EENS.(shortfall, system.buses.keys)))
 
 
 a = systemstates.generators[1,:]

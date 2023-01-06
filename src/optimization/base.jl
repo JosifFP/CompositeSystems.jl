@@ -9,6 +9,7 @@ struct Topology
     storages_idxs::Vector{UnitRange{Int}}
     generatorstorages_idxs::Vector{UnitRange{Int}}
 
+    init_loads_nodes::Dict{Int, Vector{Int}}
     loads_nodes::Dict{Int, Vector{Int}}
     shunts_nodes::Dict{Int, Vector{Int}}
     generators_nodes::Dict{Int, Vector{Int}}
@@ -28,8 +29,9 @@ struct Topology
 
         key_loads = filter(i->field(system, :loads, :status)[i], field(system, :loads, :keys))
         loads_idxs = makeidxlist(key_loads, length(system.loads))
-        loads_nodes = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(loads_nodes, key_loads, field(system, :loads, :buses))
+        init_loads_nodes = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(init_loads_nodes, key_loads, field(system, :loads, :buses))
+        loads_nodes = deepcopy(init_loads_nodes)
 
         key_shunts = filter(i->field(system, :shunts, :status)[i], field(system, :shunts, :keys))
         shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
@@ -66,7 +68,7 @@ struct Topology
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
             branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
-            generatorstorages_idxs::Vector{UnitRange{Int}}, 
+            generatorstorages_idxs::Vector{UnitRange{Int}}, init_loads_nodes,
             loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
             arcs_from, arcs_to, arcs, busarcs, buspairs)
     end
@@ -80,6 +82,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.generators_idxs == y.generators_idxs &&
     x.storages_idxs == y.storages_idxs &&
     x.generatorstorages_idxs == y.generatorstorages_idxs &&
+    x.init_loads_nodes == y.init_loads_nodes &&
     x.loads_nodes == y.loads_nodes &&
     x.shunts_nodes == y.shunts_nodes &&
     x.generators_nodes == y.generators_nodes &&
@@ -184,8 +187,8 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
     else
         add_var_container!(pm.var, :pg, field(system, :generators, :keys))
         add_var_container!(pm.var, :va, field(system, :buses, :keys))
-        add_var_container!(pm.var, :plc, field(system, :loads, :keys))
-        add_var_container!(pm.var, :c_plc, field(system, :loads, :keys))
+        add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
+        add_var_container!(pm.var, :z_shunt, field(system, :shunts, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
 
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
@@ -227,16 +230,11 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :va, field(system, :buses, :keys))
         add_var_container!(pm.var, :phi, field(system, :buses, :keys))
         add_var_container!(pm.var, :cs, field(pm.topology, :buspairs))
-        add_var_container!(pm.var, :plc, field(system, :loads, :keys))
-        add_var_container!(pm.var, :qlc, field(system, :loads, :keys))
-        add_var_container!(pm.var, :c_plc, field(system, :loads, :keys))
-        add_var_container!(pm.var, :c_qlc, field(system, :loads, :keys))
         add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
+        add_var_container!(pm.var, :z_shunt, field(system, :shunts, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
 
-        add_con_container!(pm.con, :power_factor, field(system, :loads, :keys))
-        add_con_container!(pm.con, :c_power_factor, field(system, :loads, :keys))
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
         add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
@@ -281,7 +279,7 @@ function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Se
 
     if iszero(s%10) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    elseif iszero(s%30) && settings.optimizer == Gurobi
+    elseif iszero(s%20) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     else
         MOIU.reset_optimizer(pm.model)
@@ -291,6 +289,7 @@ function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Se
     fill!(getfield(states, :qlc), 0)
     fill!(getfield(states, :se), 0)
     fill!(getfield(states, :loads), 1)
+    fill!(getfield(states, :shunts), 1)
     return
 
 end
@@ -298,23 +297,13 @@ end
 ""
 function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    update_idxs!(
-        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
-        topology(pm, :generators_idxs), topology(pm, :generators_nodes), field(system, :generators, :buses)
-    )
-    
-    update_idxs!(
-        filter(i->states.shunts[i,t], field(system, :shunts, :keys)),
-        topology(pm, :shunts_idxs), topology(pm, :shunts_nodes), field(system, :shunts, :buses)
-    )
-    
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
-        update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
-        update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
         simplify!(pm, system, states, t)
         update_arcs!(pm, system, states.branches, t)
     end
-    
+
+    update_all_idxs!(pm, system, states, t)
+
     return
 
 end
@@ -322,23 +311,9 @@ end
 ""
 function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    update_idxs!(
-        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
-        topology(pm, :generators_idxs), topology(pm, :generators_nodes), field(system, :generators, :buses)
-    )
-    
-    update_idxs!(
-        filter(i->states.shunts[i,t], field(system, :shunts, :keys)),
-        topology(pm, :shunts_idxs), topology(pm, :shunts_nodes), field(system, :shunts, :buses)
-    )
-    
-    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
-    
-    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
-    
     simplify!(pm, system, states, t)
-    
     update_arcs!(pm, system, states.branches, t)
+    update_all_idxs!(pm, system, states, t)
     
     return
 

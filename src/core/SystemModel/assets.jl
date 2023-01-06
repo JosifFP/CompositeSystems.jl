@@ -522,8 +522,8 @@ struct Shunts <: AbstractAssets
 
     keys::Vector{Int}
     buses::Vector{Int}
-    bs::Vector{Float32} #susceptance
-    gs::Vector{Float32}
+    bs::Vector{Float32} # Active power withdrawn per voltage p.u.
+    gs::Vector{Float32} # Reactive power withdrawn per voltage p.u.
     status::Vector{Bool}
 
     function Shunts(
