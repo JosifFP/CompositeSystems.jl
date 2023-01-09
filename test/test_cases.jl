@@ -27,7 +27,7 @@ settings = CompositeSystems.Settings(
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=5000, seed=100, threaded=true)
+method = SequentialMCS(samples=7500, seed=100, threaded=true)
 #method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
