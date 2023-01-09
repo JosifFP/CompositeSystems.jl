@@ -109,7 +109,7 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 end
 
 ""
-function update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
     _update_topology!(pm, system, states, t)
 
@@ -215,10 +215,10 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 
 end
 
-function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
 
     for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
         update_var_gen_power_imaginary(pm, system, states, i, t)
     end
 
@@ -242,26 +242,23 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
         update_con_thermal_limits(pm, system, states, i, t)
     end
 
-    if all(states.branches[:,t]) ≠ true
-        
-        active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-        active_branches = assetgrouplist(topology(pm, :branches_idxs))
-    
-        reset_con_model_voltage(pm, active_buspairs)
-        reset_con_ohms_yt(pm, active_branches)
-        #reset_con_voltage_angle_difference(pm, active_buspairs)
-    
-        for (bp,buspair) in topology(pm, :buspairs)
-            update_var_buspair_cosine(pm, bp)
-            #update_con_voltage_angle_difference(pm, bp)
-            if !ismissing(buspair)
-                con_model_voltage(pm, bp)
-            end
+    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+    active_branches = assetgrouplist(topology(pm, :branches_idxs))
+
+    reset_con_model_voltage(pm, active_buspairs)
+    reset_con_ohms_yt(pm, active_branches)
+    #reset_con_voltage_angle_difference(pm, active_buspairs)
+
+    for (bp,buspair) in topology(pm, :buspairs)
+        update_var_buspair_cosine(pm, bp)
+        #update_con_voltage_angle_difference(pm, bp)
+        if !ismissing(buspair)
+            con_model_voltage(pm, bp)
         end
-        
-        for i in active_branches
-            con_ohms_yt(pm, system, i)
-        end
+    end
+    
+    for i in active_branches
+        con_ohms_yt(pm, system, i)
     end
 
     return

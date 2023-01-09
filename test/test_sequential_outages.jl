@@ -15,7 +15,7 @@
     CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
     
     t=2
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, t)  
 
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
@@ -36,7 +36,7 @@
     CompositeSystems.field(systemstates, :generators)[8,t] = 0
     CompositeSystems.field(systemstates, :generators)[9,t] = 0
     systemstates.system[t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, t)
 
     @testset "G3, G7, G8 and G9 on outage" begin
         @test isapprox(sum(systemstates.plc[:,t]), 0.3731; atol = 1e-4)
@@ -56,7 +56,7 @@
     CompositeSystems.field(systemstates, :branches)[5,t] = 0
     CompositeSystems.field(systemstates, :branches)[8,t] = 0
     systemstates.system[t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, t)
     
     @testset "L5 and L8 on outage" begin
         @test isapprox(sum(systemstates.plc[:,t]), 0.4; atol = 1e-4)
@@ -74,7 +74,7 @@
     end
 
     t=5
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, t)  
 
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
@@ -94,7 +94,7 @@
     CompositeSystems.field(systemstates, :branches)[4,t] = 0
     CompositeSystems.field(systemstates, :branches)[8,t] = 0
     systemstates.system[t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, t)  
 
     @testset "L3, L4 and L8 on outage" begin
         @test isapprox(sum(systemstates.plc[:,t]), 0.1717; atol = 1e-4)
@@ -115,7 +115,7 @@
     CompositeSystems.field(systemstates, :generators)[2,t] = 0
     CompositeSystems.field(systemstates, :generators)[3,t] = 0
     systemstates.system[t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)   
+    OPF._update!(pm, system, systemstates, t)   
 
     @testset "L2 and L7 on outage, generation reduced" begin
         @test isapprox(sum(systemstates.plc[:,t]), 0.8010; atol = 1e-4)

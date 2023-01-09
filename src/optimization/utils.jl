@@ -517,10 +517,10 @@ function objective_value(opf_model::Model)
 end
 
 ""
-function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    
+function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)  
+
     _update_topology!(pm, system, states, t)
-    _update_method!(pm, system, states, t)
+    _update_method!(pm, system, states, t, force_pmin=force_pmin)
     optimize_method!(pm)
     build_result!(pm, system, states, t)
     return

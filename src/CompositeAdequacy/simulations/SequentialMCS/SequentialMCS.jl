@@ -94,11 +94,9 @@ end
 ""
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
-    if states.system[t] == false
-        update_topology!(pm, system, states, t)
-        update_method!(pm, system, states, t)
-        optimize_method!(pm)
-    end
+    update_topology!(pm, system, states, t)
+    update_method!(pm, system, states, t)
+    optimize_method!(pm)
     build_result!(pm, system, states, t)
     return
 

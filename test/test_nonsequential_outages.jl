@@ -10,7 +10,7 @@
 
         #OUTAGE BRANCH 1
         states.branches[1] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -55,7 +55,7 @@
         #OUTAGE BRANCH 6
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -99,7 +99,7 @@
 
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -142,7 +142,7 @@
 
         #OUTAGE BRANCH 3
         states.branches[3] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -187,7 +187,7 @@
         #OUTAGE BRANCH 2
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -232,7 +232,7 @@
         #OUTAGE BRANCH 7
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -277,7 +277,7 @@
         #OUTAGE BRANCH 4
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[4] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -322,7 +322,7 @@
         #OUTAGE BRANCH 5
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -367,7 +367,7 @@
         #OUTAGE BRANCH 8
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -412,7 +412,7 @@
         #OUTAGE BRANCH 9
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[9] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -458,7 +458,7 @@
         
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -502,7 +502,7 @@
         #OUTAGE BRANCH #1 AND #6
         states.branches[1] = 0
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -549,7 +549,7 @@
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -596,7 +596,7 @@
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -653,7 +653,7 @@
 
         #OUTAGE BRANCH 1
         states.branches[1] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -698,7 +698,7 @@
         #OUTAGE BRANCH 6
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -742,7 +742,7 @@
 
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -785,7 +785,7 @@
 
         #OUTAGE BRANCH 3
         states.branches[3] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -830,7 +830,7 @@
         #OUTAGE BRANCH 2
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -875,7 +875,7 @@
         #OUTAGE BRANCH 7
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -920,7 +920,7 @@
         #OUTAGE BRANCH 4
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[4] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -965,7 +965,7 @@
         #OUTAGE BRANCH 5
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1010,7 +1010,7 @@
         #OUTAGE BRANCH 8
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1055,7 +1055,7 @@
         #OUTAGE BRANCH 9
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[9] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1101,7 +1101,7 @@
         
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1145,7 +1145,7 @@
         #OUTAGE BRANCH #1 AND #6
         states.branches[1] = 0
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1192,7 +1192,7 @@
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1239,7 +1239,7 @@
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1296,7 +1296,7 @@
 
         #OUTAGE BRANCH 1
         states.branches[1] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1365,7 +1365,7 @@
         #OUTAGE BRANCH 6
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1433,7 +1433,7 @@
 
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1500,7 +1500,7 @@
 
         #OUTAGE BRANCH 3
         states.branches[3] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1569,7 +1569,7 @@
         #OUTAGE BRANCH 2
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1638,7 +1638,7 @@
         #OUTAGE BRANCH 7
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1707,7 +1707,7 @@
         #OUTAGE BRANCH 4
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[4] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1776,7 +1776,7 @@
         #OUTAGE BRANCH 5
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1845,7 +1845,7 @@
         #OUTAGE BRANCH 8
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1914,7 +1914,7 @@
         #OUTAGE BRANCH 9
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[9] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1983,7 +1983,7 @@
         
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2051,7 +2051,7 @@
         #OUTAGE BRANCH #1 AND #6
         states.branches[1] = 0
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2122,7 +2122,7 @@
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2193,7 +2193,7 @@
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2277,7 +2277,7 @@ end
     
         #OUTAGE BRANCH 1
         states.branches[1] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2323,7 +2323,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[25] = 0
         states.branches[26] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2370,7 +2370,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[14] = 0
         states.branches[16] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2416,7 +2416,7 @@ end
         #OUTAGE BRANCH 6
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2460,7 +2460,7 @@ end
     
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2504,7 +2504,7 @@ end
         #OUTAGE BRANCH 3
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[3] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2549,7 +2549,7 @@ end
         #OUTAGE BRANCH 2
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2594,7 +2594,7 @@ end
         #OUTAGE BRANCH 33
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[33] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2639,7 +2639,7 @@ end
         #OUTAGE BRANCH 4
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[4] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2684,7 +2684,7 @@ end
         #OUTAGE BRANCH 5
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2729,7 +2729,7 @@ end
         #OUTAGE BRANCH 8
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2774,7 +2774,7 @@ end
         #OUTAGE BRANCH 9
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[9] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2819,7 +2819,7 @@ end
         
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2864,7 +2864,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[1] = 0
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2910,7 +2910,7 @@ end
         #OUTAGE BRANCH #20
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[20] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -2955,7 +2955,7 @@ end
         #OUTAGE BRANCH #12
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[12] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3009,7 +3009,7 @@ end
     
         #OUTAGE BRANCH 1
         states.branches[1] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3055,7 +3055,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[25] = 0
         states.branches[26] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3102,7 +3102,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[14] = 0
         states.branches[16] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3148,7 +3148,7 @@ end
         #OUTAGE BRANCH 6
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3192,7 +3192,7 @@ end
     
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3236,7 +3236,7 @@ end
         #OUTAGE BRANCH 3
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[3] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3281,7 +3281,7 @@ end
         #OUTAGE BRANCH 2
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3326,7 +3326,7 @@ end
         #OUTAGE BRANCH 33
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[33] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3371,7 +3371,7 @@ end
         #OUTAGE BRANCH 4
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[4] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3416,7 +3416,7 @@ end
         #OUTAGE BRANCH 5
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3461,7 +3461,7 @@ end
         #OUTAGE BRANCH 8
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3506,7 +3506,7 @@ end
         #OUTAGE BRANCH 9
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[9] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3551,7 +3551,7 @@ end
         
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3596,7 +3596,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[1] = 0
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3642,7 +3642,7 @@ end
         #OUTAGE BRANCH #20
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[20] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3687,7 +3687,7 @@ end
         #OUTAGE BRANCH #12
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[12] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3732,7 +3732,7 @@ end
         #OUTAGE BRANCH #7
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3779,7 +3779,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
         states.branches[27] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3835,7 +3835,7 @@ end
     
         #OUTAGE BRANCH 1
         states.branches[1] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3904,7 +3904,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[25] = 0
         states.branches[26] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -3975,7 +3975,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[14] = 0
         states.branches[16] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4045,7 +4045,7 @@ end
         #OUTAGE BRANCH 6
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4113,7 +4113,7 @@ end
     
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4181,7 +4181,7 @@ end
         #OUTAGE BRANCH 3
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[3] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4250,7 +4250,7 @@ end
         #OUTAGE BRANCH 2
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[2] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4319,7 +4319,7 @@ end
         #OUTAGE BRANCH 33
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[33] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4388,7 +4388,7 @@ end
         #OUTAGE BRANCH 4
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[4] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4457,7 +4457,7 @@ end
         #OUTAGE BRANCH 5
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[5] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4526,7 +4526,7 @@ end
         #OUTAGE BRANCH 8
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[8] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4595,7 +4595,7 @@ end
         #OUTAGE BRANCH 9
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[9] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4663,7 +4663,7 @@ end
     
         #NO OUTAGE
         states = CompositeAdequacy.SystemStates(system, available=true)
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4732,7 +4732,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[1] = 0
         states.branches[6] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4802,7 +4802,7 @@ end
         #OUTAGE BRANCH #20
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[20] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4871,7 +4871,7 @@ end
         #OUTAGE BRANCH #12
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[12] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -4940,7 +4940,7 @@ end
         #OUTAGE BRANCH #7
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -5011,7 +5011,7 @@ end
         states = CompositeAdequacy.SystemStates(system, available=true)
         states.branches[7] = 0
         states.branches[27] = 0
-        OPF.update_opf!(pm, system, states, 1)
+        OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
