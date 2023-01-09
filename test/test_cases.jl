@@ -8,13 +8,12 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/MRBTS/MRBTS.m"
-#Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
-
-timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
+timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+rawfile = "test/data/SMCS/MRBTS/MRBTS.m"
+Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
+#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/RTS_79_A/RTS.m"
+#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
@@ -22,13 +21,13 @@ settings = CompositeSystems.Settings(
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    #powermodel = OPF.DCMPPowerModel
+    powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=5000, seed=100, threaded=true)
 #method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
@@ -40,7 +39,6 @@ CompositeSystems.EENS.(shortfall)
 
 
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
-
 
 
 
