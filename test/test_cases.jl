@@ -8,13 +8,13 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/MRBTS/MRBTS.m"
+#Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-#timeseriesfile = "test/data/RTS/Loads_buses.xlsx"
-#rawfile = "test/data/RTS/Base/RTS.m"
-#Base_reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
+timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+rawfile = "test/data/SMCS/RTS_79_A/RTS.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
@@ -22,13 +22,14 @@ settings = CompositeSystems.Settings(
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    powermodel = OPF.DCMPPowerModel
+    #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=2000, seed=100, threaded=true)
+method = SequentialMCS(samples=1000, seed=100, threaded=true)
+#method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.buses.keys)
@@ -38,6 +39,7 @@ CompositeSystems.EENS.(shortfall)
 
 
 
+val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 
 
@@ -99,11 +101,11 @@ all(view(states.branches,:,t-1)) ≠ true
 
 
 
-pm.topology.loads_nodes::Dict{Int, Vector{Int}}
-pm.topology.shunts_nodes::Dict{Int, Vector{Int}}
-pm.topology.generators_nodes::Dict{Int, Vector{Int}}
-pm.topology.storages_nodes::Dict{Int, Vector{Int}}
-pm.topology.generatorstorages_nodes::Dict{Int, Vector{Int}}
+pm.topology.bus_loads::Dict{Int, Vector{Int}}
+pm.topology.bus_shunts::Dict{Int, Vector{Int}}
+pm.topology.bus_generators::Dict{Int, Vector{Int}}
+pm.topology.bus_storages::Dict{Int, Vector{Int}}
+pm.topology.bus_generatorstorages::Dict{Int, Vector{Int}}
 
 pm.topology.arcs_from::Vector{Union{Missing, Tuple{Int, Int, Int}}}
 pm.topology.arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}

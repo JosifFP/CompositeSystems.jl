@@ -9,11 +9,11 @@ import BenchmarkTools: @btime
 
 include("solvers.jl")
 
-settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
-timeseriesfile = "test/data/RTS/Loads_system.xlsx"
-rawfile = "test/data/RTS/Base/RTS.m"
-reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
-system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)    
+settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMATIC)
+timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+rawfile = "test/data/SMCS/RTS_79_A/RTS.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)    
 
 data = OPF.build_network(rawfile, symbol=false)
 load_pd = Dict{Int, Float64}()
@@ -32,15 +32,34 @@ pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
 systemstates = OPF.SystemStates(system, available=true)
 CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
 
-JuMP.termination_status(pm.model)
-JuMP.primal_status(pm.model)
-JuMP.solution_summary(pm.model, verbose=false)
-sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
-values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))
-println(pm.model)
-
 t=2
-CompositeAdequacy.update!(pm, system, systemstates, t)
+CompositeSystems.field(systemstates, :branches)[11,t] = 0
+systemstates.system[t] = 0
+OPF._update!(pm, system, systemstates, t)
+systemstates.plc[:,t]
+println(pm.model)
+sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
+result_pf = OPF.build_sol_branch_values(pm, system.branches)
+
+systemstates.generators[:,t]
+systemstates.generators_de[:,t]
+
+system.generators.pmax[1]
+system.generators.pmax[2]
+system.generators.pmax[3]
+
+pm.topology.buses_idxs
+pm.topology.generators_idxs
+
+
+
+systemstates.generators[:,t]
+systemstates.generators_de[:,t]
+pm.topology.generators_nodes
+
+pm.topology.ge
+
+
 println(pm.model)
 
 

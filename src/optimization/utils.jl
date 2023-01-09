@@ -304,7 +304,7 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
 end
 
 ""
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; isolated::Bool=false)
 
     update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
@@ -322,18 +322,40 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     incident_branch_count = sum([0; [states.branches[l,t] for (l,u,v) in busarcs_i]])
                     incident_active_edge = incident_branch_count
                 end
-                if incident_active_edge == 1 && length(topology(pm, :generators_nodes)[i]) == 0 && 
-                    length(topology(pm, :loads_nodes)[i]) == 0 && length(topology(pm, :storages_nodes)[i]) == 0 &&
-                    length(topology(pm, :shunts_nodes)[i]) == 0
+                if incident_active_edge == 1 && length(topology(pm, :bus_generators)[i]) == 0 && 
+                    length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 &&
+                    length(topology(pm, :bus_shunts)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
+                elseif incident_active_edge == 0 && isolated == true
+                    states.buses[i,t] = 4
+                    changed = true
+                    for k in topology(pm, :bus_loads)[i]
+                        if states.loads[k,t] ≠ 0
+                            states.loads[k,t] = 0
+                        end
+                    end
+                    for k in topology(pm, :bus_shunts)[i]
+                        if states.shunts[k,t] ≠ 0
+                            states.shunts[k,t] = 0
+                        end
+                    end
+                    for k in topology(pm, :bus_generators)[i]
+                        if states.generators[k,t] ≠ 0
+                            states.generators[k,t] = 0
+                        end
+                    end
+                    for k in topology(pm, :bus_storages)[i]
+                        if states.storages[k,t] ≠ 0
+                            states.storages[k,t] = 0
+                        end
+                    end
                 end
             end
         end
 
         if changed
-
             for i in field(system, :branches, :keys)
                 if states.branches[i,t] ≠ 0
                     f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
@@ -344,10 +366,8 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     end
                 end
             end
-
             revised == true && update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
             changed == true && update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
-
         end
     end
 
@@ -360,10 +380,10 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         cc_active_strg = [0]
 
         for i in cc
-            cc_active_loads = push!(cc_active_loads, length(topology(pm, :loads_nodes)[i]))
-            cc_active_shunts = push!(cc_active_shunts, length(topology(pm, :shunts_nodes)[i]))
-            cc_active_gens = push!(cc_active_gens, length(topology(pm, :generators_nodes)[i]))
-            cc_active_strg = push!(cc_active_strg, length(topology(pm, :storages_nodes)[i]))
+            cc_active_loads = push!(cc_active_loads, length(topology(pm, :bus_loads)[i]))
+            cc_active_shunts = push!(cc_active_shunts, length(topology(pm, :bus_shunts)[i]))
+            cc_active_gens = push!(cc_active_gens, length(topology(pm, :bus_generators)[i]))
+            cc_active_strg = push!(cc_active_strg, length(topology(pm, :bus_storages)[i]))
         end
 
         active_load_count = sum(cc_active_loads)
@@ -395,22 +415,22 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 
     for i in field(system, :buses, :keys)
         if states.buses[i,t] == 4
-            for k in topology(pm, :loads_nodes)[i]
+            for k in topology(pm, :bus_loads)[i]
                 if states.loads[k,t] ≠ 0
                     states.loads[k,t] = 0
                 end
             end
-            for k in topology(pm, :shunts_nodes)[i]
+            for k in topology(pm, :bus_shunts)[i]
                 if states.shunts[k,t] ≠ 0
                     states.shunts[k,t] = 0
                 end
             end
-            for k in topology(pm, :generators_nodes)[i]
+            for k in topology(pm, :bus_generators)[i]
                 if states.generators[k,t] ≠ 0
                     states.generators[k,t] = 0
                 end
             end
-            for k in topology(pm, :storages_nodes)[i]
+            for k in topology(pm, :bus_storages)[i]
                 if states.storages[k,t] ≠ 0
                     states.storages[k,t] = 0
                 end
@@ -430,22 +450,22 @@ function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::S
     
     update_idxs!(
         filter(i->states.generators[i,t], field(system, :generators, :keys)), 
-        topology(pm, :generators_idxs), topology(pm, :generators_nodes), field(system, :generators, :buses)
+        topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses)
     )
 
     update_idxs!(
         filter(i->states.storages[i,t], field(system, :storages, :keys)), 
-        topology(pm, :storages_idxs), topology(pm, :storages_nodes), field(system, :storages, :buses)
+        topology(pm, :storages_idxs), topology(pm, :bus_storages), field(system, :storages, :buses)
     )
 
     update_idxs!(
         filter(i->states.loads[i,t], field(system, :loads, :keys)), 
-        topology(pm, :loads_idxs), topology(pm, :loads_nodes), field(system, :loads, :buses)
+        topology(pm, :loads_idxs), topology(pm, :bus_loads), field(system, :loads, :buses)
     )
 
     update_idxs!(
         filter(i->states.shunts[i,t], field(system, :shunts, :keys)), 
-        topology(pm, :shunts_idxs), topology(pm, :shunts_nodes), field(system, :shunts, :buses)
+        topology(pm, :shunts_idxs), topology(pm, :bus_shunts), field(system, :shunts, :buses)
     )
 
 end

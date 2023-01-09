@@ -25,29 +25,29 @@
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9136; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.3976; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9165; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.4124; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
     t=3
-    CompositeSystems.field(systemstates, :generators_de)[3,t] = 0
-    CompositeSystems.field(systemstates, :generators_de)[7,t] = 0
-    CompositeSystems.field(systemstates, :generators_de)[8,t] = 0
-    CompositeSystems.field(systemstates, :generators_de)[9,t] = 0
+    CompositeSystems.field(systemstates, :generators)[3,t] = 0
+    CompositeSystems.field(systemstates, :generators)[7,t] = 0
+    CompositeSystems.field(systemstates, :generators)[8,t] = 0
+    CompositeSystems.field(systemstates, :generators)[9,t] = 0
     systemstates.system[t] = 0
     CompositeAdequacy.update!(pm, system, systemstates, t)
 
     @testset "G3, G7, G8 and G9 on outage" begin
-        @test isapprox(sum(systemstates.plc[:,t]), 0.3716; atol = 1e-4)
+        @test isapprox(sum(systemstates.plc[:,t]), 0.3731; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0.3716; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.3731; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.5000; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.1169; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.1281; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test isapprox(systemstates.qlc[3,t]/systemstates.plc[3,t], CompositeAdequacy.field(system, :loads, :pf)[2]; atol = 1e-4)
     end
@@ -66,8 +66,8 @@
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0.2; atol = 1e-4)
         @test isapprox(systemstates.plc[6,t], 0.2; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.5197; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.3959; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.5146; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.3693; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test isapprox(systemstates.qlc[5,t]/systemstates.plc[5,t], CompositeAdequacy.field(system, :loads, :pf)[4]; atol = 1e-4)
         @test isapprox(systemstates.qlc[6,t]/systemstates.plc[6,t], CompositeAdequacy.field(system, :loads, :pf)[5]; atol = 1e-4)
@@ -84,8 +84,8 @@
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9136; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.3976; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9165; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.4124; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
@@ -97,10 +97,10 @@
     CompositeAdequacy.update!(pm, system, systemstates, t)
 
     @testset "L3, L4 and L8 on outage" begin
-        @test isapprox(sum(systemstates.plc[:,t]), 0.1703; atol = 1e-4)
+        @test isapprox(sum(systemstates.plc[:,t]), 0.1717; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0.1703; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.1717; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
@@ -111,20 +111,20 @@
     t=7
     CompositeSystems.field(systemstates, :branches)[2,t] = 0
     CompositeSystems.field(systemstates, :branches)[7,t] = 0
-    CompositeSystems.field(systemstates, :generators_de)[1,t] = 0
-    CompositeSystems.field(systemstates, :generators_de)[2,t] = 0
-    CompositeSystems.field(systemstates, :generators_de)[3,t] = 0
+    CompositeSystems.field(systemstates, :generators)[1,t] = 0
+    CompositeSystems.field(systemstates, :generators)[2,t] = 0
+    CompositeSystems.field(systemstates, :generators)[3,t] = 0
     systemstates.system[t] = 0
     CompositeAdequacy.update!(pm, system, systemstates, t)   
 
     @testset "L2 and L7 on outage, generation reduced" begin
-        @test isapprox(sum(systemstates.plc[:,t]), 0.9793; atol = 1e-4)
+        @test isapprox(sum(systemstates.plc[:,t]), 0.8010; atol = 1e-4)
         @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[3,t], 0.85; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0.8010; atol = 1e-4)
         @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
-        @test isapprox(systemstates.plc[6,t], 0.1292; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test isapprox(systemstates.qlc[4,t]/systemstates.plc[4,t], CompositeAdequacy.field(system, :loads, :pf)[3]; atol = 1e-4)
         @test isapprox(systemstates.qlc[6,t]/systemstates.plc[6,t], CompositeAdequacy.field(system, :loads, :pf)[5]; atol = 1e-4)
@@ -467,6 +467,326 @@ end
 
         @test isapprox(systemstates.qlc[9,t]/systemstates.plc[9,t], CompositeAdequacy.field(system, :loads, :pf)[9]; atol = 1e-4)
         @test isapprox(systemstates.qlc[14,t]/systemstates.plc[14,t], CompositeAdequacy.field(system, :loads, :pf)[12]; atol = 1e-4)
+    end
+
+end
+
+
+@testset "test sequentially split situations RTS system, DCMPPowerModel" begin
+
+    settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+    timeseriesfile = "test/data/RTS/Loads_system.xlsx"
+    rawfile = "test/data/RTS/Base/RTS.m"
+    reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
+    system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)    
+
+    data = OPF.build_network(rawfile, symbol=false)
+    load_pd = Dict{Int, Float64}()
+    for (k,v) in data["load"]
+        load_pd[parse(Int,k)] = v["pd"]
+        system.loads.qd[parse(Int,k)] = v["qd"]
+    end
+    
+    for t in 1:8736
+        for i in system.loads.keys
+            system.loads.pd[i,t] = load_pd[i]
+        end
+    end
+    
+    model = OPF.jump_model(JuMP.AUTOMATIC, deepcopy(settings.optimizer), string_names = true)
+    pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
+    systemstates = OPF.SystemStates(system, available=true)
+    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+
+    t=1
+    @testset "No outages" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+    end
+    
+    t=2
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "No outages" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+    end
+
+    t=3
+    CompositeSystems.field(systemstates, :branches)[29,t] = 0
+    CompositeSystems.field(systemstates, :branches)[36,t] = 0
+    CompositeSystems.field(systemstates, :branches)[37,t] = 0
+    systemstates.system[t] = 0
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "Outages of L29, L36, L37" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 3.09; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 1.81; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 1.28; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500-3.09; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+
+    end
+
+    t=4
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "No outages" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+    end
+
+    t=5
+    CompositeSystems.field(systemstates, :branches)[25,t] = 0
+    CompositeSystems.field(systemstates, :branches)[26,t] = 0
+    CompositeSystems.field(systemstates, :branches)[28,t] = 0
+    systemstates.system[t] = 0
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "Outages of L25, L26, L28" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 2.12; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 1.75; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0.37; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500 - 2.12; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+    end
+
+    t=6
+    CompositeSystems.field(systemstates, :branches)[1,t] = 0
+    CompositeSystems.field(systemstates, :branches)[8,t] = 0
+    CompositeSystems.field(systemstates, :branches)[10,t] = 0
+    systemstates.system[t] = 0
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "Outages of L1, L8, L10" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 1.150; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 1.150; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500 - 1.150; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1, atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+    end
+
+    t=7
+    CompositeSystems.field(systemstates, :branches)[7,t] = 0
+    CompositeSystems.field(systemstates, :branches)[19,t] = 0
+    CompositeSystems.field(systemstates, :branches)[29,t] = 0
+    systemstates.system[t] = 0
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "Outages of L7, L19, L29" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+    end
+
+    t=8
+    CompositeSystems.field(systemstates, :branches)[7,t] = 0
+    CompositeSystems.field(systemstates, :branches)[23,t] = 0
+    CompositeSystems.field(systemstates, :branches)[29,t] = 0
+    systemstates.system[t] = 0
+    CompositeAdequacy.update!(pm, system, systemstates, t)
+
+    @testset "Outages of L7, L23, L29" begin
+        @test isapprox(sum(systemstates.plc[:,t]), 1.65; atol = 1e-2)
+        @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[7,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[8,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[9,t], 1.65; atol = 1e-2)
+        @test isapprox(systemstates.plc[10,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[11,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[12,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[13,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[14,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[15,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[16,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[17,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[18,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[19,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[20,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[21,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[22,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 28.500-1.65; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
     end
 
 end

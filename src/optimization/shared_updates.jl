@@ -20,20 +20,35 @@ end
 ""
 function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; force_pmin=false)
 
-    JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators_de)[i,t])
-    
-    if force_pmin
-        JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators_de)[i,t])
+    if field(states, :generators_de)[i,t] < 1 && field(states, :generators)[i,t] == 0
+        JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators_de)[i,t])
+        if force_pmin
+            JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators_de)[i,t])
+        else
+            JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
+        end
     else
-        JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
+        JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators)[i,t])
+        if force_pmin
+            JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators)[i,t])
+        else
+            JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
+        end
     end
 
 end
 
 ""
 function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
-    JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators_de)[i,t])
-    JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators_de)[i,t])
+
+    if field(states, :generators_de)[i,t] >= field(states, :generators)[i,t] && field(states, :generators)[i,t] == 0
+        JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators_de)[i,t])
+        JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators_de)[i,t])
+    else
+        JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators)[i,t])
+        JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators)[i,t])
+    end
+    
 end
 
 ""
@@ -79,7 +94,7 @@ end
 "Defines load power factor variables to represent curtailed load in objective function"
 function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 
-    if isempty(topology(pm, :loads_nodes)[i])
+    if isempty(topology(pm, :bus_loads)[i])
         JuMP.set_upper_bound(var(pm, :z_demand, 1)[i], 0)
     else
         JuMP.set_upper_bound(var(pm, :z_demand, 1)[i], 1)

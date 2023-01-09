@@ -1,5 +1,6 @@
-%% MATPOWER Case Format
+%% MATPOWER Case Format : Version 2
 function mpc = RBTS
+mpc.version = '2';
 
 %%-----  Reliability Data  -----%%
 
@@ -22,13 +23,13 @@ mpc.gen = [
 %% branch reliability data
 %    f_bus	t_bus	λ_updn	μ_updn common_mode λ_common μ_common
 mpc.branch = [
-	1	3	1.5	873.6	1	0.15	547.5	
-	2	4	5.0	873.6	2	0.50	547.5	
+	1	3	1.5	873.6	0	0.00	0.00;	
+	2	4	5.0	873.6	0	0.00	0.00;	
 	2	1	4.0	873.6	0	0.00	0.00;			
 	3	4	1.0	873.6	0	0.00	0.00;
 	3	5	1.0	873.6	0	0.00	0.00;
-	1	3	1.5	873.6	1	0.15	547.5	
-	2	4	5.0	873.6	2	0.50	547.5
+	1	3	1.5	873.6	0	0.00	0.00;	
+	2	4	5.0	873.6	0	0.00	0.00;
 	4	5	1.0 873.6	0	0.00	0.00;
 	5	6	1.0 873.6	0	0.00	0.00;
 ];
@@ -36,9 +37,9 @@ mpc.branch = [
 %% load data
 %  bus_i  cost firm_load
 mpc.load = [		
-	2	7410	1
-	3	2690	1
-	4	6780	1		
-	5	4820	1	
-	6	3630	1			
+	2	9632.5	1
+	3	4376.9	1
+	4	8026.7	1		
+	5	8632.3	1	
+	6	5513.2	1		
 ];

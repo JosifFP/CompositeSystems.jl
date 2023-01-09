@@ -51,6 +51,7 @@ function assess(
         end
 
         for t in 2:N
+            #println("t=$(t), systemstates=$(systemstates.system[t]), gens=$(systemstates.generators_de[:,t])")
             update!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
@@ -93,9 +94,11 @@ end
 ""
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
-    update_topology!(pm, system, states, t)
-    update_method!(pm, system, states, t)
-    optimize_method!(pm)
+    if states.system[t] == false
+        update_topology!(pm, system, states, t)
+        update_method!(pm, system, states, t)
+        optimize_method!(pm)
+    end
     build_result!(pm, system, states, t)
     return
 

@@ -20,10 +20,10 @@ function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, 
 
     #bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i]))
     bus_arcs = topology(pm, :busarcs)[i]
-    bus_gens = topology(pm, :generators_nodes)[i]
-    bus_loads = topology(pm, :loads_nodes)[i]
-    bus_shunts = topology(pm, :shunts_nodes)[i]
-    bus_storage = topology(pm, :storages_nodes)[i]
+    bus_gens = topology(pm, :bus_generators)[i]
+    bus_loads = topology(pm, :bus_loads)[i]
+    bus_shunts = topology(pm, :bus_shunts)[i]
+    bus_storage = topology(pm, :bus_storages)[i]
 
     bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
     bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads])
@@ -39,17 +39,17 @@ end
 function con_power_balance_nolc(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     bus_arcs = topology(pm, :busarcs)[i]
-    generators_nodes = topology(pm, :generators_nodes)[i]
-    loads_nodes = topology(pm, :loads_nodes)[i]
-    shunts_nodes = topology(pm, :shunts_nodes)[i]
-    storages_nodes = topology(pm, :storages_nodes)[i]
+    bus_generators = topology(pm, :bus_generators)[i]
+    bus_loads = topology(pm, :bus_loads)[i]
+    bus_shunts = topology(pm, :bus_shunts)[i]
+    bus_storages = topology(pm, :bus_storages)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k] for k in loads_nodes])
-    bus_qd = Float32.([field(system, :loads, :qd)[k] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
-    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+    bus_pd = Float32.([field(system, :loads, :pd)[k] for k in bus_loads])
+    bus_qd = Float32.([field(system, :loads, :qd)[k] for k in bus_loads])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
 
-    _con_power_balance_nolc(pm, system, i, nw, bus_arcs, generators_nodes, loads_nodes, shunts_nodes, storages_nodes, bus_pd, bus_qd, bus_gs, bus_bs)
+    _con_power_balance_nolc(pm, system, i, nw, bus_arcs, bus_generators, bus_loads, bus_shunts, bus_storages, bus_pd, bus_qd, bus_gs, bus_bs)
 
 end
 

@@ -207,8 +207,8 @@ function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, st
     phi  = var(pm, :phi, 1)
     z_demand   = var(pm, :z_demand, 1)
     z_shunt   = var(pm, :z_shunt, 1)
-    bus_loads = topology(pm, :loads_nodes)[i]
-    bus_shunts = topology(pm, :shunts_nodes)[i]
+    bus_loads = topology(pm, :bus_loads)[i]
+    bus_shunts = topology(pm, :bus_shunts)[i]
 
     bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
     bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads])
@@ -230,13 +230,13 @@ end
 function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 
     phi  = var(pm, :phi, 1)
-    loads_nodes = topology(pm, :loads_nodes)[i]
-    shunts_nodes = topology(pm, :shunts_nodes)[i]
+    bus_loads = topology(pm, :bus_loads)[i]
+    bus_shunts = topology(pm, :bus_shunts)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in loads_nodes])
-    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in loads_nodes])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in shunts_nodes])
-    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in shunts_nodes])
+    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
+    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads])
+    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
+    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
 
     JuMP.set_normalized_coefficient(con(pm, :power_balance_p, 1)[i], phi[i], -sum(gs for gs in bus_gs)*2)
     JuMP.set_normalized_coefficient(con(pm, :power_balance_q, 1)[i], phi[i], +sum(bs for bs in bus_bs)*2)

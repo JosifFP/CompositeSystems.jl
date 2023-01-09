@@ -92,7 +92,7 @@ function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::I
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
         JuMP.set_lower_bound(z_demand[i], 0)
-        if isempty(topology(pm, :loads_nodes)[i])
+        if isempty(topology(pm, :bus_loads)[i])
             JuMP.set_upper_bound(z_demand[i], 0)
         else
             JuMP.set_upper_bound(z_demand[i], 1)

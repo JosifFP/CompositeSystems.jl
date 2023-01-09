@@ -10,11 +10,11 @@ struct Topology
     generatorstorages_idxs::Vector{UnitRange{Int}}
 
     init_loads_nodes::Dict{Int, Vector{Int}}
-    loads_nodes::Dict{Int, Vector{Int}}
-    shunts_nodes::Dict{Int, Vector{Int}}
-    generators_nodes::Dict{Int, Vector{Int}}
-    storages_nodes::Dict{Int, Vector{Int}}
-    generatorstorages_nodes::Dict{Int, Vector{Int}}
+    bus_loads::Dict{Int, Vector{Int}}
+    bus_shunts::Dict{Int, Vector{Int}}
+    bus_generators::Dict{Int, Vector{Int}}
+    bus_storages::Dict{Int, Vector{Int}}
+    bus_generatorstorages::Dict{Int, Vector{Int}}
 
     arcs_from::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
@@ -31,27 +31,27 @@ struct Topology
         loads_idxs = makeidxlist(key_loads, length(system.loads))
         init_loads_nodes = Dict((i, Int[]) for i in key_buses)
         bus_asset!(init_loads_nodes, key_loads, field(system, :loads, :buses))
-        loads_nodes = deepcopy(init_loads_nodes)
+        bus_loads = deepcopy(init_loads_nodes)
 
         key_shunts = filter(i->field(system, :shunts, :status)[i], field(system, :shunts, :keys))
         shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
-        shunts_nodes = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(shunts_nodes, key_shunts, field(system, :shunts, :buses))
+        bus_shunts = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(bus_shunts, key_shunts, field(system, :shunts, :buses))
 
         key_generators = filter(i->field(system, :generators, :status)[i], field(system, :generators, :keys))
         generators_idxs = makeidxlist(key_generators, length(system.generators))
-        generators_nodes = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(generators_nodes, key_generators, field(system, :generators, :buses))
+        bus_generators = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(bus_generators, key_generators, field(system, :generators, :buses))
 
         key_storages = filter(i->field(system, :storages, :status)[i], field(system, :storages, :keys))
         storages_idxs = makeidxlist(key_storages, length(system.storages))
-        storages_nodes = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(storages_nodes, key_storages, field(system, :storages, :buses))
+        bus_storages = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(bus_storages, key_storages, field(system, :storages, :buses))
 
         key_generatorstorages = filter(i->field(system, :generatorstorages, :status)[i], field(system, :generatorstorages, :keys))
         generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
-        generatorstorages_nodes = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(generatorstorages_nodes, key_generatorstorages, field(system, :generatorstorages, :buses))
+        bus_generatorstorages = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(bus_generatorstorages, key_generatorstorages, field(system, :generatorstorages, :buses))
 
         key_branches = filter(i->field(system, :branches, :status)[i], field(system, :branches, :keys))
         branches_idxs = makeidxlist(key_branches, length(system.branches))
@@ -69,7 +69,7 @@ struct Topology
             branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
             generatorstorages_idxs::Vector{UnitRange{Int}}, init_loads_nodes,
-            loads_nodes, shunts_nodes, generators_nodes, storages_nodes, generatorstorages_nodes, 
+            bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, 
             arcs_from, arcs_to, arcs, busarcs, buspairs)
     end
 
@@ -83,11 +83,11 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.storages_idxs == y.storages_idxs &&
     x.generatorstorages_idxs == y.generatorstorages_idxs &&
     x.init_loads_nodes == y.init_loads_nodes &&
-    x.loads_nodes == y.loads_nodes &&
-    x.shunts_nodes == y.shunts_nodes &&
-    x.generators_nodes == y.generators_nodes &&
-    x.storages_nodes == y.storages_nodes &&
-    x.generatorstorages_nodes == y.generatorstorages_nodes &&
+    x.bus_loads == y.bus_loads &&
+    x.bus_shunts == y.bus_shunts &&
+    x.bus_generators == y.bus_generators &&
+    x.bus_storages == y.bus_storages &&
+    x.bus_generatorstorages == y.bus_generatorstorages &&
     x.busarcs == y.busarcs &&
     x.arcs_from == y.arcs_from &&
     x.arcs_to == y.arcs_to &&
@@ -279,7 +279,7 @@ function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Se
 
     if iszero(s%10) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    elseif iszero(s%20) && settings.optimizer == Gurobi
+    elseif iszero(s%30) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
     else
         MOIU.reset_optimizer(pm.model)
@@ -299,6 +299,7 @@ function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::S
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
         simplify!(pm, system, states, t)
+        #simplify!(pm, system, states, t, isolated=true)
         update_arcs!(pm, system, states.branches, t)
     end
 
