@@ -651,13 +651,13 @@
 
         @testset "DC-OPF with DCMPPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, juniper_optimizer_1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_1)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)

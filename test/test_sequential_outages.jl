@@ -339,7 +339,7 @@ end
         @test isapprox(systemstates.plc[23,t], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[24,t], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 26.7339; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 5.669; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 5.6691; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
 

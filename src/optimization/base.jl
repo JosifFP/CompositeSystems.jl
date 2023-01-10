@@ -299,7 +299,7 @@ function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::S
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
         simplify!(pm, system, states, t)
-        #simplify!(pm, system, states, t, isolated=true)
+        #simplify!(pm, system, states, t, no_isolated=true)
         update_arcs!(pm, system, states.branches, t)
     end
 

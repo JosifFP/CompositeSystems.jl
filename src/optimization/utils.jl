@@ -304,7 +304,7 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
 end
 
 ""
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; isolated::Bool=false)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; no_isolated::Bool=false)
 
     update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
@@ -328,7 +328,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
-                elseif incident_active_edge == 0 && isolated == true
+                elseif incident_active_edge == 0 && no_isolated == true
                     states.buses[i,t] = 4
                     changed = true
                     for k in topology(pm, :bus_loads)[i]
