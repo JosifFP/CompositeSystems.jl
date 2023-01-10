@@ -34,16 +34,15 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    systemstates = SystemStates(system)
     model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
     pm = abstract_model(settings.powermodel, Topology(system), model)
-
     recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
     rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
 
     for s in sampleseeds
         println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
+        systemstates = SystemStates(system)
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
         if OPF.is_empty(pm.model.moi_backend)
