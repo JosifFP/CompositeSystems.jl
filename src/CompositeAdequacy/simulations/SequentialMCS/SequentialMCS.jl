@@ -51,7 +51,6 @@ function assess(
         end
 
         for t in 2:N
-            #println("t=$(t), systemstates=$(systemstates.system[t]), gens=$(systemstates.generators_de[:,t])")
             update!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
@@ -66,15 +65,37 @@ function assess(
 end
 
 ""
-function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
+function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}; transitions::Bool=true) where N
 
-    initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
-    initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
-    initialize_availability!(rng, field(states, :commonbranches), field(system, :commonbranches), N)
-    initialize_availability!(rng, field(states, :generators),field(states, :generators_de), field(system, :generators), N)
-    initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
-    initialize_availability_system!(states, system, N)
+    if transitions == false
+        initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
+        initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
+        initialize_availability!(rng, field(states, :commonbranches), field(system, :commonbranches), N)
+        initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
+        initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
+        initialize_availability_system!(states, system, N)
+    else
+        singlestates = NextTransition(system)
+        initialize_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, N)
+        initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
+        initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
+        initialize_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, N)
 
+        for t in 2:N
+            update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, t, N)
+            update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, t, N)
+            update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, t, N)
+            update_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, t, N)
+            view(field(states, :branches),:,t) .= singlestates.branches_available[:]
+            view(field(states, :commonbranches),:,t) .= singlestates.commonbranches_available[:]
+            view(field(states, :generators),:,t) .= singlestates.generators_available[:]
+            view(field(states, :storages),:,t) .= singlestates.storages_available[:]
+        end
+
+        initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
+        initialize_availability_system!(states, system, N)
+
+    end
     return
 
 end

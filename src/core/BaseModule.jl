@@ -23,7 +23,7 @@
 
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
-        SystemModel, SystemStates, static_parameters,
+        SystemModel, SystemStates, NextTransition, static_parameters,
         #utils
         assetgrouplist, makeidxlist, field, extract_timeseriesload, build_network, calc_buspair_parameters
     #

@@ -1,58 +1,35 @@
 ""
-function initialize_availability!(
-    rng::AbstractRNG,
-    availability::Matrix{Bool},
-    availability_de::Matrix{Float32},
-    asset::Generators, N::Int)
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Float32}, asset::Generators, N::Int)
 
     for i in asset.keys
-
         if asset.status[i] ≠ false
 
             sequence = view(availability, i, :)
-            sequence_de = view(availability_de, i, :)
             fill!(sequence, 1)
-            fill!(sequence_de, 1)
             λ_updn = asset.λ_updn[i]/N
             μ_updn = asset.μ_updn[i]/N
         
             if asset.state_model[i] == 3
-
                 λ_upde = asset.λ_upde[i]/N
                 μ_upde = asset.μ_upde[i]/N
                 pde = asset.pde[i]
-
                 if λ_updn ≠ 0.0 && λ_upde ≠ 0.0
-                    cycles!(sequence_de, pde, rng, λ_updn, μ_updn, λ_upde, μ_upde, N)
+                    cycles!(sequence, pde, rng, λ_updn, μ_updn, λ_upde, μ_upde, N)
                 end
-
-                for k = 1:N
-                    #if sequence_de[k] > 0.0 && sequence_de[k] < 1.0 #sequence[k] = false
-                    if sequence_de[k] == 0.0
-                        sequence[k] = false
-                    end
-                end
-
             else
-                
                 if λ_updn ≠ 0.0
                     cycles!(sequence, rng, λ_updn, μ_updn, N)
-                    sequence_de .= Float32.(sequence)
                 end
-
             end
         end
     end
 
-    return availability, availability_de
+    return availability
     
 end
 
 ""
-function initialize_availability!(
-    rng::AbstractRNG,
-    availability::Matrix{Bool},
-    asset::AbstractAssets, N::Int)
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool}, asset::AbstractAssets, N::Int)
 
     for i in asset.keys
         if asset.status[i] ≠ false
@@ -73,10 +50,7 @@ function initialize_availability!(
 end
 
 ""
-function initialize_availability!(
-    rng::AbstractRNG,
-    availability::Matrix{Bool},
-    asset::CommonBranches, N::Int)
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool},asset::CommonBranches, N::Int)
 
     for i in asset.keys
         sequence = view(availability, i, :)
@@ -93,21 +67,87 @@ function initialize_availability!(
 end
 
 ""
-function initialize_availability!(
-    rng::AbstractRNG,
-    availability::Matrix{Int},
-    asset::Buses, N::Int)
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Int}, asset::Buses, N::Int)
     
     bus_type = field(asset, :bus_type)
-
     for j in 1:N
         for i in eachindex(asset.keys)
             availability[i,j] = bus_type[i]
         end
     end
-
     return availability
     
+end
+
+""
+function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
+
+    for i in asset.keys
+        λ_updn = asset.λ_updn[i]/N
+        μ_updn = asset.μ_updn[i]/N
+        online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+        availability[i] = online
+        #m_λ_updn = hcat([asset.λ_updn./N for i in 1:N]...)
+        #m_μ_updn = hcat([asset.μ_updn./N for i in 1:N]...)
+        transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
+        nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
+    end
+
+    return availability
+
+end
+
+""
+function update_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
+
+    for i in asset.keys
+        if nexttransition[i] == t_now # Unit switches states
+            transitionprobs = (availability[i] ⊻= true) ? asset.λ_updn./t_last : asset.μ_updn./t_last
+            nexttransition[i] = randtransitiontime(rng, transitionprobs, i, t_now, t_last)
+        end
+    end
+
+end
+
+""
+function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now::Int, t_last::Int)
+
+    cdf = 0.
+    p_noprevtransition = 1.
+
+    x = rand(rng)
+    t = t_now + 1
+
+    while t <= t_last
+        cdf += p_noprevtransition * p[i]
+        x < cdf && return t
+        p_noprevtransition *= (1. - p[i])
+        t += 1
+    end
+
+    return t_last + 1
+
+end
+
+""
+function randtransitiontime(rng::AbstractRNG, p::Matrix{Float64}, i::Int, t_now::Int, t_last::Int)
+
+    cdf = 0.
+    p_noprevtransition = 1.
+
+    x = rand(rng)
+    t = t_now + 1
+
+    while t <= t_last
+        p_it = p[i,t]
+        cdf += p_noprevtransition * p_it
+        x < cdf && return t
+        p_noprevtransition *= (1. - p_it)
+        t += 1
+    end
+
+    return t_last + 1
+
 end
 
 ""
@@ -180,7 +220,7 @@ function cycles!(
 end
 
 ""
-function cycles!(sequence::AbstractArray{Bool}, rng::AbstractRNG, λ_updn::Float64, μ_updn::Float64, N::Int)
+function cycles!(sequence::AbstractArray{Float32}, rng::AbstractRNG, λ_updn::Float64, μ_updn::Float64, N::Int)
 
     (ttf,ttr) = T(rng,λ_updn,μ_updn)
     i=Int(1)
@@ -224,7 +264,7 @@ function initialize_availability_system!(states::SystemStates, system::SystemMod
 
     for t in 1:N
 
-        total_gen::Float32 = sum(field(system, :generators, :pmax).*field(states, :generators_de)[:,t])
+        total_gen::Float32 = sum(field(system, :generators, :pmax).*field(states, :generators)[:,t])
 
         if all(view(field(states, :commonbranches),:,t)) == false
             for k in field(system, :branches, :keys)
@@ -241,41 +281,10 @@ function initialize_availability_system!(states::SystemStates, system::SystemMod
         else
             if sum(view(field(system, :loads, :pd), :, t)) >= total_gen
                 states.system[t] = false
-            elseif sum(view(field(states, :generators_de), :, t)) < length(system.generators)
+            elseif sum(view(field(states, :generators), :, t)) < length(system.generators)
                 states.system[t] = false
             end
         end
     end
 
 end
-
-# ""
-# function gens_sum(v_pmax::Vector{Float32}, active_keys::Vector{Int})
-#     return sum(v_pmax[i] for i in active_keys)
-# end
-
-# ""
-# function initialize_availability_system!(states::SystemStates, N::Int)
-
-#     v = vcat(field(states, :branches), field(states, :generators), field(states, :loads))
-
-#     @inbounds for t in 1:N
-#         B = filter(i -> states.buses[i]==4, states.buses)
-#         if check_status(view(v, :, t)) == false ||  length(B) > 0
-#             states.system[t] = false
-#         end
-#     end
-# end
-
-# ""
-# function initialize_availability!(states::SystemStates, N::Int)
-
-#     v = vcat(field(states, :branches), field(states, :generators))
-#     #filter(field(states, :generators), field(states, :generators))
-
-#     @inbounds for t in 1:N
-#         if check_status(view(v, :, t)) == false
-#             states.system[t] = false
-#         end
-#     end
-# end

@@ -20,20 +20,11 @@ end
 ""
 function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; force_pmin=false)
 
-    if field(states, :generators_de)[i,t] < 1 && field(states, :generators)[i,t] == 0
-        JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators_de)[i,t])
-        if force_pmin
-            JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators_de)[i,t])
-        else
-            JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
-        end
+    JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators)[i,t])
+    if force_pmin
+        JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators)[i,t])
     else
-        JuMP.set_upper_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmax)[i]*field(states, :generators)[i,t])
-        if force_pmin
-            JuMP.set_lower_bound(var(pm, :pg, 1)[i], field(system, :generators, :pmin)[i]*field(states, :generators)[i,t])
-        else
-            JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
-        end
+        JuMP.set_lower_bound(var(pm, :pg, 1)[i], 0.0)
     end
 
 end
@@ -41,13 +32,8 @@ end
 ""
 function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
 
-    if field(states, :generators_de)[i,t] >= field(states, :generators)[i,t] && field(states, :generators)[i,t] == 0
-        JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators_de)[i,t])
-        JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators_de)[i,t])
-    else
-        JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators)[i,t])
-        JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators)[i,t])
-    end
+    JuMP.set_upper_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmax)[i]*field(states, :generators)[i,t])
+    JuMP.set_lower_bound(var(pm, :qg, 1)[i], field(system, :generators, :qmin)[i]*field(states, :generators)[i,t])
     
 end
 

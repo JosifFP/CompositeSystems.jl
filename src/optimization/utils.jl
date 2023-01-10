@@ -449,7 +449,7 @@ function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::S
     update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
     
     update_idxs!(
-        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
+        filter(i->states.generators[i,t]!=0, field(system, :generators, :keys)), 
         topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses)
     )
 

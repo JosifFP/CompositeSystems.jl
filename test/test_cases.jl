@@ -8,9 +8,15 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-rawfile = "test/data/SMCS/MRBTS/MRBTS.m"
-Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS4.m"
+
+
+#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/MRBTS/MRBTS.m"
+#Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
+
 #timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
 #rawfile = "test/data/SMCS/RTS_79_A/RTS.m"
 #Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
@@ -20,14 +26,14 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    #powermodel = OPF.DCPPowerModel
+    powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=2000, seed=100, threaded=true)
 #method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
@@ -80,7 +86,6 @@ end
 
 states.plc[:,t]
 states.branches[:,t]
-states.generators_de[:,t]
 states.generators[:,t]
 
 pm.topology
@@ -124,19 +129,13 @@ sum(val.(CompositeSystems.EENS.(shortfall, system.buses.keys)))
 
 
 a = systemstates.generators[1,:]
-b = systemstates.generators_de[1,:]
 using Plots
 plot(1:8736, a)
-plot(1:8736, b)
 
 a = systemstates.generators[2,:]
-b = systemstates.generators_de[2,:]
 using Plots
 plot(1:8736, a)
-plot(1:8736, b)
 
 a = systemstates.generators[3,:]
-b = systemstates.generators_de[3,:]
 using Plots
 plot(1:8736, a)
-plot(1:8736, b)

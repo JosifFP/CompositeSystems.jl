@@ -21,6 +21,42 @@ model = OPF.jump_model(JuMP.AUTOMATIC, deepcopy(settings.optimizer), string_name
 pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
 systemstates = OPF.SystemStates(system, available=true)
 CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+assetgrouplist(pm.topology.generators_idxs)
+pm.topology.bus_generators
+
+t=7
+CompositeSystems.field(systemstates, :branches)[2,t] = 0
+CompositeSystems.field(systemstates, :branches)[7,t] = 0
+CompositeSystems.field(systemstates, :generators)[1,t] = 0
+CompositeSystems.field(systemstates, :generators)[2,t] = 0
+CompositeSystems.field(systemstates, :generators)[3,t] = 0
+systemstates.system[t] = 0
+OPF._update!(pm, system, systemstates, t)   
+
+result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
+result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
+result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
+result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
+result_pf = OPF.build_sol_branch_values(pm, system.branches)
+total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
+total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
+
+
+
+
+JuMP.termination_status(pm.model)
+JuMP.primal_status(pm.model)
+JuMP.solution_summary(pm.model, verbose=false)
+sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
+
+
+
+
+
+
+
+
+
 
 t=2
 OPF._update!(pm, system, systemstates, t)
@@ -46,7 +82,6 @@ sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
 systemstates.branches[:,t]
 systemstates.generators[:,t]
-systemstates.generators_de[:,t]
 systemstates.loads[:,t]
 
 pm.topology.buspairs
