@@ -11,18 +11,39 @@ include("solvers.jl")
 
 settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
 #settings = CompositeSystems.Settings(ipopt_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
-rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
-for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
-CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
+timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+rawfile = "test/data/SMCS/RTS_79_A/RTS_DC.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 model = OPF.jump_model(JuMP.AUTOMATIC, deepcopy(settings.optimizer), string_names = true)
 pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
 systemstates = OPF.SystemStates(system, available=true)
 CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
-assetgrouplist(pm.topology.generators_idxs)
-pm.topology.bus_generators
+rng = CompositeAdequacy.Philox4x((0, 0), 9)
+CompositeAdequacy.initialize_states!(rng, systemstates, system)
+system.branches.λ_updn
+system.branches.μ_updn
+systemstates.commonbranches
+
+using Plots
+a = systemstates.branches[10,:]
+b = systemstates.branches[12,:]
+plot(1:8736, a)
+plot(1:8736, b)
+
+
+system.branches.t_bus[10]
+system.branches.f_bus[10]
+
+system.branches.t_bus[11]
+system.branches.f_bus[11]
+
+system.branches.λ_updn[11]
+system.branches.μ_updn[11]
+
+system.branches.λ_updn[10]
+system.branches.μ_updn[10]
+
 
 t=7
 CompositeSystems.field(systemstates, :branches)[2,t] = 0
@@ -40,41 +61,6 @@ result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
 result_pf = OPF.build_sol_branch_values(pm, system.branches)
 total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
-
-
-
-
-JuMP.termination_status(pm.model)
-JuMP.primal_status(pm.model)
-JuMP.solution_summary(pm.model, verbose=false)
-sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
-
-
-
-
-
-
-
-
-
-
-t=2
-OPF._update!(pm, system, systemstates, t)
-t=3
-CompositeSystems.field(systemstates, :generators)[3,t] = 0
-CompositeSystems.field(systemstates, :generators)[7,t] = 0
-CompositeSystems.field(systemstates, :generators)[8,t] = 0
-CompositeSystems.field(systemstates, :generators)[9,t] = 0
-systemstates.system[t] = 0
-OPF._update!(pm, system, systemstates, t)
-t=4
-CompositeSystems.field(systemstates, :branches)[5,t] = 0
-CompositeSystems.field(systemstates, :branches)[8,t] = 0
-systemstates.system[t] = 0
-OPF._update!(pm, system, systemstates, t)
-t=5
-OPF._update!(pm, system, systemstates, t)  
-
 JuMP.termination_status(pm.model)
 JuMP.primal_status(pm.model)
 JuMP.solution_summary(pm.model, verbose=false)

@@ -91,7 +91,6 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
             view(field(states, :storages),:,t) .= singlestates.storages_available[:]
         end
 
-        initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
         initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
         initialize_availability_system!(states, system, N)
 

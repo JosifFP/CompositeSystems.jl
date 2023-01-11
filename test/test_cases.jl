@@ -25,14 +25,14 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    powermodel = OPF.DCPPowerModel
+    #powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=3000, seed=100, threaded=true)
+method = SequentialMCS(samples=1000, seed=100, threaded=true)
 #method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
@@ -61,58 +61,6 @@ CompositeAdequacy.initialize_states!(rng, states, system)
 
 
 
-states.branches[11,1] = 0
-
-pm.topology.branches_idxs
-states.branches
-OPF.update_all_idxs!(pm, system, states, 1)
-ccs = OPF.calc_connected_components(pm.topology, field(system, :branches))
-
-ccs_order = sort(collect(ccs); by=length)
-largest_cc = ccs_order[end]
-
-length(largest_cc)
-length(system.buses)
-
-recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-s=2
-t=2544
-
-CompositeAdequacy.seed!(rng, (method.seed, s))
-CompositeAdequacy.initialize_states!(rng, states, system)
-
-if OPF.is_empty(pm.model.moi_backend)
-    CompositeAdequacy.initialize_powermodel!(pm, system, states)
-end
-
-CompositeAdequacy.update!(pm, system, states, t)
-states.plc[:,t]
-
-
-CompositeAdequacy.reset_model!(pm, states, settings, s)
-s=3
-t=2544
-CompositeAdequacy.seed!(rng, (method.seed, s))
-CompositeAdequacy.initialize_states!(rng, states, system)
-
-if OPF.is_empty(pm.model.moi_backend)
-    CompositeAdequacy.initialize_powermodel!(pm, system, states)
-end
-
-states.plc[:,t]
-states.branches[:,t]
-states.generators[:,t]
-
-pm.topology
-
-assetgrouplist(pm.topology.buses_idxs::Vector{UnitRange{Int}})
-assetgrouplist(pm.topology.loads_idxs::Vector{UnitRange{Int}})
-assetgrouplist(pm.topology.branches_idxs::Vector{UnitRange{Int}})
-assetgrouplist(pm.topology.shunts_idxs::Vector{UnitRange{Int}})
-assetgrouplist(pm.topology.generators_idxs::Vector{UnitRange{Int}})
-assetgrouplist(pm.topology.storages_idxs::Vector{UnitRange{Int}})
-assetgrouplist(pm.topology.generatorstorages_idxs::Vector{UnitRange{Int}})
 
 
 all(view(states.branches,:,t)) ≠ true
