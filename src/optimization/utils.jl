@@ -328,7 +328,8 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
-                elseif incident_active_edge == 0 && no_isolated == true
+                elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && 
+                    length(topology(pm, :bus_storages)[i]) == 0 && length(topology(pm, :bus_shunts)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                 end

@@ -11,19 +11,39 @@ include("solvers.jl")
 
 settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
 #settings = CompositeSystems.Settings(ipopt_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
-timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS_DC.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
-system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
+CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
 model = OPF.jump_model(JuMP.AUTOMATIC, deepcopy(settings.optimizer), string_names = true)
 pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
 systemstates = OPF.SystemStates(system, available=true)
 CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
-rng = CompositeAdequacy.Philox4x((0, 0), 9)
-CompositeAdequacy.initialize_states!(rng, systemstates, system)
-system.branches.λ_updn
-system.branches.μ_updn
-systemstates.commonbranches
+println(pm.model)
+pm.model
+
+t=2
+OPF._update!(pm, system, systemstates, t)  
+println(pm.model)
+pm.model
+
+@testset "No outages" begin
+    @test isapprox(sum(systemstates.plc[:,t]), 0; atol = 1e-4)
+    @test isapprox(systemstates.plc[1,t], 0; atol = 1e-4)
+    @test isapprox(systemstates.plc[2,t], 0; atol = 1e-4)
+    @test isapprox(systemstates.plc[3,t], 0; atol = 1e-4)
+    @test isapprox(systemstates.plc[4,t], 0; atol = 1e-4)
+    @test isapprox(systemstates.plc[5,t], 0; atol = 1e-4)
+    @test isapprox(systemstates.plc[6,t], 0; atol = 1e-4)
+    @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9109; atol = 1e-4)
+    @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.3841; atol = 1e-4)
+    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+end
+
+
+
 
 using Plots
 a = systemstates.branches[10,:]

@@ -8,17 +8,17 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
 #timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_DC.m"
 #Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/RTS_79_A/RTS_DC_HIGH.m"
-#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
@@ -26,13 +26,13 @@ settings = CompositeSystems.Settings(
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    #powermodel = OPF.DCMPPowerModel
+    powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=2000, seed=100, threaded=true)
 #method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 

@@ -298,7 +298,7 @@ end
 function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
-        simplify!(pm, system, states, t) #simplify!(pm, system, states, t, no_isolated=true)
+        simplify!(pm, system, states, t, no_isolated=true)
         update_arcs!(pm, system, states.branches, t)
     end
 
@@ -311,7 +311,7 @@ end
 ""
 function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    simplify!(pm, system, states, t)
+    simplify!(pm, system, states, t, no_isolated=false)
     update_arcs!(pm, system, states.branches, t)
     update_all_idxs!(pm, system, states, t)
     

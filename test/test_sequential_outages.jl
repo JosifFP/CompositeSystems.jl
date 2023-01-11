@@ -13,7 +13,7 @@
     pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
     systemstates = OPF.SystemStates(system, available=true)
     CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
-    
+
     t=2
     OPF._update!(pm, system, systemstates, t)  
 
