@@ -8,17 +8,17 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-#imeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS4.m"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
-timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-rawfile = "test/data/SMCS/MRBTS/MRBTS_DC.m"
-Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
+#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/MRBTS/MRBTS_DC.m"
+#Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
 #timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/RTS_79_A/RTS_DC.m"
-#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
+#rawfile = "test/data/SMCS/RTS_79_A/RTS_DC_HIGH.m"
+#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
@@ -45,6 +45,13 @@ val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 
 
+
+
+
+
+
+
+
 threads = Base.Threads.nthreads()
 sampleseeds = Channel{Int}(2*threads)
 results = CompositeAdequacy.resultchannel(method, resultspecs, threads)
@@ -61,35 +68,12 @@ CompositeAdequacy.initialize_states!(rng, states, system)
 
 
 
-
-
-all(view(states.branches,:,t)) ≠ true
-all(view(states.branches,:,t-1)) ≠ true
-
-
-
-pm.topology.bus_loads::Dict{Int, Vector{Int}}
-pm.topology.bus_shunts::Dict{Int, Vector{Int}}
-pm.topology.bus_generators::Dict{Int, Vector{Int}}
-pm.topology.bus_storages::Dict{Int, Vector{Int}}
-pm.topology.bus_generatorstorages::Dict{Int, Vector{Int}}
-
-pm.topology.arcs_from::Vector{Union{Missing, Tuple{Int, Int, Int}}}
-pm.topology.arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
-pm.topology.arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
-pm.topology.busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
-pm.topology.buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}
-
-
 JuMP.termination_status(pm.model)
 JuMP.primal_status(pm.model)
 JuMP.solution_summary(pm.model, verbose=false)
 sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 sum(system.buses.pd[:,1])
 
-
-
-sum(val.(CompositeSystems.EENS.(shortfall, system.buses.keys)))
 
 
 a = systemstates.generators[1,:]

@@ -304,7 +304,7 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
 end
 
 ""
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; no_isolated::Bool=false)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; no_isolated::Bool=true)
 
     update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
@@ -331,26 +331,6 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                 elseif incident_active_edge == 0 && no_isolated == true
                     states.buses[i,t] = 4
                     changed = true
-                    for k in topology(pm, :bus_loads)[i]
-                        if states.loads[k,t] ≠ 0
-                            states.loads[k,t] = 0
-                        end
-                    end
-                    for k in topology(pm, :bus_shunts)[i]
-                        if states.shunts[k,t] ≠ 0
-                            states.shunts[k,t] = 0
-                        end
-                    end
-                    for k in topology(pm, :bus_generators)[i]
-                        if states.generators[k,t] ≠ 0
-                            states.generators[k,t] = 0
-                        end
-                    end
-                    for k in topology(pm, :bus_storages)[i]
-                        if states.storages[k,t] ≠ 0
-                            states.storages[k,t] = 0
-                        end
-                    end
                 end
             end
         end
@@ -373,7 +353,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 
     ccs = OPF.calc_connected_components(pm.topology, field(system, :branches))
 
-    if length(ccs) > 1
+    if length(ccs) > 1 && no_isolated == true
         ccs_order = sort(collect(ccs); by=length)
         largest_cc = ccs_order[end]
 
@@ -383,10 +363,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         if system.ref_buses[1] in largest_cc && length(field(system, :buses)) - length(largest_cc) < 3
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
-                    states.buses[i,t] = 4
-                    if i !=7
-                        println("bus $(i) desactivated")
-                    end              
+                    states.buses[i,t] = 4             
                 end
             end
         end
