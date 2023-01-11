@@ -373,6 +373,25 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 
     ccs = OPF.calc_connected_components(pm.topology, field(system, :branches))
 
+    if length(ccs) > 1
+        ccs_order = sort(collect(ccs); by=length)
+        largest_cc = ccs_order[end]
+
+        length(largest_cc)
+        length(system.buses)
+    
+        if system.ref_buses[1] in largest_cc && length(field(system, :buses)) - length(largest_cc) < 3
+            for i in field(system, :buses, :keys)
+                if states.buses[i,t] ≠ 4 && !(i in largest_cc)
+                    states.buses[i,t] = 4
+                    if i !=7
+                        println("bus $(i) desactivated")
+                    end              
+                end
+            end
+        end
+    end
+
     for cc in ccs
         cc_active_loads = [0]
         cc_active_shunts = [0]
@@ -467,6 +486,8 @@ function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::S
         filter(i->states.shunts[i,t], field(system, :shunts, :keys)), 
         topology(pm, :shunts_idxs), topology(pm, :bus_shunts), field(system, :shunts, :buses)
     )
+
+    return
 
 end
 

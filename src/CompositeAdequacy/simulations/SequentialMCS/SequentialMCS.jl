@@ -80,7 +80,7 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
         initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
         initialize_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, N)
 
-        for t in 2:N
+        for t in 1:N
             update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, t, N)
             update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, t, N)
             update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, t, N)
@@ -91,6 +91,7 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
             view(field(states, :storages),:,t) .= singlestates.storages_available[:]
         end
 
+        initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
         initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
         initialize_availability_system!(states, system, N)
 

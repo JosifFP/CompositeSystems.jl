@@ -2,7 +2,7 @@
 @testset "RBTS system" begin
     @testset "test OPF, RBTS system, DCPPowerModel, outages" begin
 
-        rawfile = "test/data/RBTS/Base/RBTS.m"
+        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
         system = BaseModule.SystemModel(rawfile)
 
         states = CompositeAdequacy.SystemStates(system, available=true)
@@ -645,7 +645,7 @@
 
     @testset "test OPF, RBTS system, DCMPPowerModel, outages" begin
 
-        rawfile = "test/data/RBTS/Base/RBTS.m"
+        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
         system = BaseModule.SystemModel(rawfile)
 
         states = CompositeAdequacy.SystemStates(system, available=true)
@@ -1288,7 +1288,7 @@
 
     @testset "test OPF, RBTS system, LPACCPowerModel, outages" begin
 
-        rawfile = "test/data/RBTS/Base/RBTS.m"
+        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
         system = BaseModule.SystemModel(rawfile)
 
         states = CompositeAdequacy.SystemStates(system, available=true)

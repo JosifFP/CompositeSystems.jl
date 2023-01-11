@@ -4,8 +4,8 @@ settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMA
 
 @testset "test 5 Split situations RBTS system" begin
 
-    rawfile = "test/data/RBTS/Base/RBTS.m"
-    reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+    reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
     system = BaseModule.SystemModel(rawfile, reliabilityfile)
     CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     model = OPF.jump_model(JuMP.AUTOMATIC, deepcopy(settings.optimizer))

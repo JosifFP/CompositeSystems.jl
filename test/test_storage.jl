@@ -3,11 +3,11 @@ import PowerModels, JuMP
 using Test
 import CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
 import InfrastructureModels
-rawfile = "test/data/RBTS/Base/RBTS.m"
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
 Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS2.m"
 
-Storage_rawfile = "test/data/RBTS/Storage/RBTS.m"
-Storage_reliabilityfile = "test/data/RBTS/Storage/R_RBTS.m"
+Storage_rawfile = "test/data/RBTS/Storage/RBTS_AC.m"
+Storage_reliabilityfile = "test/data/RBTS/Storage/R_RBTS_FULL.m"
 timeseriesfile = "test/data/RBTS/Loads.xlsx"
 
 #DCMPPowerModel

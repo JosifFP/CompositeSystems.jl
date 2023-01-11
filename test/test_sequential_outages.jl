@@ -3,8 +3,8 @@
 
     settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
     #settings = CompositeSystems.Settings(ipopt_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
-    rawfile = "test/data/RBTS/Base/RBTS.m"
-    reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+    reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
     timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
     system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
     for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end

@@ -2,7 +2,7 @@
 
 @testset "test OPF, RBTS system" begin
 
-    rawfile = "test/data/RBTS/Base/RBTS.m"
+    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
     system = BaseModule.SystemModel(rawfile)
 
     @testset "DC-OPF with NFAPowerModel, RBTS" begin

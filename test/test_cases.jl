@@ -8,17 +8,16 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS4.m"
+#imeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS4.m"
 
-
-#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/MRBTS/MRBTS.m"
-#Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
+timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+rawfile = "test/data/SMCS/MRBTS/MRBTS_DC.m"
+Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
 #timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/RTS_79_A/RTS.m"
+#rawfile = "test/data/SMCS/RTS_79_A/RTS_DC.m"
 #Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
 
 resultspecs = (Shortfall(), Shortfall())
@@ -33,7 +32,7 @@ settings = CompositeSystems.Settings(
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=3000, seed=100, threaded=true)
 #method = SequentialMCS(samples=1, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
@@ -41,11 +40,8 @@ CompositeSystems.LOLE.(shortfall, system.buses.keys)
 CompositeSystems.EENS.(shortfall, system.buses.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
-
-
-
+val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
-
 
 
 
@@ -57,6 +53,26 @@ method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 states = CompositeAdequacy.SystemStates(system)
 model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
 pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
+recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+s=1
+CompositeAdequacy.seed!(rng, (method.seed, s))
+CompositeAdequacy.initialize_states!(rng, states, system)
+
+
+
+states.branches[11,1] = 0
+
+pm.topology.branches_idxs
+states.branches
+OPF.update_all_idxs!(pm, system, states, 1)
+ccs = OPF.calc_connected_components(pm.topology, field(system, :branches))
+
+ccs_order = sort(collect(ccs); by=length)
+largest_cc = ccs_order[end]
+
+length(largest_cc)
+length(system.buses)
 
 recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
@@ -139,3 +155,27 @@ plot(1:8736, a)
 a = systemstates.generators[3,:]
 using Plots
 plot(1:8736, a)
+
+
+""
+function _select_largest_component!(data::Dict{String,<:Any})
+    ccs = calc_connected_components(data)
+
+    if length(ccs) > 1
+        Memento.info(_LOGGER, "found $(length(ccs)) components")
+
+        ccs_order = sort(collect(ccs); by=length)
+        largest_cc = ccs_order[end]
+
+        Memento.info(_LOGGER, "largest component has $(length(largest_cc)) buses")
+
+        for (i,bus) in data["bus"]
+            if bus["bus_type"] != 4 && !(bus["index"] in largest_cc)
+                bus["bus_type"] = 4
+                Memento.info(_LOGGER, "deactivating bus $(i) due to small connected component")
+            end
+        end
+
+        correct_reference_buses!(data)
+    end
+end
