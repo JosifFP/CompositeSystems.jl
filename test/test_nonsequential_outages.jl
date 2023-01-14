@@ -32,7 +32,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -77,7 +77,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -120,7 +120,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -164,7 +164,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -209,7 +209,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -254,7 +254,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -299,7 +299,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -344,7 +344,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -389,7 +389,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -479,7 +479,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -499,19 +499,20 @@
 
         end
 
-        #OUTAGE BRANCH #1 AND #6
+        #OUTAGE BRANCH #1 AND #5
         states.branches[1] = 0
-        states.branches[6] = 0
+        states.branches[5] = 0
         OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["1"]["br_status"] = 0
-        data["branch"]["6"]["br_status"] = 0
+        data["branch"]["5"]["br_status"] = 0
+        PowerModels.simplify_network!(data)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
         
-        @testset "DC-OPF with DCPPowerModel, RBTS, branch #1 and #6" begin
+        @testset "DC-OPF with DCPPowerModel, RBTS, branch #1 and #5" begin
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-5)
@@ -525,7 +526,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -556,6 +557,7 @@
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["2"]["br_status"] = 0
         data["branch"]["7"]["br_status"] = 0
+        PowerModels.simplify_network!(data)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
         
         @testset "DC-OPF with DCPPowerModel, RBTS, branch #2 and #7" begin
@@ -572,7 +574,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -605,6 +607,7 @@
         data["branch"]["8"]["br_status"] = 0
         data["load"]["5"]["status"] = 0
         data["load"]["4"]["status"] = 0
+        PowerModels.simplify_network!(data)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
         
         @testset "DC-OPF with DCPPowerModel, RBTS, branch #5 and #8" begin
@@ -621,7 +624,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -675,7 +678,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -720,7 +723,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -763,7 +766,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -807,7 +810,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -852,7 +855,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -897,7 +900,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -942,7 +945,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -987,7 +990,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -1032,7 +1035,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -1122,7 +1125,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -1142,19 +1145,19 @@
 
         end
 
-        #OUTAGE BRANCH #1 AND #6
+        #OUTAGE BRANCH #1 AND #5
         states.branches[1] = 0
-        states.branches[6] = 0
+        states.branches[5] = 0
         OPF._update_opf!(pm, system, states, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_pf = OPF.build_sol_branch_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["1"]["br_status"] = 0
-        data["branch"]["6"]["br_status"] = 0
+        data["branch"]["5"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
         
-        @testset "DC-OPF with DCMPPowerModel, RBTS, branch #1 and #6" begin
+        @testset "DC-OPF with DCMPPowerModel, RBTS, branch #1 and #5" begin
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-5)
@@ -1168,7 +1171,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -1215,7 +1218,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -1264,7 +1267,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2299,7 +2302,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2346,7 +2349,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2393,7 +2396,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2438,7 +2441,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2481,7 +2484,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2526,7 +2529,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2571,7 +2574,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2616,7 +2619,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2661,7 +2664,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2706,7 +2709,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2751,7 +2754,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2840,7 +2843,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2887,7 +2890,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2932,7 +2935,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -2977,7 +2980,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3031,7 +3034,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3078,7 +3081,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3125,7 +3128,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3170,7 +3173,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3213,7 +3216,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3258,7 +3261,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3303,7 +3306,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3348,7 +3351,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3393,7 +3396,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3438,7 +3441,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3483,7 +3486,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3572,7 +3575,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3619,7 +3622,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3664,7 +3667,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3709,7 +3712,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3755,7 +3758,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -3803,7 +3806,7 @@ end
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
         
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
         
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)

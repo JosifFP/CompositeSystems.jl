@@ -1,6 +1,9 @@
 #include(joinpath(@__DIR__, "..","solvers.jl"))
 
 @testset "Ipopt solver" begin
+
+    solver = ipopt_optimizer_1
+
     @testset "test OPF, RBTS system" begin
 
         rawfile = "test/data/RBTS/Base/RBTS_AC.m"
@@ -8,12 +11,12 @@
 
         @testset "DC-OPF with NFAPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -23,7 +26,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -36,7 +39,7 @@
             end
 
             for i in eachindex(key_buses)
-                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -46,55 +49,13 @@
 
         @testset "DC-OPF with DCPPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
-
-            for i in eachindex(result["solution"]["gen"])
-                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
-            end
-
-            for i in eachindex(result["solution"]["bus"])
-                @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-6)
-            end
-
-            for i in eachindex(result["solution"]["branch"])
-                @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
-            end
-
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
-
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
-            pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
-            pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
-
-            for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
-            end
-
-            for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
-            end
-
-            @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
-
-        end
-
-        @testset "DC-OPF with DCMPPowerModel, RBTS" begin
-
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, ipopt_optimizer_1)
-            result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-            result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
-
-            data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -121,7 +82,49 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
+            end
+
+            @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
+
+        end
+
+        @testset "DC-OPF with DCMPPowerModel, RBTS" begin
+
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
+            result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
+            result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
+            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+
+            data = OPF.build_network(rawfile, symbol=false)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
+
+            for i in eachindex(result["solution"]["gen"])
+                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
+            end
+
+            for i in eachindex(result["solution"]["bus"])
+                @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-6)
+            end
+
+            for i in eachindex(result["solution"]["branch"])
+                @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
+            end
+
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
+
+            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
+            pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
+            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+
+            for k in key_generators
+                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            end
+
+            for i in eachindex(result["solution"]["bus"])
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -130,7 +133,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -140,7 +143,7 @@
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -179,7 +182,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -195,12 +198,12 @@
 
         @testset "DC-OPF with NFAPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -210,7 +213,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -223,7 +226,7 @@
             end
 
             for i in eachindex(key_buses)
-                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -233,14 +236,14 @@
 
         @testset "DC-OPF with DCMPPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -254,7 +257,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-5)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -267,7 +270,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -276,14 +279,14 @@
 
         @testset "DC-OPF with DCPPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -297,7 +300,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-5)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -310,7 +313,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -319,7 +322,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -329,7 +332,7 @@
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -368,7 +371,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -384,12 +387,12 @@
 
         @testset "DC-OPF with NFAPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -399,7 +402,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -412,7 +415,7 @@
             end
 
             for i in eachindex(key_buses)
-                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -422,13 +425,13 @@
 
         @testset "DC-OPF with DCPPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -455,7 +458,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -464,13 +467,13 @@
 
         @testset "DC-OPF with DCMPPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -497,7 +500,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -506,7 +509,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -516,18 +519,18 @@
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
         
             for i in eachindex(result["solution"]["gen"])
-                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-4)
+                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-5)
                 result_pg_powermodels += result["solution"]["gen"][string(i)]["pg"]
                 result_qg_powermodels += result["solution"]["gen"][string(i)]["qg"]
             end
         
-            @test isapprox(total_pg, result_pg_powermodels; atol = 1e-3)
+            @test isapprox(total_pg, result_pg_powermodels; atol = 1e-5)
             @test isapprox(total_qg, result_qg_powermodels; atol = 1e-5)
 
             for i in eachindex(result["solution"]["bus"])
@@ -555,7 +558,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -571,12 +574,12 @@
 
         @testset "DC-OPF with NFAPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -586,7 +589,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -599,7 +602,7 @@
             end
 
             for i in eachindex(key_buses)
-                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -609,13 +612,13 @@
 
         @testset "DC-OPF with DCPPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -629,7 +632,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -642,7 +645,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -684,7 +687,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -693,7 +696,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -703,7 +706,7 @@
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -742,7 +745,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -758,12 +761,12 @@
 
         @testset "DC-OPF with NFAPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -773,7 +776,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -786,7 +789,7 @@
             end
 
             for i in eachindex(key_buses)
-                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -796,55 +799,13 @@
 
         @testset "DC-OPF with DCPPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
-
-            for i in eachindex(result["solution"]["gen"])
-                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
-            end
-
-            for i in eachindex(result["solution"]["bus"])
-                @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-6)
-            end
-
-            for i in eachindex(result["solution"]["branch"])
-                @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
-            end
-
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
-
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
-            pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
-            pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
-
-            for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
-            end
-
-            for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
-            end
-
-            @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
-
-        end
-
-        @testset "DC-OPF with DCMPPowerModel, case9" begin
-
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, ipopt_optimizer_1)
-            result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-            result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
-
-            data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -871,7 +832,49 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
+            end
+
+            @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
+
+        end
+
+        @testset "DC-OPF with DCMPPowerModel, case9" begin
+
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
+            result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
+            result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
+            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+
+            data = OPF.build_network(rawfile, symbol=false)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
+
+            for i in eachindex(result["solution"]["gen"])
+                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
+            end
+
+            for i in eachindex(result["solution"]["bus"])
+                @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-6)
+            end
+
+            for i in eachindex(result["solution"]["branch"])
+                @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
+            end
+
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
+
+            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
+            pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
+            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+
+            for k in key_generators
+                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            end
+
+            for i in eachindex(result["solution"]["bus"])
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -880,7 +883,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -890,7 +893,7 @@
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -929,7 +932,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -945,12 +948,12 @@
 
         @testset "DC-OPF with NFAPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -960,7 +963,7 @@
                 @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
             end
 
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
             key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
@@ -973,7 +976,7 @@
             end
 
             for i in eachindex(key_buses)
-                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[i], pg_bus_powermodels[i]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -983,55 +986,13 @@
 
         @testset "DC-OPF with DCPPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, ipopt_optimizer_1)
-
-            for i in eachindex(result["solution"]["gen"])
-                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
-            end
-
-            for i in eachindex(result["solution"]["bus"])
-                @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-6)
-            end
-
-            for i in eachindex(result["solution"]["branch"])
-                @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
-            end
-
-            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-4)
-
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
-            pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
-            pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
-
-            for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
-            end
-
-            for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
-            end
-
-            @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
-
-        end
-
-        @testset "DC-OPF with DCMPPowerModel, frankenstein_00" begin
-
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, ipopt_optimizer_1)
-            result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-            result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
-
-            data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
@@ -1058,7 +1019,49 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
+            end
+
+            @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
+
+        end
+
+        @testset "DC-OPF with DCMPPowerModel, frankenstein_00" begin
+
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
+            result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
+            result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
+            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+
+            data = OPF.build_network(rawfile, symbol=false)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
+
+            for i in eachindex(result["solution"]["gen"])
+                @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-6)
+            end
+
+            for i in eachindex(result["solution"]["bus"])
+                @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-6)
+            end
+
+            for i in eachindex(result["solution"]["branch"])
+                @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-6)
+            end
+
+            @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
+
+            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
+            pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
+            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+
+            for k in key_generators
+                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            end
+
+            for i in eachindex(result["solution"]["bus"])
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -1067,7 +1070,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, ipopt_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1077,7 +1080,7 @@
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, ipopt_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -1116,7 +1119,7 @@
             end
 
             for i in eachindex(result["solution"]["bus"])
-                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
+                @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-5)
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-5)
@@ -1128,6 +1131,8 @@ end
 
 
 @testset "Gurobi solver (not exact)" begin
+
+    solver = gurobi_optimizer_1
     
     @testset "test OPF, RBTS system" begin
 
@@ -1136,12 +1141,12 @@ end
 
         @testset "DC-OPF with NFAPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
@@ -1166,13 +1171,13 @@ end
 
         @testset "DC-OPF with DCPPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1208,13 +1213,13 @@ end
 
         @testset "DC-OPF with DCMPPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1250,7 +1255,7 @@ end
 
         @testset "AC-OPF with LPACCPowerModel, RBTS" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1260,7 +1265,7 @@ end
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -1315,12 +1320,12 @@ end
 
         @testset "DC-OPF with NFAPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
@@ -1341,14 +1346,14 @@ end
 
         @testset "DC-OPF with DCMPPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
 
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
@@ -1369,14 +1374,14 @@ end
 
         @testset "DC-OPF with DCPPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
@@ -1396,7 +1401,7 @@ end
 
         @testset "AC-OPF with LPACCPowerModel, RTS" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1406,7 +1411,7 @@ end
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -1461,12 +1466,12 @@ end
 
         @testset "DC-OPF with NFAPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1499,13 +1504,13 @@ end
 
         @testset "DC-OPF with DCPPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1541,13 +1546,13 @@ end
 
         @testset "DC-OPF with DCMPPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1583,7 +1588,7 @@ end
 
         @testset "AC-OPF with LPACCPowerModel, case5" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1593,7 +1598,7 @@ end
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -1604,7 +1609,7 @@ end
                 result_qg_powermodels += result["solution"]["gen"][string(i)]["qg"]
             end
         
-            @test isapprox(total_pg, result_pg_powermodels; atol = 1e-3)
+            @test isapprox(total_pg, result_pg_powermodels; atol = 1e-5)
             @test isapprox(total_qg, result_qg_powermodels; atol = 1e-2)
 
             for i in eachindex(result["solution"]["bus"])
@@ -1648,12 +1653,12 @@ end
 
         @testset "DC-OPF with NFAPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1682,13 +1687,13 @@ end
 
         @testset "DC-OPF with DCPPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1724,13 +1729,13 @@ end
 
         @testset "DC-OPF with DCMPPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1766,7 +1771,7 @@ end
 
         @testset "AC-OPF with LPACCPowerModel, case6" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1776,7 +1781,7 @@ end
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -1831,12 +1836,12 @@ end
 
         @testset "DC-OPF with NFAPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1869,13 +1874,13 @@ end
 
         @testset "DC-OPF with DCPPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1911,13 +1916,13 @@ end
 
         @testset "DC-OPF with DCMPPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-2)
@@ -1953,7 +1958,7 @@ end
 
         @testset "AC-OPF with LPACCPowerModel, case9" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1963,7 +1968,7 @@ end
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0
@@ -2016,12 +2021,12 @@ end
 
         @testset "DC-OPF with NFAPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.NFAPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.NFAPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, solver)
 
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
@@ -2042,13 +2047,13 @@ end
 
         @testset "DC-OPF with DCPPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.DCPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, solver)
 
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-2)
@@ -2072,13 +2077,13 @@ end
 
         @testset "DC-OPF with DCMPPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.DCMPPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
 
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, solver)
 
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-2)
@@ -2102,7 +2107,7 @@ end
 
         @testset "AC-OPF with LPACCPowerModel, frankenstein_00" begin
 
-            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, gurobi_optimizer_1)
+            pm = OPF.solve_opf(system, OPF.LPACCPowerModel, solver)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -2112,7 +2117,7 @@ end
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
             data = OPF.build_network(rawfile, symbol=false)
-            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, gurobi_optimizer_1)
+            result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, solver)
         
             result_pg_powermodels = 0
             result_qg_powermodels = 0

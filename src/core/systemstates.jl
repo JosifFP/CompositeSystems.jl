@@ -16,13 +16,6 @@ struct SystemStates <: AbstractState
     gse::Matrix{Float64}
     plc::Matrix{Float64}
     qlc::Matrix{Float64}
-    system::Vector{Bool}
-    #loads_nexttransition::Vector{Int}
-    #branches_nexttransition::Vector{Int}
-    #shunts_nexttransition::Vector{Int}
-    #generators_nexttransition::Vector{Int}
-    #storages_nexttransition::Vector{Int}
-    #generatorstorages_nexttransition::Vector{Int}
 end
 
 "SystemStates structure with matrices for Sequential MCS"
@@ -44,12 +37,11 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     generators = Array{Float32, 2}(undef, length(system.generators), N)
     storages = Array{Bool, 2}(undef, length(system.storages), N)
     generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
-    sys = Array{Bool, 1}(undef, N)
 
     se = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
     gse = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
-    plc = Array{Float64, 2}(undef, length(system.buses), N)
-    qlc = Array{Float64, 2}(undef, length(system.buses), N)
+    plc = Array{Float64}(undef, length(system.buses))
+    qlc = Array{Float64}(undef, length(system.buses))
 
     fill!(loads, 1)
     fill!(shunts, 1)
@@ -57,8 +49,7 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     fill!(gse, 0)
     fill!(plc, 0)
     fill!(qlc, 0)
-    fill!(sys, 1)
-
+    
     if available==true
         fill!(branches, 1)
         fill!(commonbranches, 1)
@@ -68,7 +59,7 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
         fill!(generatorstorages, 1)
     end
 
-    return SystemStates(buses, loads, branches, commonbranches, shunts, generators, storages, generatorstorages, se, gse, plc, qlc, sys)
+    return SystemStates(buses, loads, branches, commonbranches, shunts, generators, storages, generatorstorages, se, gse, plc, qlc)
     
 end
 
@@ -111,14 +102,11 @@ struct NextTransition <: AbstractState
         #nstors = length(system.storages)
         #generatorstorages_available = Vector{Bool}(undef, nstors)
         #generatorstorages_nexttransition = Vector{Int}(undef, nstors)
-
         return new(
             generators_available, generators_nexttransition,
             branches_available, branches_nexttransition,
             commonbranches_available, commonbranches_nexttransition,
             storages_available, storages_nexttransition
         )
-
     end
-
 end

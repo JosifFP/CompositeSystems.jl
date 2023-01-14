@@ -95,7 +95,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.buspairs == y.buspairs
 
 "a macro for adding the base AbstractPowerModels fields to a type definition"
-OPF.@def pm_fields begin
+@def pm_fields begin
     model::AbstractModel
     topology::Topology
     var::Dict{Symbol, AbstractArray}
@@ -301,9 +301,7 @@ function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::S
         simplify!(pm, system, states, t, no_isolated=true)
         update_arcs!(pm, system, states.branches, t)
     end
-
     update_all_idxs!(pm, system, states, t)
-
     return
 
 end

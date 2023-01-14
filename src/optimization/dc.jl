@@ -108,36 +108,36 @@ function con_ohms_yt(pm::AbstractNFAModel, system::SystemModel, i::Int; nw::Int=
 end
 
 "Nothing to do, no voltage angle variables"
-function _con_ohms_yt_from(pm::AbstractNFAModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr_to)
+function _con_ohms_yt_from(pm::AbstractNFAModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 end
 
 "DC Line Flow Constraints"
-function _con_ohms_yt_from(pm::AbstractDCPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr_to)
+function _con_ohms_yt_from(pm::AbstractDCPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
-    con(pm, :ohms_yt_from_p, nw)[i] = @constraint(pm.model, p_fr == -b*(va_fr_to))
+    con(pm, :ohms_yt_from_p, nw)[i] = @constraint(pm.model, p_fr == -b*(va_fr - va_to))
 
 end
 
 "DC Line Flow Constraints"
-function _con_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr_to)
+function _con_ohms_yt_from(pm::AbstractDCMPPModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     # get b only based on br_x (b = -1 / br_x) and take tap + shift into account
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
-    con(pm, :ohms_yt_from_p, nw)[i] = @constraint(pm.model, p_fr == (va_fr_to - ta)/(x*tm))
+    con(pm, :ohms_yt_from_p, nw)[i] = @constraint(pm.model, p_fr == (va_fr - va_to - ta)/(x*tm))
 
 end
 
 "Nothing to do, this model is symetric"
-function _con_ohms_yt_to(pm::AbstractAPLossLessModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr_to)
+function _con_ohms_yt_to(pm::AbstractAPLossLessModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end
 
 """
 Creates Ohms constraints (yt post fix indicates that Y and T values are in rectangular form)
 """
-function _con_ohms_yt_to(pm::AbstractDCPLLModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr_to)
+function _con_ohms_yt_to(pm::AbstractDCPLLModel, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     p_to  = var(pm, :p, nw)[i, t_bus, f_bus]
@@ -213,7 +213,6 @@ end
 function _con_storage_thermal_limit(pm::AbstractDCPowerModel, n::Int, i, rating)
     
     ps = var(pm, :ps, n)[i]
-
     JuMP.lower_bound(ps) < -rating && JuMP.set_lower_bound(ps, -rating)
     JuMP.upper_bound(ps) >  rating && JuMP.set_upper_bound(ps,  rating)
 end
@@ -241,19 +240,19 @@ end
 
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
 ""
-function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
 
-    z_demand   = var(pm, :z_demand, 1)
-    z_shunt   = var(pm, :z_shunt, 1)
-    bus_loads = topology(pm, :bus_loads)[i]
+    z_demand   = var(pm, :z_demand, nw)
+    z_shunt   = var(pm, :z_shunt, nw)
+    #bus_loads = topology(pm, :bus_loads)[i]
     bus_shunts = topology(pm, :bus_shunts)[i]
+    bus_loads = [k for k in field(system, :loads, :keys) if field(system, :loads, :buses)[k] == i]
 
     bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
     bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in bus_shunts)
 
-    JuMP.set_normalized_coefficient(con(pm, :power_balance_p, 1)[i], z_demand[i], sum(pd for pd in bus_pd))
-    #JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(gs for gs in bus_gs)*1.0^2)
-    
+    JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[i], sum(pd for pd in bus_pd))
+
     return
 
 end
@@ -277,6 +276,45 @@ end
 
 ""
 function update_con_voltage_angle_difference(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, i::Int, t::Int)
+end
+
+"Nothing to do, no voltage angle variables"
+function _update_con_ohms_yt_from(pm::AbstractNFAModel, states::SystemStates, i::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+end
+
+"DC Line Flow Constraints"
+function _update_con_ohms_yt_from(pm::AbstractDCPModel, states::SystemStates, i::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    #JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], p_fr, field(states, :branches)[i,t])
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_fr, b*field(states, :branches)[i,t])
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_to, -b*field(states, :branches)[i,t])
+end
+
+"DC Line Flow Constraints"
+function _update_con_ohms_yt_from(pm::AbstractDCMPPModel, states::SystemStates, i::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    x = -b / (g^2 + b^2)
+    ta = atan(ti, tr)
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[i], -ta/(x*tm)*field(states, :branches)[i,t])
+    #JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], p_fr, field(states, :branches)[i,t])
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_fr, -field(states, :branches)[i,t]/(x*tm))
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_to, field(states, :branches)[i,t]/(x*tm))
+end
+
+"Nothing to do, this model is symetric"
+function _update_con_ohms_yt_to(pm::AbstractAPLossLessModels, states::SystemStates, i::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+end
+
+""
+function _update_con_ohms_yt_to(pm::AbstractDCPLLModel, states::SystemStates, i::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+
+    p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
+    p_to  = var(pm, :p, nw)[i, t_bus, f_bus]
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_fr, field(states, :branches)[i,t])
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_to, field(states, :branches)[i,t])
+
 end
 
 ""

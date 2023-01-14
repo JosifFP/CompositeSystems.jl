@@ -18,7 +18,6 @@ end
 "Nodal power balance constraints"
 function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
-    #bus_arcs = filter(!ismissing, skipmissing(topology(pm, :busarcs)[i]))
     bus_arcs = topology(pm, :busarcs)[i]
     bus_gens = topology(pm, :bus_generators)[i]
     bus_loads = topology(pm, :bus_loads)[i]
@@ -61,15 +60,17 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::In
     g, b = calc_branch_y(field(system, :branches), i)
     tr, ti = calc_branch_t(field(system, :branches), i)
     tm = field(system, :branches, :tap)[i]
-    va_fr_to = @expression(pm.model, var(pm, :va, nw)[f_bus] - var(pm, :va, nw)[t_bus])
+
+    va_fr  = var(pm, :va, nw)[f_bus]
+    va_to  = var(pm, :va, nw)[t_bus]
 
     g_fr = field(system, :branches, :g_fr)[i]
     b_fr = field(system, :branches, :b_fr)[i]
     g_to = field(system, :branches, :g_to)[i]
     b_to = field(system, :branches, :b_to)[i]
 
-    _con_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr_to)
-    _con_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr_to)
+    _con_ohms_yt_from(pm, i, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+    _con_ohms_yt_to(pm, i, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 
 end
 

@@ -47,7 +47,6 @@ function run()
             #CompositeSystems.field(systemstates, :branches)[5,t] = 0
             #CompositeSystems.field(systemstates, :branches)[8,t] = 0
             #system.branches.rate_a[5] = 0.3
-            #systemstates.system[t] = 0
         end
         #OPF.build_method!(pm, system, systemstates, t)
         #OPF.optimize_method!(pm)
@@ -57,7 +56,7 @@ function run()
         #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
         #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
         #println(Float32.(systemstates.se[t]*100))
-        #println(Float32.(systemstates.plc[:,t]*100))
+        #println(Float32.(systemstates.plc[:]*100))
         #println(Float32.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
         println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
         #OPF.empty_model!(pm)

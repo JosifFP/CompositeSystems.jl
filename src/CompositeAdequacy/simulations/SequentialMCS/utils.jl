@@ -23,9 +23,7 @@ function initialize_availability!(rng::AbstractRNG, availability::Matrix{Float32
             end
         end
     end
-
-    return availability
-    
+    return
 end
 
 ""
@@ -33,7 +31,7 @@ function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool}, 
 
     for i in asset.keys
         if asset.status[i] ≠ false
-            sequence = view(availability, i, :)
+            sequence = availability[i,:]
             fill!(sequence, 1)
             λ_updn = asset.λ_updn[i]/N
             μ_updn = asset.μ_updn[i]/N
@@ -44,9 +42,7 @@ function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool}, 
             fill!(sequence, 0)
         end
     end
-
-    return availability
-    
+    return
 end
 
 ""
@@ -61,13 +57,11 @@ function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool},a
             cycles!(sequence, rng, λ_updn, μ_updn, N)
         end
     end
-
-    return availability
-    
+    return
 end
 
 ""
-function initialize_availability!(rng::AbstractRNG, availability::Matrix{Int}, asset::Buses, N::Int)
+function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::Int)
     
     bus_type = field(asset, :bus_type)
     for j in 1:N
@@ -75,30 +69,83 @@ function initialize_availability!(rng::AbstractRNG, availability::Matrix{Int}, a
             availability[i,j] = bus_type[i]
         end
     end
-    return availability
-    
+    return
 end
 
 ""
-function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
+function initialize_availability!(rng::AbstractRNG, availabilities::Matrix{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
+
+    availability = view(availabilities, :, 1)
 
     for i in asset.keys
         λ_updn = asset.λ_updn[i]/N
         μ_updn = asset.μ_updn[i]/N
         online = rand(rng) < μ_updn / (λ_updn + μ_updn)
         availability[i] = online
-        #m_λ_updn = hcat([asset.λ_updn./N for i in 1:N]...)
-        #m_μ_updn = hcat([asset.μ_updn./N for i in 1:N]...)
         transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
         nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
     end
-
-    return availability
-
+    return
 end
 
 ""
-function update_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
+function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
+    
+    for i in asset.keys
+        λ_updn = asset.λ_updn[i]/N
+        μ_updn = asset.μ_updn[i]/N
+        online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+        availability[i] = online
+        transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
+        nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
+    end
+    return
+end
+
+""
+function initialize_availability!(rng::AbstractRNG, availabilities::Matrix{Float32}, nexttransition::Vector{Int}, asset::Generators, N::Int)
+
+    availability = view(availabilities, :, 1)
+
+    for i in asset.keys
+        λ_updn = asset.λ_updn[i]/N
+        μ_updn = asset.μ_updn[i]/N
+
+        if asset.state_model[i] == 2
+            online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+            availability[i] = online
+            transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
+            nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
+
+        elseif asset.state_model[i] == 3
+            sequence = view(availability, i, :)
+            fill!(sequence, 1)
+            λ_upde = asset.λ_upde[i]/N
+            μ_upde = asset.μ_upde[i]/N
+            pde = asset.pde[i]
+            if λ_updn ≠ 0.0 && λ_upde ≠ 0.0
+                cycles!(sequence, pde, rng, λ_updn, μ_updn, λ_upde, μ_upde, N)
+            end
+        end
+    end
+    return
+end
+
+""
+function update_availability!(rng::AbstractRNG, availabilitY::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
+
+    for i in asset.keys
+        if nexttransition[i] == t_now # Unit switches states
+            transitionprobs = (availabilitY[i] ⊻= true) ? asset.λ_updn./t_last : asset.μ_updn./t_last
+            nexttransition[i] = randtransitiontime(rng, transitionprobs, i, t_now, t_last)
+        end
+    end
+end
+
+""
+function update_availability!(rng::AbstractRNG, availabilities::Matrix{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
+
+    availability = view(availabilities, :, t_now)
 
     for i in asset.keys
         if nexttransition[i] == t_now # Unit switches states
@@ -106,7 +153,6 @@ function update_availability!(rng::AbstractRNG, availability::Vector{Bool}, next
             nexttransition[i] = randtransitiontime(rng, transitionprobs, i, t_now, t_last)
         end
     end
-
 end
 
 ""
@@ -260,31 +306,14 @@ function T(rng, λ_updn::Float64, μ_updn::Float64)::Tuple{Int,Int}
 end
 
 ""
-function initialize_availability_system!(states::SystemStates, system::SystemModel, N::Int)
-
-    for t in 1:N
-
-        total_gen::Float32 = sum(field(system, :generators, :pmax).*field(states, :generators)[:,t])
-
-        if all(view(field(states, :commonbranches),:,t)) == false
-            for k in field(system, :branches, :keys)
-                if field(system, :branches, :common_mode)[k] ≠ 0
-                    if states.commonbranches[field(system, :branches, :common_mode)[k],t] == false
-                        states.branches[k,t] = false
-                    end
+function apply_common_outages!(states::SystemStates, system::SystemModel, t::Int)
+    if all(view(field(states, :commonbranches),:,t)) == false
+        for k in field(system, :branches, :keys)
+            if field(system, :branches, :common_mode)[k] ≠ 0
+                if states.commonbranches[field(system, :branches, :common_mode)[k],t] == false
+                    states.branches[k,t] = false
                 end
-            end
-        end    
-
-        if all(view(field(states, :branches),:,t)) == false
-            states.system[t] = false
-        else
-            if sum(view(field(system, :loads, :pd), :, t)) >= total_gen
-                states.system[t] = false
-            elseif sum(view(field(states, :generators), :, t)) <= length(system.generators)
-                states.system[t] = false
             end
         end
     end
-
 end

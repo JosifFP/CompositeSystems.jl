@@ -275,7 +275,7 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
     
     key_branches = assetgrouplist(topology(pm, :branches_idxs))
 
-    for i in eachindex(key_branches)
+    for i in field(system, :branches, :keys)
         if asset_states[i,t] == false
             topology(pm, :arcs_from)[i] = missing
             topology(pm, :arcs_to)[i] = missing
@@ -323,15 +323,14 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     incident_active_edge = incident_branch_count
                 end
                 if incident_active_edge == 1 && length(topology(pm, :bus_generators)[i]) == 0 && 
-                    length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 &&
-                    length(topology(pm, :bus_shunts)[i]) == 0
+                    length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 && length(topology(pm, :bus_shunts)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
-                elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && 
-                    length(topology(pm, :bus_storages)[i]) == 0 && length(topology(pm, :bus_shunts)[i]) == 0
+                elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
+                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
                 end
             end
         end
@@ -364,7 +363,8 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         if system.ref_buses[1] in largest_cc && length(field(system, :buses)) - length(largest_cc) < 3
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
-                    states.buses[i,t] = 4             
+                    states.buses[i,t] = 4
+                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")            
                 end
             end
         end
@@ -403,11 +403,12 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
             t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
             if f_bus == 4 || t_bus == 4
                 states.branches[i,t] = 0
-                #revised = true
+                revised = true
             end
         end
     end
     
+    revised == true && update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
     changed == true && update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
 
     for i in field(system, :buses, :keys)
@@ -520,7 +521,7 @@ function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemSta
 
     _update_topology!(pm, system, states, t)
     _update_method!(pm, system, states, t, force_pmin=force_pmin)
-    optimize_method!(pm)
+    JuMP.optimize!(pm.model)
     build_result!(pm, system, states, t)
     return
 

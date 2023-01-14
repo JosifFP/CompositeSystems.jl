@@ -14,7 +14,7 @@ function assess(
 
     if method.threaded
         for _ in 1:threads
-            Threads.@spawn assess(system, method, deepcopy(settings), sampleseeds, results, resultspecs...)
+            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)
@@ -34,7 +34,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    model = jump_model(settings.modelmode, deepcopy(settings.optimizer))
+    model = jump_model(settings.modelmode, settings.optimizer)
     pm = abstract_model(settings.powermodel, Topology(system), model)
     systemstates = SystemStates(system)
     recorders = accumulator.(system, method, resultspecs)
@@ -67,12 +67,11 @@ end
 function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}; transitions::Bool=true) where N
 
     if transitions == false
-        initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
+        #initialize_availability!(field(states, :buses), field(system, :buses), N)
         initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
         initialize_availability!(rng, field(states, :commonbranches), field(system, :commonbranches), N)
         initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
         initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
-        initialize_availability_system!(states, system, N)
     else
         singlestates = NextTransition(system)
         initialize_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, N)
@@ -89,14 +88,11 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
             view(field(states, :commonbranches),:,t) .= singlestates.commonbranches_available[:]
             view(field(states, :generators),:,t) .= singlestates.generators_available[:]
             view(field(states, :storages),:,t) .= singlestates.storages_available[:]
+            apply_common_outages!(states, system, t)
         end
-
-        initialize_availability!(rng, field(states, :buses), field(system, :buses), N)
-        initialize_availability_system!(states, system, N)
-
+        initialize_availability!(field(states, :buses), field(system, :buses), N)
     end
     return
-
 end
 
 ""
@@ -104,8 +100,7 @@ function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, sta
 
     initialize_pm_containers!(pm, system; timeseries=false)
     build_method!(pm, system, 1)
-    optimize_method!(pm)
-
+    JuMP.optimize!(pm.model)
     results == true && build_result!(pm, system, states, 1)
     return
 
@@ -116,7 +111,7 @@ function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStat
     
     update_topology!(pm, system, states, t)
     update_method!(pm, system, states, t)
-    optimize_method!(pm)
+    JuMP.optimize!(pm.model)
     build_result!(pm, system, states, t)
     return
 

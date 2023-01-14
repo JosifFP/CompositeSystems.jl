@@ -57,7 +57,7 @@ function solve_opf(system::SystemModel, powermodel::Type, optimizer::MOI.Optimiz
     pm = abstract_model(powermodel, OPF.Topology(system), model)
     initialize_pm_containers!(pm, system; timeseries=false)
     build_opf!(pm, system)
-    optimize_method!(pm)
+    JuMP.optimize!(pm.model)
     return pm
     
 end
@@ -135,28 +135,26 @@ function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::Syste
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
+        update_con_ohms_yt(pm, system, states, i, t)
+    end
+
+    for (bp,_) in field(system, :buspairs)
+        update_con_voltage_angle_difference(pm, bp)
     end
 
     active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
-
     reset_con_model_voltage(pm, active_buspairs)
-    reset_con_ohms_yt(pm, active_branches)
     #reset_con_voltage_angle_difference(pm, active_buspairs)
 
     for (bp,buspair) in topology(pm, :buspairs)
         update_var_buspair_cosine(pm, bp)
-        update_con_voltage_angle_difference(pm, bp)
         if !ismissing(buspair)
             con_model_voltage(pm, bp)
+            #con_voltage_angle_difference(pm, bp)
         end
     end
 
-    for i in active_branches
-        con_ohms_yt(pm, system, i)
-    end
-
-    optimize_method!(pm)
+    JuMP.optimize!(pm.model)
     return pm
 
 end
@@ -187,34 +185,30 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
+        update_con_ohms_yt(pm, system, states, i, t)
     end
+
+    # for (bp,_) in field(system, :buspairs)
+    #     update_con_voltage_angle_difference(pm, bp)
+    # end
 
     if all(states.branches[:,t]) ≠ true || all(states.branches[:,t-1]) ≠ true
-        
         active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-        active_branches = assetgrouplist(topology(pm, :branches_idxs))
-    
         reset_con_model_voltage(pm, active_buspairs)
-        reset_con_ohms_yt(pm, active_branches)
-        #reset_con_voltage_angle_difference(pm, active_buspairs)
-    
+        reset_con_voltage_angle_difference(pm, active_buspairs)
+
         for (bp,buspair) in topology(pm, :buspairs)
             update_var_buspair_cosine(pm, bp)
-            #update_con_voltage_angle_difference(pm, bp)
             if !ismissing(buspair)
                 con_model_voltage(pm, bp)
+                con_voltage_angle_difference(pm, bp)
             end
         end
-        
-        for i in active_branches
-            con_ohms_yt(pm, system, i)
-        end
     end
-
     return
-
 end
 
+""
 function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
 
     for i in field(system, :generators, :keys)
@@ -240,27 +234,27 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
+        update_con_ohms_yt(pm, system, states, i, t)
+    end
+
+    for (bp,_) in field(system, :buspairs)
+        update_con_voltage_angle_difference(pm, bp)
     end
 
     active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
-
+    #active_branches = assetgrouplist(topology(pm, :branches_idxs))
     reset_con_model_voltage(pm, active_buspairs)
-    reset_con_ohms_yt(pm, active_branches)
-    #reset_con_voltage_angle_difference(pm, active_buspairs)
+    #reset_con_ohms_yt(pm, active_branches)
 
     for (bp,buspair) in topology(pm, :buspairs)
         update_var_buspair_cosine(pm, bp)
-        #update_con_voltage_angle_difference(pm, bp)
         if !ismissing(buspair)
             con_model_voltage(pm, bp)
         end
     end
-    
-    for i in active_branches
-        con_ohms_yt(pm, system, i)
-    end
-
+    #for i in active_branches
+        #con_ohms_yt(pm, system, i)
+    #end
     return
 
 end
@@ -296,12 +290,12 @@ function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::Sys
 
     load_cost = Dict{Int, Any}()
     bus_load = Dict{Int, Any}()
-    for i in field(system, :buses, :keys)
+    for i in assetgrouplist(topology(pm, :buses_idxs))
         bus_load[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
         load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
     end
 
-    fd = @expression(pm.model, sum(load_cost[i] for i in field(system, :buses, :keys)))
+    fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
     fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
     return @objective(pm.model, MIN_SENSE, fd + fe)
     
@@ -321,50 +315,41 @@ function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemMo
     
 end
 
-function optimize_method!(pm::AbstractPowerModel)
-
-    #optimize!(model; ignore_optimize_hook = true)
-    _ = JuMP.optimize!(pm.model)
-    #_ = optimize!(pm.model; ignore_optimize_hook = true)
-    return
-end
-
 ""
 function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
-    if states.system[t] == false
-        if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
+    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
 
-            plc = build_sol_values(var(pm, :z_demand, nw))
-            se = build_sol_values(var(pm, :se, nw))
-        
-            for i in field(system, :buses, :keys)
-                bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+        plc = build_sol_values(var(pm, :z_demand, nw))
+        se = build_sol_values(var(pm, :se, nw))
+    
+        for i in field(system, :buses, :keys)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            if field(states, :buses)[i,t] == 4
+                states.plc[i] = bus_pd
+            else
                 !haskey(plc, i) && get!(plc, i, bus_pd)
-                states.plc[i,t] = bus_pd*(1 - getindex(plc, i))
+                states.plc[i] = bus_pd*(1 - getindex(plc, i))
             end
+        end
 
-            for i in field(system, :storages, :keys)
-                haskey(se, i) == false && get!(se, i, 0.0)
-                states.se[i,t] = getindex(se, i)
-            end
-            #if sum(states.plc[:,t]) > 0
-            #    println("t=$(t), plc = $(states.plc[:,t])")
-            #end
-            #if sum(states.plc[:,t]) > 0
-            #    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-            #    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-            #    pg = sum(values(build_sol_values(var(pm, :pg, nw))))
-            #    println("t=$(t), plc = $(states.plc[:,t]), branches = $(states.branches[:,t]), pg = $(pg)")  
-            #end
-        else
-            println("not solved, t=$(t), status=$(termination_status(pm.model))")
-            @assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
+        for i in field(system, :storages, :keys)
+            haskey(se, i) == false && get!(se, i, 0.0)
+            states.se[i,t] = getindex(se, i)
         end
     else
+        println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t])")
+        #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
+
         for i in field(system, :buses, :keys)
-            states.plc[i,t] = 0.0
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            if field(states, :buses)[i,t] == 4
+                states.plc[i] = bus_pd
+            else
+                states.plc[i] = 0
+            end
         end
+
     end
     return
 
@@ -373,44 +358,41 @@ end
 ""
 function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
 
-    if states.system[t] == false
-        if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
+    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
 
-            plc = build_sol_values(var(pm, :z_demand, nw))
-            se = build_sol_values(var(pm, :se, nw))
+        plc = build_sol_values(var(pm, :z_demand, nw))
+        se = build_sol_values(var(pm, :se, nw))
 
-            for i in field(system, :loads, :keys)
-
-                for i in field(system, :buses, :keys)
-
-                    bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
-                    bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :init_loads_nodes)[i]; init=0)
-
-                    !haskey(plc, i) && get!(plc, i, bus_pd)
-                    states.plc[i,t] = bus_pd*(1 - getindex(plc, i))
-                    states.qlc[i,t] = bus_qd*(1 - getindex(plc, i))
-                end
-        
-                for i in field(system, :storages, :keys)
-                    haskey(se, i) == false && get!(se, i, 0.0)
-                    states.se[i,t] = getindex(se, i)
-                end
-
+        for i in field(system, :buses, :keys)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            if field(states, :buses)[i,t] == 4
+                states.plc[i] = bus_pd
+                states.qlc[i] = bus_qd
+            else
+                !haskey(plc, i) && get!(plc, i, bus_pd)
+                states.plc[i] = bus_pd*(1 - getindex(plc, i))
+                states.qlc[i] = bus_qd*(1 - getindex(plc, i))
             end
-            #if sum(states.plc[:,t]) > 0  println("t=$(t), PLC = $(sum(states.plc[:,t]))")  end
-        else
-            println("not solved, t=$(t), status=$(termination_status(pm.model))")
-            println("t=$(t), branches = $(states.branches[:,t]), pg = $(states.generators[:,t])") 
-            @assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"       
+        end
+
+        for i in field(system, :storages, :keys)
+            haskey(se, i) == false && get!(se, i, 0.0)
+            states.se[i,t] = getindex(se, i)
         end
     else
+        println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t])")
+        #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
         for i in field(system, :buses, :keys)
-            states.plc[i,t] = 0.0
-            states.qlc[i,t] = 0.0
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            if field(states, :buses)[i,t] == 4
+                states.plc[i] = bus_pd
+            else
+                states.plc[i] = 0
+            end
         end
     end
     return
-
 end
 
 ""
