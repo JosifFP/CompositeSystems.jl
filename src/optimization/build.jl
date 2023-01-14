@@ -322,6 +322,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
 
         plc = build_sol_values(var(pm, :z_demand, nw))
         se = build_sol_values(var(pm, :se, nw))
+        fill!(states.plc, 0)
     
         for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
@@ -362,6 +363,8 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
 
         plc = build_sol_values(var(pm, :z_demand, nw))
         se = build_sol_values(var(pm, :se, nw))
+        fill!(states.plc, 0)
+        fill!(states.qlc, 0)
 
         for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
