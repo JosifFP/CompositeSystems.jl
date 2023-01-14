@@ -14,8 +14,8 @@ struct SystemStates <: AbstractState
     generatorstorages::Matrix{Bool}
     se::Matrix{Float64}
     gse::Matrix{Float64}
-    plc::Matrix{Float64}
-    qlc::Matrix{Float64}
+    plc::Vector{Float64}
+    qlc::Vector{Float64}
 end
 
 "SystemStates structure with matrices for Sequential MCS"
