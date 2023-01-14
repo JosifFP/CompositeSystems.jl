@@ -215,7 +215,7 @@ function record!(
     acc::SMCShortfallSamplesAccumulator,
     states::SystemStates,
     sampleid::Int, t::Int
-) where {N,L,T}
+ )
 
     for r in field(states, :plc)
         acc.shortfall[r,t,sampleid] = field(states, :plc)[r]
