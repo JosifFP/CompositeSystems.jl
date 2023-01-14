@@ -291,14 +291,8 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
     map!(x -> Int[], topology(pm, :busarcs))
     bus_asset!(topology(pm, :busarcs), arcs)
 
-    buspairs = BaseModule.calc_buspair_parameters(field(system, :branches), key_branches)
-    for (i,j) in eachindex(field(system, :buspairs))
-        if !haskey(buspairs,(i,j))
-            topology(pm, :buspairs)[(i,j)] = missing
-        else
-            topology(pm, :buspairs)[(i,j)] = buspairs[(i,j)]
-        end
-    end
+    update_buspair_parameters!(topology(pm, :buspairs), field(system, :branches), key_branches)
+
     return
 
 end
@@ -524,5 +518,37 @@ function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemSta
     JuMP.optimize!(pm.model)
     build_result!(pm, system, states, t)
     return
+
+end
+
+""
+function update_buspair_parameters!(buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}, branches::Branches, branch_lookup::Vector{Int})
+ 
+    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+    bp_branch = Dict((bp, Int[]) for bp in buspair_indexes)
+    bp_angmin = Dict((bp, -Inf32) for bp in buspair_indexes)
+    bp_angmax = Dict((bp,  Inf32) for bp in buspair_indexes)
+    #bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    
+    for l in branch_lookup
+        i = branches.f_bus[l]
+        j = branches.t_bus[l]
+        bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
+        bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
+        push!(bp_branch[(i,j)], l)
+    end
+    
+    dict = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
+
+    for bp in eachindex(buspairs)
+        i,j = bp
+        if !((i,j) in buspair_indexes)
+            buspairs[bp] = missing
+        else
+            buspairs[bp] = dict[bp]
+        end
+    end
+    
+    return dict
 
 end

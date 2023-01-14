@@ -206,8 +206,8 @@ function update_var_buspair_cosine(pm::AbstractLPACModel, bp::Tuple{Int,Int})
         JuMP.set_lower_bound(cs[bp], cos_min)
         JuMP.set_upper_bound(cs[bp], cos_max)
     else
-        JuMP.set_lower_bound(cs[bp], 0)
-        JuMP.set_upper_bound(cs[bp], 0)   
+        JuMP.set_lower_bound(cs[bp], 0.0)
+        JuMP.set_upper_bound(cs[bp], 0.0)   
     end
     
 end

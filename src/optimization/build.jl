@@ -185,24 +185,28 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 
     for i in field(system, :branches, :keys)
         update_con_thermal_limits(pm, system, states, i, t)
-        update_con_ohms_yt(pm, system, states, i, t)
+        #update_con_ohms_yt(pm, system, states, i, t)
     end
 
-    # for (bp,_) in field(system, :buspairs)
-    #     update_con_voltage_angle_difference(pm, bp)
-    # end
+    for (bp,_) in field(system, :buspairs)
+        update_con_voltage_angle_difference(pm, bp)
+    end
 
     if all(states.branches[:,t]) ≠ true || all(states.branches[:,t-1]) ≠ true
         active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
+        active_branches = assetgrouplist(topology(pm, :branches_idxs))
         reset_con_model_voltage(pm, active_buspairs)
-        reset_con_voltage_angle_difference(pm, active_buspairs)
-
+        #reset_con_voltage_angle_difference(pm, active_buspairs)
+        reset_con_ohms_yt(pm, active_branches)
         for (bp,buspair) in topology(pm, :buspairs)
             update_var_buspair_cosine(pm, bp)
             if !ismissing(buspair)
                 con_model_voltage(pm, bp)
-                con_voltage_angle_difference(pm, bp)
+                #con_voltage_angle_difference(pm, bp)
             end
+        end
+        for i in active_branches
+            con_ohms_yt(pm, system, i)
         end
     end
     return
@@ -384,7 +388,7 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
             states.se[i,t] = getindex(se, i)
         end
     else
-        println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t])")
+        println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t]), buspairs = $(topology(pm, :buspairs))")
         #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
         for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
