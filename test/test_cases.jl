@@ -25,15 +25,15 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_1,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    #powermodel = OPF.DCPPowerModel
+    powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
     #powermodel = OPF.DCPLLPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 method = SequentialMCS(samples=7500, seed=100, threaded=true)
-#method = SequentialMCS(samples=2, seed=100, threaded=false)
+#method = SequentialMCS(samples=10, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.buses.keys)
@@ -58,8 +58,7 @@ results = CompositeAdequacy.resultchannel(method, resultspecs, threads)
 Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
 states = CompositeAdequacy.SystemStates(system)
-model = OPF.jump_model(settings.modelmode, deepcopy(settings.optimizer))
-pm = OPF.abstract_model(settings.powermodel, OPF.Topology(system), model)
+pm = OPF.abstract_model(system, settings)
 recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
 rng = CompositeAdequacy.Philox4x((0, 0), 10)
 s=1

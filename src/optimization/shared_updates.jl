@@ -38,6 +38,41 @@ function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemMo
     
 end
 
+"Defines load power factor variables to represent curtailed load in objective function"
+function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+
+    z_demand = var(pm, :z_demand, nw)[i]
+    if field(states, :buses)[i,t] == 4
+        if isempty(topology(pm, :bus_loads)[i])
+            JuMP.fix(z_demand, 0, force=true)
+        else
+            if JuMP.is_fixed(z_demand)
+                JuMP.unfix(z_demand[i])
+            end
+            JuMP.set_upper_bound(z_demand, 1)
+            JuMP.set_lower_bound(z_demand, 0)
+        end
+    else
+        if JuMP.is_fixed(z_demand)
+            JuMP.unfix(z_demand[i])
+        end
+        JuMP.set_upper_bound(z_demand, 1)
+        JuMP.set_lower_bound(z_demand, 0)
+    end
+end
+
+# ""
+# function update_var_shunt_admittance_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+    
+#     bus = field(system, :shunts, :buses)[i]
+#     z_shunt = var(pm, :z_shunt, nw)[i]
+#     if field(states, :buses)[bus,t] == 4
+#         JuMP.fix(z_shunt, 0, force=true)
+#     else
+#         JuMP.fix(z_shunt, 1, force=true)
+#     end
+# end
+
 ""
 function update_var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, arc::Tuple{Int, Int, Int}, t::Int; nw::Int=1)
     
@@ -72,26 +107,6 @@ function update_var_branch_power_imaginary(pm::AbstractPowerModel, system::Syste
     JuMP.set_lower_bound(q_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
     JuMP.set_upper_bound(q_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
 
-end
-
-""
-function update_var_buspair_cosine(pm::AbstractPowerModel, bp::Tuple{Int,Int})
-end
-
-"Defines load power factor variables to represent curtailed load in objective function"
-function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
-
-    z_demand = var(pm, :z_demand, 1)[i]
-    if isempty(topology(pm, :bus_loads)[i])
-        JuMP.fix(z_demand, 0, force=true)
-    else
-        if JuMP.is_fixed(z_demand)
-            JuMP.unfix(z_demand[i])
-        end
-        JuMP.set_upper_bound(z_demand, 1)
-        JuMP.set_lower_bound(z_demand, 0)
-    end
-    
 end
 
 #***************************************************** STORAGE VAR UPDATES *************************************************************************
@@ -142,22 +157,13 @@ end
 
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
 
-function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
-
-    if hasfield(Branches, :rate_a)
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[i], (field(system, :branches, :rate_a)[i]^2)*field(states, :branches)[i,t])
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[i], (field(system, :branches, :rate_a)[i]^2)*field(states, :branches)[i,t])
-    end
-    
-end
-
 "Branch - Ohm's Law Constraints"
 function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
-    g, b = OPF.calc_branch_y(field(system, :branches), i)
-    tr, ti = OPF.calc_branch_t(field(system, :branches), i)
+    g, b = calc_branch_y(field(system, :branches), i)
+    tr, ti = calc_branch_t(field(system, :branches), i)
     tm = field(system, :branches, :tap)[i]
 
     va_fr  = var(pm, :va, nw)[f_bus]
@@ -173,79 +179,15 @@ function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states:
 
 end
 
-# ""
-# function update_con_voltage_angle_difference(pm::AbstractLPACModel, bp::Tuple{Int,Int}; nw::Int=1)
-
-#     f_bus,t_bus = bp
-#     va_fr = var(pm, :va, nw)[f_bus]
-#     va_to = var(pm, :va, nw)[t_bus]
-#     buspair = topology(pm, :buspairs)[bp]
-    
-#     if !ismissing(buspair)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_fr, 1)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_to, -1)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_fr, 1)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_to, -1)
-#         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], buspair[3])
-#         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], buspair[2])
-#     else
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_fr, 0)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_to, 0)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_fr, 0)
-#         JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_to, 0)
-#         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], 0)
-#         JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], 0)
-#     end
-
-# end
-
 ""
-function update_con_voltage_angle_difference(pm::AbstractPolarModels, bp::Tuple{Int,Int}; nw::Int=1)
+function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
 
-    f_bus,t_bus = bp
-    buspair = topology(pm, :buspairs)[bp]
-    va_fr = var(pm, :va, nw)[f_bus]
-    va_to = var(pm, :va, nw)[t_bus]
-
-    if !ismissing(buspair)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], buspair[3])
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], buspair[2])
-
-        if JuMP.has_upper_bound(va_fr) && JuMP.has_lower_bound(va_fr)
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_fr, 0)
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_fr, 0)
-        else
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_fr, 1)
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_fr, 1)
-        end
-    
-        if JuMP.has_upper_bound(va_to) && JuMP.has_lower_bound(va_to) 
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_to, 0)
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_to, 0)
-        else
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_to, -1)
-            JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_to, -1)
-        end
-
+    if field(states, :branches)[l,t] == false
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], 0.0)
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], 0.0)
     else
-        JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_to, 0)
-        JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_to, 0)
-        JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_upper, nw)[(f_bus, t_bus)], va_fr, 0)
-        JuMP.set_normalized_coefficient(con(pm, :voltage_angle_diff_lower, nw)[(f_bus, t_bus)], va_fr, 0)
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], field(system, :branches, :rate_a)[l]^2)
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], field(system, :branches, :rate_a)[l]^2)
     end
 
-end
-
-""
-function reset_con_voltage_angle_difference(pm::AbstractPolarModels, buspair::Vector{Tuple{Int, Int}})
-
-    JuMP.delete(pm.model, con(pm, :voltage_angle_diff_upper, 1).data)
-    JuMP.delete(pm.model, con(pm, :voltage_angle_diff_lower, 1).data)
-    add_con_container!(pm.con, :voltage_angle_diff_upper, buspair)
-    add_con_container!(pm.con, :voltage_angle_diff_lower, buspair)
-
-end
-
-""
-function reset_con_model_voltage(pm::AbstractPowerModel, buspair::Vector{Tuple{Int, Int}})
 end

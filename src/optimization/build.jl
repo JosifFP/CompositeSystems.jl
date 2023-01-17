@@ -7,17 +7,20 @@ Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data
 function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
 
     # Add Optimization and State Variables
-    var_bus_voltage(pm, system)
-    var_gen_power(pm, system)
-    var_branch_power(pm, system)
+    var_branch_indicator(pm, system)
+    var_bus_voltage_on_off(pm, system)
     var_load_power_factor(pm, system, t)
     var_shunt_admittance_factor(pm, system, t)
+    var_gen_power(pm, system)
+    var_branch_power(pm, system)
     var_storage_power_mi(pm, system)
 
     objective_min_stor_load_curtailment(pm, system, t)
 
     # Add Constraints
     # ---------------
+    con_model_voltage_on_off(pm, system)
+
     for i in field(system, :ref_buses)
         con_theta_ref(pm, system, i)
     end
@@ -33,41 +36,32 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
         con_storage_thermal_limit(pm, system, i)
     end
 
-    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
-
-    for bp in active_buspairs
-        con_model_voltage(pm, bp)
-        con_voltage_angle_difference(pm, bp)
-    end
-
-    for i in active_branches
+    for i in assetgrouplist(topology(pm, :branches_idxs))
         con_ohms_yt(pm, system, i)
         con_thermal_limits(pm, system, i)
+        con_voltage_angle_difference(pm, system, i)
     end
-
     return
-
 end
 
-"Classic OPF from PowerModels.jl."
-function solve_opf(system::SystemModel, powermodel::Type, optimizer::MOI.OptimizerWithAttributes)
+"Classic OPF from _PM.jl."
+function solve_opf(system::SystemModel, settings::Settings)
 
-    model = jump_model(JuMP.AUTOMATIC, optimizer, string_names = true)
-    pm = abstract_model(powermodel, OPF.Topology(system), model)
-    initialize_pm_containers!(pm, system; timeseries=false)
+    pm = abstract_model(system, settings)
     build_opf!(pm, system)
     JuMP.optimize!(pm.model)
     return pm
     
 end
 
-"Internal function to build classic OPF from PowerModels.jl. 
+"Internal function to build classic OPF from _PM.jl. 
 It requires internal function 'con_power_balance_nolc' since it does not have power curtailment variables."
 function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 
     # Add Optimization and State Variables
-    var_bus_voltage(pm, system)
+    JuMP.set_string_names_on_creation(pm.model, true)
+    var_branch_indicator(pm, system)
+    var_bus_voltage_on_off(pm, system)
     var_gen_power(pm, system, force_pmin=true)
     var_branch_power(pm, system)
     var_storage_power_mi(pm, system)
@@ -76,6 +70,8 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 
     # Add Constraints
     # ---------------
+    con_model_voltage_on_off(pm, system)
+
     for i in field(system, :ref_buses)
         con_theta_ref(pm, system, i)
     end
@@ -91,17 +87,10 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
         con_storage_thermal_limit(pm, system, i)
     end
 
-    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    active_branches = assetgrouplist(topology(pm, :branches_idxs))
-
-    for bp in active_buspairs
-        con_model_voltage(pm, bp)
-        con_voltage_angle_difference(pm, bp)
-    end
-
-    for i in active_branches
+    for i in assetgrouplist(topology(pm, :branches_idxs))
         con_ohms_yt(pm, system, i)
         con_thermal_limits(pm, system, i)
+        con_voltage_angle_difference(pm, system, i)
     end
 
     return
@@ -109,10 +98,42 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 end
 
 ""
-function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function _update_opf!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
     _update_topology!(pm, system, states, t)
+    
+    for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
 
+    for l in field(system, :branches, :keys)
+        update_var_branch_indicator(pm, system, states, l, t)
+        update_con_ohms_yt(pm, system, states, l, t)
+        update_con_thermal_limits(pm, system, states, l, t)
+        update_con_voltage_angle_difference(pm, system, states, l, t)
+    end
+
+    for i in field(system, :buses, :keys)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_con_power_balance_nolc(pm, system, states, i, t)
+    end
+
+    for i in field(system, :storages, :keys)
+        update_con_storage(pm, system, states, i, t)
+    end
+
+    #objective_min_fuel_and_flow_cost(pm, system)
+    JuMP.optimize!(pm.model)
+    return pm
+
+end
+
+""
+function _update_opf!(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
+    
+    _update_topology!(pm, system, states, t)
+    
     for i in field(system, :generators, :keys)
         update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
         update_var_gen_power_imaginary(pm, system, states, i, t)
@@ -123,35 +144,23 @@ function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::Syste
         update_var_branch_power_imaginary(pm, system, states, arc, t)
     end
 
+    for l in field(system, :branches, :keys)
+        update_var_branch_indicator(pm, system, states, l, t)
+        update_branch_voltage_magnitude_fr_on_off(pm, system, states, l, t)
+        update_branch_voltage_magnitude_to_on_off(pm, system, states, l, t)
+        update_var_branch_voltage_product_angle_on_off(pm, system, states, l, t)
+        update_con_ohms_yt(pm, system, states, l, t)
+        update_con_thermal_limits(pm, system, states, l, t)
+        update_con_voltage_angle_difference(pm, system, states, l, t)
+    end
+
     for i in field(system, :buses, :keys)
         update_var_bus_voltage_angle(pm, system, states, i, t)
-        update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance_nolc(pm, system, states, i, t)
     end
-    
+
     for i in field(system, :storages, :keys)
         update_con_storage(pm, system, states, i, t)
-    end
-
-    for i in field(system, :branches, :keys)
-        update_con_thermal_limits(pm, system, states, i, t)
-        update_con_ohms_yt(pm, system, states, i, t)
-    end
-
-    for (bp,_) in field(system, :buspairs)
-        update_con_voltage_angle_difference(pm, bp)
-    end
-
-    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    reset_con_model_voltage(pm, active_buspairs)
-    #reset_con_voltage_angle_difference(pm, active_buspairs)
-
-    for (bp,buspair) in topology(pm, :buspairs)
-        update_var_buspair_cosine(pm, bp)
-        if !ismissing(buspair)
-            con_model_voltage(pm, bp)
-            #con_voltage_angle_difference(pm, bp)
-        end
     end
 
     JuMP.optimize!(pm.model)
@@ -159,107 +168,128 @@ function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::Syste
 
 end
 
-"Updates OPF formulation with Load Curtailment variables and constraints"
-function update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
+""
+function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    
     for i in field(system, :generators, :keys)
         update_var_gen_power_real(pm, system, states, i, t)
         update_var_gen_power_imaginary(pm, system, states, i, t)
     end
 
-    for arc in field(system, :arcs)
-        update_var_branch_power_real(pm, system, states, arc, t)
-        update_var_branch_power_imaginary(pm, system, states, arc, t)
+    if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
+        for l in field(system, :branches, :keys)
+            update_var_branch_indicator(pm, system, states, l, t)
+            update_con_ohms_yt(pm, system, states, l, t)
+            update_con_thermal_limits(pm, system, states, l, t)
+            update_con_voltage_angle_difference(pm, system, states, l, t)
+        end
     end
 
     for i in field(system, :buses, :keys)
         update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
-        update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
     end
-    
+
     for i in field(system, :storages, :keys)
         update_con_storage(pm, system, states, i, t)
     end
 
-    for i in field(system, :branches, :keys)
-        update_con_thermal_limits(pm, system, states, i, t)
-        #update_con_ohms_yt(pm, system, states, i, t)
-    end
-
-    for (bp,_) in field(system, :buspairs)
-        update_con_voltage_angle_difference(pm, bp)
-    end
-
-    if all(states.branches[:,t]) ≠ true || all(states.branches[:,t-1]) ≠ true
-        active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-        active_branches = assetgrouplist(topology(pm, :branches_idxs))
-        reset_con_model_voltage(pm, active_buspairs)
-        #reset_con_voltage_angle_difference(pm, active_buspairs)
-        reset_con_ohms_yt(pm, active_branches)
-        for (bp,buspair) in topology(pm, :buspairs)
-            update_var_buspair_cosine(pm, bp)
-            if !ismissing(buspair)
-                con_model_voltage(pm, bp)
-                #con_voltage_angle_difference(pm, bp)
-            end
-        end
-        for i in active_branches
-            con_ohms_yt(pm, system, i)
-        end
-    end
-    return
+    #objective_min_fuel_and_flow_cost(pm, system)
+    JuMP.optimize!(pm.model)
+    return pm
 end
 
 ""
-function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
-
+function update_method!(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
+    
     for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
+        update_var_gen_power_real(pm, system, states, i, t)
         update_var_gen_power_imaginary(pm, system, states, i, t)
     end
 
-    for arc in field(system, :arcs)
-        update_var_branch_power_real(pm, system, states, arc, t)
-        update_var_branch_power_imaginary(pm, system, states, arc, t)
+    if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
+        for l in field(system, :branches, :keys)
+            update_var_branch_indicator(pm, system, states, l, t)
+            #update_branch_voltage_magnitude_fr_on_off(pm, system, states, l, t)
+            #update_branch_voltage_magnitude_to_on_off(pm, system, states, l, t)
+            #update_var_branch_voltage_product_angle_on_off(pm, system, states, l, t)
+            update_con_ohms_yt(pm, system, states, l, t)
+            update_con_thermal_limits(pm, system, states, l, t)
+            update_con_voltage_angle_difference(pm, system, states, l, t)
+        end
     end
 
     for i in field(system, :buses, :keys)
         update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
-        update_var_bus_voltage_magnitude(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
     end
-    
+
     for i in field(system, :storages, :keys)
         update_con_storage(pm, system, states, i, t)
     end
 
-    for i in field(system, :branches, :keys)
-        update_con_thermal_limits(pm, system, states, i, t)
-        update_con_ohms_yt(pm, system, states, i, t)
+    JuMP.optimize!(pm.model)
+    return pm
+
+end
+
+""
+function _update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+    
+    for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
     end
 
-    for (bp,_) in field(system, :buspairs)
-        update_con_voltage_angle_difference(pm, bp)
+    for l in field(system, :branches, :keys)
+        update_var_branch_indicator(pm, system, states, l, t)
+        update_con_ohms_yt(pm, system, states, l, t)
+        update_con_thermal_limits(pm, system, states, l, t)
     end
 
-    active_buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    #active_branches = assetgrouplist(topology(pm, :branches_idxs))
-    reset_con_model_voltage(pm, active_buspairs)
-    #reset_con_ohms_yt(pm, active_branches)
-
-    for (bp,buspair) in topology(pm, :buspairs)
-        update_var_buspair_cosine(pm, bp)
-        if !ismissing(buspair)
-            con_model_voltage(pm, bp)
-        end
+    for i in field(system, :buses, :keys)
+        update_var_load_power_factor(pm, system, states, i, t)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_con_power_balance(pm, system, states, i, t)
     end
-    #for i in active_branches
-        #con_ohms_yt(pm, system, i)
-    #end
-    return
+
+    for i in field(system, :storages, :keys)
+        update_con_storage(pm, system, states, i, t)
+    end
+
+    #objective_min_fuel_and_flow_cost(pm, system)
+    JuMP.optimize!(pm.model)
+    return pm
+end
+
+""
+function _update_method!(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+    
+    for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
+
+    for l in field(system, :branches, :keys)
+        update_var_branch_indicator(pm, system, states, l, t)
+        update_con_ohms_yt(pm, system, states, l, t)
+        update_con_thermal_limits(pm, system, states, l, t)
+    end
+
+    for i in field(system, :buses, :keys)
+        update_var_load_power_factor(pm, system, states, i, t)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_con_power_balance(pm, system, states, i, t)
+    end
+
+    for i in field(system, :storages, :keys)
+        update_con_storage(pm, system, states, i, t)
+    end
+
+    JuMP.optimize!(pm.model)
+    return pm
 
 end
 
@@ -298,7 +328,6 @@ function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::Sys
         bus_load[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
         load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
     end
-
     fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
     fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
     return @objective(pm.model, MIN_SENSE, fd + fe)
@@ -329,7 +358,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
         fill!(states.plc, 0)
     
         for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
             if field(states, :buses)[i,t] == 4
                 states.plc[i] = bus_pd
             else
@@ -347,7 +376,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
         #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
 
         for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
             if field(states, :buses)[i,t] == 4
                 states.plc[i] = bus_pd
             else
@@ -371,8 +400,8 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
         fill!(states.qlc, 0)
 
         for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
-            bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
+            bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
             if field(states, :buses)[i,t] == 4
                 states.plc[i] = bus_pd
                 states.qlc[i] = bus_qd
@@ -391,7 +420,7 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
         println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t]), buspairs = $(topology(pm, :buspairs))")
         #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
         for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :init_loads_nodes)[i]; init=0)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
             if field(states, :buses)[i,t] == 4
                 states.plc[i] = bus_pd
             else
@@ -405,10 +434,18 @@ end
 ""
 function build_sol_values(var::DenseAxisArray)
 
-    sol = Dict{Int, Any}()
+    axs =  axes(var)[1]
 
-    for key in axes(var)[1]
-        sol[key] = InfrastructureModels.build_solution_values(var[key])
+    if typeof(axs) == Vector{Tuple{Int, Int}}
+        sol = Dict{Tuple{Int, Int}, Any}()
+    elseif typeof(axs) == Vector{Int}
+        sol = Dict{Int, Any}()
+    else
+        typeof(axs) == Union{Vector{Tuple{Int, Int}}, Vector{Int}}
+    end
+
+    for key in axs
+        sol[key] = _IM.build_solution_values(var[key])
     end
 
     return sol
@@ -417,7 +454,7 @@ end
 "Build solution dictionary of active flows per branch"
 function build_sol_branch_values(pm::AbstractDCPowerModel, branches::Branches)
 
-    dict_p = sort(InfrastructureModels.build_solution_values(var(pm, :p, :)))
+    dict_p = sort(_IM.build_solution_values(var(pm, :p, :)))
     tuples = keys(sort(OPF.var(pm, :p, :)))
     sol = Dict{Int, Any}()
 
@@ -443,9 +480,8 @@ end
 "Build solution dictionary of active flows per branch"
 function build_sol_branch_values(pm::AbstractLPACModel, branches::Branches)
 
-    dict_p = sort(InfrastructureModels.build_solution_values(var(pm, :p, :)))
-    dict_q = sort(InfrastructureModels.build_solution_values(var(pm, :q, :)))
-    dict_cs = sort(InfrastructureModels.build_solution_values(var(pm, :cs, :)))
+    dict_p = sort(_IM.build_solution_values(var(pm, :p, :)))
+    dict_q = sort(_IM.build_solution_values(var(pm, :q, :)))
     sol = Dict{Int, Any}()
     tuples = keys(sort(OPF.var(pm, :p, :)))
     
@@ -459,11 +495,6 @@ function build_sol_branch_values(pm::AbstractLPACModel, branches::Branches)
                 get!(sol, l, Dict{String, Any}("pt"=>dict_p[k], "qt"=>dict_q[k]))
             end
     
-            if haskey(dict_cs, string((i,j)))
-                get!(sol[l], "cs", dict_cs[string((i,j))])
-            elseif haskey(dict_cs, string((j,i)))
-                get!(sol[l], "cs", dict_cs[string((j,i))])
-            end
         elseif haskey(sol, l)
             if (branches.f_bus[l],branches.t_bus[l]) == (i,j)
                 get!(sol[l], "pf", dict_p[k])

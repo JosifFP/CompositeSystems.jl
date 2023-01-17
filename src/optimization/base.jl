@@ -9,7 +9,7 @@ struct Topology
     storages_idxs::Vector{UnitRange{Int}}
     generatorstorages_idxs::Vector{UnitRange{Int}}
 
-    init_loads_nodes::Dict{Int, Vector{Int}}
+    bus_loads_init::Dict{Int, Vector{Int}}
     bus_loads::Dict{Int, Vector{Int}}
     bus_shunts::Dict{Int, Vector{Int}}
     bus_generators::Dict{Int, Vector{Int}}
@@ -21,6 +21,8 @@ struct Topology
     arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}
+    delta_bounds::Vector{Float32}
+    isolated_bus_gens::Vector{Bool}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -29,9 +31,9 @@ struct Topology
 
         key_loads = filter(i->field(system, :loads, :status)[i], field(system, :loads, :keys))
         loads_idxs = makeidxlist(key_loads, length(system.loads))
-        init_loads_nodes = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(init_loads_nodes, key_loads, field(system, :loads, :buses))
-        bus_loads = deepcopy(init_loads_nodes)
+        bus_loads_init = Dict((i, Int[]) for i in key_buses)
+        bus_asset!(bus_loads_init, key_loads, field(system, :loads, :buses))
+        bus_loads = deepcopy(bus_loads_init)
 
         key_shunts = filter(i->field(system, :shunts, :status)[i], field(system, :shunts, :keys))
         shunts_idxs = makeidxlist(key_shunts, length(system.shunts))
@@ -64,13 +66,18 @@ struct Topology
         busarcs = Dict((i, Tuple{Int, Int, Int}[]) for i in eachindex(key_buses))
         bus_asset!(busarcs, arcs)
 
+        vad_min,vad_max = calc_theta_delta_bounds(key_buses, key_branches, field(system, :branches))
+        delta_bounds = [vad_min,vad_max]
+
+        isolated_bus_gens = Bool[true]
+
         return new(
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
             branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
-            generatorstorages_idxs::Vector{UnitRange{Int}}, init_loads_nodes,
+            generatorstorages_idxs::Vector{UnitRange{Int}}, bus_loads_init,
             bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, 
-            arcs_from, arcs_to, arcs, busarcs, buspairs)
+            arcs_from, arcs_to, arcs, busarcs, buspairs, delta_bounds, isolated_bus_gens)
     end
 
 end
@@ -82,7 +89,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.generators_idxs == y.generators_idxs &&
     x.storages_idxs == y.storages_idxs &&
     x.generatorstorages_idxs == y.generatorstorages_idxs &&
-    x.init_loads_nodes == y.init_loads_nodes &&
+    x.bus_loads_init == y.bus_loads_init &&
     x.bus_loads == y.bus_loads &&
     x.bus_shunts == y.bus_shunts &&
     x.bus_generators == y.bus_generators &&
@@ -92,7 +99,9 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.arcs_from == y.arcs_from &&
     x.arcs_to == y.arcs_to &&
     x.arcs == y.arcs &&
-    x.buspairs == y.buspairs
+    x.buspairs == y.buspairs &&
+    x.delta_bounds == y.delta_bounds &&
+    x.isolated_bus_gens == y.isolated_bus_gens
 
 "a macro for adding the base AbstractPowerModels fields to a type definition"
 @def pm_fields begin
@@ -114,17 +123,11 @@ struct DCPPowerModel <: AbstractDCPModel @pm_fields end
 abstract type AbstractDCMPPModel <: AbstractDCPModel end
 struct DCMPPowerModel <: AbstractDCMPPModel @pm_fields end
 
-abstract type AbstractDCPLLModel <: AbstractDCPModel end
-struct DCPLLPowerModel <: AbstractDCPLLModel @pm_fields end
-
 abstract type AbstractNFAModel <: AbstractDCPModel end
 struct NFAPowerModel <: AbstractNFAModel @pm_fields end
 
 abstract type AbstractLPACModel <: AbstractPowerModel end
 struct LPACCPowerModel <: AbstractLPACModel @pm_fields end
-
-abstract type PM_AbstractDCPModel <: AbstractDCPowerModel end
-struct PM_DCPPowerModel <: PM_AbstractDCPModel @pm_fields end
 
 AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel}
 AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPowerModel}
@@ -135,47 +138,47 @@ struct Settings
     optimizer::MOI.OptimizerWithAttributes
     modelmode::JuMP.ModelMode
     powermodel::Type
+    isolated_bus_gens::Bool
+    set_string_names_on_creation::Bool
 
     function Settings(
         optimizer::MOI.OptimizerWithAttributes;
         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-        powermodel::Type=OPF.DCPPowerModel
+        powermodel::Type=OPF.DCPPowerModel,
+        isolated_bus_gens::Bool=true,
+        set_string_names_on_creation::Bool=false
         )
-        new(optimizer, modelmode, powermodel)
+        new(optimizer, modelmode, powermodel, isolated_bus_gens, set_string_names_on_creation)
     end
 
 end
 
-""
-function jump_model(modelmode::JuMP.ModelMode, optimizer; string_names = false)
-
-    if modelmode == JuMP.AUTOMATIC
-        jump_model = Model(optimizer; add_bridges = false)
-    elseif modelmode == JuMP.DIRECT
+"Constructor for an AbstractPowerModel modeling object"
+function abstract_model(system::SystemModel, settings::Settings)
+    
+    if settings.modelmode == JuMP.AUTOMATIC
+        jump_model = Model(settings.optimizer; add_bridges = false)
+    elseif settings.modelmode == JuMP.DIRECT
         @error("Mode not supported")
-        jump_model = direct_model(optimizer)
+        jump_model = direct_model(settings.optimizer)
     else
         @warn("Manual Mode not supported")
     end
 
-    if string_names == false
-    JuMP.set_string_names_on_creation(jump_model, false)
-    end
-
+    JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
     JuMP.set_silent(jump_model)
+    topology = Topology(system)
+    powermodel = pm(jump_model, topology, settings.powermodel)
+    initialize_pm_containers!(powermodel, system)
 
-    return jump_model
-    
+    return powermodel
+
 end
 
-
-"Constructor for an AbstractPowerModel modeling object"
-function abstract_model(method::Type{M}, topology::Topology, model::JuMP.Model) where {M<:AbstractPowerModel}
-
+function pm(model::JuMP.Model, topology::Topology, ::Type{M}) where {M<:AbstractPowerModel}
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()
     return M(model, topology, var, con)
-
 end
 
 ""
@@ -187,18 +190,23 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
     else
         add_var_container!(pm.var, :pg, field(system, :generators, :keys))
         add_var_container!(pm.var, :va, field(system, :buses, :keys))
+        add_var_container!(pm.var, :z_branch, field(system, :branches, :keys))
         add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
         add_var_container!(pm.var, :z_shunt, field(system, :shunts, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
 
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
-        add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
-        add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
-        add_con_container!(pm.con, :voltage_angle_diff_upper, keys(field(system, :buspairs)))
-        add_con_container!(pm.con, :voltage_angle_diff_lower, keys(field(system, :buspairs)))
-        add_con_container!(pm.con, :model_voltage, keys(field(system, :buspairs)))
-        add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
-        add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_lower_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_upper_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_lower_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_upper_p, field(system, :branches, :keys))
+
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to_lower, field(system, :branches, :keys))
 
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
         add_var_container!(pm.var, :se, field(system, :storages, :keys))
@@ -229,11 +237,16 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :qg, field(system, :generators, :keys))
         add_var_container!(pm.var, :va, field(system, :buses, :keys))
         add_var_container!(pm.var, :phi, field(system, :buses, :keys))
-        add_var_container!(pm.var, :cs, field(pm.topology, :buspairs))
+        add_var_container!(pm.var, :z_branch, field(system, :branches, :keys))
+        add_var_container!(pm.var, :phi_fr, field(system, :branches, :keys))
+        add_var_container!(pm.var, :phi_to, field(system, :branches, :keys))
+        add_var_container!(pm.var, :td, field(system, :branches, :keys))
+        add_var_container!(pm.var, :cs, field(system, :branches, :keys))
         add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
         add_var_container!(pm.var, :z_shunt, field(system, :shunts, :keys))
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
+
 
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
@@ -241,9 +254,16 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_from_q, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_q, field(system, :branches, :keys))
-        add_con_container!(pm.con, :voltage_angle_diff_upper, keys(field(system, :buspairs)))
-        add_con_container!(pm.con, :voltage_angle_diff_lower, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+
         add_con_container!(pm.con, :model_voltage, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :model_voltage_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :model_voltage_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :relaxation_cos_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :relaxation_cos_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :relaxation_cos, field(system, :branches, :keys))
+
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
@@ -268,19 +288,16 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
 end
 
 ""
-function empty_model!(pm::AbstractDCPowerModel)
-    JuMP.empty!(pm.model)
-    MOIU.reset_optimizer(pm.model)
-    return
-end
-
-""
-function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Settings, s)
+function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
     if iszero(s%10) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
     elseif iszero(s%30) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
     else
         MOIU.reset_optimizer(pm.model)
     end
@@ -295,13 +312,24 @@ function reset_model!(pm::AbstractPowerModel, states::SystemStates, settings::Se
 end
 
 ""
+function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
+
+    fill!(getfield(states, :plc), 0)
+    fill!(getfield(states, :qlc), 0)
+    fill!(getfield(states, :se), 0)
+    fill!(getfield(states, :loads), 1)
+    fill!(getfield(states, :shunts), 1)
+    return
+
+end
+
+""
 function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
-        simplify!(pm, system, states, t, no_isolated=true)
+        simplify!(pm, system, states, t)
+        update_arcs!(pm, system, states.branches, t)
     end
-
-    update_arcs!(pm, system, states.branches, t)
     update_all_idxs!(pm, system, states, t)
     return
 
@@ -310,7 +338,7 @@ end
 ""
 function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    simplify!(pm, system, states, t, no_isolated=false)
+    simplify!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
     update_all_idxs!(pm, system, states, t)
     

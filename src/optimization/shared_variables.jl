@@ -1,5 +1,4 @@
 # Shared Formulation Definitions
-
 ""
 function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel; kwargs...)
     var_bus_voltage_angle(pm, system; kwargs...)
@@ -39,14 +38,12 @@ end
 function var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true, force_pmin::Bool=false)
 
     qg = var(pm, :qg)[nw] = @variable(pm.model, qg[assetgrouplist(topology(pm, :generators_idxs))])
-
     if bounded
         for l in assetgrouplist(topology(pm, :generators_idxs))
             JuMP.set_upper_bound(qg[l], field(system, :generators, :qmax)[l])
             JuMP.set_lower_bound(qg[l], field(system, :generators, :qmin)[l])
         end
     end
-
 end
 
 "Defines DC or AC power flow variables p to represent the active power flow for each branch"
@@ -60,14 +57,12 @@ function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
     p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
-
     if bounded
         for (l,i,j) in arcs
             JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
             JuMP.set_upper_bound(p[(l,i,j)], field(system, :branches, :rate_a)[l])
         end
     end
-
 end
 
 ""

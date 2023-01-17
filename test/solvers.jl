@@ -32,18 +32,18 @@ highs_optimizer_1 = JuMP.optimizer_with_attributes(
 
 juniper_optimizer_1 = optimizer_with_attributes(
     Juniper.Optimizer, "nl_solver"=>
-    JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-4, "print_level"=>0), 
+    JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0), 
     "log_levels"=>[], "processors"=>1
 )
 
 juniper_optimizer_2 = optimizer_with_attributes(
     Juniper.Optimizer, "nl_solver"=> ipopt_optimizer_3, 
-    "atol"=>1e-4, "log_levels"=>[], "processors"=>1
+    "atol"=>1e-6, "log_levels"=>[], "processors"=>1
 )
 
 #sdp_solver = JuMP.optimizer_with_attributes(SCS.Optimizer, "verbose"=>false)
 gurobi_optimizer_1 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>0, "OutputFlag"=>0, "LogToConsole"=>0)
-
+gurobi_optimizer_2 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>0, "OutputFlag"=>0, "LogToConsole"=>0, "NonConvex"=>2)
 # GLPK_optimizer =
 #     JuMP.optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
 # scs_solver = JuMP.optimizer_with_attributes(

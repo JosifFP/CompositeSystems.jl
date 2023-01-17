@@ -14,6 +14,8 @@
 
     const MOI = MathOptInterface
     const MOIU = MathOptInterface.Utilities
+    const _IM = InfrastructureModels
+    const _PM = PowerModels
 
     export
 
@@ -26,7 +28,7 @@
 
         #functions
         solve_opf, abstract_model, build_method!, update_method!, build_result!, field,
-        var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, jump_model,
+        var, con, topology, update_topology!, reset_model!, initialize_pm_containers!,
 
         #optimizationcontainers
         Topology,

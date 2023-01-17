@@ -34,8 +34,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    model = jump_model(settings.modelmode, settings.optimizer)
-    pm = abstract_model(settings.powermodel, Topology(system), model)
+    pm = abstract_model(system, settings)
     systemstates = SystemStates(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
@@ -50,12 +49,13 @@ function assess(
         end
 
         for t in 2:N
+            #println("t=$(t)")
             update!(pm, system, systemstates, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        reset_model!(pm, systemstates, settings, s)
+        reset_model!(pm, system, systemstates, settings, s)
         
     end
 
@@ -98,7 +98,6 @@ end
 ""
 function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; results::Bool=false)
 
-    initialize_pm_containers!(pm, system; timeseries=false)
     build_method!(pm, system, 1)
     JuMP.optimize!(pm.model)
     results == true && build_result!(pm, system, states, 1)

@@ -1,27 +1,3 @@
-"maps component types to status parameters"
-const pm_component_status = Dict(
-    "bus" => "bus_type",
-    "load" => "status",
-    "shunt" => "status",
-    "gen" => "gen_status",
-    "storage" => "status",
-    "switch" => "status",
-    "branch" => "br_status",
-    "dcline" => "br_status",
-)
-
-"maps component types to inactive status values"
-const pm_component_status_inactive = Dict(
-    "bus" => 4,
-    "load" => 0,
-    "shunt" => 0,
-    "gen" => 0,
-    "storage" => 0,
-    "switch" => 0,
-    "branch" => 0,
-    "dcline" => 0,
-)
-
 topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
 topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]
 topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol) = getfield(getfield(getfield(pm, :topology), field), subfield)
@@ -35,10 +11,6 @@ var(pm::AbstractPowerModel, field::Symbol, ::Colon) = getindex(getindex(getfield
 con(pm::AbstractPowerModel) = getfield(pm, :con)
 con(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :con), field)
 con(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :con), field), nw)
-
-#sol(pm::AbstractPowerModel) = getfield(pm, :sol)
-#sol(pm::AbstractPowerModel, field::Symbol) = getindex(getfield(pm, :sol), field)
-#sol(pm::AbstractPowerModel, field::Symbol, nw::Int) = getindex(getindex(getfield(pm, :sol), field), :, nw)
 
 BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
 BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
@@ -105,15 +77,6 @@ function add_sol_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::V
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
-
-    value = _container_spec(JuMP.VariableRef, keys)
-    var_container = container_spec(value, timesteps)
-    _assign_container!(container, var_key, var_container)
-    return
-end
-
-""
 function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
@@ -135,6 +98,25 @@ end
 function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
+    con_container = container_spec(value, timesteps)
+    _assign_container!(container, con_key, con_container)
+    return
+end
+
+""
+function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(JuMP.VariableRef, keys)
+    var_container = container_spec(value, timesteps)
+    _assign_container!(container, var_key, var_container)
+    return
+end
+
+
+""
+function add_var_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Base.KeySet{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+
+    value = _container_spec(JuMP.VariableRef, keys)
     con_container = container_spec(value, timesteps)
     _assign_container!(container, con_key, con_container)
     return
@@ -191,7 +173,7 @@ function calc_connected_components(topology::Topology, branches::Branches)
 
     for i in active_bus_ids
         if !(i in touched)
-            PowerModels._cc_dfs(i, neighbors, component_lookup, touched)
+            _PM._cc_dfs(i, neighbors, component_lookup, touched)
         end
     end
 
@@ -219,10 +201,16 @@ end
 function Base.getproperty(e::Settings, s::Symbol) 
     if s === :optimizer 
         getfield(e, :optimizer)::MOI.OptimizerWithAttributes
-    elseif s===:modelmode 
+    elseif s === :modelmode 
         getfield(e, :modelmode)::JuMP.ModelMode
     elseif s === :powermodel
         getfield(e, :powermodel)::Type
+    elseif s === :isolated_bus_gens
+        getfield(e, :isolated_bus_gens)::Bool
+    elseif s === :set_string_names_on_creation
+        getfield(e, :set_string_names_on_creation)::Bool
+    else
+        @error("Configuration $(s) not supported")
     end
 end
 
@@ -293,12 +281,15 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
 
     update_buspair_parameters!(topology(pm, :buspairs), field(system, :branches), key_branches)
 
+    vad_min,vad_max = calc_theta_delta_bounds(pm, field(system, :branches))
+    topology(pm, :delta_bounds)[1] = vad_min
+    topology(pm, :delta_bounds)[2] = vad_max
     return
 
 end
 
 ""
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; no_isolated::Bool=true)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
@@ -324,7 +315,6 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                 elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
-                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
                 end
             end
         end
@@ -345,20 +335,20 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         end
     end
 
-    ccs = OPF.calc_connected_components(pm.topology, field(system, :branches))
+    ccs = calc_connected_components(pm.topology, field(system, :branches))
 
-    if length(ccs) > 1 && no_isolated == true
+    if length(ccs) > 1 && topology(pm, :isolated_bus_gens)[1] == true
         ccs_order = sort(collect(ccs); by=length)
         largest_cc = ccs_order[end]
 
         length(largest_cc)
         length(system.buses)
     
-        if system.ref_buses[1] in largest_cc && length(field(system, :buses)) - length(largest_cc) < 3
+        if system.ref_buses[1] in largest_cc && (length(field(system, :buses)) - length(largest_cc)) < 3
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
                     states.buses[i,t] = 4
-                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")            
+                    #@info("isolated_bus_gens section: deactivating bus $(i) due to dangling isolated network section")            
                 end
             end
         end
@@ -514,7 +504,7 @@ end
 function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)  
 
     _update_topology!(pm, system, states, t)
-    _update_method!(pm, system, states, t, force_pmin=force_pmin)
+    _update_method!(pm, system, states, t)
     JuMP.optimize!(pm.model)
     build_result!(pm, system, states, t)
     return
@@ -550,5 +540,60 @@ function update_buspair_parameters!(buspairs::Dict{Tuple{Int, Int}, Union{Missin
     end
     
     return dict
+
+end
+
+""
+function calc_theta_delta_bounds(pm::AbstractPowerModel, branches::Branches)
+
+    bus_count = length(assetgrouplist(topology(pm, :buses_idxs)))
+    branches_idxs = assetgrouplist(topology(pm, :branches_idxs))
+    angle_min = Real[]
+    angle_max = Real[]
+    angle_mins = [field(branches, :angmin)[l] for l in branches_idxs]
+    angle_maxs = [field(branches, :angmax)[l] for l in branches_idxs]
+    sort!(angle_mins)
+    sort!(angle_maxs, rev=true)
+    
+    if length(angle_mins) > 1
+        # note that, this can occur when dclines are present
+        angle_count = min(bus_count-1, length(branches_idxs))
+        angle_min_val = sum(angle_mins[1:angle_count])
+        angle_max_val = sum(angle_maxs[1:angle_count])
+    else
+        angle_min_val = angle_mins[1]
+        angle_max_val = angle_maxs[1]
+    end
+    push!(angle_min, angle_min_val)
+    push!(angle_max, angle_max_val)
+
+    return angle_min[1], angle_max[1]
+
+end
+
+""
+function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{Int}, branches::Branches)
+
+    bus_count = length(key_buses)
+    angle_min = Real[]
+    angle_max = Real[]
+    angle_mins = [field(branches, :angmin)[l] for l in branches_idxs]
+    angle_maxs = [field(branches, :angmax)[l] for l in branches_idxs]
+    sort!(angle_mins)
+    sort!(angle_maxs, rev=true)
+    
+    if length(angle_mins) > 1
+        # note that, this can occur when dclines are present
+        angle_count = min(bus_count-1, length(branches_idxs))
+        angle_min_val = sum(angle_mins[1:angle_count])
+        angle_max_val = sum(angle_maxs[1:angle_count])
+    else
+        angle_min_val = angle_mins[1]
+        angle_max_val = angle_maxs[1]
+    end
+    push!(angle_min, angle_min_val)
+    push!(angle_max, angle_max_val)
+
+    return angle_min[1], angle_max[1]
 
 end
