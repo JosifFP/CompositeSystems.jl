@@ -44,18 +44,20 @@ function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemMode
     z_demand = var(pm, :z_demand, nw)[i]
     if field(states, :buses)[i,t] == 4
         if isempty(topology(pm, :bus_loads)[i])
-            JuMP.fix(z_demand, 0, force=true)
+            #JuMP.fix(z_demand, 0, force=true)
+            JuMP.set_upper_bound(z_demand, 0)
+            JuMP.set_lower_bound(z_demand, 0)
         else
-            if JuMP.is_fixed(z_demand)
-                JuMP.unfix(z_demand[i])
-            end
+            #if JuMP.is_fixed(z_demand)
+            #    JuMP.unfix(z_demand[i])
+            #end
             JuMP.set_upper_bound(z_demand, 1)
             JuMP.set_lower_bound(z_demand, 0)
         end
     else
-        if JuMP.is_fixed(z_demand)
-            JuMP.unfix(z_demand[i])
-        end
+        #if JuMP.is_fixed(z_demand)
+        #    JuMP.unfix(z_demand[i])
+        #end
         JuMP.set_upper_bound(z_demand, 1)
         JuMP.set_lower_bound(z_demand, 0)
     end

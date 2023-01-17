@@ -171,9 +171,11 @@ end
 ""
 function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
-    for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, t)
-        update_var_gen_power_imaginary(pm, system, states, i, t)
+    if sum(view(field(states, :generators), :, t)) < length(system.generators) || sum(view(field(states, :generators), :, t-1)) < length(system.generators)
+        for i in field(system, :generators, :keys)
+            update_var_gen_power_real(pm, system, states, i, t)
+            update_var_gen_power_imaginary(pm, system, states, i, t)
+        end
     end
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
@@ -196,7 +198,6 @@ function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::S
     end
 
     #objective_min_fuel_and_flow_cost(pm, system)
-    JuMP.optimize!(pm.model)
     return pm
 end
 
@@ -229,8 +230,6 @@ function update_method!(pm::AbstractLPACModel, system::SystemModel, states::Syst
     for i in field(system, :storages, :keys)
         update_con_storage(pm, system, states, i, t)
     end
-
-    JuMP.optimize!(pm.model)
     return pm
 
 end

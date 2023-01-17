@@ -277,13 +277,9 @@ end
 function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
-    z_shunt   = var(pm, :z_shunt, nw)
-    #bus_loads = topology(pm, :bus_loads)[i]
-    bus_shunts = topology(pm, :bus_shunts)[i]
-    bus_loads = [k for k in field(system, :loads, :keys) if field(system, :loads, :buses)[k] == i]
-
+    bus_loads = topology(pm, :bus_loads)[i]
+    #bus_loads = [k for k in field(system, :loads, :keys) if field(system, :loads, :buses)[k] == i]
     bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
-    bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in bus_shunts)
 
     JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[i], sum(pd for pd in bus_pd))
 

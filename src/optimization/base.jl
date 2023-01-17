@@ -294,7 +294,7 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)
-    elseif iszero(s%30) && settings.optimizer == Gurobi
+    elseif iszero(s%50) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)
@@ -314,13 +314,24 @@ end
 ""
 function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
+    if iszero(s%10) && settings.optimizer == Ipopt
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    elseif iszero(s%50) && settings.optimizer == Gurobi
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
+
     fill!(getfield(states, :plc), 0)
     fill!(getfield(states, :qlc), 0)
     fill!(getfield(states, :se), 0)
     fill!(getfield(states, :loads), 1)
     fill!(getfield(states, :shunts), 1)
     return
-
 end
 
 ""
