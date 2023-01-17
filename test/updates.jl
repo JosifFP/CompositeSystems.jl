@@ -15,8 +15,11 @@ rawfile = "test/data/RBTS/Base/RBTS_AC.m"
 system = BaseModule.SystemModel(rawfile)
 settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
 states = CompositeAdequacy.SystemStates(system, available=true)
-pm = OPF.solve_opf(system, settings)
 
+@btime length(field(states, :generators))
+@btime length(view(field(states, :generators), :, 2-1))
+
+pm = OPF.solve_opf(system, settings)
 pm = OPF.abstract_model(system, settings)
 OPF.build_opf!(pm, system)
 

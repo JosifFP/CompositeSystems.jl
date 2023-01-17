@@ -110,7 +110,7 @@ function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStat
     
     update_topology!(pm, system, states, t)
     update_method!(pm, system, states, t)
-    JuMP.optimize!(pm.model)
+    optimize_method!(pm, system, states, t)
     build_result!(pm, system, states, t)
     return
 

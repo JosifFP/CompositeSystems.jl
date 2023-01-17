@@ -27,7 +27,6 @@ settings = CompositeSystems.Settings(
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
     powermodel = OPF.DCMPPowerModel
-    #powermodel = OPF.DCPLLPowerModel
     #powermodel = OPF.LPACCPowerModel
 )
 

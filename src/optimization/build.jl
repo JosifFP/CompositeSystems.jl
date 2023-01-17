@@ -171,7 +171,7 @@ end
 ""
 function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int)
     
-    if sum(view(field(states, :generators), :, t)) < length(system.generators) || sum(view(field(states, :generators), :, t-1)) < length(system.generators)
+    if sum(view(field(states, :generators), :, t)) < length(system.generators) || sum(view(field(states, :generators), :, t-1)) < length(field(states, :generators))
         for i in field(system, :generators, :keys)
             update_var_gen_power_real(pm, system, states, i, t)
             update_var_gen_power_imaginary(pm, system, states, i, t)
@@ -187,14 +187,16 @@ function update_method!(pm::AbstractDCPowerModel, system::SystemModel, states::S
         end
     end
 
+    if all(view(states.storages,:,t)) ≠ true || all(view(states.storages,:,t-1)) ≠ true
+        for i in field(system, :storages, :keys)
+            update_con_storage(pm, system, states, i, t)
+        end
+    end
+
     for i in field(system, :buses, :keys)
         update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
-    end
-
-    for i in field(system, :storages, :keys)
-        update_con_storage(pm, system, states, i, t)
     end
 
     #objective_min_fuel_and_flow_cost(pm, system)
@@ -204,9 +206,11 @@ end
 ""
 function update_method!(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, t::Int)
     
-    for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, t)
-        update_var_gen_power_imaginary(pm, system, states, i, t)
+    if sum(view(field(states, :generators), :, t)) < length(system.generators) || sum(view(field(states, :generators), :, t-1)) < length(system.generators)
+        for i in field(system, :generators, :keys)
+            update_var_gen_power_real(pm, system, states, i, t)
+            update_var_gen_power_imaginary(pm, system, states, i, t)
+        end
     end
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
@@ -221,15 +225,18 @@ function update_method!(pm::AbstractLPACModel, system::SystemModel, states::Syst
         end
     end
 
+    if all(view(states.storages,:,t)) ≠ true || all(view(states.storages,:,t-1)) ≠ true
+        for i in field(system, :storages, :keys)
+            update_con_storage(pm, system, states, i, t)
+        end
+    end
+
     for i in field(system, :buses, :keys)
         update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
     end
 
-    for i in field(system, :storages, :keys)
-        update_con_storage(pm, system, states, i, t)
-    end
     return pm
 
 end
@@ -290,6 +297,14 @@ function _update_method!(pm::AbstractLPACModel, system::SystemModel, states::Sys
     JuMP.optimize!(pm.model)
     return pm
 
+end
+
+""
+function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    if all(view(states.branches,:,t)) ≠ true  || all(view(states.storages,:,t)) ≠ true || sum(view(field(states, :generators), :, t)) < length(system.generators)
+        JuMP.optimize!(pm.model)
+    end
+    return
 end
 
 "Classic OPF objective function without nonlinear equations"
@@ -354,7 +369,6 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
 
         plc = build_sol_values(var(pm, :z_demand, nw))
         se = build_sol_values(var(pm, :se, nw))
-        fill!(states.plc, 0)
     
         for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
@@ -395,8 +409,6 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
 
         plc = build_sol_values(var(pm, :z_demand, nw))
         se = build_sol_values(var(pm, :se, nw))
-        fill!(states.plc, 0)
-        fill!(states.qlc, 0)
 
         for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
