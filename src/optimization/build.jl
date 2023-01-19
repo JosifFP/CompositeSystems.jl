@@ -301,9 +301,11 @@ end
 
 ""
 function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if all(view(states.branches,:,t)) ≠ true  || all(view(states.storages,:,t)) ≠ true || sum(view(field(states, :generators), :, t)) < length(system.generators)
+    if all(view(states.branches,:,t)) ≠ true  || all(view(states.storages,:,t)) ≠ true || sum(view(field(states, :generators), :, t)) < length(system.generators) - 1
         JuMP.optimize!(pm.model)
         build_result!(pm, system, states, t)
+    else
+        fill!(states.plc, 0.0)
     end
     return
 end

@@ -22,16 +22,16 @@ Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_1,
+    gurobi_optimizer_2,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
     #powermodel = OPF.DCPPowerModel
-    powermodel = OPF.DCMPPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.DCMPPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=5000, seed=100, threaded=true)
+method = SequentialMCS(samples=2500, seed=100, threaded=true)
 #method = SequentialMCS(samples=10, seed=100, threaded=false)
 @time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
 
@@ -95,27 +95,3 @@ plot(1:8736, a)
 a = systemstates.generators[3,:]
 using Plots
 plot(1:8736, a)
-
-
-""
-function _select_largest_component!(data::Dict{String,<:Any})
-    ccs = calc_connected_components(data)
-
-    if length(ccs) > 1
-        Memento.info(_LOGGER, "found $(length(ccs)) components")
-
-        ccs_order = sort(collect(ccs); by=length)
-        largest_cc = ccs_order[end]
-
-        Memento.info(_LOGGER, "largest component has $(length(largest_cc)) buses")
-
-        for (i,bus) in data["bus"]
-            if bus["bus_type"] != 4 && !(bus["index"] in largest_cc)
-                bus["bus_type"] = 4
-                Memento.info(_LOGGER, "deactivating bus $(i) due to small connected component")
-            end
-        end
-
-        correct_reference_buses!(data)
-    end
-end

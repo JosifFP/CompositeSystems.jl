@@ -79,7 +79,6 @@ struct Topology
             bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, 
             arcs_from, arcs_to, arcs, busarcs, buspairs, delta_bounds, isolated_bus_gens)
     end
-
 end
 
 Base.:(==)(x::T, y::T) where {T <: Topology} =
@@ -338,6 +337,7 @@ end
 function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     if all(view(states.branches,:,t)) ≠ true || all(view(states.branches,:,t-1)) ≠ true
+        #topology(pm,  :isolated_bus_gens) .= Bool[false]
         simplify!(pm, system, states, t)
         update_arcs!(pm, system, states.branches, t)
     end

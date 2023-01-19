@@ -96,11 +96,10 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
 end
 
 ""
-function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; results::Bool=false)
+function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates)
 
     build_method!(pm, system, 1)
-    JuMP.optimize!(pm.model)
-    results == true && build_result!(pm, system, states, 1)
+    optimize_method!(pm, system, states, 1)
     return
 
 end
