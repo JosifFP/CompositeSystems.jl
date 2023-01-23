@@ -289,11 +289,11 @@ end
 ""
 function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
-    if iszero(s%50) && settings.optimizer == Ipopt
+    if iszero(s%25) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)
-    elseif iszero(s%100) && settings.optimizer == Gurobi
+    elseif iszero(s%50) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)

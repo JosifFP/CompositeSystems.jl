@@ -64,34 +64,26 @@ function assess(
 end
 
 ""
-function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}; transitions::Bool=true) where N
+function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
 
-    if transitions == false
-        #initialize_availability!(field(states, :buses), field(system, :buses), N)
-        initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
-        initialize_availability!(rng, field(states, :commonbranches), field(system, :commonbranches), N)
-        initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
-        initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
-    else
-        singlestates = NextTransition(system)
-        initialize_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, N)
-        initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
-        initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
-        initialize_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, N)
+    singlestates = NextTransition(system)
+    initialize_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, N)
+    initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
+    initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
+    initialize_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, N)
 
-        for t in 1:N
-            update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, t, N)
-            update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, t, N)
-            update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, t, N)
-            update_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, t, N)
-            view(field(states, :branches),:,t) .= singlestates.branches_available[:]
-            view(field(states, :commonbranches),:,t) .= singlestates.commonbranches_available[:]
-            view(field(states, :generators),:,t) .= singlestates.generators_available[:]
-            view(field(states, :storages),:,t) .= singlestates.storages_available[:]
-            apply_common_outages!(states, system, t)
-        end
-        initialize_availability!(field(states, :buses), field(system, :buses), N)
+    for t in 1:N
+        update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, t, N)
+        update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, t, N)
+        update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, t, N)
+        update_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, t, N)
+        view(field(states, :branches),:,t) .= singlestates.branches_available[:]
+        view(field(states, :commonbranches),:,t) .= singlestates.commonbranches_available[:]
+        view(field(states, :generators),:,t) .= singlestates.generators_available[:]
+        view(field(states, :storages),:,t) .= singlestates.storages_available[:]
+        apply_common_outages!(states, system, t)
     end
+    initialize_availability!(field(states, :buses), field(system, :buses), N)
     return
 end
 

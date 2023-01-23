@@ -18,7 +18,7 @@ include("solvers.jl")
 
 timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
 rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
 
 resultspecs = (Shortfall(), Shortfall())
 settings = CompositeSystems.Settings(
@@ -40,9 +40,7 @@ CompositeSystems.EENS.(shortfall, system.buses.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
 val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
-val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
-
-
+val.(CompositeSystems.EENS.(shortfall, system.buses.keys)
 
 settings = CompositeSystems.Settings(gurobi_optimizer_2, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
 
@@ -56,7 +54,31 @@ CompositeSystems.EENS.(shortfall)
 val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
+a=shortfall.eventperiod_period_mean*100
+sum(a)
+using Plots
+plot(1:8736, a)
 
+a=shortfall.shortfall_busperiod_std*100
+sum(a)
+using Plots
+a
+plot(1:8736, a[6,:])
+
+
+
+
+
+
+
+new{N,L,T,P,E}(nsamples, buses, timestamps,
+eventperiod_mean, eventperiod_std,
+eventperiod_bus_mean, eventperiod_bus_std,
+eventperiod_period_mean, eventperiod_period_std,
+eventperiod_busperiod_mean, eventperiod_busperiod_std,
+shortfall_mean, shortfall_std,
+shortfall_bus_std, shortfall_period_std,
+shortfall_busperiod_std)
 
 
 
