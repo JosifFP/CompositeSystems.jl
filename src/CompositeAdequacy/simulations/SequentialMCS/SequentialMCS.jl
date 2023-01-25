@@ -92,7 +92,6 @@ end
 
 ""
 function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates)
-    update_topology!(pm, system, states, 1)
     build_method!(pm, system, 1)
     return
 end

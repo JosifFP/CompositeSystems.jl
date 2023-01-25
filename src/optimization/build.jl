@@ -60,7 +60,7 @@ end
 ""
 function update_generators!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
     if !check_availability(field(system, :generators), field(states, :generators), t, t-1)
-        @inbounds for i in field(system, :generators, :keys)
+        @inbounds @views for i in field(system, :generators, :keys)
             update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
             update_var_gen_power_imaginary(pm, system, states, i, t)
         end
@@ -70,7 +70,7 @@ end
 ""
 function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     if !check_availability(field(states, :branches), t, t-1)
-        @inbounds for l in field(system, :branches, :keys)
+        @inbounds @views for l in field(system, :branches, :keys)
             update_var_branch_indicator(pm, system, states, l, t)
             update_con_ohms_yt(pm, system, states, l, t)
             update_con_thermal_limits(pm, system, states, l, t)
@@ -85,7 +85,7 @@ end
 ""
 function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     if !check_availability(field(states, :storages), t, t-1)
-        @inbounds for i in field(system, :storages, :keys)
+        @inbounds @views for i in field(system, :storages, :keys)
             update_con_storage(pm, system, states, i, t)
         end
     end
@@ -93,7 +93,7 @@ end
 
 ""
 function update_buses!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    @inbounds for i in field(system, :buses, :keys)
+    @inbounds @views for i in field(system, :buses, :keys)
         update_var_load_power_factor(pm, system, states, i, t)
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
