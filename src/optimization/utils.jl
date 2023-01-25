@@ -319,9 +319,9 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
-                #elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0
-                #    states.buses[i,t] = 4
-                #    changed = true
+                elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0
+                    states.buses[i,t] = 4
+                    changed = true
                 end
             end
         end
@@ -344,14 +344,14 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 
     ccs = calc_connected_components(pm.topology, field(system, :branches))
 
-    if length(ccs) > 1 && topology(pm, :isolated_bus_gens)[1] == true
+    if length(ccs) > 1 && topology(pm, :isolated_bus_gens)[1] == false
         ccs_order = sort(collect(ccs); by=length)
         largest_cc = ccs_order[end]
 
         length(largest_cc)
         length(system.buses)
     
-        if system.ref_buses[1] in largest_cc && (length(field(system, :buses)) - length(largest_cc)) < 2
+        if system.ref_buses[1] in largest_cc && (length(field(system, :buses)) - length(largest_cc)) < 1
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
                     states.buses[i,t] = 4

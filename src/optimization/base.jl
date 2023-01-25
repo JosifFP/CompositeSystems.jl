@@ -306,8 +306,6 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     fill!(getfield(states, :se), 0)
     fill!(getfield(states, :loads), 1)
     fill!(getfield(states, :shunts), 1)
-    update_arcs!(pm, system, states.branches, 1)
-    update_all_idxs!(pm, system, states, 1)
     return
 
 end

@@ -43,7 +43,7 @@ juniper_optimizer_2 = optimizer_with_attributes(
 
 #sdp_solver = JuMP.optimizer_with_attributes(SCS.Optimizer, "verbose"=>false)
 gurobi_optimizer_1 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>0, "OutputFlag"=>0, "LogToConsole"=>0, "NumericFocus"=>3)
-gurobi_optimizer_2 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>1, "OutputFlag"=>0, "LogToConsole"=>0, "NonConvex"=>2, "NumericFocus"=>3, "Threads"=>8)
+gurobi_optimizer_2 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>0, "OutputFlag"=>0, "LogToConsole"=>0, "NonConvex"=>2, "Threads"=>8)
 gurobi_optimizer_3 = JuMP.optimizer_with_attributes(Gurobi.Optimizer, "Presolve"=>1, "PreCrush"=>1, "OutputFlag"=>0, "LogToConsole"=>0, "NonConvex"=>2, "NumericFocus"=>3, "Threads"=>8)
 # GLPK_optimizer =
 #     JuMP.optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
