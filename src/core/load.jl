@@ -167,7 +167,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameter
                 data["qd"],
                 data["pf"],
                 data["cost"],
-                data["firm_load"],
                 data["status"]
             )
 
@@ -181,7 +180,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameter
                 data["qd"],
                 data["pf"],
                 data["cost"],
-                data["firm_load"],
                 data["status"]
             )
         end

@@ -392,7 +392,67 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
     return
 end
 
+""
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Float32}, asset::Generators, N::Int)
 
+    for i in asset.keys
+        if asset.status[i] ≠ false
+
+            sequence = view(availability, i, :)
+            fill!(sequence, 1)
+            λ_updn = asset.λ_updn[i]/N
+            μ_updn = asset.μ_updn[i]/N
+        
+            if asset.state_model[i] == 3
+                λ_upde = asset.λ_upde[i]/N
+                μ_upde = asset.μ_upde[i]/N
+                pde = asset.pde[i]
+                if λ_updn ≠ 0.0 && λ_upde ≠ 0.0
+                    cycles!(sequence, pde, rng, λ_updn, μ_updn, λ_upde, μ_upde, N)
+                end
+            else
+                if λ_updn ≠ 0.0
+                    cycles!(sequence, rng, λ_updn, μ_updn, N)
+                end
+            end
+        end
+    end
+    return
+end
+
+""
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool}, asset::AbstractAssets, N::Int)
+
+    for i in asset.keys
+        if asset.status[i] ≠ false
+            sequence = availability[i,:]
+            fill!(sequence, 1)
+            λ_updn = asset.λ_updn[i]/N
+            μ_updn = asset.μ_updn[i]/N
+            if λ_updn ≠ 0.0
+                cycles!(sequence, rng, λ_updn, μ_updn, N)
+            end
+        else
+            fill!(sequence, 0)
+        end
+    end
+    return
+end
+
+""
+function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool}, asset::CommonBranches, N::Int)
+
+    for i in asset.keys
+        sequence = view(availability, i, :)
+        fill!(sequence, 1)
+        λ_updn = asset.λ_updn[i]/N
+        μ_updn = asset.μ_updn[i]/N
+        if λ_updn ≠ 0.0
+            cycles!(sequence, rng, λ_updn, μ_updn, N)
+        end
+    end
+    return
+end
 
 
 

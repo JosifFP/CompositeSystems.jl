@@ -103,7 +103,6 @@ const load_fields = [
     ("qd", Float32),
     ("pf", Float32),
     ("cost", Float32),
-    ("firm_load", Float32),
     ("status", Bool)
 ]
 
@@ -139,7 +138,6 @@ const compositesystems_fields = [
     ("μ_common", Float64),
     ("λ_upde", Float64),
     ("μ_upde", Float64),
-    ("firm_load", Float32),
     ("pde", Float32),
     ("cost", Float32)
 ]
@@ -178,7 +176,6 @@ const r_branch = [
 const r_load = [
     ("bus_i", Int),
     ("cost", Float32),
-    ("firm_load", Float32),
     ("index", Int)
 ]
 
@@ -356,7 +353,6 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
         i = string(k)
         if haskey(reliability_data["load"], i) && v["load_bus"] == reliability_data["load"][i]["bus_i"]
             get!(v, "cost", reliability_data["load"][i]["cost"])
-            get!(v, "firm_load", reliability_data["load"][i]["firm_load"])
         end
     end
 

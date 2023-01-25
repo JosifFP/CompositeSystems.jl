@@ -301,7 +301,7 @@ function assetgrouplist(idxss::Vector{UnitRange{Int}})
 end
 
 ""
-function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
+function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)::Vector{UnitRange{Int}}
 
     if isempty(collectionidxs)
         idxlist = fill(1:0, n_collections)
@@ -333,6 +333,43 @@ function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
 
     return idxlist
 
+end
+
+"It checks if all elements in the matrix are true for both the current time step and the previous time step, 
+and returns false if this condition is not met."
+function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::Int)::Bool
+    @views t_now_view = asset_states[:, t_now]
+    if t_previous ≠ 0
+        @views t_previous_view = asset_states[:, t_previous]
+        return !any(t_now_view .== 0) && !any(t_previous_view .== 0)
+    else
+        return !any(t_now_view .== 0)
+    end
+end
+# function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::Int)
+#     if t_previous ≠ 0
+#         return !any(view(asset_states, :, t_now) .== 0) && !any(view(asset_states, :, t_previous) .== 0)
+#     else
+#         return !any(view(asset_states, :, t_now) .== 0)
+#     end
+# end
+
+"It checks if the sum of the elements in the matrix is less than the number of generators for both the current 
+time step and the previous time step, and returns false if this condition is not met."
+function check_availability(generators::Generators, asset_states::Matrix{Float32}, t_now::Int, t_previous::Int)::Bool
+    if t_previous ≠ 0
+        if sum(@view(asset_states[:,t_now])) < length(generators) && sum(@view(asset_states[:,t_previous])) < length(generators)
+            return false
+        else
+            return true
+        end
+    else
+        if sum(@view(asset_states[:,t_now])) < length(generators)
+            return false
+        else
+            return true
+        end
+    end
 end
 
 "Extract a field from a composite value by name or position."

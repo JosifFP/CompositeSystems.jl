@@ -114,7 +114,7 @@ end
 #***************************************************** STORAGE VAR UPDATES *************************************************************************
 ""
 function update_con_storage(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
-    se_1 = field(states, :se)[i,t-1]
+    se_1 = @view states.se[i,t-1]
     JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], se_1)
 end
 

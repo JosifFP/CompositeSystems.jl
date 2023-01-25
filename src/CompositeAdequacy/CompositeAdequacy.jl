@@ -29,6 +29,8 @@
 
         # Result specifications
         Shortfall, ShortfallSamples,
+        GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, 
+        BranchAvailability, ShuntAvailability, BusAvailability,
 
         #utils
         makeidxlist, 

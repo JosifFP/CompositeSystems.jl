@@ -258,7 +258,7 @@ function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int
 
 end
 
-""
+"This function updates the arcs of the power system model."
 function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states::Matrix{Bool}, t::Int)
     
     key_branches = assetgrouplist(topology(pm, :branches_idxs))
@@ -281,14 +281,21 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
 
     update_buspair_parameters!(topology(pm, :buspairs), field(system, :branches), key_branches)
 
-    vad_min,vad_max = calc_theta_delta_bounds(pm, field(system, :branches))
-    topology(pm, :delta_bounds)[1] = vad_min
-    topology(pm, :delta_bounds)[2] = vad_max
+    #vad_min,vad_max = calc_theta_delta_bounds(pm, field(system, :branches))
+    #topology(pm, :delta_bounds)[1] = vad_min
+    #topology(pm, :delta_bounds)[2] = vad_max
     return
 
 end
 
-""
+"""
+The simplify! function is used to simplify the power system model by removing inactive elements from the model. 
+This is done by checking the availability of generators, loads, shunts, and branches and removing any that are not active. 
+The function starts by updating the indices of the active elements, and then iteratively checks if any buses can be deactivated 
+due to having only one active incident edge and no generation, loads, storages, or shunts. 
+If any buses are deactivated, the function also deactivates any branches that are connected to those buses. 
+The function also checks for connected components of the system and deactivates any isolated sections of the network
+"""
 function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     update_all_idxs!(pm, system, states, t)

@@ -1,6 +1,6 @@
 @reexport module BaseModule
     import XLSX
-    import Dates: Dates, @dateformat_str, AbstractDateTime, DateTime, Time, Period, Minute, Hour, Day, Year, Date, hour, now, format
+    import Dates: Dates, @dateformat_str, AbstractDateTime, DateTime, Time, Period, Hour, Day, Year, Date, hour, now, format
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
     import LinearAlgebra
@@ -17,15 +17,15 @@
         AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, GeneratorStorages, CommonBranches,
 
         # Units
-        Period, Minute, Hour, Day, Year,
-        PowerUnit, kW, MW, GW, TW,
-        EnergyUnit, kWh, MWh, GWh, TWh,
+        Period, Hour, Day, Year,
+        PowerUnit, kW, MW, GW,
+        EnergyUnit, kWh, MWh, GWh,
 
         unitsymbol, conversionfactor, powertoenergy, energytopower,
         # Main data structure
         SystemModel, SystemStates, NextTransition, static_parameters,
         #utils
-        assetgrouplist, makeidxlist, field, extract_timeseriesload, build_network, calc_buspair_parameters
+        assetgrouplist, makeidxlist, field, extract_timeseriesload, build_network, calc_buspair_parameters, check_availability
     #
 
     # Create our module level logger (this will get precompiled)

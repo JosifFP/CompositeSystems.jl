@@ -9,7 +9,7 @@ struct SystemModel{N,L,T<:Period}
     branches::Branches
     commonbranches::CommonBranches
     shunts::Shunts
-
+    
     ref_buses::Vector{Int}
     arcs_from::Vector{Tuple{Int, Int, Int}}
     arcs_to::Vector{Tuple{Int, Int, Int}}

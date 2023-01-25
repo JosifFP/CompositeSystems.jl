@@ -216,12 +216,11 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     qd::Vector{Float32} # Reactive power in per unit
     pf::Vector{Float32} # Power factor
     cost::Vector{Float32}
-    firm_load::Vector{Float32} #Percentage of the total load designated as firm load. The difference corresponds to curtailable load that is interrupted first with no cost.
     status::Vector{Bool}
 
     function Loads{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float32}, qd::Vector{Float32}, 
-        pf::Vector{Float32}, cost::Vector{Float32}, firm_load::Vector{Float32}, status::Vector{Bool}
+        pf::Vector{Float32}, cost::Vector{Float32}, status::Vector{Bool}
         ) where {N,L,T}
 
         nloads = length(keys)
@@ -232,10 +231,9 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert all(pd .>= 0)
         @assert length(pf) == (nloads)
         @assert length(cost) == (nloads)
-        @assert length(firm_load) == (nloads)
         @assert length(status) == (nloads)
 
-        new{N,L,T}(Int.(keys), Int.(buses), pd, Float32.(qd), Float32.(pf), Float32.(cost), Float32.(firm_load), Bool.(status))
+        new{N,L,T}(Int.(keys), Int.(buses), pd, Float32.(qd), Float32.(pf), Float32.(cost), Bool.(status))
     end
 
 end
@@ -247,7 +245,6 @@ Base.:(==)(x::T, y::T) where {T <: Loads} =
     x.qd == y.qd &&
     x.pf == y.pf &&
     x.cost == y.cost &&
-    x.firm_load == y.firm_load &&
     x.status == y.status
 #
 

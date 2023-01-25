@@ -7,7 +7,7 @@
     import Ipopt, Juniper, HiGHS, Gurobi
     import InfrastructureModels: InfrastructureModels, @def
     import PowerModels
-    import JuMP.Containers: DenseAxisArray
+    import JuMP.Containers: DenseAxisArray, SparseAxisArray
     import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
         optimize!, Model, direct_model, optimizer_with_attributes, ModelMode,
         termination_status, AbstractModel, OPTIMAL, dual, LOCALLY_SOLVED

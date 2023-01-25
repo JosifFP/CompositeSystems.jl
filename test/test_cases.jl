@@ -8,51 +8,102 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
 #timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
 #Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS2.m"
+#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
+#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
-resultspecs = (Shortfall(), Shortfall())
+resultspecs = (Shortfall(), GeneratorAvailability())
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_2,
+    gurobi_optimizer_3,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    #powermodel = OPF.DCPPowerModel
+    powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
-    powermodel = OPF.LPACCPowerModel
+    #powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=2500, seed=100, threaded=true)
-#method = SequentialMCS(samples=10, seed=100, threaded=false)
-@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
-
-CompositeSystems.LOLE.(shortfall, system.buses.keys)
-CompositeSystems.EENS.(shortfall, system.buses.keys)
-CompositeSystems.LOLE.(shortfall)
-CompositeSystems.EENS.(shortfall)
-val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
-val.(CompositeSystems.EENS.(shortfall, system.buses.keys)
-
-settings = CompositeSystems.Settings(gurobi_optimizer_2, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
-
-system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 method = SequentialMCS(samples=7500, seed=100, threaded=true)
-@time shortfall,report = CompositeSystems.assess(system, method, settings, resultspecs...)
+@time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+
 CompositeSystems.LOLE.(shortfall, system.buses.keys)
 CompositeSystems.EENS.(shortfall, system.buses.keys)
 CompositeSystems.LOLE.(shortfall)
 CompositeSystems.EENS.(shortfall)
 val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
+
+
+
+
+
+key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
+@btime buses_idxs = makeidxlist(key_buses, length(system.buses))
+
+
+
+using IterTools
+
+function makeidxlist_v2(keys::Vector{Int}, N::Int)
+    grouped = IterTools.groupby(keys)
+    idxlist = Vector{Vector{Int}}(undef, N)
+    for (val, group) in grouped
+        idxlist[val] = vec(group)
+    end
+    return idxlist
+end
+
+
+key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
+@btime buses_idxs = makeidxlist_v2(key_buses, length(system.buses))
+
+
+
+singlestates = NextTransition(system)
+rng = CompositeAdequacy.Philox4x((0, 0), 10)
+CompositeAdequacy.initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, 8736)
+systemstates = SystemStates(system)
+CompositeAdequacy.initialize_states!(rng, systemstates, system)
+
+t=2
+BaseModule.check_availability(field(systemstates, :branches), t, t-1)
+
+
+field(systemstates, :branches)[1,2] = 0
+
+
+field(systemstates, :branches)
+
+
+
+singlestates.generators_available
+
+
+timestamprow = permutedims(system.timestamps)
+busescol = system.buses.keys
+println("SpatioTemporal LOLPs:")
+display(vcat(
+    hcat("", timestamprow),
+    hcat(busescol, LOLE(shortfall, :, :))
+)); println()
+
+println("SpatioTemporal EUEs:")
+display(vcat(
+    hcat("", timestamprow),
+    hcat(busescol, EENS(shortfall, :, :))
+)); println()
+
+
+
 
 a=shortfall.eventperiod_period_mean*100
 sum(a)
@@ -116,4 +167,4 @@ plot(1:8736, a)
 
 a = systemstates.generators[3,:]
 using Plots
-plot(1:8736, a)
+plot(1:8736, a``

@@ -1,66 +1,4 @@
-""
-function initialize_availability!(rng::AbstractRNG, availability::Matrix{Float32}, asset::Generators, N::Int)
-
-    for i in asset.keys
-        if asset.status[i] ≠ false
-
-            sequence = view(availability, i, :)
-            fill!(sequence, 1)
-            λ_updn = asset.λ_updn[i]/N
-            μ_updn = asset.μ_updn[i]/N
-        
-            if asset.state_model[i] == 3
-                λ_upde = asset.λ_upde[i]/N
-                μ_upde = asset.μ_upde[i]/N
-                pde = asset.pde[i]
-                if λ_updn ≠ 0.0 && λ_upde ≠ 0.0
-                    cycles!(sequence, pde, rng, λ_updn, μ_updn, λ_upde, μ_upde, N)
-                end
-            else
-                if λ_updn ≠ 0.0
-                    cycles!(sequence, rng, λ_updn, μ_updn, N)
-                end
-            end
-        end
-    end
-    return
-end
-
-""
-function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool}, asset::AbstractAssets, N::Int)
-
-    for i in asset.keys
-        if asset.status[i] ≠ false
-            sequence = availability[i,:]
-            fill!(sequence, 1)
-            λ_updn = asset.λ_updn[i]/N
-            μ_updn = asset.μ_updn[i]/N
-            if λ_updn ≠ 0.0
-                cycles!(sequence, rng, λ_updn, μ_updn, N)
-            end
-        else
-            fill!(sequence, 0)
-        end
-    end
-    return
-end
-
-""
-function initialize_availability!(rng::AbstractRNG, availability::Matrix{Bool},asset::CommonBranches, N::Int)
-
-    for i in asset.keys
-        sequence = view(availability, i, :)
-        fill!(sequence, 1)
-        λ_updn = asset.λ_updn[i]/N
-        μ_updn = asset.μ_updn[i]/N
-        if λ_updn ≠ 0.0
-            cycles!(sequence, rng, λ_updn, μ_updn, N)
-        end
-    end
-    return
-end
-
-""
+"initialize the availability of buses using an RNG and a system object of type SystemModel."
 function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::Int)
     
     bus_type = field(asset, :bus_type)
@@ -72,7 +10,7 @@ function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::In
     return
 end
 
-""
+"initialize the availability of different types of assets using an RNG and a system object of type SystemModel."
 function initialize_availability!(rng::AbstractRNG, availabilities::Matrix{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
 
     availability = view(availabilities, :, 1)
@@ -81,25 +19,27 @@ function initialize_availability!(rng::AbstractRNG, availabilities::Matrix{Bool}
         λ_updn = asset.λ_updn[i]/N
         μ_updn = asset.μ_updn[i]/N
         online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+        #online = true
         availability[i] = online
         transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
         nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
     end
-    return
+    return availability
 end
 
-""
+"initialize the availability of different types of assets (buses, branches, generators, etc.) using an RNG and a system object of type SystemModel."
 function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
     
     for i in asset.keys
         λ_updn = asset.λ_updn[i]/N
         μ_updn = asset.μ_updn[i]/N
         online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+        #online = true
         availability[i] = online
         transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
         nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
     end
-    return
+    return availability
 end
 
 ""
@@ -110,6 +50,7 @@ function initialize_availability!(rng::AbstractRNG, availabilities::Matrix{Float
     for i in asset.keys
         λ_updn = asset.λ_updn[i]/N
         μ_updn = asset.μ_updn[i]/N
+        #online = true
 
         if asset.state_model[i] == 2
             online = rand(rng) < μ_updn / (λ_updn + μ_updn)
@@ -128,7 +69,7 @@ function initialize_availability!(rng::AbstractRNG, availabilities::Matrix{Float
             end
         end
     end
-    return
+    return availability
 end
 
 ""
@@ -303,6 +244,36 @@ function T(rng, λ_updn::Float64, μ_updn::Float64)::Tuple{Int,Int}
     end
 
     return ttf,ttr
+end
+
+"This initialize_all_states! function is designed to initialize the states of all devices in the system using an RNG, 
+a singlestates object of type NextTransition, and a system object of type SystemModel."
+function initialize_all_states!(rng::AbstractRNG, states::SystemStates, singlestates::NextTransition, system::SystemModel{N}) where N
+    initialize_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, N)
+    initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
+    initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
+    initialize_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, N)
+    view(field(states, :branches),:,1) .= singlestates.branches_available[:]
+    view(field(states, :shunts),:,1) .= singlestates.shunts_available[:]
+    view(field(states, :commonbranches),:,1) .= singlestates.commonbranches_available[:]
+    view(field(states, :generators),:,1) .= singlestates.generators_available[:]
+    view(field(states, :storages),:,1) .= singlestates.storages_available[:]
+    view(field(states, :generatorstorages),:,1) .= singlestates.generatorstorages_available[:]
+    return
+end
+
+""
+function update_all_states!(rng::AbstractRNG, states::SystemStates, singlestates::NextTransition, system::SystemModel{N}, t::Int) where N
+    update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, field(system, :branches), t, N)
+    update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, field(system, :commonbranches), t, N)
+    update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, field(system, :generators), t, N)
+    update_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, field(system, :storages), t, N)
+    view(field(states, :branches),:,t) .= singlestates.branches_available[:]
+    view(field(states, :commonbranches),:,t) .= singlestates.commonbranches_available[:]
+    view(field(states, :generators),:,t) .= singlestates.generators_available[:]
+    view(field(states, :storages),:,t) .= singlestates.storages_available[:]
+    view(field(states, :generatorstorages),:,t) .= singlestates.generatorstorages_available[:]
+    apply_common_outages!(states, system, t)
 end
 
 ""

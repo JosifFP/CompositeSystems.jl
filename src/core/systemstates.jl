@@ -49,6 +49,8 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     fill!(gse, 0)
     fill!(plc, 0)
     fill!(qlc, 0)
+
+
     
     if available==true
         fill!(branches, 1)
@@ -66,27 +68,32 @@ end
 ""
 struct NextTransition <: AbstractState
 
-    generators_available::Vector{Bool}
-    generators_nexttransition::Vector{Int}
-
     branches_available::Vector{Bool}
     branches_nexttransition::Vector{Int}
-
+    shunts_available::Vector{Bool}
+    shunts_nexttransition::Vector{Int}
+    generators_available::Vector{Bool}
+    generators_nexttransition::Vector{Int}
     commonbranches_available::Vector{Bool}
     commonbranches_nexttransition::Vector{Int}
-
     storages_available::Vector{Bool}
     storages_nexttransition::Vector{Int}
+    generatorstorages_available::Vector{Bool}
+    generatorstorages_nexttransition::Vector{Int}
 
     function NextTransition(system::SystemModel)
-
-        ngens = length(system.generators)
-        generators_available = Vector{Bool}(undef, ngens)
-        generators_nexttransition= Vector{Int}(undef, ngens)
 
         nbranches = length(system.branches)
         branches_available = Vector{Bool}(undef, nbranches)
         branches_nexttransition= Vector{Int}(undef, nbranches)
+
+        nshunts = length(system.shunts)
+        shunts_available = Vector{Bool}(undef, nshunts)
+        shunts_nexttransition= Vector{Int}(undef, nshunts)
+
+        ngens = length(system.generators)
+        generators_available = Vector{Bool}(undef, ngens)
+        generators_nexttransition= Vector{Int}(undef, ngens)
 
         ncommonbranches = length(system.commonbranches)
         commonbranches_available = Vector{Bool}(undef, ncommonbranches)
@@ -96,17 +103,17 @@ struct NextTransition <: AbstractState
         storages_available = Vector{Bool}(undef, nstors)
         storages_nexttransition = Vector{Int}(undef, nstors)
 
-        #nshunts = length(system.shunts)
-        #shunts_available = Vector{Bool}(undef, nshunts)
-        #shunts_nexttransition= Vector{Int}(undef, nshunts)
-        #nstors = length(system.storages)
-        #generatorstorages_available = Vector{Bool}(undef, nstors)
-        #generatorstorages_nexttransition = Vector{Int}(undef, nstors)
+        ngenstors = length(system.generatorstorages)
+        generatorstorages_available = Vector{Bool}(undef, ngenstors)
+        generatorstorages_nexttransition = Vector{Int}(undef, ngenstors)
+
         return new(
-            generators_available, generators_nexttransition,
             branches_available, branches_nexttransition,
+            shunts_available, shunts_nexttransition,
+            generators_available, generators_nexttransition,
             commonbranches_available, commonbranches_nexttransition,
-            storages_available, storages_nexttransition
+            storages_available, storages_nexttransition,
+            generatorstorages_available, generatorstorages_nexttransition
         )
     end
 end
