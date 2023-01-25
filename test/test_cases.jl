@@ -46,46 +46,6 @@ val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 
 
-key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
-@btime buses_idxs = makeidxlist(key_buses, length(system.buses))
-
-
-
-using IterTools
-
-function makeidxlist_v2(keys::Vector{Int}, N::Int)
-    grouped = IterTools.groupby(keys)
-    idxlist = Vector{Vector{Int}}(undef, N)
-    for (val, group) in grouped
-        idxlist[val] = vec(group)
-    end
-    return idxlist
-end
-
-
-key_buses = filter(i->field(system, :buses, :bus_type)[i]≠ 4, field(system, :buses, :keys))
-@btime buses_idxs = makeidxlist_v2(key_buses, length(system.buses))
-
-
-
-singlestates = NextTransition(system)
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-CompositeAdequacy.initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, 8736)
-systemstates = SystemStates(system)
-CompositeAdequacy.initialize_states!(rng, systemstates, system)
-
-t=2
-BaseModule.check_availability(field(systemstates, :branches), t, t-1)
-
-
-field(systemstates, :branches)[1,2] = 0
-
-
-field(systemstates, :branches)
-
-
-
-singlestates.generators_available
 
 
 timestamprow = permutedims(system.timestamps)
