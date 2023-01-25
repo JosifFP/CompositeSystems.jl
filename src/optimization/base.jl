@@ -289,17 +289,17 @@ end
 ""
 function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
-    # if iszero(s%25) && settings.optimizer == Ipopt
-    #     JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    #     initialize_pm_containers!(pm, system)
-    #     OPF.initialize_powermodel!(pm, system, states)
-    # elseif iszero(s%50) && settings.optimizer == Gurobi
-    #     JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    #     initialize_pm_containers!(pm, system)
-    #     OPF.initialize_powermodel!(pm, system, states)
-    # else
-    #     MOIU.reset_optimizer(pm.model)
-    # end
+    if iszero(s%50) && settings.optimizer == Ipopt
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    elseif iszero(s%100) && settings.optimizer == Gurobi
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
 
     fill!(getfield(states, :plc), 0)
     fill!(getfield(states, :qlc), 0)
@@ -313,17 +313,17 @@ end
 ""
 function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
-    # if iszero(s%10) && settings.optimizer == Ipopt
-    #     JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    #     initialize_pm_containers!(pm, system)
-    #     OPF.initialize_powermodel!(pm, system, states)
-    # elseif iszero(s%50) && settings.optimizer == Gurobi
-    #     JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    #     initialize_pm_containers!(pm, system)
-    #     OPF.initialize_powermodel!(pm, system, states)
-    # else
-    #     MOIU.reset_optimizer(pm.model)
-    # end
+    if iszero(s%500) && settings.optimizer == Ipopt
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    elseif iszero(s%1000) && settings.optimizer == Gurobi
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
 
     fill!(getfield(states, :plc), 0)
     fill!(getfield(states, :qlc), 0)

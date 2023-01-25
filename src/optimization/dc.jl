@@ -83,7 +83,7 @@ function _con_power_balance(
     z_shunt   = var(pm, :z_shunt, nw)
     ps   = var(pm, :ps, nw)
 
-    @simd exp_p = @expression(pm.model,
+    exp_p = @expression(pm.model,
     sum(p[a] for a in bus_arcs)
     + sum(ps[s] for s in bus_storage)
     - sum(pg[g] for g in bus_gens)

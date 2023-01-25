@@ -25,9 +25,9 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
     modelmode = JuMP.AUTOMATIC,
     #powermodel = OPF.NFAPowerModel
-    powermodel = OPF.DCPPowerModel
+    #powermodel = OPF.DCPPowerModel
     #powermodel = OPF.DCMPPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    powermodel = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
