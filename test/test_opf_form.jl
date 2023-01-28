@@ -48,7 +48,7 @@
         # end
 
         @testset "DC-OPF with DCPPowerModel, RBTS" begin
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -91,7 +91,7 @@
 
         @testset "DC-OPF with DCMPPowerModel, RBTS" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCMPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -134,7 +134,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, RBTS" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.LPACCPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
@@ -237,7 +237,7 @@
         # end
 
         @testset "DC-OPF with DCMPPowerModel, RTS" begin
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCMPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -281,7 +281,7 @@
 
         @testset "DC-OPF with DCPPowerModel, RTS" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -325,7 +325,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, RTS" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.LPACCPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
@@ -429,7 +429,7 @@
 
         @testset "DC-OPF with DCPPowerModel, case5" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -472,7 +472,7 @@
 
         @testset "DC-OPF with DCMPPowerModel, case5" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCMPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -515,7 +515,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, case5" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.LPACCPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
@@ -619,7 +619,7 @@
 
         @testset "DC-OPF with DCPPowerModel, case6" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -662,7 +662,7 @@
 
         @testset "DC-OPF with DCMPPowerModel, case6" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCMPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -705,7 +705,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, case6" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.LPACCPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
@@ -771,7 +771,7 @@
 
         @testset "DC-OPF with NFAPowerModel, case9" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.NFAPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.NFAPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -810,7 +810,7 @@
 
         @testset "DC-OPF with DCPPowerModel, case9" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -853,7 +853,7 @@
 
         @testset "DC-OPF with DCMPPowerModel, case9" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCMPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -896,7 +896,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, case9" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.LPACCPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
@@ -962,7 +962,7 @@
 
         @testset "DC-OPF with NFAPowerModel, frankenstein_00" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.NFAPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.NFAPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_pf = OPF.build_sol_branch_values(pm, system.branches)
@@ -1001,7 +1001,7 @@
 
         @testset "DC-OPF with DCPPowerModel, frankenstein_00" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1044,7 +1044,7 @@
 
         @testset "DC-OPF with DCMPPowerModel, frankenstein_00" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.DCMPPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1087,7 +1087,7 @@
 
         @testset "AC-OPF with LPACCPowerModel, frankenstein_00" begin
 
-            settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+            settings = CompositeSystems.Settings(juniper_optimizer_1, jump_modelmode = JuMP.AUTOMATIC, powermodel_formulation = OPF.LPACCPowerModel)
             pm = OPF.solve_opf(system, settings)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))

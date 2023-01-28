@@ -76,19 +76,19 @@ end
 
 #     optimizer::MOI.OptimizerWithAttributes
 #     file::String
-#     modelmode::JuMP.ModelMode
-#     powermodel::Type{<:AbstractPowerModel}
+#     jump_modelmode::JuMP.ModelMode
+#     powermodel_formulation::Type{<:AbstractPowerModel}
 
 #     function Settings(
 #         optimizer::MOI.OptimizerWithAttributes;
 #         file::String="",
-#         modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-#         powermodel::String="AbstractDCMPPModel"
+#         jump_modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
+#         powermodel_formulation::String="AbstractDCMPPModel"
 #         )
 
-#         abstractpm = type(powermodel)
+#         abstractpm = type(powermodel_formulation)
 
-#         new(optimizer, file, modelmode, abstractpm)
+#         new(optimizer, file, jump_modelmode, abstractpm)
 #     end
 
 # end

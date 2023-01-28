@@ -22,7 +22,6 @@ struct Topology
     busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}
     delta_bounds::Vector{Float32}
-    isolated_bus_gens::Vector{Bool}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -69,15 +68,13 @@ struct Topology
         vad_min,vad_max = calc_theta_delta_bounds(key_buses, key_branches, field(system, :branches))
         delta_bounds = [vad_min,vad_max]
 
-        isolated_bus_gens = Bool[true]
-
         return new(
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
             branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
             generatorstorages_idxs::Vector{UnitRange{Int}}, bus_loads_init,
             bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, 
-            arcs_from, arcs_to, arcs, busarcs, buspairs, delta_bounds, isolated_bus_gens)
+            arcs_from, arcs_to, arcs, busarcs, buspairs, delta_bounds)
     end
 end
 
@@ -99,8 +96,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.arcs_to == y.arcs_to &&
     x.arcs == y.arcs &&
     x.buspairs == y.buspairs &&
-    x.delta_bounds == y.delta_bounds &&
-    x.isolated_bus_gens == y.isolated_bus_gens
+    x.delta_bounds == y.delta_bounds
 
 "a macro for adding the base AbstractPowerModels fields to a type definition"
 @def pm_fields begin
@@ -132,22 +128,24 @@ AbstractAPLossLessModels = Union{DCPPowerModel, DCMPPowerModel, AbstractNFAModel
 AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPowerModel}
 
 ""
-struct Settings
+mutable struct Settings
 
     optimizer::MOI.OptimizerWithAttributes
-    modelmode::JuMP.ModelMode
-    powermodel::Type
-    isolated_bus_gens::Bool
+    jump_modelmode::JuMP.ModelMode
+    powermodel_formulation::Type
+    select_largest_splitnetwork::Bool
+    deactivate_isolated_bus_gens_stors::Bool
     set_string_names_on_creation::Bool
 
     function Settings(
         optimizer::MOI.OptimizerWithAttributes;
-        modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
-        powermodel::Type=OPF.DCPPowerModel,
-        isolated_bus_gens::Bool=true,
+        jump_modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
+        powermodel_formulation::Type=OPF.DCPPowerModel,
+        select_largest_splitnetwork::Bool=false,
+        deactivate_isolated_bus_gens_stors::Bool=true,
         set_string_names_on_creation::Bool=false
         )
-        new(optimizer, modelmode, powermodel, isolated_bus_gens, set_string_names_on_creation)
+        new(optimizer, jump_modelmode, powermodel_formulation, select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, set_string_names_on_creation)
     end
 
 end
@@ -155,9 +153,9 @@ end
 "Constructor for an AbstractPowerModel modeling object"
 function abstract_model(system::SystemModel, settings::Settings)
     
-    if settings.modelmode == JuMP.AUTOMATIC
+    if settings.jump_modelmode == JuMP.AUTOMATIC
         jump_model = Model(settings.optimizer; add_bridges = false)
-    elseif settings.modelmode == JuMP.DIRECT
+    elseif settings.jump_modelmode == JuMP.DIRECT
         @error("Mode not supported")
         jump_model = direct_model(settings.optimizer)
     else
@@ -167,10 +165,10 @@ function abstract_model(system::SystemModel, settings::Settings)
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
     JuMP.set_silent(jump_model)
     topology = Topology(system)
-    powermodel = pm(jump_model, topology, settings.powermodel)
-    initialize_pm_containers!(powermodel, system)
+    powermodel_formulation = pm(jump_model, topology, settings.powermodel_formulation)
+    initialize_pm_containers!(powermodel_formulation, system)
 
-    return powermodel
+    return powermodel_formulation
 
 end
 
@@ -313,11 +311,11 @@ end
 ""
 function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
-    if iszero(s%500) && settings.optimizer == Ipopt
+    if iszero(s%100) && settings.optimizer == Ipopt
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)
-    elseif iszero(s%1000) && settings.optimizer == Gurobi
+    elseif iszero(s%200) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)
@@ -336,9 +334,9 @@ function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::Sys
 end
 
 ""
-function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
     if !check_availability(field(states, :branches), t, t-1)
-        simplify!(pm, system, states, t)
+        simplify!(pm, system, states, settings, t)
         update_arcs!(pm, system, states.branches, t)
     end
     update_all_idxs!(pm, system, states, t)
@@ -346,8 +344,8 @@ function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::S
 end
 
 ""
-function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    simplify!(pm, system, states, t)
+function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    simplify!(pm, system, states, settings, t)
     update_arcs!(pm, system, states.branches, t)
     update_all_idxs!(pm, system, states, t)
     return

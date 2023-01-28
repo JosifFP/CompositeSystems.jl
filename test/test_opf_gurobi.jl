@@ -1026,7 +1026,5 @@ end
         end
 
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
-
     end
-
 end

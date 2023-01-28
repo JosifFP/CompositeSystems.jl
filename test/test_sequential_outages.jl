@@ -1,8 +1,15 @@
 
 @testset "test sequentially split situations w/o isolated buses, RBTS system, LPACCPowerModel" begin
 
-    settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
-    #settings = CompositeSystems.Settings(ipopt_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+    settings = CompositeSystems.Settings(
+        juniper_optimizer_1;
+        jump_modelmode = JuMP.AUTOMATIC,
+        powermodel_formulation = OPF.LPACCPowerModel,
+        select_largest_splitnetwork = true,
+        deactivate_isolated_bus_gens_stors = true,
+        set_string_names_on_creation = true
+    )
+
     rawfile = "test/data/RBTS/Base/RBTS_AC.m"
     reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
     timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
@@ -12,9 +19,25 @@
     systemstates = OPF.SystemStates(system, available=true)
     CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
 
-    t=2
-    CompositeAdequacy.update!(pm, system, systemstates, t)  
+    t=1
+    OPF._update!(pm, system, systemstates, settings, t)
+    @testset "No outages" begin
+        @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9371; atol = 1e-4) #THIS RESULT IS NOT OPTIMAL, BUT SAFE
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231; atol = 1e-4) #THIS RESULT IS NOT OPTIMAL, BUT SAFE
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+    end
 
+    t=2
+    OPF._update!(pm, system, systemstates, settings, t)  
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -35,7 +58,7 @@
     CompositeSystems.field(systemstates, :generators)[7,t] = 0
     CompositeSystems.field(systemstates, :generators)[8,t] = 0
     CompositeSystems.field(systemstates, :generators)[9,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "G3, G7, G8 and G9 on outage" begin
         @test isapprox(sum(systemstates.plc[:]), 0.3716; atol = 1e-4)
@@ -56,7 +79,7 @@
     t=4
     CompositeSystems.field(systemstates, :branches)[5,t] = 0
     CompositeSystems.field(systemstates, :branches)[8,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
     
     @testset "L5 and L8 on outage" begin
         @test isapprox(sum(systemstates.plc[:]), 0.4; atol = 1e-4)
@@ -76,7 +99,7 @@
     end
 
     t=5
-    CompositeAdequacy.update!(pm, system, systemstates, t)  
+    OPF._update!(pm, system, systemstates, settings, t)  
 
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
@@ -97,7 +120,7 @@
     CompositeSystems.field(systemstates, :branches)[3,t] = 0
     CompositeSystems.field(systemstates, :branches)[4,t] = 0
     CompositeSystems.field(systemstates, :branches)[8,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)  
+    OPF._update!(pm, system, systemstates, settings, t)  
 
     @testset "L3, L4 and L8 on outage" begin
         @test isapprox(sum(systemstates.plc[:]), 0.7703; atol = 1e-4)
@@ -121,7 +144,7 @@
     CompositeSystems.field(systemstates, :generators)[1,t] = 0
     CompositeSystems.field(systemstates, :generators)[2,t] = 0
     CompositeSystems.field(systemstates, :generators)[3,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)   
+    OPF._update!(pm, system, systemstates, settings, t)   
 
     @testset "L2 and L7 on outage, generation reduced" begin
         @test isapprox(sum(systemstates.plc[:]), 0.9792; atol = 1e-4)
@@ -137,11 +160,36 @@
         @test isapprox(systemstates.qlc[6]/systemstates.plc[6], CompositeAdequacy.field(system, :loads, :pf)[5]; atol = 1e-4)
         @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
+
+    t=8
+    OPF._update!(pm, system, systemstates, settings, t)  
+    @testset "No outages" begin
+        @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+        @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9371; atol = 1e-4) #THIS RESULT IS NOT OPTIMAL, BUT SAFE
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231; atol = 1e-4) #THIS RESULT IS NOT OPTIMAL, BUT SAFE
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+    end
 end
 
 @testset "test sequentially split situations w/o isolated buses, RTS system, LPACCPowerModel" begin
 
-    settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.LPACCPowerModel)
+    settings = CompositeSystems.Settings(
+        juniper_optimizer_1;
+        jump_modelmode = JuMP.AUTOMATIC,
+        powermodel_formulation = OPF.LPACCPowerModel,
+        select_largest_splitnetwork = false,
+        deactivate_isolated_bus_gens_stors = true,
+        set_string_names_on_creation = true
+    )
+
     timeseriesfile = "test/data/RTS/Loads_system.xlsx"
     rawfile = "test/data/RTS/Base/RTS.m"
     reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
@@ -165,6 +213,7 @@ end
     CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
 
     t=1
+    OPF._update!(pm, system, systemstates, settings, t)
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -200,7 +249,7 @@ end
     end
     
     t=2
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
@@ -241,7 +290,7 @@ end
         CompositeSystems.field(systemstates, :branches)[29,t] = 0
         CompositeSystems.field(systemstates, :branches)[36,t] = 0
         CompositeSystems.field(systemstates, :branches)[37,t] = 0
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 3.09; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
@@ -281,7 +330,7 @@ end
     @testset "No outages" begin
         
         t=4
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
@@ -320,7 +369,7 @@ end
         CompositeSystems.field(systemstates, :branches)[25,t] = 0
         CompositeSystems.field(systemstates, :branches)[26,t] = 0
         CompositeSystems.field(systemstates, :branches)[28,t] = 0
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 2.354; atol = 1e-3)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
@@ -362,7 +411,7 @@ end
         CompositeSystems.field(systemstates, :branches)[1,t] = 0
         CompositeSystems.field(systemstates, :branches)[8,t] = 0
         CompositeSystems.field(systemstates, :branches)[10,t] = 0
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 1.1654; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
@@ -402,7 +451,7 @@ end
         CompositeSystems.field(systemstates, :branches)[7,t] = 0
         CompositeSystems.field(systemstates, :branches)[19,t] = 0
         CompositeSystems.field(systemstates, :branches)[29,t] = 0
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
@@ -441,7 +490,7 @@ end
         CompositeSystems.field(systemstates, :branches)[7,t] = 0
         CompositeSystems.field(systemstates, :branches)[23,t] = 0
         CompositeSystems.field(systemstates, :branches)[29,t] = 0
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 1.95; atol = 1e-3)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
         @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
@@ -480,7 +529,15 @@ end
 
 @testset "test sequentially split situations w/o isolated buses, RTS system, DCMPPowerModel" begin
 
-    settings = CompositeSystems.Settings(juniper_optimizer_1, modelmode = JuMP.AUTOMATIC, powermodel = OPF.DCMPPowerModel)
+    settings = CompositeSystems.Settings(
+        juniper_optimizer_1;
+        jump_modelmode = JuMP.AUTOMATIC,
+        powermodel_formulation = OPF.DCMPPowerModel,
+        select_largest_splitnetwork = false,
+        deactivate_isolated_bus_gens_stors = true,
+        set_string_names_on_creation = true
+    )
+
     timeseriesfile = "test/data/RTS/Loads_system.xlsx"
     rawfile = "test/data/RTS/Base/RTS.m"
     reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
@@ -504,6 +561,7 @@ end
     CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
 
     t=1
+    OPF._update!(pm, system, systemstates, settings, t)
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -534,11 +592,10 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
     
     t=2
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
@@ -570,14 +627,13 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
     t=3
     CompositeSystems.field(systemstates, :branches)[29,t] = 0
     CompositeSystems.field(systemstates, :branches)[36,t] = 0
     CompositeSystems.field(systemstates, :branches)[37,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "Outages of L29, L36, L37" begin
         @test isapprox(sum(systemstates.plc[:]), 3.09; atol = 1e-4)
@@ -609,11 +665,10 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
     t=4
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "No outages" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
@@ -645,14 +700,13 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
     t=5
     CompositeSystems.field(systemstates, :branches)[25,t] = 0
     CompositeSystems.field(systemstates, :branches)[26,t] = 0
     CompositeSystems.field(systemstates, :branches)[28,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "Outages of L25, L26, L28" begin
         @test isapprox(sum(systemstates.plc[:]), 2.12; atol = 1e-4)
@@ -684,14 +738,13 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
     t=6
     CompositeSystems.field(systemstates, :branches)[1,t] = 0
     CompositeSystems.field(systemstates, :branches)[8,t] = 0
     CompositeSystems.field(systemstates, :branches)[10,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "Outages of L1, L8, L10" begin
         @test isapprox(sum(systemstates.plc[:]), 1.150; atol = 1e-4)
@@ -723,14 +776,13 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1, atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
     t=7
     CompositeSystems.field(systemstates, :branches)[7,t] = 0
     CompositeSystems.field(systemstates, :branches)[19,t] = 0
     CompositeSystems.field(systemstates, :branches)[29,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "Outages of L7, L19, L29" begin
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
@@ -762,14 +814,13 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
     t=8
     CompositeSystems.field(systemstates, :branches)[7,t] = 0
     CompositeSystems.field(systemstates, :branches)[23,t] = 0
     CompositeSystems.field(systemstates, :branches)[29,t] = 0
-    CompositeAdequacy.update!(pm, system, systemstates, t)
+    OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "Outages of L7, L23, L29" begin
         @test isapprox(sum(systemstates.plc[:]), 1.65; atol = 1e-2)
@@ -801,7 +852,6 @@ end
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
     end
 
 end

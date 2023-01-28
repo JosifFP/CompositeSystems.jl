@@ -12,27 +12,45 @@ include("solvers.jl")
 #rawfile = "test/data/RBTS/Base/RBTS_AC.m"
 #Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
-timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
-Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
+#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
+#Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), GeneratorAvailability())
 settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
-    modelmode = JuMP.AUTOMATIC,
-    #powermodel = OPF.NFAPowerModel
-    powermodel = OPF.DCPPowerModel
-    #powermodel = OPF.DCMPPowerModel
-    #powermodel = OPF.LPACCPowerModel
+    jump_modelmode = JuMP.AUTOMATIC,
+    #powermodel_formulation = OPF.NFAPowerModel
+    #powermodel_formulation = OPF.DCPPowerModel
+    powermodel_formulation = OPF.DCMPPowerModel
+    #powermodel_formulation = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=15000, seed=100, threaded=true)
+method = SequentialMCS(samples=8, seed=100, threaded=true)
 @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+
+shortfall.eventperiod_mean
+shortfall.eventperiod_std
+shortfall.eventperiod_bus_mean
+shortfall.eventperiod_bus_std
+shortfall.eventperiod_period_mean
+shortfall.eventperiod_period_std
+shortfall.eventperiod_busperiod_mean
+shortfall.eventperiod_busperiod_std
+shortfall.shortfall_mean
+shortfall.shortfall_std
+shortfall.shortfall_bus_std
+shortfall.shortfall_period_std
+shortfall.shortfall_busperiod_std
+
+collect(shortfall.eventperiod_bus_mean)
+collect(shortfall.eventperiod_busperiod_mean')
 
 
 CompositeSystems.LOLE.(shortfall, system.buses.keys)
@@ -43,6 +61,36 @@ val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 
+using XLSX
+XLSX.openxlsx("results_shortfall.xlsx", mode="w") do xf
+    XLSX.rename!(xf[1], "new_sheet_1")
+    xf[1]["A1"] = "eventperiod_mean"
+    xf[1]["A2"] = shortfall.eventperiod_mean
+    xf[1]["B1"] = "eventperiod_std"
+    xf[1]["B2"] = shortfall.eventperiod_std
+    xf[1]["C1"] = "eventperiod_bus_mean"
+    xf[1]["C2", dim=1] = collect(shortfall.eventperiod_bus_mean)
+    xf[1]["D1"] = "eventperiod_bus_std"
+    xf[1]["D2", dim=1] = collect(shortfall.eventperiod_bus_std)
+    xf[1]["E1"] = "eventperiod_period_mean"
+    xf[1]["E2", dim=1] = collect(shortfall.eventperiod_period_mean)
+    xf[1]["F1"] = "eventperiod_period_std"
+    xf[1]["F2", dim=1] = collect(shortfall.eventperiod_period_std)
+    xf[1]["G1"] = "shortfall_std"
+    xf[1]["G2"] = shortfall.shortfall_std
+    xf[1]["H1"] = "shortfall_bus_std"
+    xf[1]["H2", dim=1] = collect(shortfall.shortfall_bus_std)
+    xf[1]["I1"] = "shortfall_period_std"
+    xf[1]["I2", dim=1] = collect(shortfall.shortfall_period_std)
+    XLSX.addsheet!(xf, "eventperiod_busperiod_mean")
+    xf[2]["A1"] = collect(shortfall.eventperiod_busperiod_mean')
+    XLSX.addsheet!(xf, "eventperiod_busperiod_std")
+    xf[3]["A1"] = collect(shortfall.eventperiod_busperiod_std')
+    XLSX.addsheet!(xf, "shortfall_mean")
+    xf[4]["A1"] = collect(shortfall.shortfall_mean')
+    XLSX.addsheet!(xf, "shortfall_busperiod_std")
+    xf[5]["A1"] = collect(shortfall.shortfall_busperiod_std')
+end
 
 
 

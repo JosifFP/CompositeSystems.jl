@@ -49,11 +49,33 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
 end
 
 ""
-function update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_generators!(pm, system, states, t)
+function update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+    update_generators!(pm, system, states, t, force_pmin=force_pmin)
     update_branches!(pm, system, states, t)
     update_storages!(pm, system, states, t)
     update_buses!(pm, system, states, t)
+    return pm
+end
+
+function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+    @inbounds @views for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
+    @inbounds @views for l in field(system, :branches, :keys)
+        update_var_branch_indicator(pm, system, states, l, t)
+        update_con_ohms_yt(pm, system, states, l, t)
+        update_con_thermal_limits(pm, system, states, l, t)
+        update_con_voltage_angle_difference(pm, system, states, l, t)
+    end
+    @inbounds @views for i in field(system, :storages, :keys)
+        update_con_storage(pm, system, states, i, t)
+    end
+    @inbounds @views for i in field(system, :buses, :keys)
+        update_var_load_power_factor(pm, system, states, i, t)
+        update_var_bus_voltage_angle(pm, system, states, i, t)
+        update_con_power_balance(pm, system, states, i, t)
+    end
     return pm
 end
 
@@ -98,16 +120,6 @@ function update_buses!(pm::AbstractPowerModel, system::SystemModel, states::Syst
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
     end
-end
-
-""
-function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
-    update_generators!(pm, system, states, t, force_pmin=force_pmin)
-    update_branches!(pm, system, states, t)
-    update_storages!(pm, system, states, t)
-    update_buses!(pm, system, states, t)
-    JuMP.optimize!(pm.model)
-    return pm
 end
 
 "Classic OPF from _PM.jl."
@@ -164,13 +176,24 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 end
 
 ""
-function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
     
-    _update_topology!(pm, system, states, t)
-    update_generators!(pm, system, states, t)
-    update_branches!(pm, system, states, t)
-    update_storages!(pm, system, states, t)
-    
+    _update_topology!(pm, system, states, settings, t)
+
+    @inbounds @views for i in field(system, :generators, :keys)
+        update_var_gen_power_real(pm, system, states, i, t, force_pmin=true)
+        update_var_gen_power_imaginary(pm, system, states, i, t)
+    end
+    @inbounds @views for l in field(system, :branches, :keys)
+        update_var_branch_indicator(pm, system, states, l, t)
+        update_con_ohms_yt(pm, system, states, l, t)
+        update_con_thermal_limits(pm, system, states, l, t)
+        update_con_voltage_angle_difference(pm, system, states, l, t)
+    end
+    @inbounds @views for i in field(system, :storages, :keys)
+        update_con_storage(pm, system, states, i, t)
+    end
+
     for i in field(system, :buses, :keys)
         update_var_bus_voltage_angle(pm, system, states, i, t)
         update_con_power_balance_nolc(pm, system, states, i, t)
@@ -189,7 +212,7 @@ to optimize the power model and then calls build_result!(pm, system, states, t) 
 If there are no changes, it fills the states.plc variable with zeros.
 """
 function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if all(@view states.branches[:,t]) ≠ true  || all(@view states.storages[:,t]) ≠ true || sum(@view field(states, :generators)[:, t]) < length(system.generators) - 1
+    if (all(@view states.branches[:,t]) ≠ true  || all(@view states.storages[:,t]) ≠ true || sum(@view field(states, :generators)[:, t]) < length(system.generators) - 1)
         JuMP.optimize!(pm.model)
         build_result!(pm, system, states, t)
     else
@@ -206,7 +229,7 @@ function objective_min_fuel_and_flow_cost(pm::AbstractPowerModel, system::System
     gen_cost = Dict{Int, Any}()
     gen_idxs = assetgrouplist(topology(pm, :generators_idxs))
 
-    @views for i in field(system, :generators, :keys)
+    @views for i in gen_idxs
         cost = reverse(field(system, :generators, :cost)[i])
         pg = var(pm, :pg, nw)[i]
         if length(cost) == 1

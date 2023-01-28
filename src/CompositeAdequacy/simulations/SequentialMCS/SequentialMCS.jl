@@ -61,7 +61,7 @@ function assess(
 
         for t in 1:N
             #println("t=$(t)")
-            update!(pm, system, systemstates, t)
+            update!(pm, system, systemstates, settings, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
@@ -99,8 +99,8 @@ end
 "The function update! updates the system states and power model for a given time step t. 
 It does this by first updating the topology of the system with the function update_topology!, 
 then updating the method and power model with update_method!, and finally optimizing the method with optimize_method!"
-function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    update_topology!(pm, system, states, t)
+function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    update_topology!(pm, system, states, settings, t)
     update_method!(pm, system, states, t)
     optimize_method!(pm, system, states, t)
     return

@@ -12,7 +12,7 @@ timeseriesfile = "test/data/RBTS/Loads.xlsx"
 
 #DCMPPowerModel
 #DCPLLPowerModel
-settings = CompositeSystems.Settings(gurobi_optimizer_1, modelmode=JuMP.AUTOMATIC, powermodel=OPF.DCPLLPowerModel)
+settings = CompositeSystems.Settings(gurobi_optimizer_1, jump_modelmode=JuMP.AUTOMATIC, powermodel_formulation=OPF.DCPLLPowerModel)
 
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
 timeseries_load, SParametrics = BaseModule.extract_timeseriesload(timeseriesfile)
@@ -50,7 +50,7 @@ function run()
         #OPF.build_method!(pm, system, systemstates, t)
         #OPF.optimize_method!(pm)
         #OPF.build_result!(pm, system, systemstates, t)
-        CompositeAdequacy.update!(pm, system, systemstates, t)
+        OPF._update!(pm, system, systemstates, settings, t)
         CompositeAdequacy.resolve!(pm, system, systemstates, t)
         #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
         #println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))

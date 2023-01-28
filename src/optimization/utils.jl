@@ -201,12 +201,14 @@ end
 function Base.getproperty(e::Settings, s::Symbol) 
     if s === :optimizer 
         getfield(e, :optimizer)::MOI.OptimizerWithAttributes
-    elseif s === :modelmode 
-        getfield(e, :modelmode)::JuMP.ModelMode
-    elseif s === :powermodel
-        getfield(e, :powermodel)::Type
-    elseif s === :isolated_bus_gens
-        getfield(e, :isolated_bus_gens)::Bool
+    elseif s === :jump_modelmode 
+        getfield(e, :jump_modelmode)::JuMP.ModelMode
+    elseif s === :powermodel_formulation
+        getfield(e, :powermodel_formulation)::Type
+    elseif s === :select_largest_splitnetwork
+        getfield(e, :select_largest_splitnetwork)::Bool
+    elseif s === :deactivate_isolated_bus_gens_stors
+        getfield(e, :deactivate_isolated_bus_gens_stors)::Bool
     elseif s === :set_string_names_on_creation
         getfield(e, :set_string_names_on_creation)::Bool
     else
@@ -296,7 +298,7 @@ due to having only one active incident edge and no generation, loads, storages, 
 If any buses are deactivated, the function also deactivates any branches that are connected to those buses. 
 The function also checks for connected components of the system and deactivates any isolated sections of the network
 """
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
 
     update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
@@ -314,12 +316,14 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     incident_branch_count = sum([0; [states.branches[l,t] for (l,u,v) in busarcs_i]])
                     incident_active_edge = incident_branch_count
                 end
-                if incident_active_edge == 1 && length(topology(pm, :bus_generators)[i]) == 0 && 
+                if incident_active_edge <= 1 && length(topology(pm, :bus_generators)[i]) == 0 && 
                     length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 && length(topology(pm, :bus_shunts)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
-                elseif incident_active_edge == 0 && length(topology(pm, :bus_generators)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0
+                end
+                if settings.deactivate_isolated_bus_gens_stors == true && incident_active_edge == 0 && 
+                    (length(topology(pm, :bus_generators)[i]) > 0 || length(topology(pm, :bus_storages)[i]) > 0)
                     states.buses[i,t] = 4
                     changed = true
                 end
@@ -344,18 +348,18 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 
     ccs = calc_connected_components(pm.topology, field(system, :branches))
 
-    if length(ccs) > 1 && topology(pm, :isolated_bus_gens)[1] == false
+    if length(ccs) > 1 && settings.select_largest_splitnetwork == true
         ccs_order = sort(collect(ccs); by=length)
         largest_cc = ccs_order[end]
 
         length(largest_cc)
         length(system.buses)
     
-        if system.ref_buses[1] in largest_cc && (length(field(system, :buses)) - length(largest_cc)) < 1
+        if system.ref_buses[1] in largest_cc && length(largest_cc) < length(field(system, :buses))
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
                     states.buses[i,t] = 4
-                    #@info("isolated_bus_gens section: deactivating bus $(i) due to dangling isolated network section")            
+                    #@info("select_largest_splitnetwork section: deactivating bus $(i) due to dangling isolated network section")            
                 end
             end
         end
@@ -508,14 +512,18 @@ function objective_value(opf_model::Model)
 end
 
 ""
-function _update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)  
-
-    _update_topology!(pm, system, states, t)
-    _update_method!(pm, system, states, t)
+function _update!(pm::AbstractPowerModel, system::SystemModel{N}, states::SystemStates, settings::Settings, t::Int; force_pmin::Bool=true) where N
+    
+    if N == 1
+        _update_topology!(pm, system, states, settings, t)
+        _update_method!(pm, system, states, t, force_pmin=force_pmin)
+    else
+        update_topology!(pm, system, states, settings, t)
+        update_method!(pm, system, states, t)
+    end
     JuMP.optimize!(pm.model)
     build_result!(pm, system, states, t)
     return
-
 end
 
 ""
