@@ -85,51 +85,9 @@ function var_branch_cosine_on_off(pm::AbstractLPACModel, system::SystemModel; nw
             cos_min[l] = min(cos(angmin), cos(angmax))
         end
     end
+    #var(pm, :cs)[nw] = @variable(pm.model, cs[l in branches], lower_bound = cos_min[l], upper_bound = max(0, cos_max[l]), start=1.0)
+    var(pm, :cs)[nw] = @variable(pm.model, cs[l in branches], lower_bound = min(0, cos_min[l]), upper_bound = max(0, cos_max[l]), start=1.0)
 
-    var(pm, :cs)[nw] = @variable(pm.model, cs[l in branches], 
-    lower_bound = min(0, cos_min[l]),
-    upper_bound = max(0, cos_max[l]),
-    start=1.0
-    )
-
-end
-
-""
-function var_bus_voltage(pm::AbstractLPACModel, system::SystemModel; kwargs...)
-    var_bus_voltage_angle(pm, system; kwargs...)
-    var_bus_voltage_magnitude(pm, system; kwargs...)
-    var_buspair_cosine(pm, system; kwargs...)
-end
-
-""
-function var_buspair_cosine(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-
-    buspairs = [k for (k,v) in topology(pm, :buspairs) if ismissing(v) == false]
-    cs = var(pm, :cs)[nw] = @variable(pm.model, cs[buspairs], start=1.0)
-
-    if bounded
-        for (bp, buspair) in topology(pm, :buspairs)
-            if !ismissing(buspair)
-                angmin = buspair[2]
-                angmax = buspair[3]
-                if angmin >= 0
-                    cos_max = cos(angmin)
-                    cos_min = cos(angmax)
-                end
-                if angmax <= 0
-                    cos_max = cos(angmax)
-                    cos_min = cos(angmin)
-                end
-                if angmin < 0 && angmax > 0
-                    cos_max = 1.0
-                    cos_min = min(cos(angmin), cos(angmax))
-                end
-
-                JuMP.set_lower_bound(cs[bp], cos_min)
-                JuMP.set_upper_bound(cs[bp], cos_max)
-            end
-        end
-    end
 end
 
 #***************************************************** CONSTRAINTS ************************************************************************
@@ -359,26 +317,40 @@ function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, s
         JuMP.set_lower_bound(td, min(0, field(system, :branches, :angmin)[l]))
         JuMP.set_upper_bound(td, max(0, field(system, :branches, :angmax)[l]))
     end
+end
 
+""
+function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+    
+    z_shunt = var(pm, :z_shunt, nw)[l]
+    @views t_now_view_shunts = field(states, :shunts)[:, t]
+    @views t_now_view_branches = field(states, :branches)[:, t]
+    
+    if any(t_now_view_shunts .== 0) || any(t_now_view_branches .== 0)
+        if JuMP.is_fixed(z_shunt) JuMP.unfix(z_shunt) end
+    else
+        if !JuMP.is_fixed(z_shunt) JuMP.fix(z_shunt, 1.0) end
+    end
 end
 
 ""
 function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
-
-    z_demand   = var(pm, :z_demand, nw)
+    #phi  = var(pm, :phi, nw)[i]
+    z_demand   = var(pm, :z_demand, nw)[i]
     bus_loads = topology(pm, :bus_loads)[i]
+    #bus_shunts = topology(pm, :bus_shunts)[i]
 
     bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
     bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
-
+    #bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
+    #bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
     if field(states, :buses)[i,t] == 4
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[i], 0)
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand[i], 0)
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand, 0)
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand, 0)
     else
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[i], sum(pd for pd in bus_pd))
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand[i], sum(qd for qd in bus_qd))
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand, sum(pd for pd in bus_pd))
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand, sum(qd for qd in bus_qd))
     end
-
 end
 
 ""
@@ -388,10 +360,10 @@ function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemMode
     bus_loads = topology(pm, :bus_loads)[i]
     bus_shunts = topology(pm, :bus_shunts)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
-    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
-    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
+    bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
+    bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
+    bus_gs = [field(system, :shunts, :gs)[k] for k in bus_shunts]
+    bus_bs = [field(system, :shunts, :bs)[k] for k in bus_shunts]
 
     JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], phi[i], -sum(gs for gs in bus_gs)*2)
     JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], phi[i], +sum(bs for bs in bus_bs)*2)
@@ -426,13 +398,12 @@ end
 function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
 
     z_branch = var(pm, :z_branch, nw)[i]
-
+    
     if field(states, :branches)[i,t] == 0
         JuMP.fix(z_branch, 0, force=true)
     else
         JuMP.fix(z_branch, 1, force=true)
     end
-    
 end
 
 # function update_con_model_voltage_on_off(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)

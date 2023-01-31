@@ -11,7 +11,7 @@ include("solvers.jl")
 
 @testset "Testset of OPF formulations + Load Curtailment minimization" begin
     BaseModule.silence()
-    include("test_nonsequential_outages.jl")
-    include("test_sequential_outages.jl")
+    #include("test_nonsequential_outages.jl")
+    include("test_outages.jl")
     include("test_load_curtailment.jl")
 end;

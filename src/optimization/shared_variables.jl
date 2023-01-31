@@ -98,9 +98,13 @@ end
 
 "Defines load curtailment variables p to represent the active power flow for each branch"
 function var_shunt_admittance_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
-    var(pm, :z_shunt)[nw] = @variable(pm.model, z_shunt[assetgrouplist(topology(pm, :shunts_idxs))], binary = true, start =1.0)
-end
+    z_shunt = var(pm, :z_shunt)[nw] = @variable(pm.model, z_shunt[assetgrouplist(topology(pm, :shunts_idxs))], binary = true, start =1.0)
+    
+    for l in assetgrouplist(topology(pm, :shunts_idxs))
+        JuMP.fix(z_shunt[l], 1.0)
+    end
 
+end
 
 #**************************************************** STORAGE VARIABLES ************************************************************************
 "variables for modeling storage units, includes grid injection and internal variables, with mixed int variables for charge/discharge"

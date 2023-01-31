@@ -21,7 +21,7 @@ struct Topology
     arcs::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}
     buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}
-    delta_bounds::Vector{Float32}
+    delta_bounds::Vector{Float64}
 
     function Topology(system::SystemModel{N}) where {N}
 
@@ -153,14 +153,8 @@ end
 "Constructor for an AbstractPowerModel modeling object"
 function abstract_model(system::SystemModel, settings::Settings)
     
-    if settings.jump_modelmode == JuMP.AUTOMATIC
-        jump_model = Model(settings.optimizer; add_bridges = false)
-    elseif settings.jump_modelmode == JuMP.DIRECT
-        @error("Mode not supported")
-        jump_model = direct_model(settings.optimizer)
-    else
-        @warn("Manual Mode not supported")
-    end
+    @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
+    jump_model = Model(settings.optimizer; add_bridges = false)
 
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
     JuMP.set_silent(jump_model)
@@ -200,10 +194,8 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
 
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
-        add_con_container!(pm.con, :thermal_limit_from_upper, field(system, :branches, :keys))
-        add_con_container!(pm.con, :thermal_limit_from_lower, field(system, :branches, :keys))
-        add_con_container!(pm.con, :thermal_limit_to_upper, field(system, :branches, :keys))
-        add_con_container!(pm.con, :thermal_limit_to_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
         add_var_container!(pm.var, :se, field(system, :storages, :keys))
@@ -218,9 +210,7 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
     end
-
     return
-
 end
 
 ""

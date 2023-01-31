@@ -15,7 +15,6 @@ function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemMode
             end
         end
     end
-
 end
 
 ""
@@ -48,37 +47,19 @@ function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemMode
             JuMP.set_upper_bound(z_demand, 0)
             JuMP.set_lower_bound(z_demand, 0)
         else
-            #if JuMP.is_fixed(z_demand)
-            #    JuMP.unfix(z_demand[i])
-            #end
             JuMP.set_upper_bound(z_demand, 1)
             JuMP.set_lower_bound(z_demand, 0)
         end
     else
-        #if JuMP.is_fixed(z_demand)
-        #    JuMP.unfix(z_demand[i])
-        #end
         JuMP.set_upper_bound(z_demand, 1)
         JuMP.set_lower_bound(z_demand, 0)
     end
 end
 
-# ""
-# function update_var_shunt_admittance_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
-    
-#     bus = field(system, :shunts, :buses)[i]
-#     z_shunt = var(pm, :z_shunt, nw)[i]
-#     if field(states, :buses)[bus,t] == 4
-#         JuMP.fix(z_shunt, 0, force=true)
-#     else
-#         JuMP.fix(z_shunt, 1, force=true)
-#     end
-# end
-
 ""
 function update_var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, arc::Tuple{Int, Int, Int}, t::Int; nw::Int=1)
     
-    l,i,j = arc
+    l,_,_ = arc
 
     if typeof(var(pm, :p, nw)[arc]) == JuMP.AffExpr
         p_var = first(keys(var(pm, :p, nw)[arc].terms))
@@ -96,7 +77,7 @@ end
 ""
 function update_var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, arc::Tuple{Int, Int, Int}, t::Int; nw::Int=1)
 
-    l,i,j = arc
+    l,_,_ = arc
 
     if typeof(var(pm, :q, nw)[arc]) == JuMP.AffExpr
         q_var = first(keys(var(pm, :q, 1)[arc].terms))
@@ -121,37 +102,37 @@ end
 "Not needed"
 function update_var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     
-    ps = var(pm, :ps, nw)
-    JuMP.set_lower_bound(ps[i], max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
-    JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    ps = var(pm, :ps, nw)[i]
+    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
 
 end
 
 "Not needed"
 function update_var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     
-    se = var(pm, :se, nw)
-    JuMP.set_lower_bound(se[i], 0)
-    JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
+    se = var(pm, :se, nw)[i]
+    JuMP.set_lower_bound(se, 0)
+    JuMP.set_upper_bound(se, field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
 
 end
 
 "Not needed"
 function update_var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     
-    sc = var(pm, :sc, nw)
-    JuMP.set_lower_bound(sc[i], 0)
-    JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i]*field(states, :storages)[i,t])
+    sc = var(pm, :sc, nw)[i]
+    JuMP.set_lower_bound(sc, 0)
+    JuMP.set_upper_bound(sc, field(system, :storages, :charge_rating)[i]*field(states, :storages)[i,t])
 
 end
 
 "Not needed"
 function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     
-    sd = var(pm, :sc, nw)
+    sd = var(pm, :sc, nw)[i]
     for i in eachindex(field(system, :storages, :keys))
-        JuMP.set_lower_bound(sd[i], 0)
-        JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i]*field(states, :storages)[i,t])
+        JuMP.set_lower_bound(sd, 0)
+        JuMP.set_upper_bound(sd, field(system, :storages, :discharge_rating)[i]*field(states, :storages)[i,t])
     end
 
 end
@@ -183,13 +164,6 @@ end
 
 ""
 function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
-
-    if field(states, :branches)[l,t] == false
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], 0.0)
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], 0.0)
-    else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], field(system, :branches, :rate_a)[l]^2)
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], field(system, :branches, :rate_a)[l]^2)
-    end
-
+    JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l]^2)*field(states, :branches)[l,t])
+    JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l]^2)*field(states, :branches)[l,t])
 end

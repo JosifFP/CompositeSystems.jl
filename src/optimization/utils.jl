@@ -347,11 +347,18 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
     end
 
     ccs = calc_connected_components(pm.topology, field(system, :branches))
+    ccs_order = sort(collect(ccs); by=length)
+    largest_cc = ccs_order[end]
+
+    for i in field(system, :shunts, :buses)
+        if !(i in largest_cc)
+            for k in topology(pm, :bus_shunts)[i]
+                states.shunts[k,t] = false
+            end
+        end
+    end
 
     if length(ccs) > 1 && settings.select_largest_splitnetwork == true
-        ccs_order = sort(collect(ccs); by=length)
-        largest_cc = ccs_order[end]
-
         length(largest_cc)
         length(system.buses)
     
@@ -608,7 +615,5 @@ function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{I
     end
     push!(angle_min, angle_min_val)
     push!(angle_max, angle_max_val)
-
     return angle_min[1], angle_max[1]
-
 end

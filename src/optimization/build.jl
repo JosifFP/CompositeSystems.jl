@@ -52,6 +52,7 @@ end
 function update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
     update_generators!(pm, system, states, t, force_pmin=force_pmin)
     update_branches!(pm, system, states, t)
+    update_shunts!(pm, system, states, t)
     update_storages!(pm, system, states, t)
     update_buses!(pm, system, states, t)
     return pm
@@ -100,6 +101,15 @@ function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::S
             #update_branch_voltage_magnitude_fr_on_off(pm, system, states, l, t)
             #update_branch_voltage_magnitude_to_on_off(pm, system, states, l, t)
             #update_var_branch_voltage_product_angle_on_off(pm, system, states, l, t)
+        end
+    end
+end
+
+""
+function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    if !check_availability(field(states, :shunts), t, t-1) || !check_availability(field(states, :branches), t, t-1)
+        @inbounds @views for i in field(system, :shunts, :keys)
+            update_var_shunt_admittance_factor(pm, system, states, i, t)
         end
     end
 end
@@ -170,9 +180,7 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
         con_thermal_limits(pm, system, i)
         con_voltage_angle_difference(pm, system, i)
     end
-
     return
-
 end
 
 ""
@@ -220,8 +228,6 @@ function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::S
     end
     return
 end
-
-
 
 "Classic OPF objective function without nonlinear equations"
 function objective_min_fuel_and_flow_cost(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)

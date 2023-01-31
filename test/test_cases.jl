@@ -8,50 +8,31 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
-#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
 #timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
 #Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
+#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), GeneratorAvailability())
 settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel
-    #powermodel_formulation = OPF.DCPPowerModel
-    powermodel_formulation = OPF.DCMPPowerModel
+    powermodel_formulation = OPF.DCPPowerModel
+    #powermodel_formulation = OPF.DCMPPowerModel
     #powermodel_formulation = OPF.LPACCPowerModel
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=8, seed=100, threaded=true)
+method = SequentialMCS(samples=7500, seed=100, threaded=true)
 @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
-
-
-shortfall.eventperiod_mean
-shortfall.eventperiod_std
-shortfall.eventperiod_bus_mean
-shortfall.eventperiod_bus_std
-shortfall.eventperiod_period_mean
-shortfall.eventperiod_period_std
-shortfall.eventperiod_busperiod_mean
-shortfall.eventperiod_busperiod_std
-shortfall.shortfall_mean
-shortfall.shortfall_std
-shortfall.shortfall_bus_std
-shortfall.shortfall_period_std
-shortfall.shortfall_busperiod_std
-
-collect(shortfall.eventperiod_bus_mean)
-collect(shortfall.eventperiod_busperiod_mean')
-
 
 CompositeSystems.LOLE.(shortfall, system.buses.keys)
 CompositeSystems.EENS.(shortfall, system.buses.keys)
@@ -94,6 +75,19 @@ end
 
 
 
+shortfall.eventperiod_mean
+shortfall.eventperiod_std
+shortfall.eventperiod_bus_mean
+shortfall.eventperiod_bus_std
+shortfall.eventperiod_period_mean
+shortfall.eventperiod_period_std
+shortfall.eventperiod_busperiod_mean
+shortfall.eventperiod_busperiod_std
+shortfall.shortfall_mean
+shortfall.shortfall_std
+shortfall.shortfall_bus_std
+shortfall.shortfall_period_std
+shortfall.shortfall_busperiod_std
 
 
 timestamprow = permutedims(system.timestamps)

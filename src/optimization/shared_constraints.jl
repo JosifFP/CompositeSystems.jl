@@ -2,8 +2,7 @@
 #***************************************************** CONSTRAINTS *************************************************************************
 "Fix the voltage angle to zero at the reference bus"
 function con_theta_ref(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
-    JuMP.fix(var(pm, :va, nw)[i], 0, force = true)
-    #@constraint(pm.model, var(pm, :va, nw)[i] == 0)
+    @constraint(pm.model, var(pm, :va, nw)[i] == 0)
 end
 
 "Nodal power balance constraints"
@@ -15,14 +14,12 @@ function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, 
     bus_shunts = topology(pm, :bus_shunts)[i]
     bus_storage = topology(pm, :bus_storages)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k,t] for k in bus_loads])
-    bus_qd = Float32.([field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads])
-
+    bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
+    bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
     bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in bus_shunts)
     bus_bs = Dict{Int, Float32}(k => field(system, :shunts, :bs)[k] for k in bus_shunts)
 
     _con_power_balance(pm, system, i, nw, bus_arcs, bus_gens, bus_loads, bus_shunts, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
-
 end
 
 "Nodal power balance constraints without load curtailment variables"
@@ -34,13 +31,12 @@ function con_power_balance_nolc(pm::AbstractPowerModel, system::SystemModel, i::
     bus_shunts = topology(pm, :bus_shunts)[i]
     bus_storages = topology(pm, :bus_storages)[i]
 
-    bus_pd = Float32.([field(system, :loads, :pd)[k] for k in bus_loads])
-    bus_qd = Float32.([field(system, :loads, :qd)[k] for k in bus_loads])
-    bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
-    bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
+    bus_pd = [field(system, :loads, :pd)[k] for k in bus_loads]
+    bus_qd = [field(system, :loads, :qd)[k] for k in bus_loads]
+    bus_gs = [field(system, :shunts, :gs)[k] for k in bus_shunts]
+    bus_bs = [field(system, :shunts, :bs)[k] for k in bus_shunts]
 
     _con_power_balance_nolc(pm, system, i, nw, bus_arcs, bus_generators, bus_loads, bus_shunts, bus_storages, bus_pd, bus_qd, bus_gs, bus_bs)
-
 end
 
 
@@ -81,6 +77,10 @@ function con_voltage_angle_difference(pm::AbstractPolarModels, system::SystemMod
 
 end
 
+"nothing to do, no voltage angle variables"
+function con_voltage_angle_difference(pm::AbstractNFAModel, system::SystemModel, l::Int; nw::Int=1)
+end
+
 ""
 function _con_voltage_angle_difference(pm::AbstractPolarModels, nw::Int, l::Int, f_bus::Int, t_bus::Int, angmin, angmax, vad_min, vad_max)
     va_fr = var(pm, :va, nw)[f_bus]
@@ -88,7 +88,6 @@ function _con_voltage_angle_difference(pm::AbstractPolarModels, nw::Int, l::Int,
     con(pm, :voltage_angle_diff_upper, nw)[l] = @constraint(pm.model, va_fr - va_to <= angmax)
     con(pm, :voltage_angle_diff_lower, nw)[l] = @constraint(pm.model, va_fr - va_to >= angmin)
 end
-
 
 ""
 function con_thermal_limits_on_off(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::Int=1)
@@ -187,10 +186,8 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::In
     g, b = calc_branch_y(field(system, :branches), l)
     tr, ti = calc_branch_t(field(system, :branches), l)
     tm = field(system, :branches, :tap)[l]
-
     va_fr  = var(pm, :va, nw)[f_bus]
     va_to  = var(pm, :va, nw)[t_bus]
-
     g_fr = field(system, :branches, :g_fr)[l]
     b_fr = field(system, :branches, :b_fr)[l]
     g_to = field(system, :branches, :g_to)[l]
@@ -198,7 +195,6 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::In
 
     _con_ohms_yt_from(pm, l, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     _con_ohms_yt_to(pm, l, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
-
 end
 
 #***************************************************** STORAGE CONSTRAINTS ************************************************************************
