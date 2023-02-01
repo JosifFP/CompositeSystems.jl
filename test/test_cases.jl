@@ -8,9 +8,13 @@ import BenchmarkTools: @btime
 #using ProfileView, Profile
 
 include("solvers.jl")
+#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+
 timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+rawfile = "test/data/others/Storage/RBTS_strg.m"
+Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 
 #timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
@@ -25,13 +29,16 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel
-    powermodel_formulation = OPF.DCPPowerModel
+    powermodel_formulation = OPF.DCPPowerModel,
     #powermodel_formulation = OPF.DCMPPowerModel
     #powermodel_formulation = OPF.LPACCPowerModel
+    select_largest_splitnetwork = false,
+    deactivate_isolated_bus_gens_stors = false,
+    set_string_names_on_creation = false
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=7500, seed=100, threaded=true)
+method = SequentialMCS(samples=500, seed=100, threaded=true)
 @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.buses.keys)

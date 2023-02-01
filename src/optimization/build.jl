@@ -70,7 +70,7 @@ function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sy
         update_con_voltage_angle_difference(pm, system, states, l, t)
     end
     @inbounds @views for i in field(system, :storages, :keys)
-        update_con_storage(pm, system, states, i, t)
+        update_con_storage_state(pm, system, states, i, t)
     end
     @inbounds @views for i in field(system, :buses, :keys)
         update_var_load_power_factor(pm, system, states, i, t)
@@ -116,10 +116,12 @@ end
 
 ""
 function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if !check_availability(field(states, :storages), t, t-1)
-        @inbounds @views for i in field(system, :storages, :keys)
-            update_con_storage(pm, system, states, i, t)
-        end
+    @inbounds @views for i in field(system, :storages, :keys)
+        update_con_storage_state(pm, system, states, i, t)
+        #if !check_availability(field(states, :storages), t, t-1)
+            #update_var_storage_charge(pm, system, states, i, t)
+            #update_var_storage_discharge(pm, system, states, i, t)
+        #end
     end
 end
 
@@ -199,7 +201,7 @@ function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::Syste
         update_con_voltage_angle_difference(pm, system, states, l, t)
     end
     @inbounds @views for i in field(system, :storages, :keys)
-        update_con_storage(pm, system, states, i, t)
+        update_con_storage_state(pm, system, states, i, t)
     end
 
     for i in field(system, :buses, :keys)
@@ -226,6 +228,12 @@ function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::S
     else
         fill!(states.plc, 0.0)
     end
+    return
+end
+
+function optimize_method_2!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+    JuMP.optimize!(pm.model)
+    build_result!(pm, system, states, t)
     return
 end
 

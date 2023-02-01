@@ -1094,3 +1094,105 @@ end
     end
 
 end
+
+""
+function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel; kwargs...)
+    var_bus_voltage_angle(pm, system; kwargs...)
+    var_bus_voltage_magnitude(pm, system; kwargs...)
+end
+
+"""
+This constraint captures problem agnostic constraints that are used to link
+the model's voltage variables together, in addition to the standard problem
+formulation constraints.
+"""
+function con_model_voltage(pm::AbstractLPACModel, bp::Tuple{Int,Int}; nw::Int=1)
+
+    buspair = topology(pm, :buspairs)[bp]
+    i,j = bp
+    angmin = buspair[2]
+    angmax = buspair[3]
+    vad_max = max(abs(angmin), abs(angmax))
+    con(pm, :model_voltage, nw)[bp] = JuMP.@constraint(pm.model, var(pm, :cs, nw)[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(var(pm, :va, nw)[i] - var(pm, :va, nw)[j])^2)
+
+end
+
+
+"""
+This constraint captures problem agnostic constraints that are used to link
+the model's voltage variables together, in addition to the standard problem
+formulation constraints.
+"""
+function con_model_voltage(pm::AbstractPowerModel, bp::Tuple{Int,Int}; nw::Int=1)
+end
+
+# function update_con_model_voltage_on_off(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+
+#     td_lb = topology(pm, :delta_bounds)[1]
+#     td_ub = topology(pm, :delta_bounds)[2]
+
+#     if field(states, :branches)[l,t] == false
+#         JuMP.set_normalized_rhs(con(pm, :model_voltage_upper, nw)[l], td_ub)
+#         JuMP.set_normalized_rhs(con(pm, :model_voltage_lower, nw)[l], td_lb)
+#     else
+#         JuMP.set_normalized_rhs(con(pm, :model_voltage_upper, nw)[l], 0.0)
+#         JuMP.set_normalized_rhs(con(pm, :model_voltage_lower, nw)[l], 0.0)
+#     end
+# end
+
+""
+function update_var_branch_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, arc::Tuple{Int, Int, Int}, t::Int; nw::Int=1)
+    
+    l,_,_ = arc
+
+    if typeof(var(pm, :p, nw)[arc]) == JuMP.AffExpr
+        p_var = first(keys(var(pm, :p, nw)[arc].terms))
+    elseif typeof(var(pm, :p, nw)[arc]) == JuMP.VariableRef
+        p_var = var(pm, :p, nw)[arc]
+    else
+        @error("Expression $(typeof(var(pm, :p, 1)[arc])) not supported")
+    end
+
+    JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+    JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+end
+
+""
+function update_var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, arc::Tuple{Int, Int, Int}, t::Int; nw::Int=1)
+
+    l,_,_ = arc
+
+    if typeof(var(pm, :q, nw)[arc]) == JuMP.AffExpr
+        q_var = first(keys(var(pm, :q, 1)[arc].terms))
+    elseif typeof(var(pm, :q, nw)[arc]) == JuMP.VariableRef
+        q_var = var(pm, :q, nw)[arc]
+    else
+        @error("Expression $(typeof(var(pm, :q, 1)[arc])) not supported")
+    end
+
+    JuMP.set_lower_bound(q_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+    JuMP.set_upper_bound(q_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+end
+
+
+""
+function update_var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+    ps = var(pm, :ps, nw)[i]
+    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+end
+
+""
+function update_var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+    ps = var(pm, :ps, nw)[i]
+    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+end
+
+""
+function update_var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+    se = var(pm, :se, nw)[i]
+    JuMP.set_lower_bound(se, 0)
+    JuMP.set_upper_bound(se, field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
+end
+

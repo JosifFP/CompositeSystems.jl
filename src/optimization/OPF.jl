@@ -28,7 +28,7 @@
 
         #functions
         solve_opf, abstract_model, build_method!, update_method!, build_result!, field,
-        var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, optimize_method!,
+        var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, optimize_method!, optimize_method_2!,
 
         #optimizationcontainers
         Topology,

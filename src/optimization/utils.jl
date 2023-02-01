@@ -282,7 +282,6 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
     bus_asset!(topology(pm, :busarcs), arcs)
 
     update_buspair_parameters!(topology(pm, :buspairs), field(system, :branches), key_branches)
-
     #vad_min,vad_max = calc_theta_delta_bounds(pm, field(system, :branches))
     #topology(pm, :delta_bounds)[1] = vad_min
     #topology(pm, :delta_bounds)[2] = vad_max
@@ -390,8 +389,8 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         active_gen_count = sum(cc_active_gens)
         active_strg_count = sum(cc_active_strg)
 
-        if (active_load_count == 0 && active_shunt_count == 0 && active_strg_count == 0) || active_gen_count == 0
-            #@info("deactivating connected component $(cc) due to isolation without generation, load or storage")
+        if (active_load_count == 0 && active_shunt_count == 0) || (active_gen_count == 0 && active_strg_count == 0)
+            #@info("deactivating connected component $(cc) due to isolation without generation, load or storage, active_strg_count=$(active_strg_count)")
             for i in cc
                 states.buses[i,t] = 4
                 changed = true
@@ -433,13 +432,12 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
             for k in topology(pm, :bus_storages)[i]
                 if states.storages[k,t] ≠ 0
                     states.storages[k,t] = 0
+                    if t > 1 states.se[k,t] = states.se[k,t-1] end
                 end
             end
         end
     end
-
     return
-
 end
 
 ""

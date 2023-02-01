@@ -204,11 +204,7 @@ function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i
     energy = field(system, :storages, :energy)[i]
     charge_eff = field(system, :storages, :charge_efficiency)[i]
     discharge_eff = field(system, :storages, :discharge_efficiency)[i]
-
-    if L==1 && T ≠ Hour
-        @error("Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon")
-    end
-
+    @assert L == 1 && T == Hour "Parameters L=$(L) and T=$(T) must be 1 and Hour respectively. More options available soon"
     _con_storage_state_initial(pm, nw, i, energy, charge_eff, discharge_eff, L)
 end
 
@@ -218,7 +214,6 @@ function _con_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, ener
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
     se = var(pm, :se, n)[i]
-
     con(pm, :storage_state, n)[i] = @constraint(pm.model, se - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
 end
 
@@ -227,7 +222,6 @@ function con_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemMo
 
     charge_ub = field(system, :storages, :charge_rating)[i]
     discharge_ub = field(system, :storages, :discharge_rating)[i]
-
     sc = var(pm, :sc, nw)[i]
     sd = var(pm, :sd, nw)[i]
     sc_on = var(pm, :sc_on, nw)[i]
@@ -236,7 +230,6 @@ function con_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemMo
     con(pm, :storage_complementarity_mi_1, nw)[i] = @constraint(pm.model, sc_on + sd_on == 1)
     con(pm, :storage_complementarity_mi_2, nw)[i] = @constraint(pm.model, sc_on*charge_ub >= sc)
     con(pm, :storage_complementarity_mi_3, nw)[i] = @constraint(pm.model, sd_on*discharge_ub >= sd)
-
 end
 
 ""
@@ -247,38 +240,20 @@ function con_storage_losses(pm::AbstractPowerModel, system::SystemModel, i::Int;
     storage_x = field(system, :storages, :x)[i]
     p_loss = field(system, :storages, :ploss)[i]
     q_loss = field(system, :storages, :qloss)[i]
-
-    _con_storage_losses(pm, nw, i, storage_bus, storage_r, storage_x, p_loss, q_loss)
+    vmin = field(system, :buses, :vmin)[i]
+    vmax = field(system, :buses, :vmax)[i]
+    _con_storage_losses(pm, nw, i, storage_bus, storage_r, storage_x, p_loss, q_loss, vmin, vmax)
 end
 
 ""
 function con_storage_thermal_limit(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
-
     thermal_rating = field(system, :storages, :thermal_rating)[i]
     _con_storage_thermal_limit(pm, nw, i, thermal_rating)
 end
 
-"""
-This constraint captures problem agnostic constraints that are used to link
-the model's voltage variables together, in addition to the standard problem
-formulation constraints.
-"""
-function con_model_voltage(pm::AbstractPowerModel, bp::Tuple{Int,Int}; nw::Int=1)
-end
-
-"Branch - Phase Angle Difference Constraints "
-function update_con_voltage_angle_difference(pm::AbstractPolarModels, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
-    
-    if field(states, :branches)[l,t] == false
-        vad_min = topology(pm, :delta_bounds)[1]
-        vad_max = topology(pm, :delta_bounds)[2]
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[l], vad_max)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[l], vad_min)
-    else
-        angmin = field(system, :branches, :angmin)[l]
-        angmax = field(system, :branches, :angmax)[l]
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[l], angmax)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[l], angmin)
-    end
-
+""
+function _con_storage_thermal_limit(pm::AbstractPowerModel, n::Int, i::Int, rating::Float32)
+    ps = var(pm, :ps, n)[i]
+    qs = var(pm, :qs, n)[i]
+    con(pm, :storage_thermal_limit, n)[i] = @constraint(pm.model, ps^2 + qs^2 <= rating^2)
 end

@@ -53,6 +53,11 @@ println(pmi.model)
 
 
 
+data = OPF.build_network(rawfile, symbol=false)
+result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
+pmi = PowerModels.instantiate_model(data, PowerModels.LPACCPowerModel, PowerModels.build_opf)
+println(pmi.model)
+
 
 
 

@@ -1,11 +1,5 @@
 # Shared Formulation Definitions
 ""
-function var_bus_voltage(pm::AbstractPowerModel, system::SystemModel; kwargs...)
-    var_bus_voltage_angle(pm, system; kwargs...)
-    var_bus_voltage_magnitude(pm, system; kwargs...)
-end
-
-""
 function var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
     var(pm, :va)[nw] = @variable(pm.model, va[assetgrouplist(topology(pm, :buses_idxs))])
 end
@@ -31,7 +25,6 @@ function var_gen_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int
             end
         end
     end
-
 end
 
 ""
@@ -57,6 +50,7 @@ function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
     p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
+
     if bounded
         for (l,i,j) in arcs
             JuMP.set_lower_bound(p[(l,i,j)], -field(system, :branches, :rate_a)[l])
@@ -83,7 +77,7 @@ end
 "Defines load power factor variables to represent the active power flow for each branch"
 function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    z_demand = var(pm, :z_demand)[nw] = @variable(pm.model, z_demand[assetgrouplist(topology(pm, :buses_idxs))], start =1.0)
+    z_demand = var(pm, :z_demand)[nw] = @variable(pm.model, z_demand[assetgrouplist(topology(pm, :buses_idxs))], start = 1.0)
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
         JuMP.set_lower_bound(z_demand[i], 0)
@@ -93,17 +87,14 @@ function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, t::I
             JuMP.set_upper_bound(z_demand[i], 1)
         end
     end
-    
 end
 
 "Defines load curtailment variables p to represent the active power flow for each branch"
 function var_shunt_admittance_factor(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
-    z_shunt = var(pm, :z_shunt)[nw] = @variable(pm.model, z_shunt[assetgrouplist(topology(pm, :shunts_idxs))], binary = true, start =1.0)
-    
+    z_shunt = var(pm, :z_shunt)[nw] = @variable(pm.model, z_shunt[assetgrouplist(topology(pm, :shunts_idxs))], binary = true, start = 1.0)
     for l in assetgrouplist(topology(pm, :shunts_idxs))
         JuMP.fix(z_shunt[l], 1.0)
     end
-
 end
 
 #**************************************************** STORAGE VARIABLES ************************************************************************
@@ -112,6 +103,7 @@ function var_storage_power_mi(pm::AbstractPowerModel, system::SystemModel; kwarg
     var_storage_power_real(pm, system; kwargs...)
     var_storage_power_imaginary(pm, system; kwargs...)
     var_storage_power_control_imaginary(pm, system; kwargs...)
+    var_storage_current(pm, system; kwargs...)
     var_storage_energy(pm, system; kwargs...)
     var_storage_charge(pm, system; kwargs...)
     var_storage_discharge(pm, system; kwargs...)
@@ -129,7 +121,6 @@ function var_storage_power_real(pm::AbstractPowerModel, system::SystemModel; nw:
             JuMP.set_upper_bound(ps[i], min(Inf,  field(system, :storages, :thermal_rating)[i]))
         end
     end
-
 end
 
 ""
@@ -139,26 +130,24 @@ function var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            JuMP.set_lower_bound(qs[i], max(-field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmin)[i]))
-            JuMP.set_upper_bound(qs[i], min(field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmax)[i]))
+            JuMP.set_lower_bound(qs[i], max(-Inf, -field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmin)[i]))
+            JuMP.set_upper_bound(qs[i], min(Inf, field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmax)[i]))
         end
     end
-
 end
 
-"""
-a reactive power slack variable that enables the storage device to inject or
-consume reactive power at its connecting bus, subject to the injection limits
-of the device.
-"""
-function var_storage_power_control_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+""
+function var_storage_current(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    qsc = var(pm, :qsc)[nw] = @variable(pm.model, qsc[assetgrouplist(topology(pm, :storages_idxs))])
-
+    ccms = var(pm, :ccms)[nw] = @variable(pm.model, ccms[assetgrouplist(topology(pm, :storages_idxs))])
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            JuMP.set_lower_bound(qsc[i], max(-field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmin)[i]))
-            JuMP.set_upper_bound(qsc[i], min(field(system, :storages, :thermal_rating)[i], field(system, :storages, :qmax)[i]))            
+            sb = field(system, :storages, :buses)[i]
+            ub = (field(system, :storages, :thermal_rating)[i]/field(system, :buses, :vmin)[sb])^2
+            JuMP.set_lower_bound(ccms[i], 0.0)
+            if !isinf(ub)
+                JuMP.set_upper_bound(ccms[i], ub)
+            end
         end
     end
 end
@@ -174,13 +163,35 @@ function var_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int
             JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i])
         end
     end
+end
 
+"""
+a reactive power slack variable that enables the storage device to inject or
+consume reactive power at its connecting bus, subject to the injection limits
+of the device.
+"""
+function var_storage_power_control_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    qsc = var(pm, :qsc)[nw] = @variable(pm.model, qsc[assetgrouplist(topology(pm, :storages_idxs))])
+
+    if bounded
+        for i in assetgrouplist(topology(pm, :storages_idxs))
+            qmin = field(system, :storages, :qmin)[i]
+            qmax = field(system, :storages, :qmax)[i]
+            if nand(qmin == 0, qmax == 0)
+                qmin = -Inf
+                qmax = Inf
+            end
+            JuMP.set_lower_bound(qsc[i], max(-field(system, :storages, :thermal_rating)[i], qmin))
+            JuMP.set_upper_bound(qsc[i], min(field(system, :storages, :thermal_rating)[i], qmax))            
+        end
+    end
 end
 
 ""
 function var_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    sc = var(pm, :sc)[nw] = @variable(pm.model, sc[assetgrouplist(topology(pm, :storages_idxs))])
+    sc = var(pm, :sc)[nw] = @variable(pm.model, sc[assetgrouplist(topology(pm, :storages_idxs))], start = 1.0)
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -188,13 +199,12 @@ function var_storage_charge(pm::AbstractPowerModel, system::SystemModel; nw::Int
             JuMP.set_upper_bound(sc[i], field(system, :storages, :charge_rating)[i])
         end
     end
-
 end
 
 ""
 function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    sd = var(pm, :sd)[nw] = @variable(pm.model, sd[assetgrouplist(topology(pm, :storages_idxs))])
+    sd = var(pm, :sd)[nw] = @variable(pm.model, sd[assetgrouplist(topology(pm, :storages_idxs))], start = 1.0)
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
@@ -202,18 +212,16 @@ function var_storage_discharge(pm::AbstractPowerModel, system::SystemModel; nw::
             JuMP.set_upper_bound(sd[i], field(system, :storages, :discharge_rating)[i])
         end
     end
-
 end
 
 ""
 function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     if bounded
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
-        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true)
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 0.0)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 0.0)
     else
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1)
-        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1)
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1, start = 0.0)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1, start = 0.0)
     end
-
 end

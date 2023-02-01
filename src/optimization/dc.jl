@@ -55,6 +55,10 @@ end
 function var_storage_power_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
 
+"do nothing"
+function var_storage_current(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+end
+
 "do nothing by default but some formulations require this"
 function var_storage_power_control_imaginary(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 end
@@ -76,7 +80,11 @@ end
 function update_con_voltage_angle_difference(pm::AbstractNFAModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
 end
 
-""
+"""
+This constraint captures problem agnostic constraints that are used to link
+the model's voltage variables together, in addition to the standard problem
+formulation constraints.
+"""
 function con_model_voltage_on_off(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
 end
 
@@ -248,34 +256,29 @@ end
 
 #************************************************** CONSTRAINTS STORAGE **********************************************************************
 ""
-function _con_storage_losses(pm::AbstractAPLossLessModels, n::Int, i, bus, r, x, p_loss, q_loss)
-
+function _con_storage_losses(pm::AbstractAPLossLessModels, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
     ps = var(pm, :ps, n)[i]
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
-
     con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss)
 end
 
 ""
-function _con_storage_losses(pm::AbstractDCPowerModel, n::Int, i, bus, r, x, p_loss, q_loss)
-
+function _con_storage_losses(pm::AbstractDCPowerModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
     ps = var(pm, :ps, n)[i]
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
-    
     con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss + r*ps^2)
-
 end
 
 ""
-function _con_storage_thermal_limit(pm::AbstractDCPowerModel, n::Int, i, rating)
-    
+function _con_storage_thermal_limit(pm::AbstractDCPowerModel, n::Int, i::Int, rating::Float32)
     ps = var(pm, :ps, n)[i]
     JuMP.lower_bound(ps) < -rating && JuMP.set_lower_bound(ps, -rating)
     JuMP.upper_bound(ps) >  rating && JuMP.set_upper_bound(ps,  rating)
+    con(pm, :storage_thermal_lower_limit, n)[i] = JuMP.LowerBoundRef(ps)
+    con(pm, :storage_thermal_upper_limit, n)[i] = JuMP.UpperBoundRef(ps)
 end
-
 
 #***************************************************** UPDATES *************************************************************************
 ""
@@ -337,22 +340,12 @@ function update_con_thermal_limits(pm::AbstractAPLossLessModels, system::SystemM
     f_idx = (l, f_bus, t_bus)
     p_fr = var(pm, :p, nw)[f_idx]
 
-    if field(states, :branches)[l,t] == false
-        if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
-            JuMP.set_lower_bound(p_fr, 0.0)
-            if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, 0.0) end
-        else
-            JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], 0.0)
-            JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], 0.0)
-        end
+    if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
+        JuMP.set_lower_bound(p_fr, (-rate_a)*field(states, :branches)[l,t])
+        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, rate_a*field(states, :branches)[l,t]) end
     else
-        if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
-            JuMP.set_lower_bound(p_fr, -rate_a)
-            if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, rate_a) end
-        else
-            JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a)
-            JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a)
-        end
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*field(states, :branches)[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*field(states, :branches)[l,t])
     end
 end
 

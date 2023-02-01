@@ -159,7 +159,11 @@ function _con_power_balance_nolc(
 
 end
 
-""
+"""
+This constraint captures problem agnostic constraints that are used to link
+the model's voltage variables together, in addition to the standard problem
+formulation constraints.
+"""
 function con_model_voltage_on_off(pm::AbstractLPACModel, system::SystemModel; nw::Int=1)
     
     t = var(pm, :va, nw)
@@ -258,19 +262,20 @@ function _con_ohms_yt_to(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_b
     cs = var(pm, :cs, nw)[l]
     con(pm, :ohms_yt_to_p, nw)[l] = @constraint(pm.model, p_to ==  (g+g_to)*(1.0 + 2*phi_to) + (-g*tr-b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr+g*ti)/tm^2*-(td))
     con(pm, :ohms_yt_to_q, nw)[l] = @constraint(pm.model, q_to == -(b+b_to)*(1.0 + 2*phi_to) - (-b*tr+g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr-b*ti)/tm^2*-(td))
-
 end
 
 ""
-function con_model_voltage(pm::AbstractLPACModel, bp::Tuple{Int,Int}; nw::Int=1)
-
-    buspair = topology(pm, :buspairs)[bp]
-    i,j = bp
-    angmin = buspair[2]
-    angmax = buspair[3]
-    vad_max = max(abs(angmin), abs(angmax))
-    con(pm, :model_voltage, nw)[bp] = JuMP.@constraint(pm.model, var(pm, :cs, nw)[bp] <= 1 - (1-cos(vad_max))/vad_max^2*(var(pm, :va, nw)[i] - var(pm, :va, nw)[j])^2)
-
+function _con_storage_losses(pm::AbstractLPACModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+    ps = var(pm, :ps, n)[i]
+    qs = var(pm, :qs, n)[i]
+    sc = var(pm, :sc, n)[i]
+    sd = var(pm, :sd, n)[i]
+    ccms = var(pm, :ccms, n)[i]
+    qsc = var(pm, :qsc, n)[i]
+    #phi = var(pm, :phi, n)[bus]
+    con(pm, :storage_losses_p, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss + r*ccms)
+    con(pm, :storage_losses_q, n)[i] = @constraint(pm.model, qs == qsc + q_loss + x*ccms)
+    con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps^2 + qs^2 <= vmax^2*ccms)
 end
 
 #***************************************************** UPDATES *************************************************************************
@@ -405,17 +410,3 @@ function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel,
         JuMP.fix(z_branch, 1, force=true)
     end
 end
-
-# function update_con_model_voltage_on_off(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
-
-#     td_lb = topology(pm, :delta_bounds)[1]
-#     td_ub = topology(pm, :delta_bounds)[2]
-
-#     if field(states, :branches)[l,t] == false
-#         JuMP.set_normalized_rhs(con(pm, :model_voltage_upper, nw)[l], td_ub)
-#         JuMP.set_normalized_rhs(con(pm, :model_voltage_lower, nw)[l], td_lb)
-#     else
-#         JuMP.set_normalized_rhs(con(pm, :model_voltage_upper, nw)[l], 0.0)
-#         JuMP.set_normalized_rhs(con(pm, :model_voltage_lower, nw)[l], 0.0)
-#     end
-# end

@@ -209,6 +209,9 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_thermal_lower_limit, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_thermal_upper_limit, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
     end
     return
 end
@@ -254,6 +257,7 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
+        add_var_container!(pm.var, :ccms, field(system, :storages, :keys))
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
         add_var_container!(pm.var, :qs, field(system, :storages, :keys))
         add_var_container!(pm.var, :qsc, field(system, :storages, :keys))
@@ -268,10 +272,12 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
         add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_thermal_limit, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses_p, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses_q, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
     end
-
     return
-
 end
 
 ""
