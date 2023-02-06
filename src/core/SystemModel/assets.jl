@@ -1,4 +1,3 @@
-
 abstract type AbstractAssets end
 abstract type TimeSeriesAssets{N,L,T<:Period} <: AbstractAssets end
 
@@ -11,16 +10,16 @@ struct Buses <: AbstractAssets
     zone::Vector{Int}
     bus_type::Vector{Int}
     bus_i::Vector{Int}
-    vmax::Vector{Float16}
-    vmin::Vector{Float16}
-    base_kv::Vector{Float16}
+    vmax::Vector{Float32}
+    vmin::Vector{Float32}
+    base_kv::Vector{Float32}
     va::Vector{Float32}
     vm::Vector{Float32}
 
     function Buses(
         keys::Vector{Int}, zone::Vector{Int}, bus_type::Vector{Int},
-        bus_i::Vector{Int}, vmax::Vector{Float16}, vmin::Vector{Float16}, 
-        base_kv::Vector{Float16}, va::Vector{Float32}, vm::Vector{Float32}
+        bus_i::Vector{Int}, vmax::Vector{Float32}, vmin::Vector{Float32}, 
+        base_kv::Vector{Float32}, va::Vector{Float32}, vm::Vector{Float32}
     )
 
         nbuses = length(keys)
@@ -35,9 +34,9 @@ struct Buses <: AbstractAssets
         @assert length(va) == (nbuses)
         @assert length(vm) == (nbuses)
         @assert all(vm .> 0)
-        @assert all(base_kv .> 0)
+        @assert all(base_kv .>= 0)
 
-        new(keys, Int.(zone), Int.(bus_type), Int.(bus_i), Float16.(vmax), Float16.(vmin), Float16.(base_kv), Float32.(va), Float32.(vm))
+        new(keys, Int.(zone), Int.(bus_type), Int.(bus_i), Float32.(vmax), Float32.(vmin), Float32.(base_kv), Float32.(va), Float32.(vm))
     end
 end
 
@@ -65,24 +64,32 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    pg::VecOrMat{Float16} # Active power in per unit
-    qg::Vector{Float16}  # Active power in per unit
-    vg::Vector{Float16}
-    pmax::Vector{Float16}
-    pmin::Vector{Float16}
-    qmax::Vector{Float16}
-    qmin::Vector{Float16}
-    mbase::Vector{Int}
+    pg::VecOrMat{Float32} # Active power in per unit
+    qg::Vector{Float32}  # Active power in per unit
+    vg::Vector{Float32}
+    pmax::Vector{Float32}
+    pmin::Vector{Float32}
+    qmax::Vector{Float32}
+    qmin::Vector{Float32}
+    mbase::Vector{Float32}
     cost::Vector{<:Any}
-    λ::Vector{Float64} #Failure rate in failures per year
-    μ::Vector{Float64} #Repair rate in hours per year
+    state_model::Vector{Int}
+    λ_updn::Vector{Float64}
+    μ_updn::Vector{Float64}
+    λ_upde::Vector{Float64}
+    μ_upde::Vector{Float64}
+    pde::Vector{Float32}
     status::Vector{Bool}
 
     function Generators{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int}, pg::VecOrMat{Float16}, qg::Vector{Float16}, 
-        vg::Vector{Float16}, pmax::Vector{Float16}, pmin::Vector{Float16}, 
-        qmax::Vector{Float16}, qmin::Vector{Float16}, mbase::Vector{Int}, 
-        cost::Vector{<:Any}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
+        keys::Vector{Int}, buses::Vector{Int}, 
+        pg::VecOrMat{Float32}, qg::Vector{Float32}, 
+        vg::Vector{Float32}, pmax::Vector{Float32}, pmin::Vector{Float32}, 
+        qmax::Vector{Float32}, qmin::Vector{Float32},
+        mbase::Vector{Float32}, cost::Vector{<:Any},  state_model::Vector{Int},
+        λ_updn::Vector{Float64}, μ_updn::Vector{Float64}, 
+        λ_upde::Vector{Float64}, μ_upde::Vector{Float64}, 
+        pde::Vector{Float32}, status::Vector{Bool}
     ) where {N,L,T}
 
         ngens = length(keys)
@@ -99,14 +106,19 @@ struct Generators{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert length(qmin) == (ngens)
         @assert length(mbase) == (ngens)
         @assert length(cost) == (ngens)
-        @assert length(λ) == (ngens)
-        @assert length(μ) == (ngens)
+        @assert length(state_model) == (ngens)
+        @assert length(λ_updn) == (ngens)
+        @assert length(μ_updn) == (ngens)
+        @assert length(λ_upde) == (ngens)
+        @assert length(μ_upde) == (ngens)
+        @assert length(pde) == (ngens)
         @assert length(status) == (ngens)
 
         new{N,L,T}(
-            Int.(keys), Int.(buses), pg, Float16.(qg), Float16.(vg), 
-            Float16.(pmax), Float16.(pmin), Float16.(qmax), Float16.(qmin), 
-            Int.(mbase), cost, Float64.(λ), Float64.(μ), Bool.(status)
+            Int.(keys), Int.(buses), pg, Float32.(qg), Float32.(vg), 
+            Float32.(pmax), Float32.(pmin), Float32.(qmax), Float32.(qmin), 
+            Float32.(mbase), cost, Int.(state_model), Float64.(λ_updn), Float64.(μ_updn),
+            Float64.(λ_upde), Float64.(μ_upde), Float32.(pde), Bool.(status)
         )
     end
 
@@ -124,8 +136,12 @@ Base.:(==)(x::T, y::T) where {T <: Generators} =
     x.qmin == y.qmin &&
     x.mbase == y.mbase &&
     x.cost == y.cost &&
-    x.λ == y.λ &&
-    x.μ == y.μ &&
+    x.state_model == y.state_model &&
+    x.λ_updn == y.λ_updn &&
+    x.μ_updn == y.μ_updn &&
+    x.λ_upde == y.λ_upde &&
+    x.μ_upde == y.μ_upde &&
+    x.pde == y.pde &&
     x.status == y.status
 
 Base.getindex(g::G, idxs::AbstractVector{Int}) where {G <: Generators} =
@@ -134,9 +150,11 @@ Base.getindex(g::G, idxs::AbstractVector{Int}) where {G <: Generators} =
       g.vg[idxs],
       g.pmax[idxs], g.pmin[idxs], 
       g.qmax[idxs], g.qmin[idxs],
-      g.mbase[idxs], g.cost[idxs],
-      g.λ[idxs, :], g.μ[idxs, :],
-      g.status[idxs])
+      g.mbase[idxs], g.cost[idxs], 
+      g.state_model[idxs],
+      g.λ_updn[idxs], g.μ_updn[idxs],
+      g.λ_upde[idxs], g.μ_upde[idxs],
+      g.pde[idxs],   g.status[idxs])
 
 
 function Base.vcat(gs::G...) where {N,L,T,G <: Generators{N,L,T}}
@@ -144,17 +162,21 @@ function Base.vcat(gs::G...) where {N,L,T,G <: Generators{N,L,T}}
     ngens = sum(length(g) for g in gs)
     keys = Vector{Int}(undef, ngens)
     buses = Vector{Int}(undef, ngens)
-    pg = VecOrMat{Float16}(undef, ngens, N)
-    qg = Vector{Float16}(undef, ngens)
+    pg = VecOrMat{Float32}(undef, ngens, N)
+    qg = Vector{Float32}(undef, ngens)
     vg = Vector{Float32}(undef, ngens)
-    pmax = Vector{Float16}(undef, ngens)
-    pmin = Vector{Float16}(undef, ngens)
-    qmax = Vector{Float16}(undef, ngens)
-    qmin = Vector{Float16}(undef, ngens)
-    mbase = Vector{Bool}(undef, ngens)
+    pmax = Vector{Float32}(undef, ngens)
+    pmin = Vector{Float32}(undef, ngens)
+    qmax = Vector{Float32}(undef, ngens)
+    qmin = Vector{Float32}(undef, ngens)
+    mbase = Vector{Float32}(undef, ngens)
     cost = Vector{Any}(undef, ngens)
-    λ = Vector{Float64}(undef, ngens)
-    μ = Vector{Float64}(undef, ngens)
+    state_model = Vector{Any}(undef, ngens)
+    λ_updn = Vector{Float64}(undef, ngens)
+    μ_updn = Vector{Float64}(undef, ngens)
+    λ_upde = Vector{Float64}(undef, ngens)
+    μ_upde = Vector{Float64}(undef, ngens)
+    pde = Vector{Float32}(undef, ngens)
     status = Vector{Bool}(undef, ngens)
     last_idx = 0
 
@@ -172,12 +194,16 @@ function Base.vcat(gs::G...) where {N,L,T,G <: Generators{N,L,T}}
         qmin[rows] = g.qmin
         mbase[rows] = g.mbase
         cost[rows] = g.cost
-        λ[rows] = g.λ
-        μ[rows] = g.μ
+        state_model[rows] = g.state_model
+        λ_updn[rows] = g.λ_updn
+        μ_updn[rows] = g.μ_updn
+        λ_upde[rows] = g.λ_upde
+        μ_upde[rows] = g.μ_upde
+        pde[rows] = g.pde
         status[rows] = g.status
         last_idx += n
     end
-    return Generators{N,L,T}(keys, buses, pg, qg, vg, pmax, pmin, qmax, qmin, mbase, cost, λ, μ, status)
+    return Generators{N,L,T}(keys, buses, pg, qg, vg, pmax, pmin, qmax, qmin, mbase, cost, state_model, λ_updn, μ_updn, λ_upde, μ_upde, pde, status)
     
 end
 
@@ -186,14 +212,15 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    pd::VecOrMat{Float16} # Active power in per unit
-    qd::Vector{Float16} # Reactive power in per unit
-    cost::Vector{Float16}
+    pd::VecOrMat{Float32} # Active power in per unit
+    qd::Vector{Float32} # Reactive power in per unit
+    pf::Vector{Float32} # Power factor
+    cost::Vector{Float32}
     status::Vector{Bool}
 
     function Loads{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float16}, 
-        qd::Vector{Float16}, cost::Vector{Float16}, status::Vector{Bool}
+        keys::Vector{Int}, buses::Vector{Int}, pd::VecOrMat{Float32}, qd::Vector{Float32}, 
+        pf::Vector{Float32}, cost::Vector{Float32}, status::Vector{Bool}
         ) where {N,L,T}
 
         nloads = length(keys)
@@ -202,10 +229,11 @@ struct Loads{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert size(pd, 2) == N
         @assert length(qd) == (nloads)
         @assert all(pd .>= 0)
+        @assert length(pf) == (nloads)
         @assert length(cost) == (nloads)
         @assert length(status) == (nloads)
 
-        new{N,L,T}(Int.(keys), Int.(buses), pd, Float16.(qd), Float16.(cost), Bool.(status))
+        new{N,L,T}(Int.(keys), Int.(buses), pd, Float32.(qd), Float32.(pf), Float32.(cost), Bool.(status))
     end
 
 end
@@ -215,6 +243,7 @@ Base.:(==)(x::T, y::T) where {T <: Loads} =
     x.buses == y.buses &&
     x.pd == y.pd &&
     x.qd == y.qd &&
+    x.pf == y.pf &&
     x.cost == y.cost &&
     x.status == y.status
 #
@@ -224,31 +253,31 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    ps::Vector{Float16}  # Active power in per unit
-    qs::Vector{Float16}
-    energy::Vector{Float16}
-    energy_rating::Vector{Float16} # energy_capacity
-    charge_rating::Vector{Float16}
-    discharge_rating::Vector{Float16}
-    charge_efficiency::Vector{Float16}
-    discharge_efficiency::Vector{Float16}
-    thermal_rating::Vector{Float16}
-    qmax::Vector{Float16}
-    qmin::Vector{Float16}
-    r::Vector{Float16}
-    x::Vector{Float16}
-    ploss::Vector{Float16}
-    qloss::Vector{Float16}
-    λ::Vector{Float64} #Failure rate in failures per year
-    μ::Vector{Float64} #Repair rate in hours per year
+    ps::Vector{Float32}  # Active power in per unit
+    qs::Vector{Float32}
+    energy::Vector{Float32}
+    energy_rating::Vector{Float32} # energy_capacity
+    charge_rating::Vector{Float32}
+    discharge_rating::Vector{Float32}
+    charge_efficiency::Vector{Float32}
+    discharge_efficiency::Vector{Float32}
+    thermal_rating::Vector{Float32}
+    qmax::Vector{Float32}
+    qmin::Vector{Float32}
+    r::Vector{Float32}
+    x::Vector{Float32}
+    ploss::Vector{Float32}
+    qloss::Vector{Float32}
+    λ_updn::Vector{Float64} #Failure rate in failures per year
+    μ_updn::Vector{Float64} #Repair rate in hours per year
     status::Vector{Bool}
 
     function Storages{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int}, ps::Vector{Float16}, qs::Vector{Float16},
-        energy::Vector{Float16}, energy_rating::Vector{Float16}, charge_rating::Vector{Float16}, 
-        discharge_rating::Vector{Float16}, charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16}, 
-        thermal_rating::Vector{Float16}, qmax::Vector{Float16}, qmin::Vector{Float16}, r::Vector{Float16}, 
-        x::Vector{Float16}, ploss::Vector{Float16}, qloss::Vector{Float16}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
+        keys::Vector{Int}, buses::Vector{Int}, ps::Vector{Float32}, qs::Vector{Float32},
+        energy::Vector{Float32}, energy_rating::Vector{Float32}, charge_rating::Vector{Float32}, 
+        discharge_rating::Vector{Float32}, charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32}, 
+        thermal_rating::Vector{Float32}, qmax::Vector{Float32}, qmin::Vector{Float32}, r::Vector{Float32}, 
+        x::Vector{Float32}, ploss::Vector{Float32}, qloss::Vector{Float32}, λ_updn::Vector{Float64}, μ_updn::Vector{Float64}, status::Vector{Bool}
     ) where {N,L,T}
 
         nstors = length(keys)
@@ -267,8 +296,8 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert length(x) == (nstors)
         @assert length(ploss) == (nstors)
         @assert length(qloss) == (nstors)
-        @assert length(λ) == (nstors)
-        @assert length(μ) == (nstors)
+        @assert length(λ_updn) == (nstors)
+        @assert length(μ_updn) == (nstors)
         @assert length(status) == (nstors)
         @assert all(0 .<= energy)
         @assert all(0 .<= energy_rating)
@@ -277,11 +306,11 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert all(0 .<= charge_efficiency)
         @assert all(0 .<= discharge_efficiency)
 
-        new{N,L,T}(Int.(keys), Int.(buses), Float16.(ps), Float16.(qs),
-        Float16.(energy), Float16.(energy_rating), Float16.(charge_rating), 
-        Float16.(discharge_rating), Float16.(charge_efficiency), Float16.(discharge_efficiency), 
-        Float16.(thermal_rating), Float16.(qmax), Float16.(qmin), Float16.(r), 
-        Float16.(x), Float16.(ploss), Float16.(qloss), Float64.(λ), Float64.(μ), Bool.(status))
+        new{N,L,T}(Int.(keys), Int.(buses), Float32.(ps), Float32.(qs),
+        Float32.(energy), Float32.(energy_rating), Float32.(charge_rating), 
+        Float32.(discharge_rating), Float32.(charge_efficiency), Float32.(discharge_efficiency), 
+        Float32.(thermal_rating), Float32.(qmax), Float32.(qmin), Float32.(r), 
+        Float32.(x), Float32.(ploss), Float32.(qloss), Float64.(λ_updn), Float64.(μ_updn), Bool.(status))
     end
 end
 
@@ -303,8 +332,8 @@ Base.:(==)(x::T, y::T) where {T <: Storages} =
     x.x == y.x &&
     x.ploss == y.ploss &&
     x.qloss == y.qloss &&
-    x.λ == y.λ &&
-    x.μ == y.μ &&
+    x.λ_updn == y.λ_updn &&
+    x.μ_updn == y.μ_updn &&
     x.status == y.status
 #
 
@@ -313,40 +342,40 @@ struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
 
     keys::Vector{Int}
     buses::Vector{Int}
-    ps::Vector{Float16}  # Active power in per unit
-    qs::Vector{Float16}
-    energy::Vector{Float16}
-    energy_rating::Vector{Float16} # energy_capacity
-    charge_rating::Vector{Float16}
-    discharge_rating::Vector{Float16}
-    charge_efficiency::Vector{Float16}
-    discharge_efficiency::Vector{Float16}
+    ps::Vector{Float32}  # Active power in per unit
+    qs::Vector{Float32}
+    energy::Vector{Float32}
+    energy_rating::Vector{Float32} # energy_capacity
+    charge_rating::Vector{Float32}
+    discharge_rating::Vector{Float32}
+    charge_efficiency::Vector{Float32}
+    discharge_efficiency::Vector{Float32}
 
-    inflow::Matrix{Float16}
-    gridwithdrawal_rating::Matrix{Float16}
-    gridinjection_rating::Matrix{Float16}
+    inflow::Matrix{Float32}
+    gridwithdrawal_rating::Matrix{Float32}
+    gridinjection_rating::Matrix{Float32}
 
-    λ::Vector{Float64} #Failure rate in failures per year
-    μ::Vector{Float64} #Repair rate in hours per year
+    λ_updn::Vector{Float64} #Failure rate in failures per year
+    μ_updn::Vector{Float64} #Repair rate in hours per year
     status::Vector{Bool}
-    #carryover_efficiency::Vector{Float16}
-    #thermal_rating::Vector{Float16}
-    #qmax::Vector{Float16}
-    #qmin::Vector{Float16}
-    #r::Vector{Float16}
-    #x::Vector{Float16}
-    #ploss::Vector{Float16}
-    #qloss::Vector{Float16}
+    #carryover_efficiency::Vector{Float32}
+    #thermal_rating::Vector{Float32}
+    #qmax::Vector{Float32}
+    #qmin::Vector{Float32}
+    #r::Vector{Float32}
+    #x::Vector{Float32}
+    #ploss::Vector{Float32}
+    #qloss::Vector{Float32}
 
     function GeneratorStorages{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int},
-        ps::Vector{Float16}, qs::Vector{Float16},
-        energy::Vector{Float16}, energy_rating::Vector{Float16},
-        charge_rating::Vector{Float16}, discharge_rating::Vector{Float16},
-        charge_efficiency::Vector{Float16}, discharge_efficiency::Vector{Float16},
-        inflow::Matrix{Float16}, gridwithdrawal_rating::Matrix{Float16}, 
-        gridinjection_rating::Matrix{Float16}, λ::Vector{Float64}, 
-        μ::Vector{Float64}, status::Vector{Bool}
+        ps::Vector{Float32}, qs::Vector{Float32},
+        energy::Vector{Float32}, energy_rating::Vector{Float32},
+        charge_rating::Vector{Float32}, discharge_rating::Vector{Float32},
+        charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32},
+        inflow::Matrix{Float32}, gridwithdrawal_rating::Matrix{Float32}, 
+        gridinjection_rating::Matrix{Float32}, λ_updn::Vector{Float64}, 
+        μ_updn::Vector{Float64}, status::Vector{Bool}
     ) where {N,L,T}
 
         nstors = length(keys)
@@ -361,8 +390,8 @@ struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert size(inflow) == (nstors, N)
         @assert size(gridwithdrawal_rating) == (nstors, N)
         @assert size(gridinjection_rating) == (nstors, N)
-        @assert length(λ) == (nstors)
-        @assert length(μ) == (nstors)
+        @assert length(λ_updn) == (nstors)
+        @assert length(μ_updn) == (nstors)
         @assert length(status) == (nstors)
         @assert all(0 .<= energy)
         @assert all(0 .<= energy_rating)
@@ -371,10 +400,10 @@ struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
         @assert all(0 .<= charge_efficiency)
         @assert all(0 .<= discharge_efficiency)
 
-        new{N,L,T}(Int.(keys), Int.(buses), Float16.(ps), Float16.(qs),
-        Float16.(energy), Float16.(energy_rating), Float16.(charge_rating),
-        Float16.(discharge_rating), Float16.(charge_efficiency), Float16.(discharge_efficiency),
-        inflow, gridwithdrawal_rating, gridinjection_rating, Float64.(λ), Float64.(μ), Bool.(status))
+        new{N,L,T}(Int.(keys), Int.(buses), Float32.(ps), Float32.(qs),
+        Float32.(energy), Float32.(energy_rating), Float32.(charge_rating),
+        Float32.(discharge_rating), Float32.(charge_efficiency), Float32.(discharge_efficiency),
+        inflow, gridwithdrawal_rating, gridinjection_rating, Float64.(λ_updn), Float64.(μ_updn), Bool.(status))
     end
 end
 
@@ -390,8 +419,8 @@ Base.:(==)(x::T, y::T) where {T <: GeneratorStorages} =
     x.inflow == y.inflow &&
     x.gridwithdrawal_capacity == y.gridwithdrawal_capacity &&
     x.gridinjection_capacity == y.gridinjection_capacity &&
-    x.λ == y.λ &&
-    x.μ == y.μ &&
+    x.λ_updn == y.λ_updn &&
+    x.μ_updn == y.μ_updn &&
     x.status == y.status
 #
 
@@ -401,35 +430,37 @@ struct Branches <: AbstractAssets
     keys::Vector{Int}
     f_bus::Vector{Int} #buses_from
     t_bus::Vector{Int} #buses_to
-    rate_a::Vector{Float16} #Long term rating or Rate_A
-    rate_b::Vector{Float16} #Short term rating or Rate_B
-    r::Vector{Float16} #Resistance values
-    x::Vector{Float16} #Reactance values
-    b_fr::Vector{Float16} #susceptance/2
-    b_to::Vector{Float16} #susceptance/2
-    g_fr::Vector{Float16}
-    g_to::Vector{Float16}
-    shift::Vector{Float16} #angle_shift
-    angmin::Vector{Float16}
-    angmax::Vector{Float16}
+    common_mode::Vector{Int}
+    rate_a::Vector{Float32} #Long term rating or Rate_A
+    rate_b::Vector{Float32} #Short term rating or Rate_B
+    r::Vector{Float32} #Resistance values
+    x::Vector{Float32} #Reactance values
+    b_fr::Vector{Float32} #susceptance/2
+    b_to::Vector{Float32} #susceptance/2
+    g_fr::Vector{Float32}
+    g_to::Vector{Float32}
+    shift::Vector{Float32} #angle_shift
+    angmin::Vector{Float32}
+    angmax::Vector{Float32}
     transformer::Vector{Bool}
-    tap::Vector{Float16} #tap_ratio
-    λ::Vector{Float64} #Failure rate in failures per year
-    μ::Vector{Float64} #Repair rate in hours per year
+    tap::Vector{Float32} #tap_ratio
+    λ_updn::Vector{Float64} #Failure rate in failures per year
+    μ_updn::Vector{Float64} #Repair rate in hours per year
     status::Vector{Bool}
 
     function Branches(
-        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, rate_a::Vector{Float16}, 
-        rate_b::Vector{Float16}, r::Vector{Float16}, x::Vector{Float16}, 
-        b_fr::Vector{Float16}, b_to::Vector{Float16}, g_fr::Vector{Float16}, g_to::Vector{Float16}, 
-        shift::Vector{Float16}, angmin::Vector{Float16}, angmax::Vector{Float16}, transformer::Vector{Bool}, 
-        tap::Vector{Float16}, λ::Vector{Float64}, μ::Vector{Float64}, status::Vector{Bool}
+        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, common_mode::Vector{Int}, 
+        rate_a::Vector{Float32}, rate_b::Vector{Float32}, r::Vector{Float32}, x::Vector{Float32}, 
+        b_fr::Vector{Float32}, b_to::Vector{Float32}, g_fr::Vector{Float32}, g_to::Vector{Float32}, 
+        shift::Vector{Float32}, angmin::Vector{Float32}, angmax::Vector{Float32}, transformer::Vector{Bool}, 
+        tap::Vector{Float32}, λ_updn::Vector{Float64}, μ_updn::Vector{Float64}, status::Vector{Bool}
     )
 
         nbranches = length(keys)
         @assert allunique(keys)
         @assert length(f_bus) == (nbranches)
         @assert length(t_bus) == (nbranches)
+        @assert length(common_mode) == (nbranches)
         @assert length(rate_a) == (nbranches)
         @assert length(rate_b) == (nbranches)
         @assert length(r) == (nbranches)
@@ -443,8 +474,8 @@ struct Branches <: AbstractAssets
         @assert length(angmax) == (nbranches)
         @assert length(transformer) == (nbranches)
         @assert length(tap) == (nbranches)
-        @assert length(λ) == (nbranches)
-        @assert length(μ) == (nbranches)
+        @assert length(λ_updn) == (nbranches)
+        @assert length(μ_updn) == (nbranches)
         @assert length(status) == (nbranches)
         @assert all(rate_a .>= 0)
         @assert all(rate_b .>= 0)
@@ -452,10 +483,10 @@ struct Branches <: AbstractAssets
         @assert all(x .>= 0)
 
         new(
-            Int.(keys), Int.(f_bus), Int.(t_bus), Float16.(rate_a), Float16.(rate_b),
-            Float16.(r), Float16.(x), Float16.(b_fr), Float16.(b_to), Float16.(g_fr), 
-            Float16.(g_to), Float16.(shift), Float16.(angmin), Float16.(angmax),
-            Bool.(transformer), Float16.(tap), Float64.(λ), Float64.(μ), Bool.(status))
+            Int.(keys), Int.(f_bus), Int.(t_bus), Int.(common_mode), Float32.(rate_a), Float32.(rate_b),
+            Float32.(r), Float32.(x), Float32.(b_fr), Float32.(b_to), Float32.(g_fr), 
+            Float32.(g_to), Float32.(shift), Float32.(angmin), Float32.(angmax),
+            Bool.(transformer), Float32.(tap), Float64.(λ_updn), Float64.(μ_updn), Bool.(status))
     end
 
 end
@@ -464,6 +495,7 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
     x.keys == y.keys &&
     x.f_bus == y.f_bus &&
     x.t_bus == y.t_bus &&
+    x.common_mode == y.common_mode &&
     x.rate_a == y.rate_a &&
     x.rate_b == y.rate_b &&
     x.r == y.r &&
@@ -477,8 +509,8 @@ Base.:(==)(x::T, y::T) where {T <: Branches} =
     x.angmax == y.angmax &&
     x.transformer == y.transformer &&
     x.tap == y.tap &&
-    x.λ == y.λ &&
-    x.μ == y.μ &&
+    x.λ_updn == y.λ_updn &&
+    x.μ_updn == y.μ_updn &&
     x.status == y.status
 #
 
@@ -487,13 +519,12 @@ struct Shunts <: AbstractAssets
 
     keys::Vector{Int}
     buses::Vector{Int}
-    bs::Vector{Float16} #susceptance
-    gs::Vector{Float16}
+    bs::Vector{Float32} # Active power withdrawn per voltage p.u.
+    gs::Vector{Float32} # Reactive power withdrawn per voltage p.u.
     status::Vector{Bool}
 
     function Shunts(
-        keys::Vector{Int}, buses::Vector{Int}, bs::Vector{Float16}, 
-        gs::Vector{Float16}, status::Vector{Bool}
+        keys::Vector{Int}, buses::Vector{Int}, bs::Vector{Float32}, gs::Vector{Float32}, status::Vector{Bool}
     )
 
         nshunts = length(keys)
@@ -503,7 +534,7 @@ struct Shunts <: AbstractAssets
         @assert length(gs) == (nshunts)
         @assert length(status) == (nshunts)
 
-        new(Int.(keys), Int.(buses), Float16.(bs), Float16.(gs), Bool.(status))
+        new(Int.(keys), Int.(buses), Float32.(bs), Float32.(gs), Bool.(status))
     end
 
 end
@@ -514,4 +545,35 @@ Base.:(==)(x::T, y::T) where {T <: Shunts} =
     x.bs == y.bs &&
     x.gs == y.gs &&
     x.status == y.status
+#
+
+struct CommonBranches <: AbstractAssets #Circuits on a common right-of-way or a common tower.
+
+    keys::Vector{Int}
+    f_bus::Vector{Int} #buses_from
+    t_bus::Vector{Int} #buses_to
+    λ_updn::Vector{Float64} #Failure rate in failures per year
+    μ_updn::Vector{Float64} #Repair rate in hours per year
+
+    function CommonBranches(
+        keys::Vector{Int}, f_bus::Vector{Int}, t_bus::Vector{Int}, λ_updn::Vector{Float64}, μ_updn::Vector{Float64}
+    )
+
+        ncommonbranches = length(keys)
+        @assert allunique(keys)
+        @assert length(f_bus) == (ncommonbranches)
+        @assert length(t_bus) == (ncommonbranches)
+        @assert length(λ_updn) == (ncommonbranches)
+        @assert length(μ_updn) == (ncommonbranches)
+        new(Int.(keys), Int.(f_bus), Int.(t_bus), Float64.(λ_updn), Float64.(μ_updn))
+    end
+
+end
+
+Base.:(==)(x::T, y::T) where {T <: CommonBranches} =
+    x.keys == y.keys &&
+    x.f_bus == y.f_bus &&
+    x.t_bus == y.t_bus &&
+    x.λ_updn == y.λ_updn &&
+    x.μ_updn == y.μ_updn
 #

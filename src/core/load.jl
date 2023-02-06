@@ -1,48 +1,64 @@
 """
 Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
-function SystemModel(RawFile::String, ReliabilityFile::String)
+function SystemModel(rawfile::String)
 
     #load network data
-    network = BuildNetwork(RawFile)
-    reliability_data = parse_reliability_data(ReliabilityFile)
-    SParametrics = StaticParameters{1,1,Hour}()
+    network = build_network(rawfile)
+    SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
     get!(network, :timeseries_load, "")
-    _merge_CompositeSystems_data!(network, reliability_data, SParametrics)
     return _SystemModel(network, SParametrics)
 
 end
 
 ""
-function SystemModel(RawFile::String, ReliabilityFile::String, TimeSeriesFile::String)
+function SystemModel(rawfile::String, reliabilityfile::String)
 
     #load network data
-    network = BuildNetwork(RawFile)
-    reliability_data = parse_reliability_data(ReliabilityFile)
-    timeseries_data, SParametrics = extract_timeseriesload(TimeSeriesFile)
-    merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
+    network = build_network(rawfile)
+
+    reliability_data = extract_reliability_data(reliabilityfile)
+    SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
+    merge_compositesystems_data!(network, reliability_data)
+
     return _SystemModel(network, SParametrics)
 
 end
 
 ""
-function SystemModel(RawFile::String, ReliabilityFile::String, timeseries_data::Dict{Int, Vector{Float16}}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
+function SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::String)
 
     #load network data
-    network = BuildNetwork(RawFile)
-    reliability_data = parse_reliability_data(ReliabilityFile)
-    merge_CompositeSystems_data!(network, reliability_data, timeseries_data, SParametrics)
+    network = build_network(rawfile)
+
+    reliability_data = extract_reliability_data(reliabilityfile)
+    timeseries_data, SParametrics = extract_timeseriesload(timeseriesfile)
+    merge_compositesystems_data!(network, reliability_data, timeseries_data)
+
     return _SystemModel(network, SParametrics)
 
 end
 
+""
+function SystemModel(rawfile::String, reliabilityfile::String, timeseries_data::Dict{Int, Vector{Float32}}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
+
+    #load network data
+    network = build_network(rawfile)
+
+    reliability_data = extract_reliability_data(reliabilityfile)
+    merge_compositesystems_data!(network, reliability_data, timeseries_data)
+
+    return _SystemModel(network, SParametrics)
+
+end
 
 ""
-function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters{N,L,T}) where {N,L,T<:Period}
+function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
 
-    baseMVA::Float16 = Float16(network[:baseMVA])
+    baseMVA::Float32 = Float32(network[:baseMVA])
     network_bus::Dict{Int, Any} = network[:bus]
     network_branch::Dict{Int, Any} = network[:branch]
+    network_commonbranch::Dict{Int, Any} = network[:commonbranch]
     network_shunt::Dict{Int, Any} = network[:shunt]
     network_gen::Dict{Int, Any} = network[:gen]
     network_load::Dict{Int, Any} = network[:load]
@@ -51,7 +67,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     has = has_asset(network)
     
     if has[:buses]
-
         data = container(network_bus, bus_fields)
         buses = Buses(
             data["index"], 
@@ -67,12 +82,12 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
     end
 
     if has[:branches]
-        
         data = container(network_branch, branch_fields)
         branches = Branches(
             data["index"], 
             data["f_bus"], 
-            data["t_bus"], 
+            data["t_bus"],
+            data["common_mode"],
             data["rate_a"], 
             data["rate_b"], 
             data["br_r"], 
@@ -86,8 +101,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["angmax"], 
             data["transformer"],
             data["tap"],
-            data["λ"], 
-            data["μ"],
+            data["λ_updn"], 
+            data["μ_updn"],
             data["br_status"]
         )
     end
@@ -102,7 +117,20 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["status"]
         )
     else
-        shunts = Shunts(Int[], Int[], Float16[], Float16[], Vector{Bool}())
+        shunts = Shunts(Int[], Int[], Float32[], Float32[], Vector{Bool}())
+    end
+
+    if has[:commonbranches]
+        data = container(network_commonbranch, commonbranch_fields)
+        commonbranches = CommonBranches(
+            data["index"], 
+            data["f_bus"], 
+            data["t_bus"], 
+            data["λ_updn"], 
+            data["μ_updn"]
+        )
+    else
+        commonbranches = CommonBranches(Int[], Int[], Int[], Float64[], Float64[])
     end
 
     if has[:generators]
@@ -118,36 +146,39 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["qmax"], 
             data["qmin"], 
             data["mbase"], 
-            data["cost"], 
-            data["λ"],
-            data["μ"],
+            data["cost"],
+            data["state_model"],
+            data["λ_updn"],
+            data["μ_updn"],
+            data["λ_upde"],
+            data["μ_upde"],
+            data["pde"],
             data["gen_status"]
         )
     end
     
     if has[:loads]
-        
         data = container(network_load, load_fields)
-
         if isempty(network[:timeseries_load])
-
             loads = Loads{N,L,T}(
                 data["index"], 
                 data["load_bus"], 
                 data["pd"], 
-                data["qd"], 
+                data["qd"],
+                data["pf"],
                 data["cost"],
                 data["status"]
             )
 
         else
-            timeseries_load::Dict{Int64, Vector{Float16}} = network[:timeseries_load]
+            timeseries_load::Dict{Int64, Vector{Float32}} = network[:timeseries_load]
             timeseries_pd = convert_array(data["index"], timeseries_load, baseMVA)
             loads = Loads{N,L,T}(
                 data["index"], 
                 data["load_bus"], 
                 timeseries_pd, 
-                data["qd"], 
+                data["qd"],
+                data["pf"],
                 data["cost"],
                 data["status"]
             )
@@ -175,15 +206,15 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
             data["x"],
             data["p_loss"],
             data["q_loss"],
-            data["λ"],
-            data["μ"],
+            data["λ_updn"],
+            data["μ_updn"],
             data["status"],
         )
 
     else
         storages = Storages{N,L,T}(
-            Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-            Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float64[], Float64[], Vector{Bool}())
+            Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
+            Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float64[], Float64[], Vector{Bool}())
     end
     
     if has[:dclines]
@@ -196,8 +227,8 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
 
     generatorstorages = GeneratorStorages{N,L,T}(
-        Int[], Int[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], Float16[], 
-        Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Array{Float16}(undef, 0, N), Float64[], Float64[], Vector{Bool}())
+        Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
+        Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Float64[], Float64[], Vector{Bool}())
 
 
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
@@ -205,10 +236,21 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::StaticParameters
 
     ref_buses = slack_buses(buses)
 
-    return SystemModel(loads, generators, storages, generatorstorages, buses, branches, shunts, ref_buses, baseMVA, SParametrics.timestamps)
+    key_branches = filter(i->field(branches, :status)[i], field(branches, :keys))
+    f_bus = field(branches, :f_bus)
+    t_bus = field(branches, :t_bus)
+    arcs_from = Tuple{Int, Int, Int}[(j, f_bus[j], t_bus[j]) for j in key_branches]
+    arcs_to = Tuple{Int, Int, Int}[(j, t_bus[j], f_bus[j]) for j in key_branches]
+    arcs = Tuple{Int, Int, Int}[arcs_from; arcs_to]
+
+    buspairs = calc_buspair_parameters(branches, key_branches)
+
+    return SystemModel(
+        loads, generators, storages, generatorstorages, buses, branches, commonbranches, shunts, 
+        ref_buses, arcs_from, arcs_to, arcs, buspairs, baseMVA, SParametrics.timestamps
+    )
     
 end
-
 
 ""
 function slack_buses(buses::Buses)
@@ -237,6 +279,7 @@ function has_asset(network::Dict{Symbol,Any})
         :generators => haskey(network, :gen) && isempty(network[:gen]) == false,
         :storages => haskey(network, :storage) && isempty(network[:storage]) == false,
         :branches => haskey(network, :branch) && isempty(network[:branch]) == false,
+        :commonbranches => haskey(network, :commonbranch) && isempty(network[:commonbranch]) == false,
         :dclines => haskey(network, :dcline) && isempty(network[:dcline]) == false,
         :switches => haskey(network, :switch) && isempty(network[:switch]) == false,
         :shunts => haskey(network, :shunt) && isempty(network[:shunt]) == false,

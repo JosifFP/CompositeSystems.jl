@@ -23,12 +23,12 @@ const pm_component_status_inactive = Dict(
 )
 
 ""
-function BuildNetwork(RawFile::String; replace=false, export_file=false, export_filetype::String="")
-    network = open(RawFile) do io
+function build_network(rawfile::String; replace::Bool=false, export_file::Bool=false, export_filetype::String="", symbol::Bool=true)
+    network = open(rawfile) do io
 
-        pm_data = parse_model(io, split(lowercase(RawFile), '.')[end])
+        pm_data = parse_model(io, split(lowercase(rawfile), '.')[end])
 
-        @warn("DataSanityCheck process changes/updates the network topology and input data
+        Memento.warn(_LOGGER, "DataSanityCheck process changes/updates the network topology and input data
             (for more details, please read InfrastructureModels and PowerModels printed messages). 
             To create/export a new file, type export_filetype = true. 
             Extension/filetype can be also specified using export_filetype=(string).
@@ -39,26 +39,22 @@ function BuildNetwork(RawFile::String; replace=false, export_file=false, export_
         if export_file
 
             if isempty(export_filetype)
-                export_filetype = split(lowercase(RawFile), '.')[end]
+                export_filetype = split(lowercase(rawfile), '.')[end]
             end
-
-            file = RawFile[1:findlast(==('.'), RawFile)-1]
+            file = rawfile[1:findlast(==('.'), rawfile)-1]
             new_file = file*"_CompositeSystems_"*format(now(),"HHMMSS")*"."*export_filetype
             @info("A new file: $(new_file) has been created.")
             PowerModels.export_file(new_file, data)
-            return  Dict{Symbol, Any}(ref_initialize!(data))
 
-        elseif !export_file && !replace
-
-            return Dict{Symbol, Any}(ref_initialize!(data))
-
-        else !export_file && replace
-
-            PowerModels.export_file(RawFile, data)
-            return Dict{Symbol, Any}(ref_initialize!(data))
-
+        elseif !export_file && replace
+            PowerModels.export_file(rawfile, data)
         end
 
+        if symbol == true
+            return  Dict{Symbol, Any}(ref_initialize!(data))
+        else
+            return  Dict{String, Any}(data)
+        end
     end
 
     return network
@@ -93,20 +89,34 @@ following basic network model requirements.
 - there exactly one phase angle reference bus
 - generation cost functions are polynomial
 - all branches have explicit thermal limits
+- Network in per-unit.
 """
 function DataSanityCheck(pm_data::Dict{String, <:Any})
 
     if InfrastructureModels.ismultiinfrastructure(pm_data)
-        @error("BuildNetwork function does not support multiinfrastructure data")
+        @error("build_network function does not support multiinfrastructure data")
     end
 
     if InfrastructureModels.ismultinetwork(pm_data)
-        @error("BuildNetwork function does not support multinetwork data")
+        @error("build_network function does not support multinetwork data")
     end
 
     # make a copy of data so that modifications do not change the input data
     data = deepcopy(pm_data)
-    changed = false
+
+    PowerModels.make_per_unit!(data)
+
+    # ensure that branch components always have a rate_a value
+    PowerModels.calc_thermal_limits!(data)
+
+    #checks that each branch has non-negative thermal ratings and removes zero thermal ratings.
+    PowerModels.correct_thermal_limits!(data)
+
+    #checks that all buses are unique and other components link to valid buses.
+    PowerModels.check_connectivity(data)
+
+    #checks that each branch has a reasonable transformer parameters.
+    PowerModels.correct_transformer_parameters!(data)
 
     # TODO transform PWL costs into linear costs
     for (i,gen) in data["gen"]
@@ -115,17 +125,17 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
         end
     end
 
+    "throws warnings if cost functions are malformed"
+    PowerModels.correct_cost_functions!(data)
+
     PowerModels.standardize_cost_terms!(data, order=1)
 
-    # ensure that branch components always have a rate_a value
-    PowerModels.calc_thermal_limits!(data)
-
-    PowerModels.make_per_unit!(data)
+    PowerModels.simplify_cost_terms!(data)
 
     PowerModels.simplify_network!(data)
 
     # ensure single connected component.
-    PowerModels.select_largest_component!(data)
+    #PowerModels.select_largest_component!(data)
 
     # ensure there is exactly one reference bus
     ref_buses = Set{Int}()
@@ -187,9 +197,18 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     for (i,bus) in enumerate(bus_ordered)
         bus_id_map[bus["index"]] = i
     end
+
     PowerModels.update_bus_ids!(data, bus_id_map)
 
-    get!(pm_data, "CompositeSystems_sanity_check", true)
+    #add load power factors
+    for (i,load) in data["load"]
+        if load["pd"] > 0.0 || load["qd"] ≠ 0.0
+            get!(load, "pf", load["qd"]/load["pd"])
+        end
+    end
+
+    data["commonbranch"] = Dict{Int, Any}()
+    get!(data, "Sanity_check", true)
 
     return data
 
@@ -282,7 +301,7 @@ function assetgrouplist(idxss::Vector{UnitRange{Int}})
 end
 
 ""
-function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
+function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)::Vector{UnitRange{Int}}
 
     if isempty(collectionidxs)
         idxlist = fill(1:0, n_collections)
@@ -316,14 +335,38 @@ function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)
 
 end
 
+"It checks if all elements in the matrix are true for both the current time step and the previous time step, 
+and returns false if this condition is not met."
+function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::Int)::Bool
+    @views t_now_view = asset_states[:, t_now]
+    if t_previous ≠ 0
+        @views t_previous_view = asset_states[:, t_previous]
+        return !any(t_now_view .== 0) && !any(t_previous_view .== 0)
+    else
+        return !any(t_now_view .== 0)
+    end
+end
+
+"It checks if the sum of the elements in the matrix is less than the number of generators for both the current 
+time step and the previous time step, and returns false if this condition is not met."
+function check_availability(generators::Generators, asset_states::Matrix{Float32}, t_now::Int, t_previous::Int)::Bool
+    if t_previous ≠ 0
+        if sum(@view(asset_states[:,t_now])) < length(generators) || sum(@view(asset_states[:,t_previous])) < length(generators)
+            return false
+        else
+            return true
+        end
+    else
+        if sum(@view(asset_states[:,t_now])) < length(generators)
+            return false
+        else
+            return true
+        end
+    end
+end
+
 "Extract a field from a composite value by name or position."
 field(system::SystemModel, field::Symbol) = getfield(system, field)
 field(system::SystemModel, field::Symbol, subfield::Symbol) = getfield(getfield(system, field), subfield)
-
-field(buses::Buses, subfield::Symbol) = getfield(buses, subfield)
-field(loads::Loads, subfield::Symbol) = getfield(loads, subfield)
-field(branches::Branches, subfield::Symbol) = getfield(branches, subfield)
-field(shunts::Shunts, subfield::Symbol) = getfield(shunts, subfield)
-field(generators::Generators, subfield::Symbol) = getfield(generators, subfield)
-field(storages::Storages, subfield::Symbol) = getfield(storages, subfield)
-field(generatorstorages::GeneratorStorages, subfield::Symbol) = getfield(generatorstorages, subfield)
+field(abstractassets::AbstractAssets, subfield::Symbol) = getfield(abstractassets, subfield)
+field(abstractassets::TimeSeriesAssets, subfield::Symbol) = getfield(abstractassets, subfield)

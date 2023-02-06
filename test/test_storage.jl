@@ -1,108 +1,349 @@
-include("solvers.jl")
-import PowerModels, JuMP
+using CompositeSystems, CompositeSystems.OPF, CompositeSystems.BaseModule
+using CompositeSystems.OPF
+using CompositeSystems.CompositeAdequacy
+import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
+import JuMP: termination_status
+import PowerModels
+import BenchmarkTools: @btime
 using Test
-import CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy, MathOptInterface, InfrastructureModels
 
-Base_RawFile = "test/data/RBTS/Base/RBTS.m"
-Base_ReliabilityFile = "test/data/RBTS/Base/R_RBTS.m"
+include("solvers.jl")
 
-Storage_RawFile = "test/data/RBTS/Storage/RBTS.m"
-Storage_ReliabilityFile = "test/data/RBTS/Storage/R_RBTS.m"
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/others/Storage/RBTS_strg.m"
+reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 
-Case1_RawFile = "test/data/RBTS/Case1/RBTS.m"
-Case1_ReliabilityFile = "test/data/RBTS/Case1/R_RBTS.m"
+settings = CompositeSystems.Settings(
+    juniper_optimizer_1;
+    jump_modelmode = JuMP.AUTOMATIC,
+    powermodel_formulation = OPF.LPACCPowerModel,
+    select_largest_splitnetwork = false,
+    deactivate_isolated_bus_gens_stors = false,
+    set_string_names_on_creation = true
+)
 
-TimeSeriesFile = "test/data/RBTS/Loads.xlsx"
+system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
+pm = OPF.abstract_model(system, settings)
+systemstates = OPF.SystemStates(system, available=true)
+CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+t=1
+OPF._update!(pm, system, systemstates, settings, t)
+println(Float32.(systemstates.se[t]*100))
+systemstates.se[t]*100
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :sc, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :sd, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :qs, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :qsc, 1)*100)))))
 
-settings = CompositeSystems.Settings(gurobi_optimizer_1,modelmode = JuMP.AUTOMATIC)
-
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Shortfall())
-timeseries_load, SParametrics = BaseModule.extract_timeseriesload(TimeSeriesFile)
-
-system = BaseModule.SystemModel(Storage_RawFile, Storage_ReliabilityFile, timeseries_load, SParametrics)
-#system = BaseModule.SystemModel(RawFile, ReliabilityFile, timeseries_load, SParametrics)
-method = CompositeAdequacy.SequentialMCS(samples=1, seed=100, threaded=false)
-systemstates = CompositeAdequacy.SystemStates(system)
-model = OPF.JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-pm = OPF.PowerModel(settings.powermodel, OPF.Topology(system), model)
-recorders = CompositeAdequacy.accumulator.(system, method, resultspecs)
-rng = CompositeAdequacy.Philox4x((0, 0), 10)
-CompositeAdequacy.seed!(rng, (method.seed, 1))
-CompositeAdequacy.initialize_states!(rng, systemstates, system)
-#OPF.initialize_pm_containers!(pm, system; timeseries=false)
-CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
-
-t=4
-system.loads.pd[:,t] = system.loads.pd[:,t]*2
-
-CompositeAdequacy.update_model!(pm, system, systemstates, t)
-#OPF.build_method!(pm, system, systemstates, t)
-#OPF.optimize_method!(pm)
-#OPF.build_result!(pm, system, systemstates, t)
-systemstates.plc
-systemstates.se
-
-OPF.build_sol_values(OPF.var(pm, :se, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sc, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sd, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :ps, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sc_on, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sd_on, 1))[1]
-OPF.empty_model!(pm)
-JuMP.termination_status(pm.model)
-@show JuMP.solution_summary(pm.model, verbose=true)
+t=2
+systemstates.se[t-1] = field(system, :storages, :energy_rating)[1] #it should be energy_rating = 0.4
+CompositeSystems.field(systemstates, :branches)[5,t] = 0
+CompositeSystems.field(systemstates, :branches)[8,t] = 0
+OPF._update!(pm, system, systemstates, settings, t)
+println(Float32.(systemstates.se[t]*100))
+println(Float32.(systemstates.plc[:]*100))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :sc, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :sd, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :qs, 1)*100)))))
+println(Float32.(values(sort(OPF.build_sol_values(OPF.var(pm, :qsc, 1)*100)))))
 
 
 
-for t in 2:24
-    import InfrastructureModels
-    system.loads.pd[:,t] = system.loads.pd[:,t]*1.25
+@testset "RBTS system, sequential outages, storage at bus 6" begin
+    @testset "test sequentially split situations w/o isolated buses, RBTS system, DCPPowerModel" begin
 
-    if t==17 || t==18 || t==19 || t==20
+        timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+        rawfile = "test/data/others/Storage/RBTS_strg.m"
+        reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+        settings = CompositeSystems.Settings(
+            juniper_optimizer_1;
+            jump_modelmode = JuMP.AUTOMATIC,
+            powermodel_formulation = OPF.DCPPowerModel,
+            select_largest_splitnetwork = false,
+            deactivate_isolated_bus_gens_stors = false
+        )
+        system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+        for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
+        pm = OPF.abstract_model(system, settings)
+        systemstates = OPF.SystemStates(system, available=true)
+        CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+        field(system, :storages, :energy)[1] = 0.05
+
+        t=1
+        OPF._update!(pm, system, systemstates, settings, t)
+        @testset "t=1, No outages" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) + 0.05; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.1; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+        end
+
+        t=2
+        OPF._update!(pm, system, systemstates, settings, t)  
+        @testset "t=2, No outages" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) + 0.05; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.15; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+            #stored energy left = 0.15
+        end
+
+        t=3
+        systemstates.se[t-1] = field(system, :storages, :energy_rating)[1] #it should be energy_rating = 0.4
+        CompositeSystems.field(systemstates, :generators)[3,t] = 0
+        CompositeSystems.field(systemstates, :generators)[7,t] = 0
+        CompositeSystems.field(systemstates, :generators)[8,t] = 0
+        CompositeSystems.field(systemstates, :generators)[9,t] = 0
+        OPF._update!(pm, system, systemstates, settings, t)
+
+        @testset "t=3, G3, G7, G8 and G9 on outage" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0.25; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0.25; atol = 1e-4) #without storage it should be 0.35
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) - 0.10; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.3; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.10; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.00; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.10; atol = 1e-4)
+            #stored energy left = 0.3
+        end
+
+        t=4
+        CompositeSystems.field(systemstates, :branches)[5,t] = 0
+        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        OPF._update!(pm, system, systemstates, settings, t)
+
+        @testset "t=4, L5 and L8 on outage" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0.30; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test xor(isapprox(systemstates.plc[5], 0.1; atol = 1e-4),isapprox(systemstates.plc[6], 0.1; atol = 1e-4)) #without storage it should be 0.2 in any of those buses
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) - 0.10; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.2; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.10; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.00; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.10; atol = 1e-4)
+        end
+
+        t=5
+        OPF._update!(pm, system, systemstates, settings, t)  
+        @testset "t=5, No outages" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.90 - sum(systemstates.plc[:]); atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.25; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+            #stored energy left = 0.25
+        end
+
+        t=6
         CompositeSystems.field(systemstates, :branches)[3,t] = 0
         CompositeSystems.field(systemstates, :branches)[4,t] = 0
         CompositeSystems.field(systemstates, :branches)[8,t] = 0
-        systemstates.system[t] = 0
-    end
+        OPF._update!(pm, system, systemstates, settings, t)  
 
-    #OPF.build_method!(pm, system, systemstates, t)
-    #OPF.optimize_method!(pm)
-    #OPF.build_result!(pm, system, systemstates, t)
-    CompositeAdequacy.update_model!(pm, system, systemstates, t)
-    #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100)))))
-    #println(Float16.(systemstates.se[t]))
-    #println(Float16.(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)*100)))))
-    #println(Float16.(systemstates.se[t]*100))
-    println(Float16.(systemstates.plc[:,t]*100))
-    #println(Float16.(values(sort(InfrastructureModels.build_solution_values(OPF.var(pm, :p, 1))))).*100)
-    #println(values(sort(OPF.build_sol_values(OPF.var(pm, :va, 1)*180/pi))))
-    OPF.empty_model!(pm)
+        @testset "t=6, L3, L4 and L8 on outage" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0.05; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0.05; atol = 1e-4) #without storage it should be 0.15
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) - 0.10; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.15; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.10; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.00; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.10; atol = 1e-4)
+            #stored energy left = 0.15
+        end
+
+        t=7
+        CompositeSystems.field(systemstates, :branches)[2,t] = 0
+        CompositeSystems.field(systemstates, :branches)[7,t] = 0
+        CompositeSystems.field(systemstates, :generators)[1,t] = 0
+        CompositeSystems.field(systemstates, :generators)[2,t] = 0
+        CompositeSystems.field(systemstates, :generators)[3,t] = 0
+        OPF._update!(pm, system, systemstates, settings, t)  
+
+        @testset "t=7, L2 and L7 on outage, generation reduced" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0.64; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0.64; atol = 1e-4) #without storage it should be 0.74
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) - 0.10; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.10; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.00; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.10; atol = 1e-4)
+            #stored energy left = 0.05
+        end
+
+        t=8
+        OPF._update!(pm, system, systemstates, settings, t)  
+        @testset "t=8, No outages" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) + 0.05; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.10; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+            #stored energy left = 0.15
+        end
+    end
 end
 
+@testset "RBTS system, sequential outages, storage at bus 6" begin
+    @testset "test sequentially split situations w/o isolated buses, RBTS system, LPACCPowerModel" begin
 
+        timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+        rawfile = "test/data/others/Storage/RBTS_strg.m"
+        reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+        settings = CompositeSystems.Settings(
+            juniper_optimizer_1;
+            jump_modelmode = JuMP.AUTOMATIC,
+            powermodel_formulation = OPF.LPACCPowerModel,
+            select_largest_splitnetwork = true,
+            deactivate_isolated_bus_gens_stors = true,
+            set_string_names_on_creation = true
+        )
 
+        system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+        for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
+        pm = OPF.abstract_model(system, settings)
+        systemstates = OPF.SystemStates(system, available=true)
+        CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+        field(system, :storages, :energy)[1] = 0.05
 
-#if OPF.is_empty(pm.model.moi_backend)
-#    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
-#end
+        t=1
+        OPF._update!(pm, system, systemstates, settings, t)
+        @testset "t=1, No outages" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            ps = sum(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)))))
+            qs = sum(values(sort(OPF.build_sol_values(OPF.var(pm, :qs, 1)))))
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9371 - sum(systemstates.plc[:]) + ps; atol = 1e-4) 
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231 - sum(systemstates.qlc[:]) + qs; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.1; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+        end
 
-#CompositeAdequacy.initialize_powermodel!(pm, system, systemstates, results=true)
-#t=1
-#println(values(sort(OPF.build_sol_values(OPF.var(pm, :pg, 1)*100))))
-#println(systemstates.se[t])
+        t=2
+        OPF._update!(pm, system, systemstates, settings, t)  
+        @testset "t=2, No outages" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            ps = sum(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)))))
+            qs = sum(values(sort(OPF.build_sol_values(OPF.var(pm, :qs, 1)))))
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9371 - sum(systemstates.plc[:]) + ps; atol = 1e-4) 
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231 - sum(systemstates.qlc[:]) + qs; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.15; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.05; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+            #stored energy left = 0.15
+        end
 
-#CompositeAdequacy.update_model!(pm, system, systemstates, t)
-CompositeAdequacy.build_method!(pm, system, systemstates, t)
-OPF.optimize_method!(pm)
-OPF.build_result!(pm, system, systemstates, t)
-systemstates.se
-systemstates.plc
-OPF.build_sol_values(OPF.var(pm, :se, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sc, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sd, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :ps, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sc_on, 1))[1]
-OPF.build_sol_values(OPF.var(pm, :sd_on, 1))[1]
+        t=3
+        systemstates.se[t-1] = field(system, :storages, :energy_rating)[1] #it should be energy_rating = 0.4
+        CompositeSystems.field(systemstates, :generators)[3,t] = 0
+        CompositeSystems.field(systemstates, :generators)[7,t] = 0
+        CompositeSystems.field(systemstates, :generators)[8,t] = 0
+        CompositeSystems.field(systemstates, :generators)[9,t] = 0
+        OPF._update!(pm, system, systemstates, settings, t)
 
-JuMP.termination_status(pm.model)
-@show JuMP.solution_summary(pm.model, verbose=true)
+        @testset "t=3, G3, G7, G8 and G9 on outage" begin
+            @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+            @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+            @test isapprox(sum(systemstates.plc[:]), 0.2699; atol = 1e-4)
+            @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[2], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[3], 0.2699; atol = 1e-4)
+            @test isapprox(systemstates.plc[4], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
+            @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
+            ps = sum(values(sort(OPF.build_sol_values(OPF.var(pm, :ps, 1)))))
+            qs = sum(values(sort(OPF.build_sol_values(OPF.var(pm, :qs, 1)))))
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.9371 - sum(systemstates.plc[:]) + ps; atol = 1e-4) 
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231 - sum(systemstates.qlc[:]) + qs; atol = 1e-4) 
+            @test isapprox(systemstates.se[t], 0.3; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.10; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.00; atol = 1e-4)
+            @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.10; atol = 1e-4)
+            #stored energy left = 0.3
+        end
+    end
+end

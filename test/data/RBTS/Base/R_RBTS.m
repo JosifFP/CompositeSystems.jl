@@ -1,45 +1,44 @@
-%% MATPOWER Case Format : Version 2
+%% MATPOWER Case Format
 function mpc = RBTS
-mpc.version = '2';
 
 %%-----  Reliability Data  -----%%
 
 %% generator reliability data
-%	bus	pmax	λ	mttr
-mpc.reliability_gen = [
-	1	40	6	45;
-	1	40	6	45;
-	1	10	4	45;
-	1	20	5	45;
-	2	5	2	45;
-	2	5	2	45;
-	2	40	3	60;
-	2	20	2.4	55;
-	2	20	2.4	55;
-	2	20	2.4	55;
-	2	20	2.4	55;
+%	bus	pmax	state_model	λ_updn	μ_updn	λ_upde	μ_upde pde
+mpc.gen = [
+	1	40	2	6.0		194.0	0	0	0
+	1	40	2	6.0		194.0	0	0	0
+	1	10	2	4.0		196.0	0	0	0
+	1	20	2	5.0		195.0	0	0	0
+	2	5	2	2.0		198.0	0	0	0
+	2	5	2	2.0		198.0	0	0	0
+	2	40	2	3.0		147.0	0	0	0
+	2	20	2	2.4		157.6	0	0	0
+	2	20	2	2.4		157.6	0	0	0
+	2	20	2	2.4		157.6	0	0	0
+	2	20	2	2.4		157.6	0	0	0
 ];
 
 %% branch reliability data
-%    f_bus	t_bus	λ	mttr    
-mpc.reliability_branch = [
-	1	3	1.5	10;								
-	2	4	5.0	10;									
-	2	1	4.0	10;									
-	3	4	1.0	10;								
-	3	5	1.0	10;								
-	1	3	1.5	10;									
-	2	4	5.0	10;								
-	4	5	1.0 10;								
-	5	6	1.0 10;								
+%    f_bus	t_bus	λ_updn	μ_updn common_mode λ_common μ_common
+mpc.branch = [
+	1	3	1.5	876	0	0.00	0.00;
+	2	4	5.0	876	0	0.00	0.00;	
+	2	1	4.0	876	0	0.00	0.00;			
+	3	4	1.0	876	0	0.00	0.00;
+	3	5	1.0	876	0	0.00	0.00;
+	1	3	1.5	876	0	0.00	0.00;
+	2	4	5.0	876	0	0.00	0.00;
+	4	5	1.0 876	0	0.00	0.00;
+	5	6	1.0 876	0	0.00	0.00;
 ];
 
-%% load cost data
-%  bus_i  c
-mpc.load_cost = [		
-	2	7410;		
-	3	2690;		
-	4	6780;			
-	5	4820;		
-	6	3630;			
+%% load data
+%  bus_i  cost
+mpc.load = [		
+	2	9632.5
+	3	4376.9
+	4	8026.7	
+	5	8632.3
+	6	5513.2		
 ];

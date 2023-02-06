@@ -14,7 +14,6 @@
     import Random: AbstractRNG, rand, seed!
     import Random123: Philox4x
     import StatsBase: mean, std, stderror
-    import StaticArrays: StaticArrays, SVector, SMatrix, SArray
     import TimeZones: ZonedDateTime, @tz_str
     import LinearAlgebra: qr
 
@@ -23,13 +22,15 @@
         assess, SimulationSpec,
         
         # Metrics
-        ReliabilityMetric, LOLE, EUE, val, stderror,
+        ReliabilityMetric, LOLE, EENS, EDNS, val, stderror,
 
         # Simulation specification
         SequentialMCS, NonSequentialMCS, PreContingencies, accumulator,
 
         # Result specifications
         Shortfall, ShortfallSamples,
+        GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, 
+        BranchAvailability, ShuntAvailability, BusAvailability,
 
         #utils
         makeidxlist, 

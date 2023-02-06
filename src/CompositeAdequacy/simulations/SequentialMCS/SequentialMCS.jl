@@ -1,5 +1,10 @@
 include("utils.jl")
 
+"""
+This code snippet is using multi-threading to parallelize the assess function by running multiple instances of it simultaneously on different threads.
+The Threads.@spawn macro is used to create new threads, each of which will execute the assess function using a different seed from the sampleseeds channel. 
+The results of each thread are stored in the results channel, and the function finalize is called on the results after all threads have finished executing.
+"""
 function assess(
     system::SystemModel{N},
     method::SequentialMCS,
@@ -14,7 +19,7 @@ function assess(
 
     if method.threaded
         for _ in 1:threads
-            Threads.@spawn assess(system, method, deepcopy(settings), sampleseeds, results, resultspecs...)
+            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)
@@ -24,7 +29,13 @@ function assess(
     
 end
 
-""
+"""
+This assess function is designed to perform a Monte Carlo simulation using the Sequential Monte Carlo (SMC) method.
+The function uses the pm variable to store an abstract model of the system, and the systemstates variable to store the system's states. 
+It also creates several recorders using the accumulator function, and an RNG (random number generator) of type Philox4x.
+The function then iterates over the sampleseeds channel, using each seed to initialize the RNG and the system states, 
+and performs the Monte Carlo simulation for each sample.
+"""
 function assess(
     system::SystemModel{N},
     method::SequentialMCS,
@@ -34,17 +45,10 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
+    pm = abstract_model(system, settings)
     systemstates = SystemStates(system)
-
-    model = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    pm = PowerModel(settings.powermodel, Topology(system), model)
-
-    #model for non-contingency states
-    #ncmodel = JumpModel(settings.modelmode, deepcopy(settings.optimizer))
-    #ncpm = PowerModel(settings.powermodel, Topology(system), ncmodel)
-
-    recorders = accumulator.(system, method, resultspecs)   #DON'T MOVE THIS LINE
-    rng = Philox4x((0, 0), 10)  #DON'T MOVE THIS LINE
+    recorders = accumulator.(system, method, resultspecs)
+    rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
         println("s=$(s)")
@@ -55,13 +59,14 @@ function assess(
             initialize_powermodel!(pm, system, systemstates)
         end
 
-        for t in 2:N
-            update_model!(pm, system, systemstates, t)
+        for t in 1:N
+            #println("t=$(t)")
+            update!(pm, system, systemstates, settings, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        reset_model!(pm, systemstates, settings, s)
+        reset_model!(pm, system, systemstates, settings, s)
         
     end
 
@@ -69,58 +74,39 @@ function assess(
 
 end
 
-""
+"""
+The initialize_states! function creates an initial state of the system by using the Philox4x random number generator to randomly determine the availability 
+of different assets (buses, branches, common branches, generators, and storages) for each time step.
+"""
 function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
 
-    initialize_availability!(rng, field(states, :branches), field(system, :branches), N)
-    initialize_availability!(rng, field(states, :generators), field(system, :generators), N)
-    initialize_availability!(rng, field(states, :storages), field(system, :storages), N)
-    initialize_availability!(rng, field(states, :generatorstorages), field(system, :generatorstorages), N)
-    initialize_availability_system!(states, field(system, :generators), field(system, :loads), N)
+    singlestates = NextTransition(system)
+    initialize_all_states!(rng, states, singlestates, system)
 
-    return
-
-end
-
-""
-function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates; results::Bool=false)
-
-    initialize_pm_containers!(pm, system; timeseries=false)
-    build_method!(pm, system, states, 1)
-    optimize_method!(pm)
-
-    if results == true
-        build_result!(pm, system, states, 1)
+    for t in 2:N
+        @inbounds @fastmath update_all_states!(rng, states, singlestates, system, t)
     end
-
+    initialize_availability!(field(states, :buses), field(system, :buses), N)
+    fill!(states.storages, 1)
+    return
 end
 
 ""
-function update_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates)
+    build_method!(pm, system, 1)
+    return
+end
 
-    #update_idxs!(filter(i->BaseModule.field(states, :shunts, i, t), field(system, :shunts, :keys)), topology(pm, :shunts_idxs))    
-    #update_idxs!(filter(i->BaseModule.field(states, :generators, i, t), field(system, :generators, :keys)), topology(pm, :generators_idxs))
-    update_idxs!(filter(i->BaseModule.field(states, :branches, i, t), field(system, :branches, :keys)), topology(pm, :branches_idxs))    
+"The function update! updates the system states and power model for a given time step t. 
+It does this by first updating the topology of the system with the function update_topology!, 
+then updating the method and power model with update_method!, and finally optimizing the method with optimize_method!"
+function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    update_topology!(pm, system, states, settings, t)
     update_method!(pm, system, states, t)
-    optimize_method!(pm)
-    build_result!(pm, system, states, t)
+    optimize_method!(pm, system, states, t)
+    #optimize_method_2!(pm, system, states, t)
     return
-
 end
 
-""
-function solve!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-
-    build_method!(pm, system, states, t)
-    optimize_method!(pm)
-    build_result!(pm, system, states, t)
-    return
-
-end
-
-
-#update_energy!(states.stors_energy, system.storages, t)
-#update_energy!(states.genstors_energy, system.generatorstorages, t)
-
-#include("result_report.jl")
 include("result_shortfall.jl")
+include("result_availability.jl")
