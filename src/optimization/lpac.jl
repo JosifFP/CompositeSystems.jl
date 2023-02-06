@@ -275,8 +275,9 @@ function _con_storage_losses(pm::AbstractLPACModel, n::Int, i::Int, bus::Int, r:
     #phi = var(pm, :phi, n)[bus]
     con(pm, :storage_losses_p, n)[i] = @constraint(pm.model, ps + (sd - sc) == p_loss + r*ccms)
     con(pm, :storage_losses_q, n)[i] = @constraint(pm.model, qs == qsc + q_loss + x*ccms)
-    con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps^2 + qs^2 <= vmax^2*ccms)
+    con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps^2 + qs^2 <= vmax*ccms)
 end
+
 
 #***************************************************** UPDATES *************************************************************************
 

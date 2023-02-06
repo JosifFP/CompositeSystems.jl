@@ -103,7 +103,8 @@ then updating the method and power model with update_method!, and finally optimi
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
     update_topology!(pm, system, states, settings, t)
     update_method!(pm, system, states, t)
-    optimize_method_2!(pm, system, states, t)
+    optimize_method!(pm, system, states, t)
+    #optimize_method_2!(pm, system, states, t)
     return
 end
 
