@@ -2,54 +2,40 @@
 Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
 """
 function SystemModel(rawfile::String)
-
     #load network data
     network = build_network(rawfile)
     SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
     get!(network, :timeseries_load, "")
     return _SystemModel(network, SParametrics)
-
 end
 
 ""
 function SystemModel(rawfile::String, reliabilityfile::String)
-
     #load network data
     network = build_network(rawfile)
-
     reliability_data = extract_reliability_data(reliabilityfile)
     SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
     merge_compositesystems_data!(network, reliability_data)
-
     return _SystemModel(network, SParametrics)
-
 end
 
 ""
 function SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::String)
-
     #load network data
     network = build_network(rawfile)
-
     reliability_data = extract_reliability_data(reliabilityfile)
     timeseries_data, SParametrics = extract_timeseriesload(timeseriesfile)
     merge_compositesystems_data!(network, reliability_data, timeseries_data)
-
     return _SystemModel(network, SParametrics)
-
 end
 
 ""
 function SystemModel(rawfile::String, reliabilityfile::String, timeseries_data::Dict{Int, Vector{Float32}}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
-
     #load network data
     network = build_network(rawfile)
-
     reliability_data = extract_reliability_data(reliabilityfile)
     merge_compositesystems_data!(network, reliability_data, timeseries_data)
-
     return _SystemModel(network, SParametrics)
-
 end
 
 ""

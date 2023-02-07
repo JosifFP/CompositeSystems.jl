@@ -37,7 +37,6 @@ function build_network(rawfile::String; replace::Bool=false, export_file::Bool=f
         data = DataSanityCheck(pm_data)
     
         if export_file
-
             if isempty(export_filetype)
                 export_filetype = split(lowercase(rawfile), '.')[end]
             end
@@ -45,7 +44,6 @@ function build_network(rawfile::String; replace::Bool=false, export_file::Bool=f
             new_file = file*"_CompositeSystems_"*format(now(),"HHMMSS")*"."*export_filetype
             @info("A new file: $(new_file) has been created.")
             PowerModels.export_file(new_file, data)
-
         elseif !export_file && replace
             PowerModels.export_file(rawfile, data)
         end
@@ -74,7 +72,6 @@ function parse_model(io::IO, filetype::SubString{String})
     else
         error("Unrecognized filetype: \".$filetype\", Supported extensions are \".raw\" and \".m\"")
     end
-
     return pm_data
 end
 

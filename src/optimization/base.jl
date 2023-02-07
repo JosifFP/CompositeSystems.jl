@@ -301,7 +301,6 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     fill!(getfield(states, :loads), 1)
     fill!(getfield(states, :shunts), 1)
     return
-
 end
 
 ""
