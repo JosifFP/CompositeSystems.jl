@@ -6,7 +6,7 @@
 function update_var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
 
     phi = var(pm, :phi, nw)[i]
-    if field(states, :buses)[i,t] == 4
+    if states.buses[i,t] == 4
         JuMP.set_upper_bound(phi, 0)
         JuMP.set_lower_bound(phi, 0)
     else
@@ -55,26 +55,26 @@ function _update_con_ohms_yt_from(pm::AbstractLPACModel, states::SystemStates, i
     phi_to = var(pm, :phi, nw)[t_bus]
     cs     = var(pm, :cs, nw)[(f_bus, t_bus)]
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], p_fr, field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], q_fr, field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], p_fr, states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], q_fr, states.branches[i,t])
 
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[i], (g+g_fr)/tm^2*field(states, :branches)[i,t])
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[i], -(b+b_fr)/tm^2*field(states, :branches)[i,t])
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[i], (g+g_fr)/tm^2*states.branches[i,t])
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[i], -(b+b_fr)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], phi_fr, -(((g+g_fr)/tm^2)*2 + (-g*tr+b*ti)/tm^2)*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], phi_fr, -(-((b+b_fr)/tm^2)*2 - (-b*tr-g*ti)/tm^2)*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], phi_fr, -(((g+g_fr)/tm^2)*2 + (-g*tr+b*ti)/tm^2)*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], phi_fr, -(-((b+b_fr)/tm^2)*2 - (-b*tr-g*ti)/tm^2)*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], cs, -(-g*tr+b*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], cs, +(-b*tr-g*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], cs, -(-g*tr+b*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], cs, +(-b*tr-g*ti)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], phi_to, -(-g*tr+b*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], phi_to, +(-b*tr-g*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], phi_to, -(-g*tr+b*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], phi_to, +(-b*tr-g*ti)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_fr, -(-b*tr-g*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], va_fr, -(-g*tr+b*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_fr, -(-b*tr-g*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], va_fr, -(-g*tr+b*ti)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_to, +(-b*tr-g*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], va_to, +(-g*tr+b*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_p, nw)[i], va_to, +(-b*tr-g*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_from_q, nw)[i], va_to, +(-g*tr+b*ti)/tm^2*states.branches[i,t])
 
 end
 
@@ -88,26 +88,26 @@ function _update_con_ohms_yt_to(pm::AbstractLPACModel, states::SystemStates, i::
     phi_to = var(pm, :phi, nw)[t_bus]
     cs     = var(pm, :cs, nw)[(f_bus, t_bus)]
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_to, field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], q_to, field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_to, states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], q_to, states.branches[i,t])
 
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[i], (g+g_to)*field(states, :branches)[i,t])
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[i], -(b+b_to)*field(states, :branches)[i,t])
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[i], (g+g_to)*states.branches[i,t])
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[i], -(b+b_to)*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], phi_to, -((g+g_to)*2 + (-g*tr-b*ti)/tm^2)*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], phi_to, -(-(b+b_to)*2 - (-b*tr+g*ti)/tm^2)*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], phi_to, -((g+g_to)*2 + (-g*tr-b*ti)/tm^2)*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], phi_to, -(-(b+b_to)*2 - (-b*tr+g*ti)/tm^2)*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], cs, -(-g*tr-b*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], cs, +(-b*tr+g*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], cs, -(-g*tr-b*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], cs, +(-b*tr+g*ti)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], phi_fr, -(-g*tr-b*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], phi_fr, +(-b*tr+g*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], phi_fr, -(-g*tr-b*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], phi_fr, +(-b*tr+g*ti)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], va_fr, +(-b*tr+g*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], va_fr, +(-g*tr-b*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], va_fr, +(-b*tr+g*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], va_fr, +(-g*tr-b*ti)/tm^2*states.branches[i,t])
 
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], va_to, -(-b*tr+g*ti)/tm^2*field(states, :branches)[i,t])
-    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], va_to, -(-g*tr-b*ti)/tm^2*field(states, :branches)[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], va_to, -(-b*tr+g*ti)/tm^2*states.branches[i,t])
+    # JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_q, nw)[i], va_to, -(-g*tr-b*ti)/tm^2*states.branches[i,t])
 end
 
 ""
@@ -209,8 +209,8 @@ function _update_con_ohms_yt_to(pm::AbstractDCPLLModel, states::SystemStates, i:
 
     p_fr  = var(pm, :p, nw)[i, f_bus, t_bus]
     p_to  = var(pm, :p, nw)[i, t_bus, f_bus]
-    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_fr, field(states, :branches)[i,t])
-    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_to, field(states, :branches)[i,t])
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_fr, states.branches[i,t])
+    JuMP.set_normalized_coefficient(con(pm, :ohms_yt_to_p, nw)[i], p_to, states.branches[i,t])
 
 end
 
@@ -252,8 +252,8 @@ end
 function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
 
     if hasfield(Branches, :rate_a)
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[i], (field(system, :branches, :rate_a)[i]^2)*field(states, :branches)[i,t])
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[i], (field(system, :branches, :rate_a)[i]^2)*field(states, :branches)[i,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[i], (field(system, :branches, :rate_a)[i]^2)*states.branches[i,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[i], (field(system, :branches, :rate_a)[i]^2)*states.branches[i,t])
     end
     
 end
@@ -511,7 +511,7 @@ end
 
 ""
 function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if !check_availability(field(states, :shunts), t, t-1)
+    if !check_availability(states.shunts, t, t-1)
         @inbounds @views for i in field(system, :buses, :keys)
             update_con_power_balance_shunts(pm, system, states, i, t)
         end
@@ -558,17 +558,17 @@ function update_con_thermal_limits(pm::AbstractAPLossLessModels, system::SystemM
     p_to = var(pm, :p, nw)[t_idx]
 
     if JuMP.has_lower_bound(p_fr)
-        JuMP.set_lower_bound(p_fr, (-field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
-        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t]) end
+        JuMP.set_lower_bound(p_fr, (-field(system, :branches, :rate_a)[l])*states.branches[l,t])
+        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, (field(system, :branches, :rate_a)[l])*states.branches[l,t]) end
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l])*states.branches[l,t])
     end
 
     if JuMP.has_lower_bound(p_to)
-        JuMP.set_lower_bound(p_to, (-field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
-        if JuMP.has_upper_bound(p_to) JuMP.set_upper_bound(p_to, (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t]) end
+        JuMP.set_lower_bound(p_to, (-field(system, :branches, :rate_a)[l])*states.branches[l,t])
+        if JuMP.has_upper_bound(p_to) JuMP.set_upper_bound(p_to, (field(system, :branches, :rate_a)[l])*states.branches[l,t]) end
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l])*states.branches[l,t])
     end
 end
 
@@ -606,7 +606,7 @@ function _update_con_ohms_yt_from(pm::AbstractDCPModel, states::SystemStates, l:
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
 
-    if field(states, :branches)[l,t] == false
+    if states.branches[l,t] == false
         if b <= 0
             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max)
             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min)
@@ -629,7 +629,7 @@ function _update_con_ohms_yt_from(pm::AbstractDCMPPModel, states::SystemStates, 
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
 
-    if field(states, :branches)[l,t] == false
+    if states.branches[l,t] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max)/(x*tm))
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min)/(x*tm))
     else
@@ -656,12 +656,12 @@ end
 
 ""
 function update_con_thermal_limits(pm::AbstractAPLossLessModels, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
-    JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-    JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_from_upper, nw)[l], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_from_lower, nw)[l], (-field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
-    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_to_upper, nw)[l], field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_to_lower, nw)[l], (-field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
+    JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], field(system, :branches, :rate_a)[l]*states.branches[l,t])
+    JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], field(system, :branches, :rate_a)[l]*states.branches[l,t])
+    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_from_upper, nw)[l], field(system, :branches, :rate_a)[l]*states.branches[l,t])
+    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_from_lower, nw)[l], (-field(system, :branches, :rate_a)[l])*states.branches[l,t])
+    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_to_upper, nw)[l], field(system, :branches, :rate_a)[l]*states.branches[l,t])
+    #JuMP.set_normalized_rhs(con(pm, :thermal_limit_to_lower, nw)[l], (-field(system, :branches, :rate_a)[l])*states.branches[l,t])
 end
 
 ""
@@ -691,17 +691,17 @@ function update_con_thermal_limits(pm::AbstractAPLossLessModels, system::SystemM
     p_to = var(pm, :p, nw)[t_idx]
 
     if JuMP.has_lower_bound(p_fr)
-        JuMP.set_lower_bound(p_fr, (-field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
-        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t]) end
+        JuMP.set_lower_bound(p_fr, (-field(system, :branches, :rate_a)[l])*states.branches[l,t])
+        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, (field(system, :branches, :rate_a)[l])*states.branches[l,t]) end
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l])*states.branches[l,t])
     end
 
     if JuMP.has_lower_bound(p_to)
-        JuMP.set_lower_bound(p_to, (-field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
-        if JuMP.has_upper_bound(p_to) JuMP.set_upper_bound(p_to, (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t]) end
+        JuMP.set_lower_bound(p_to, (-field(system, :branches, :rate_a)[l])*states.branches[l,t])
+        if JuMP.has_upper_bound(p_to) JuMP.set_upper_bound(p_to, (field(system, :branches, :rate_a)[l])*states.branches[l,t]) end
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l])*field(states, :branches)[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l])*states.branches[l,t])
     end
 end
 
@@ -754,7 +754,7 @@ function _update_con_ohms_yt_from(pm::AbstractDCPModel, states::SystemStates, l:
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
 
-    if field(states, :branches)[l,t] == false
+    if states.branches[l,t] == false
         if b <= 0
             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max)
             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min)
@@ -778,7 +778,7 @@ function _update_con_ohms_yt_from(pm::AbstractDCMPPModel, states::SystemStates, 
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
 
-    if field(states, :branches)[l,t] == false
+    if states.branches[l,t] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max)/(x*tm))
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min)/(x*tm))
     else
@@ -791,7 +791,7 @@ end
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(pm::AbstractDCPModel, states::SystemStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     vad = max(topology(pm, :delta_bounds)[1], topology(pm, :delta_bounds)[2])
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 0.0*(1-field(states, :branches)[l,t]))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 0.0*(1-states.branches[l,t]))
 end
 
 "DC Line Flow Constraints"
@@ -799,7 +799,7 @@ function _update_con_ohms_yt_from(pm::AbstractDCMPPModel, states::SystemStates, 
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
     vad = max(topology(pm, :delta_bounds)[1], topology(pm, :delta_bounds)[2])
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], ((-ta + 0.0)/(x*tm))*(1-field(states, :branches)[l,t]))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], ((-ta + 0.0)/(x*tm))*(1-states.branches[l,t]))
 end
 
 function _con_ohms_yt_from_2(pm::AbstractDCPModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
@@ -892,7 +892,7 @@ end
         )
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         PowerModels.simplify_network!(data)
@@ -940,7 +940,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -990,7 +990,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1042,7 +1042,7 @@ end
         result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
         
@@ -1131,7 +1131,7 @@ end
 #     td_lb = topology(pm, :delta_bounds)[1]
 #     td_ub = topology(pm, :delta_bounds)[2]
 
-#     if field(states, :branches)[l,t] == false
+#     if states.branches[l,t] == false
 #         JuMP.set_normalized_rhs(con(pm, :model_voltage_upper, nw)[l], td_ub)
 #         JuMP.set_normalized_rhs(con(pm, :model_voltage_lower, nw)[l], td_lb)
 #     else
@@ -1153,8 +1153,8 @@ function update_var_branch_power_real(pm::AbstractPowerModel, system::SystemMode
         @error("Expression $(typeof(var(pm, :p, 1)[arc])) not supported")
     end
 
-    JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-    JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+    JuMP.set_lower_bound(p_var, -field(system, :branches, :rate_a)[l]*states.branches[l,t])
+    JuMP.set_upper_bound(p_var, field(system, :branches, :rate_a)[l]*states.branches[l,t])
 end
 
 ""
@@ -1170,29 +1170,29 @@ function update_var_branch_power_imaginary(pm::AbstractPowerModel, system::Syste
         @error("Expression $(typeof(var(pm, :q, 1)[arc])) not supported")
     end
 
-    JuMP.set_lower_bound(q_var, -field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
-    JuMP.set_upper_bound(q_var, field(system, :branches, :rate_a)[l]*field(states, :branches)[l,t])
+    JuMP.set_lower_bound(q_var, -field(system, :branches, :rate_a)[l]*states.branches[l,t])
+    JuMP.set_upper_bound(q_var, field(system, :branches, :rate_a)[l]*states.branches[l,t])
 end
 
 
 ""
 function update_var_storage_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     ps = var(pm, :ps, nw)[i]
-    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
-    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*states.storages[i,t])
+    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*states.storages[i,t])
 end
 
 ""
 function update_var_storage_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     ps = var(pm, :ps, nw)[i]
-    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
-    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*field(states, :storages)[i,t])
+    JuMP.set_lower_bound(ps, max(-Inf, -field(system, :storages, :thermal_rating)[i])*states.storages[i,t])
+    JuMP.set_upper_bound(ps, min(Inf,  field(system, :storages, :thermal_rating)[i])*states.storages[i,t])
 end
 
 ""
 function update_var_storage_energy(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
     se = var(pm, :se, nw)[i]
     JuMP.set_lower_bound(se, 0)
-    JuMP.set_upper_bound(se, field(system, :storages, :energy_rating)[i]*field(states, :storages)[i,t])
+    JuMP.set_upper_bound(se, field(system, :storages, :energy_rating)[i]*states.storages[i,t])
 end
 

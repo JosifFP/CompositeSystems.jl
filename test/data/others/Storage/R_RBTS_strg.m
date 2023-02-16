@@ -52,5 +52,5 @@ mpc.load = [
 %% storage reliability data
 %	bus	energy_rating	λ_updn	μ_updn
 mpc.storage = [
-	6	200.0	0	0;
+	2	300.0	0	0;
 ];

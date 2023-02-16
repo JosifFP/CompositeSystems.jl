@@ -97,7 +97,6 @@ function con_thermal_limits_on_off(pm::AbstractPowerModel, system::SystemModel, 
     rate_a = field(system, :branches, :rate_a)[l]
     f_idx = (l, f_bus, t_bus)
     t_idx = (l, t_bus, f_bus)
-
     _con_thermal_limit_from_on_off(pm, nw, l, f_idx, rate_a)
     _con_thermal_limit_to_on_off(pm, nw, l, t_idx, rate_a)
 
@@ -111,7 +110,6 @@ function _con_thermal_limit_from_on_off(pm::AbstractPowerModel, n::Int, l::Int, 
     q_fr = var(pm, :q, n)[f_idx]
     z = var(pm, :z_branch, n)[l]
     con(pm, :thermal_limit_from, n)[l] = @constraint(pm.model, p_fr^2 + q_fr^2 <= rate_a^2*z^2)
-    
 end
 
 "`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
@@ -121,7 +119,6 @@ function _con_thermal_limit_to_on_off(pm::AbstractPowerModel, n::Int, l::Int, t_
     q_to = var(pm, :q, n)[t_idx]
     z = var(pm, :z_branch, n)[l]
     con(pm, :thermal_limit_to, n)[l] = @constraint(pm.model, p_to^2 + q_to^2 <= rate_a^2*z^2)
-
 end
 
 
@@ -133,10 +130,8 @@ function con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, l::Int;
     rate_a = field(system, :branches, :rate_a)[l]
     f_idx = (l, f_bus, t_bus)
     t_idx = (l, t_bus, f_bus)
-
     _con_thermal_limit_from(pm, nw, l, f_idx, rate_a)
     _con_thermal_limit_to(pm, nw, l, t_idx, rate_a)
-
 end
 
 # Generic thermal limit constraint
@@ -167,15 +162,12 @@ function con_ohms_yt_on_off(pm::AbstractPowerModel, system::SystemModel, l::Int;
 
     va_fr  = var(pm, :va, nw)[f_bus]
     va_to  = var(pm, :va, nw)[t_bus]
-
     g_fr = field(system, :branches, :g_fr)[l]
     b_fr = field(system, :branches, :b_fr)[l]
     g_to = field(system, :branches, :g_to)[l]
     b_to = field(system, :branches, :b_to)[l]
-
     _con_ohms_yt_from_on_off(pm, l, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     _con_ohms_yt_to_on_off(pm, l, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
-
 end
 
 ""
@@ -192,7 +184,6 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::In
     b_fr = field(system, :branches, :b_fr)[l]
     g_to = field(system, :branches, :g_to)[l]
     b_to = field(system, :branches, :b_to)[l]
-
     _con_ohms_yt_from(pm, l, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     _con_ohms_yt_to(pm, l, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end
@@ -226,7 +217,6 @@ function con_storage_complementarity_mi(pm::AbstractPowerModel, system::SystemMo
     sd = var(pm, :sd, nw)[i]
     sc_on = var(pm, :sc_on, nw)[i]
     sd_on = var(pm, :sd_on, nw)[i]
-
     con(pm, :storage_complementarity_mi_1, nw)[i] = @constraint(pm.model, sc_on + sd_on == 1)
     con(pm, :storage_complementarity_mi_2, nw)[i] = @constraint(pm.model, sc_on*charge_ub >= sc)
     con(pm, :storage_complementarity_mi_3, nw)[i] = @constraint(pm.model, sd_on*discharge_ub >= sd)

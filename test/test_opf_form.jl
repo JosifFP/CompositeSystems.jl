@@ -18,7 +18,7 @@
 
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, juniper_optimizer_2)
 
@@ -63,7 +63,7 @@
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -114,7 +114,7 @@
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -167,7 +167,7 @@
         result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
         
@@ -237,7 +237,7 @@ end
     
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
     
         data = OPF.build_network(rawfile, symbol=false)
@@ -278,7 +278,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
         data = OPF.build_network(rawfile, symbol=false)
@@ -330,7 +330,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 
         data = OPF.build_network(rawfile, symbol=false)
@@ -384,7 +384,7 @@ end
         result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
         
@@ -453,7 +453,7 @@ end
         )    
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
     
         data = OPF.build_network(rawfile, symbol=false)
@@ -494,7 +494,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -545,7 +545,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -598,7 +598,7 @@ end
         result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
         
@@ -666,7 +666,7 @@ end
         )
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.NFAPowerModel, juniper_optimizer_2)
@@ -713,7 +713,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -763,7 +763,7 @@ end
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
 
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -815,7 +815,7 @@ end
         result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
         result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
         
@@ -886,7 +886,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["1"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -929,7 +929,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["6"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -971,7 +971,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
     
@@ -1013,7 +1013,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -1057,7 +1057,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -1101,7 +1101,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["7"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -1145,7 +1145,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -1189,7 +1189,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -1233,7 +1233,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["8"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -1278,7 +1278,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["9"]["br_status"] = 0
             data["load"]["5"]["status"] = 0
@@ -1326,7 +1326,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
     
@@ -1370,7 +1370,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["1"]["br_status"] = 0
             data["branch"]["5"]["br_status"] = 0
@@ -1418,7 +1418,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             data["branch"]["7"]["br_status"] = 0
@@ -1466,7 +1466,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
             data["branch"]["8"]["br_status"] = 0
@@ -1530,7 +1530,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["1"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1575,7 +1575,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["6"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1619,7 +1619,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
     
@@ -1662,7 +1662,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1707,7 +1707,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1752,7 +1752,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["7"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1797,7 +1797,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1842,7 +1842,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1887,7 +1887,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["8"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -1932,7 +1932,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["9"]["br_status"] = 0
             data["load"]["5"]["status"] = 0
@@ -1981,7 +1981,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
     
@@ -2025,7 +2025,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["1"]["br_status"] = 0
             data["branch"]["5"]["br_status"] = 0
@@ -2072,7 +2072,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             data["branch"]["7"]["br_status"] = 0
@@ -2119,7 +2119,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
             data["branch"]["8"]["br_status"] = 0
@@ -2182,7 +2182,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     
@@ -2190,7 +2190,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2234,7 +2234,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 3
@@ -2245,7 +2245,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2254,7 +2254,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2298,7 +2298,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 2
@@ -2309,7 +2309,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2318,7 +2318,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2362,7 +2362,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 7
@@ -2373,7 +2373,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["7"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2382,7 +2382,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2426,7 +2426,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 4
@@ -2437,7 +2437,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2446,7 +2446,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2490,7 +2490,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 5
@@ -2500,7 +2500,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2509,7 +2509,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2551,7 +2551,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)            
         end
     
@@ -2562,7 +2562,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["8"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2571,7 +2571,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2613,7 +2613,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)      
         end
     
@@ -2624,7 +2624,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["9"]["br_status"] = 0
             PowerModels.simplify_network!(data)
@@ -2634,7 +2634,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2676,7 +2676,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
         
@@ -2687,7 +2687,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     
@@ -2695,7 +2695,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2737,7 +2737,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
         end
     
@@ -2749,7 +2749,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
             data["branch"]["8"]["br_status"] = 0
@@ -2760,7 +2760,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2802,7 +2802,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
     end
@@ -2829,7 +2829,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     
@@ -2837,7 +2837,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2881,7 +2881,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 3
@@ -2892,7 +2892,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2901,7 +2901,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -2945,7 +2945,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 2
@@ -2956,7 +2956,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2965,7 +2965,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3009,7 +3009,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 7
@@ -3020,7 +3020,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["7"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -3029,7 +3029,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3073,7 +3073,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 4
@@ -3084,7 +3084,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -3093,7 +3093,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3137,7 +3137,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
         end
     
         #OUTAGE BRANCH 5
@@ -3147,7 +3147,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -3156,7 +3156,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3198,7 +3198,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)            
         end
     
@@ -3209,7 +3209,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["8"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -3218,7 +3218,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3260,7 +3260,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)      
         end
     
@@ -3271,7 +3271,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["9"]["br_status"] = 0
             PowerModels.simplify_network!(data)
@@ -3281,7 +3281,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3323,7 +3323,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
         
@@ -3334,7 +3334,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     
@@ -3342,7 +3342,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3384,7 +3384,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(states, :branches)[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
         end
     
@@ -3396,7 +3396,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
             data["branch"]["8"]["br_status"] = 0
@@ -3407,7 +3407,7 @@ end
             result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
             result_phi = OPF.build_sol_values(OPF.var(pm, :phi, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
             total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
             
@@ -3480,7 +3480,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = PowerModels.parse_file(rawfile)
             data["branch"]["1"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3510,7 +3510,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["25"]["br_status"] = 0
             data["branch"]["26"]["br_status"] = 0
@@ -3541,7 +3541,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["14"]["br_status"] = 0
             data["branch"]["16"]["br_status"] = 0
@@ -3571,7 +3571,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["6"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3599,7 +3599,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
     
@@ -3627,7 +3627,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3656,7 +3656,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3685,7 +3685,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["33"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3714,7 +3714,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3741,7 +3741,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["5"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3770,7 +3770,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["8"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3799,7 +3799,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["9"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3827,7 +3827,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
         
@@ -3856,7 +3856,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["1"]["br_status"] = 0
         data["branch"]["6"]["br_status"] = 0
@@ -3886,7 +3886,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["20"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3916,7 +3916,7 @@ end
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-            result_pf = OPF.build_sol_branch_values(pm, system.branches)
+            result_pf = OPF.build_sol_values(pm, system.branches)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["12"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
@@ -3960,7 +3960,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["1"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -3990,7 +3990,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["25"]["br_status"] = 0
         data["branch"]["26"]["br_status"] = 0
@@ -4021,7 +4021,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["14"]["br_status"] = 0
         data["branch"]["16"]["br_status"] = 0
@@ -4051,7 +4051,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["6"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4079,7 +4079,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
         
@@ -4107,7 +4107,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["3"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4136,7 +4136,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["2"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4165,7 +4165,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["33"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4194,7 +4194,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["4"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4223,7 +4223,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["5"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4252,7 +4252,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["8"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4281,7 +4281,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["9"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4310,7 +4310,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
         
@@ -4339,7 +4339,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["1"]["br_status"] = 0
         data["branch"]["6"]["br_status"] = 0
@@ -4369,7 +4369,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["20"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4398,7 +4398,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["12"]["br_status"] = 0
         result = PowerModels.solve_opf(data, PowerModels.DCMPPowerModel, juniper_optimizer_2)
@@ -4427,7 +4427,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["7"]["br_status"] = 0
         data["bus"]["24"]["bus_type"] = 4
@@ -4458,7 +4458,7 @@ end
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-        result_pf = OPF.build_sol_branch_values(pm, system.branches)
+        result_pf = OPF.build_sol_values(pm, system.branches)
         data = OPF.build_network(rawfile, symbol=false)
         data["branch"]["7"]["br_status"] = 0
         data["branch"]["27"]["br_status"] = 0
@@ -4506,7 +4506,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["1"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4553,7 +4553,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["25"]["br_status"] = 0
     data["branch"]["26"]["br_status"] = 0
@@ -4602,7 +4602,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["14"]["br_status"] = 0
     data["branch"]["16"]["br_status"] = 0
@@ -4650,7 +4650,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["6"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4696,7 +4696,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     
@@ -4742,7 +4742,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["3"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4789,7 +4789,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["2"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4836,7 +4836,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["33"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4883,7 +4883,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["4"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4930,7 +4930,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["5"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -4977,7 +4977,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["8"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -5024,7 +5024,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["9"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -5070,7 +5070,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     
@@ -5117,7 +5117,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["1"]["br_status"] = 0
     data["branch"]["6"]["br_status"] = 0
@@ -5165,7 +5165,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["20"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -5212,7 +5212,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["12"]["br_status"] = 0
     result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -5259,7 +5259,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["7"]["br_status"] = 0
     data["bus"]["24"]["bus_type"] = 4
@@ -5308,7 +5308,7 @@ end
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-    result_pf = OPF.build_sol_branch_values(pm, system.branches)
+    result_pf = OPF.build_sol_values(pm, system.branches)
     data = OPF.build_network(rawfile, symbol=false)
     data["branch"]["7"]["br_status"] = 0
     data["branch"]["27"]["br_status"] = 0

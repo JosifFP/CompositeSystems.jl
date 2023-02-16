@@ -166,7 +166,6 @@ function _con_ohms_yt_from_on_off(pm::AbstractDCMPPModel, l::Int, nw::Int, f_bus
     ta = atan(ti, tr)
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
-
     con(pm, :ohms_yt_from_upper_p, nw)[l] = @constraint(pm.model, p_fr <= (va_fr - va_to - ta + vad_max*(1-z)) / (x*tm))
     con(pm, :ohms_yt_from_lower_p, nw)[l] = @constraint(pm.model, p_fr >= (va_fr - va_to - ta + vad_min*(1-z)) / (x*tm)) 
 end
@@ -341,11 +340,11 @@ function update_con_thermal_limits(pm::AbstractAPLossLessModels, system::SystemM
     p_fr = var(pm, :p, nw)[f_idx]
 
     if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
-        JuMP.set_lower_bound(p_fr, (-rate_a)*field(states, :branches)[l,t])
-        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, rate_a*field(states, :branches)[l,t]) end
+        JuMP.set_lower_bound(p_fr, (-rate_a)*states.branches[l,t])
+        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, rate_a*states.branches[l,t]) end
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*field(states, :branches)[l,t])
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*field(states, :branches)[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*states.branches[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*states.branches[l,t])
     end
 end
 
@@ -361,11 +360,11 @@ function _update_con_ohms_yt_from(pm::AbstractDCPModel, states::SystemStates, l:
     vad_max = topology(pm, :delta_bounds)[2]
 
     if b <= 0
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-field(states, :branches)[l,t]))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-field(states, :branches)[l,t]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-states.branches[l,t]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-states.branches[l,t]))
     else # account for bound reversal when b is positive
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-field(states, :branches)[l,t]))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-field(states, :branches)[l,t]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-states.branches[l,t]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-states.branches[l,t]))
     end
 end
 
@@ -376,8 +375,8 @@ function _update_con_ohms_yt_from(pm::AbstractDCMPPModel, states::SystemStates, 
     ta = atan(ti, tr)
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max*(1-field(states, :branches)[l,t]))/(x*tm))
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min*(1-field(states, :branches)[l,t]))/(x*tm))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max*(1-states.branches[l,t]))/(x*tm))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min*(1-states.branches[l,t]))/(x*tm))
 end
 
 "Nothing to do, this model is symetric"

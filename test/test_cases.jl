@@ -9,13 +9,13 @@ using XLSX, Dates
 #using ProfileView, Profile
 
 include("solvers.jl")
-#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-
 timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/others/Storage/RBTS_strg.m"
-Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+
+#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#rawfile = "test/data/others/Storage/RBTS_strg.m"
+#Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 
 #timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"

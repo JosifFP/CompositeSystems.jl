@@ -24,8 +24,10 @@ Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 resultspecs = (Shortfall(), GeneratorAvailability())
 method = SequentialMCS(samples=5000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+run_mcs(system, method, settings, resultspecs, 2)
 
-for bus in 1:1:6
+
+for bus in 1:0.5:6
     run_mcs(system, method, settings, resultspecs, bus)
 end
 
@@ -35,6 +37,7 @@ function run_mcs(system, method, settings, resultspecs, bus::Int)
     system.storages.discharge_rating[1] = 0.25
     system.storages.thermal_rating[1] = 0.25
     for i in 0.5:0.5:4.0
+    #for i in 0.5:0.5:4.0
         system.storages.energy_rating[1] = i
         shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
         print_results(shortfall)

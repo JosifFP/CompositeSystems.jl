@@ -253,12 +253,12 @@ function initialize_all_states!(rng::AbstractRNG, states::SystemStates, singlest
     initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
     initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
     initialize_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, system.storages, N)
-    view(field(states, :branches),:,1) .= singlestates.branches_available[:]
-    view(field(states, :shunts),:,1) .= singlestates.shunts_available[:]
-    view(field(states, :commonbranches),:,1) .= singlestates.commonbranches_available[:]
-    view(field(states, :generators),:,1) .= singlestates.generators_available[:]
-    view(field(states, :storages),:,1) .= singlestates.storages_available[:]
-    view(field(states, :generatorstorages),:,1) .= singlestates.generatorstorages_available[:]
+    view(states.branches,:,1) .= singlestates.branches_available[:]
+    view(states.shunts,:,1) .= singlestates.shunts_available[:]
+    view(states.commonbranches,:,1) .= singlestates.commonbranches_available[:]
+    view(states.generators,:,1) .= singlestates.generators_available[:]
+    view(states.storages,:,1) .= singlestates.storages_available[:]
+    view(states.generatorstorages,:,1) .= singlestates.generatorstorages_available[:]
     return
 end
 
@@ -268,17 +268,17 @@ function update_all_states!(rng::AbstractRNG, states::SystemStates, singlestates
     update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, field(system, :commonbranches), t, N)
     update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, field(system, :generators), t, N)
     update_availability!(rng, singlestates.storages_available, singlestates.storages_nexttransition, field(system, :storages), t, N)
-    view(field(states, :branches),:,t) .= singlestates.branches_available[:]
-    view(field(states, :commonbranches),:,t) .= singlestates.commonbranches_available[:]
-    view(field(states, :generators),:,t) .= singlestates.generators_available[:]
-    view(field(states, :storages),:,t) .= singlestates.storages_available[:]
-    view(field(states, :generatorstorages),:,t) .= singlestates.generatorstorages_available[:]
+    view(states.branches,:,t) .= singlestates.branches_available[:]
+    view(states.commonbranches,:,t) .= singlestates.commonbranches_available[:]
+    view(states.generators,:,t) .= singlestates.generators_available[:]
+    view(states.storages,:,t) .= singlestates.storages_available[:]
+    view(states.generatorstorages,:,t) .= singlestates.generatorstorages_available[:]
     apply_common_outages!(states, system, t)
 end
 
 ""
 function apply_common_outages!(states::SystemStates, system::SystemModel, t::Int)
-    if all(view(field(states, :commonbranches),:,t)) == false
+    if all(view(states.commonbranches,:,t)) == false
         for k in field(system, :branches, :keys)
             if field(system, :branches, :common_mode)[k] ≠ 0
                 if states.commonbranches[field(system, :branches, :common_mode)[k],t] == false

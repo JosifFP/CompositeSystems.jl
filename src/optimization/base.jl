@@ -191,7 +191,6 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :ohms_yt_from_upper_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_lower_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_upper_p, field(system, :branches, :keys))
-
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
@@ -237,7 +236,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
 
-
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
         add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
@@ -253,7 +251,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :relaxation_cos_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :relaxation_cos_lower, field(system, :branches, :keys))
         add_con_container!(pm.con, :relaxation_cos, field(system, :branches, :keys))
-
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
@@ -298,8 +295,8 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     fill!(getfield(states, :plc), 0)
     fill!(getfield(states, :qlc), 0)
     fill!(getfield(states, :se), 0)
-    fill!(getfield(states, :loads), 1)
-    fill!(getfield(states, :shunts), 1)
+    fill!(states.loads, 1)
+    fill!(states.shunts, 1)
     return
 end
 
@@ -330,7 +327,7 @@ end
 
 ""
 function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
-    if !check_availability(field(states, :branches), t, t-1)
+    if !check_availability(states.branches, t, t-1)
         simplify!(pm, system, states, settings, t)
         update_arcs!(pm, system, states.branches, t)
     end

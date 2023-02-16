@@ -30,4 +30,4 @@ systemstates.plc[:]
 result_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 values(OPF.build_sol_values(OPF.var(pm, :pg, :)))
 result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-result_pf = OPF.build_sol_branch_values(pm, system.branches)
+result_pf = OPF.build_sol_values(pm, system.branches)

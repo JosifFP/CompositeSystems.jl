@@ -13,8 +13,8 @@ function build_method!(pm::AbstractPowerModel, system::SystemModel, t)
     # Add Optimization and State Variables
     var_branch_indicator(pm, system)
     var_bus_voltage_on_off(pm, system)
-    var_load_power_factor(pm, system, t)
-    var_shunt_admittance_factor(pm, system, t)
+    var_load_power_factor(pm, system)
+    var_shunt_admittance_factor(pm, system)
     var_gen_power(pm, system)
     var_branch_power(pm, system)
     var_storage_power_mi(pm, system)
@@ -59,6 +59,7 @@ function update_method!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 end
 
 function _update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+
     @inbounds @views for i in field(system, :generators, :keys)
         update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
         update_var_gen_power_imaginary(pm, system, states, i, t)
@@ -82,7 +83,7 @@ end
 
 ""
 function update_generators!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
-    if !check_availability(field(system, :generators), field(states, :generators), t, t-1)
+    if !check_availability(field(system, :generators), states.generators, t, t-1)
         @inbounds @views for i in field(system, :generators, :keys)
             update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
             update_var_gen_power_imaginary(pm, system, states, i, t)
@@ -92,22 +93,19 @@ end
 
 ""
 function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if !check_availability(field(states, :branches), t, t-1)
+    if !check_availability(states.branches, t, t-1)
         @inbounds @views for l in field(system, :branches, :keys)
             update_var_branch_indicator(pm, system, states, l, t)
             update_con_ohms_yt(pm, system, states, l, t)
             update_con_thermal_limits(pm, system, states, l, t)
             update_con_voltage_angle_difference(pm, system, states, l, t)
-            #update_branch_voltage_magnitude_fr_on_off(pm, system, states, l, t)
-            #update_branch_voltage_magnitude_to_on_off(pm, system, states, l, t)
-            #update_var_branch_voltage_product_angle_on_off(pm, system, states, l, t)
         end
     end
 end
 
 ""
 function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if !check_availability(field(states, :shunts), t, t-1) || !check_availability(field(states, :branches), t, t-1)
+    if !check_availability(states.shunts, t, t-1) || !check_availability(states.branches, t, t-1)
         @inbounds @views for i in field(system, :shunts, :keys)
             update_var_shunt_admittance_factor(pm, system, states, i, t)
         end
@@ -118,7 +116,7 @@ end
 function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     @inbounds @views for i in field(system, :storages, :keys)
         update_con_storage_state(pm, system, states, i, t)
-        #if !check_availability(field(states, :storages), t, t-1)
+        #if !check_availability(states.storages, t, t-1)
             #update_var_storage_charge(pm, system, states, i, t)
             #update_var_storage_discharge(pm, system, states, i, t)
         #end
@@ -222,18 +220,12 @@ to optimize the power model and then calls build_result!(pm, system, states, t) 
 If there are no changes, it fills the states.plc variable with zeros.
 """
 function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if (all(@view states.branches[:,t]) ≠ true  || all(@view states.storages[:,t]) ≠ true || sum(@view field(states, :generators)[:, t]) < length(system.generators) - 1)
+    if length(system.storages) ≠ 0 || all(@view states.branches[:,t]) ≠ true || sum(@view states.generators[:, t]) < length(system.generators)
         JuMP.optimize!(pm.model)
         build_result!(pm, system, states, t)
     else
         fill!(states.plc, 0.0)
     end
-    return
-end
-
-function optimize_method_2!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    JuMP.optimize!(pm.model)
-    build_result!(pm, system, states, t)
     return
 end
 
@@ -271,14 +263,17 @@ Finally, it returns an objective function to minimize the sum of fd and fe.
 """
 function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
+    bus_loads = Dict{Int, Any}()
     load_cost = Dict{Int, Any}()
-    bus_load = Dict{Int, Any}()
+    se_left = Dict{Int, Any}()
     for i in assetgrouplist(topology(pm, :buses_idxs))
-        bus_load[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
-        load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
+        bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
+        load_cost[i] = @expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
+        se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
     end
+
     fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
-    fe = @expression(pm.model, 1000*sum(field(system, :storages, :energy_rating)[i] - var(pm, :se, nw)[i] for i in field(system, :storages, :keys)))
+    fe = @expression(pm.model, sum(se_left[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
     return @objective(pm.model, MIN_SENSE, fd + fe)
 end
 
@@ -304,7 +299,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
     
         @views for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if field(states, :buses)[i,t] == 4
+            if states.buses[i,t] == 4
                 states.plc[i] = bus_pd
             else
                 !haskey(plc, i) && get!(plc, i, bus_pd)
@@ -321,7 +316,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
         #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
         @views for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if field(states, :buses)[i,t] == 4
+            if states.buses[i,t] == 4
                 states.plc[i] = bus_pd
             else
                 states.plc[i] = 0
@@ -345,7 +340,7 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
         @views for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
             bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if field(states, :buses)[i,t] == 4
+            if states.buses[i,t] == 4
                 states.plc[i] = bus_pd
                 states.qlc[i] = bus_qd
             else
@@ -364,7 +359,7 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Syst
         #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
         @views for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if field(states, :buses)[i,t] == 4
+            if states.buses[i,t] == 4
                 states.plc[i] = bus_pd
             else
                 states.plc[i] = 0
@@ -395,7 +390,7 @@ function build_sol_values(var::DenseAxisArray)
 end
 
 "Build solution dictionary of active flows per branch"
-function build_sol_branch_values(pm::AbstractDCPowerModel, branches::Branches)
+function build_sol_values(pm::AbstractDCPowerModel, branches::Branches)
 
     dict_p = sort(_IM.build_solution_values(var(pm, :p, :)))
     tuples = keys(sort(OPF.var(pm, :p, :)))
@@ -421,7 +416,7 @@ function build_sol_branch_values(pm::AbstractDCPowerModel, branches::Branches)
 end
 
 "Build solution dictionary of active flows per branch"
-function build_sol_branch_values(pm::AbstractLPACModel, branches::Branches)
+function build_sol_values(pm::AbstractLPACModel, branches::Branches)
 
     dict_p = sort(_IM.build_solution_values(var(pm, :p, :)))
     dict_q = sort(_IM.build_solution_values(var(pm, :q, :)))

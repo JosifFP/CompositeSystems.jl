@@ -21,7 +21,7 @@ end
 
 ""
 function record!(acc::SMCSGenAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(field(states, :generators), :, t)
+    acc.available[:, t, sampleid] .= view(states.generators, :, t)
     return
 end
 
@@ -54,7 +54,7 @@ end
 
 ""
 function record!(acc::SMCSStorAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(field(states, :storages), :, t)
+    acc.available[:, t, sampleid] .= view(states.storages, :, t)
     return
 end
 
@@ -87,7 +87,7 @@ end
 
 ""
 function record!(acc::SMCSGenStorAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(field(states, :generatorstorages), :, t)
+    acc.available[:, t, sampleid] .= view(states.generatorstorages, :, t)
     return
 
 end
@@ -121,7 +121,7 @@ end
 
 ""
 function record!(acc::SMCSBranchAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(field(states, :branches), :, t)
+    acc.available[:, t, sampleid] .= view(states.branches, :, t)
     return
 end
 
@@ -155,7 +155,7 @@ end
 
 ""
 function record!(acc::SMCSShuntAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(field(states, :shunts), :, t)
+    acc.available[:, t, sampleid] .= view(states.shunts, :, t)
     return
 end
 
@@ -188,7 +188,7 @@ end
 
 ""
 function record!(acc::SMCSBusAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(field(states, :buses), :, t)
+    acc.available[:, t, sampleid] .= view(states.buses, :, t)
     return
 end
 
