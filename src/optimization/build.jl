@@ -219,8 +219,9 @@ compared to the previous time step. If there are any changes, the function calls
 to optimize the power model and then calls build_result!(pm, system, states, t) to update the system states. 
 If there are no changes, it fills the states.plc variable with zeros.
 """
-function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
-    if length(system.storages) ≠ 0 || all(@view states.branches[:,t]) ≠ true || sum(@view states.generators[:, t]) < length(system.generators)
+function optimize_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    if length(system.storages) ≠ 0 || all(@view states.branches[:,t]) ≠ true || 
+        sum(@view states.generators[:, t]) < length(system.generators) - settings.min_generators_off
         JuMP.optimize!(pm.model)
         build_result!(pm, system, states, t)
     else
@@ -268,8 +269,8 @@ function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::Sys
     se_left = Dict{Int, Any}()
     for i in assetgrouplist(topology(pm, :buses_idxs))
         bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
-        load_cost[i] = @expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
-        se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
+        load_cost[i] = JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
+        se_left[i] = minimum(field(system, :loads, :cost))*sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
     end
 
     fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))

@@ -8,7 +8,6 @@ struct Topology
     generators_idxs::Vector{UnitRange{Int}}
     storages_idxs::Vector{UnitRange{Int}}
     generatorstorages_idxs::Vector{UnitRange{Int}}
-
     bus_loads_init::Dict{Int, Vector{Int}}
     bus_loads::Dict{Int, Vector{Int}}
     bus_shunts::Dict{Int, Vector{Int}}
@@ -135,6 +134,7 @@ mutable struct Settings
     powermodel_formulation::Type
     select_largest_splitnetwork::Bool
     deactivate_isolated_bus_gens_stors::Bool
+    min_generators_off::Int
     set_string_names_on_creation::Bool
 
     function Settings(
@@ -143,11 +143,13 @@ mutable struct Settings
         powermodel_formulation::Type=OPF.DCPPowerModel,
         select_largest_splitnetwork::Bool=false,
         deactivate_isolated_bus_gens_stors::Bool=true,
+        min_generators_off::Int=1,
         set_string_names_on_creation::Bool=false
         )
-        new(optimizer, jump_modelmode, powermodel_formulation, select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, set_string_names_on_creation)
+        new(optimizer, jump_modelmode, powermodel_formulation, 
+        select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, 
+        min_generators_off, set_string_names_on_creation)
     end
-
 end
 
 "Constructor for an AbstractPowerModel modeling object"
@@ -292,9 +294,9 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
         MOIU.reset_optimizer(pm.model)
     end
 
-    fill!(getfield(states, :plc), 0)
-    fill!(getfield(states, :qlc), 0)
-    fill!(getfield(states, :se), 0)
+    fill!(states.plc, 0)
+    fill!(states.qlc, 0)
+    fill!(states.se, 0)
     fill!(states.loads, 1)
     fill!(states.shunts, 1)
     return
@@ -315,11 +317,11 @@ function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::Sys
         MOIU.reset_optimizer(pm.model)
     end
 
-    fill!(getfield(states, :plc), 0)
-    fill!(getfield(states, :qlc), 0)
-    fill!(getfield(states, :se), 0)
-    fill!(getfield(states, :loads), 1)
-    fill!(getfield(states, :shunts), 1)
+    fill!(states.plc, 0)
+    fill!(states.qlc, 0)
+    fill!(states.se, 0)
+    fill!(states.loads, 1)
+    fill!(states.shunts, 1)
     update_arcs!(pm, system, states.branches, 1)
     update_all_idxs!(pm, system, states, 1)
     return

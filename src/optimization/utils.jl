@@ -209,6 +209,8 @@ function Base.getproperty(e::Settings, s::Symbol)
         getfield(e, :select_largest_splitnetwork)::Bool
     elseif s === :deactivate_isolated_bus_gens_stors
         getfield(e, :deactivate_isolated_bus_gens_stors)::Bool
+    elseif s === :min_generators_off
+        getfield(e, :min_generators_off)::Int        
     elseif s === :set_string_names_on_creation
         getfield(e, :set_string_names_on_creation)::Bool
     else

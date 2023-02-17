@@ -325,11 +325,9 @@ function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::Syste
     @views t_now_view_branches = states.branches[:, t]
     
     if any(t_now_view_shunts .== 0) || any(t_now_view_branches .== 0)
-        #if JuMP.is_fixed(z_shunt) JuMP.unfix(z_shunt) end
-        JuMP.fix(z_shunt, 0)
+        if JuMP.is_fixed(z_shunt) JuMP.unfix(z_shunt) end
     else
-        #if !JuMP.is_fixed(z_shunt) JuMP.fix(z_shunt, 1.0) end
-        JuMP.fix(z_shunt, 1)
+        if !JuMP.is_fixed(z_shunt) JuMP.fix(z_shunt, 1.0) end
     end
 end
 

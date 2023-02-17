@@ -75,8 +75,8 @@ function record!(acc::SMCSShortfallAccumulator, states::SystemStates, sampleid::
 
     totalshortfall = 0
     isshortfall = false
-    for r in eachindex(field(states, :plc))
-        busshortfall = field(states, :plc)[r]
+    for r in eachindex(states.plc)
+        busshortfall = states.plc[r]
         isbusshortfall = sum(busshortfall) > 1e-6
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
@@ -178,8 +178,8 @@ end
 
 ""
 function record!(acc::SMCSShortfallSamplesAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    for r in field(states, :plc)
-        acc.shortfall[r,t,sampleid] = field(states, :plc)[r]
+    for r in states.plc
+        acc.shortfall[r,t,sampleid] = states.plc[r]
     end
     return
 

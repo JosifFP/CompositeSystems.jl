@@ -39,11 +39,13 @@ settings = CompositeSystems.Settings(
     #powermodel_formulation = OPF.LPACCPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = false,
+    min_generators_off = 1,
     set_string_names_on_creation = false
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=100, seed=100, threaded=true)
+method = SequentialMCS(samples=15000, seed=100, threaded=true)
+
 @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeSystems.LOLE.(shortfall, system.buses.keys)
@@ -56,6 +58,11 @@ val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 
 
+system.storages.buses[1] = 2
+system.storages.charge_rating[1] = 0.25
+system.storages.discharge_rating[1] = 0.25
+system.storages.thermal_rating[1] = 0.25
+system.storages.energy_rating[1] = 0.5
 
 
 shortfall.eventperiod_mean

@@ -51,7 +51,7 @@ function assess(
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-        #println("s=$(s)")
+        println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
@@ -103,7 +103,7 @@ then updating the method and power model with update_method!, and finally optimi
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
     update_topology!(pm, system, states, settings, t)
     update_method!(pm, system, states, t)
-    optimize_method!(pm, system, states, t)
+    optimize_method!(pm, system, states, settings, t)
     return
 end
 

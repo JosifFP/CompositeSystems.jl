@@ -76,10 +76,10 @@ include("solvers.jl")
     
     t=3
     systemstates.se[t-1] = field(system, :storages, :energy_rating)[1] #se(t-1) = 2.0
-    CompositeSystems.field(systemstates, :generators)[3,t] = 0
-    CompositeSystems.field(systemstates, :generators)[7,t] = 0
-    CompositeSystems.field(systemstates, :generators)[8,t] = 0
-    CompositeSystems.field(systemstates, :generators)[9,t] = 0
+    systemstates.generators[3,t] = 0
+    systemstates.generators[7,t] = 0
+    systemstates.generators[8,t] = 0
+    systemstates.generators[9,t] = 0
     OPF._update!(pm, system, systemstates, settings, t)
     
     @testset "t=3, G3, G7, G8 and G9 on outage" begin
@@ -100,8 +100,8 @@ include("solvers.jl")
     end
     
     t=4
-    CompositeSystems.field(systemstates, :branches)[5,t] = 0
-    CompositeSystems.field(systemstates, :branches)[8,t] = 0
+    systemstates.branches[5,t] = 0
+    systemstates.branches[8,t] = 0
     OPF._update!(pm, system, systemstates, settings, t)
     
     @testset "t=4, L5 and L8 on outage" begin
@@ -122,9 +122,9 @@ include("solvers.jl")
     end
     
     t=5
-    CompositeSystems.field(systemstates, :branches)[3,t] = 0
-    CompositeSystems.field(systemstates, :branches)[4,t] = 0
-    CompositeSystems.field(systemstates, :branches)[8,t] = 0
+    systemstates.branches[3,t] = 0
+    systemstates.branches[4,t] = 0
+    systemstates.branches[8,t] = 0
     OPF._update!(pm, system, systemstates, settings, t)  
     
     @testset "t=5, L3, L4 and L8 on outage" begin
@@ -145,11 +145,11 @@ include("solvers.jl")
     end
     
     t=6
-    CompositeSystems.field(systemstates, :branches)[2,t] = 0
-    CompositeSystems.field(systemstates, :branches)[7,t] = 0
-    CompositeSystems.field(systemstates, :generators)[1,t] = 0
-    CompositeSystems.field(systemstates, :generators)[2,t] = 0
-    CompositeSystems.field(systemstates, :generators)[3,t] = 0
+    systemstates.branches[2,t] = 0
+    systemstates.branches[7,t] = 0
+    systemstates.generators[1,t] = 0
+    systemstates.generators[2,t] = 0
+    systemstates.generators[3,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
     
     @testset "L2 and L7 on outage, generation reduced" begin
@@ -170,9 +170,9 @@ include("solvers.jl")
     end
 
     t=7
-    CompositeSystems.field(systemstates, :branches)[2,t] = 0
-    CompositeSystems.field(systemstates, :generators)[1,t] = 0
-    CompositeSystems.field(systemstates, :generators)[2,t] = 0
+    systemstates.branches[2,t] = 0
+    systemstates.generators[1,t] = 0
+    systemstates.generators[2,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L2 on outage, generation reduced" begin
@@ -193,8 +193,8 @@ include("solvers.jl")
     end
 
     t=8
-    CompositeSystems.field(systemstates, :branches)[1,t] = 0
-    CompositeSystems.field(systemstates, :branches)[6,t] = 0
+    systemstates.branches[1,t] = 0
+    systemstates.branches[6,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L1 and L6 on outage" begin
@@ -217,7 +217,7 @@ include("solvers.jl")
     end
 
     t=9
-    CompositeSystems.field(systemstates, :branches)[4,t] = 0
+    systemstates.branches[4,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L4 on outage" begin
@@ -305,10 +305,10 @@ end
     
     t=3
     systemstates.se[t-1] = 1.0 #se(t-1) = 2.0
-    CompositeSystems.field(systemstates, :generators)[3,t] = 0
-    CompositeSystems.field(systemstates, :generators)[7,t] = 0
-    CompositeSystems.field(systemstates, :generators)[8,t] = 0
-    CompositeSystems.field(systemstates, :generators)[9,t] = 0
+    systemstates.generators[3,t] = 0
+    systemstates.generators[7,t] = 0
+    systemstates.generators[8,t] = 0
+    systemstates.generators[9,t] = 0
     OPF._update!(pm, system, systemstates, settings, t)
     
     @testset "t=3, G3, G7, G8 and G9 on outage" begin
@@ -329,8 +329,8 @@ end
     end
     
     t=4
-    CompositeSystems.field(systemstates, :branches)[5,t] = 0
-    CompositeSystems.field(systemstates, :branches)[8,t] = 0
+    systemstates.branches[5,t] = 0
+    systemstates.branches[8,t] = 0
     OPF._update!(pm, system, systemstates, settings, t)
     
     @testset "t=4, L5 and L8 on outage" begin
@@ -351,9 +351,9 @@ end
     end
     
     t=5
-    CompositeSystems.field(systemstates, :branches)[3,t] = 0
-    CompositeSystems.field(systemstates, :branches)[4,t] = 0
-    CompositeSystems.field(systemstates, :branches)[8,t] = 0
+    systemstates.branches[3,t] = 0
+    systemstates.branches[4,t] = 0
+    systemstates.branches[8,t] = 0
     OPF._update!(pm, system, systemstates, settings, t)
 
     @testset "t=5, L3, L4 and L8 on outage" begin
@@ -374,11 +374,11 @@ end
     end
 
     t=6
-    CompositeSystems.field(systemstates, :branches)[2,t] = 0
-    CompositeSystems.field(systemstates, :branches)[7,t] = 0
-    CompositeSystems.field(systemstates, :generators)[1,t] = 0
-    CompositeSystems.field(systemstates, :generators)[2,t] = 0
-    CompositeSystems.field(systemstates, :generators)[3,t] = 0
+    systemstates.branches[2,t] = 0
+    systemstates.branches[7,t] = 0
+    systemstates.generators[1,t] = 0
+    systemstates.generators[2,t] = 0
+    systemstates.generators[3,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L2 and L7 on outage, generation reduced" begin
@@ -400,9 +400,9 @@ end
     end
 
     t=7
-    CompositeSystems.field(systemstates, :branches)[2,t] = 0
-    CompositeSystems.field(systemstates, :generators)[1,t] = 0
-    CompositeSystems.field(systemstates, :generators)[2,t] = 0
+    systemstates.branches[2,t] = 0
+    systemstates.generators[1,t] = 0
+    systemstates.generators[2,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L2 on outage, generation reduced" begin
@@ -423,8 +423,8 @@ end
     end
 
     t=8
-    CompositeSystems.field(systemstates, :branches)[1,t] = 0
-    CompositeSystems.field(systemstates, :branches)[6,t] = 0
+    systemstates.branches[1,t] = 0
+    systemstates.branches[6,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L1 and L6 on outage" begin
@@ -447,7 +447,7 @@ end
     end
 
     t=9
-    CompositeSystems.field(systemstates, :branches)[4,t] = 0
+    systemstates.branches[4,t] = 0
     OPF._update!(pm, system, systemstates, settings, t) 
 
     @testset "L1 and L6 on outage" begin

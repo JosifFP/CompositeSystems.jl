@@ -10,18 +10,44 @@ using Test
 
 include("solvers.jl")
 
-rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-system = BaseModule.SystemModel(rawfile)
 settings = CompositeSystems.Settings(
-    juniper_optimizer_2;
+    juniper_optimizer_1;
     jump_modelmode = JuMP.AUTOMATIC,
-    powermodel_formulation = OPF.DCPPowerModel,
-    select_largest_splitnetwork = true,
-    deactivate_isolated_bus_gens_stors = true,
+    powermodel_formulation = OPF.LPACCPowerModel,
+    select_largest_splitnetwork = false,
+    deactivate_isolated_bus_gens_stors = false,
     set_string_names_on_creation = true
 )
-states = CompositeAdequacy.SystemStates(system, available=true)
-pm = OPF.solve_opf(system, settings)
+
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/others/Storage/RBTS_strg.m"
+reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
+pm = OPF.abstract_model(system, settings)
+systemstates = OPF.SystemStates(system, available=true)
+CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+
+topology(pm, :bus_storages)
+nw = 1
+t = 1
+
+bus_loads = Dict{Int, Any}()
+load_cost = Dict{Int, Any}()
+se_left = Dict{Int, Any}()
+for i in assetgrouplist(topology(pm, :buses_idxs))
+    bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
+    load_cost[i] = JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
+    se_left[i] = minimum(field(system, :loads, :cost))*sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
+end
+
+
+var(pm, :z_demand, nw)
+bus_loads
+load_cost
+se_left
+minimum(field(system, :loads, :cost))
+
 
 states.branches[1] = 0
 OPF._update_opf!(pm, system, states, settings, 1)
