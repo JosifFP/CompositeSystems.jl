@@ -2234,7 +2234,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 3
@@ -2298,7 +2298,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 2
@@ -2362,7 +2362,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 7
@@ -2426,7 +2426,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 4
@@ -2490,7 +2490,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 5
@@ -2551,7 +2551,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)            
         end
     
@@ -2613,7 +2613,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)      
         end
     
@@ -2676,7 +2676,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
         
@@ -2737,7 +2737,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
         end
     
@@ -2802,7 +2802,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
     end
@@ -2881,7 +2881,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 3
@@ -2945,7 +2945,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 2
@@ -3009,7 +3009,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 7
@@ -3073,7 +3073,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 4
@@ -3137,7 +3137,7 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
         end
     
         #OUTAGE BRANCH 5
@@ -3198,7 +3198,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)            
         end
     
@@ -3260,7 +3260,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)      
         end
     
@@ -3323,7 +3323,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
         
@@ -3384,7 +3384,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
         end
     

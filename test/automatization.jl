@@ -15,6 +15,7 @@ settings = CompositeSystems.Settings(
     powermodel_formulation = OPF.DCPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = false,
+    min_generators_off = 1,
     set_string_names_on_creation = false
 )
 

@@ -267,10 +267,16 @@ function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::Sys
     bus_loads = Dict{Int, Any}()
     load_cost = Dict{Int, Any}()
     se_left = Dict{Int, Any}()
+    rescale = 1.0
+
+    if log10(maximum(system.loads.cost)) > 3
+        rescale = 10^(-modf(log10(maximum(system.loads.cost)))[2]+2)
+    end
+
     for i in assetgrouplist(topology(pm, :buses_idxs))
         bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
-        load_cost[i] = JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
-        se_left[i] = minimum(field(system, :loads, :cost))*sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
+        load_cost[i] = rescale*JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
+        se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
     end
 
     fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
@@ -307,7 +313,6 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
                 states.plc[i] = bus_pd*(1 - getindex(plc, i))
             end
         end
-
         @views for i in field(system, :storages, :keys)
             haskey(se, i) == false && get!(se, i, 0.0)
             states.se[i,t] = getindex(se, i)
@@ -322,6 +327,9 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
             else
                 states.plc[i] = 0
             end
+        end
+        @views for i in field(system, :storages, :keys)
+            states.se[i,t] = states.se[i,t-1]
         end
     end
     return

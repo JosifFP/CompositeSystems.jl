@@ -1,15 +1,3 @@
-using CompositeSystems, CompositeSystems.OPF, CompositeSystems.BaseModule
-using CompositeSystems.OPF
-using CompositeSystems.CompositeAdequacy
-import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
-import JuMP: termination_status
-import PowerModels
-import BenchmarkTools: @btime
-using Test
-
-include("solvers.jl")
-
-
 @testset "RBTS system, sequential outages, storage at bus 6" begin
     timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
     rawfile = "test/data/others/Storage/RBTS_strg.m"

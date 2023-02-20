@@ -23,7 +23,7 @@ settings = CompositeSystems.Settings(
 system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
 for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
 
-system.storages.buses[1] = 2
+system.storages.buses[1] = 6
 system.storages.charge_rating[1] = 0.25
 system.storages.discharge_rating[1] = 0.25
 system.storages.thermal_rating[1] = 0.25
@@ -75,7 +75,7 @@ OPF._update!(pm, system, systemstates, settings, t)
 end
 
 t=3
-systemstates.se[t-1] = 1.0 #se(t-1) = 2.0
+systemstates.se[t-1] = field(system, :storages, :energy_rating)[1] #se(t-1) = 2.0
 systemstates.generators[3,t] = 0
 systemstates.generators[7,t] = 0
 systemstates.generators[8,t] = 0
@@ -93,7 +93,7 @@ OPF._update!(pm, system, systemstates, settings, t)
     @test isapprox(systemstates.plc[5], 0; atol = 1e-4)
     @test isapprox(systemstates.plc[6], 0; atol = 1e-4)
     @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(systemstates.plc[:]) - system.storages.charge_rating[1]; atol = 1e-4)
-    @test isapprox(systemstates.se[t], 1.0 - system.storages.charge_rating[1]; atol = 1e-4)
+    @test isapprox(systemstates.se[t], 2.0 - system.storages.charge_rating[1]; atol = 1e-4)
     @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -system.storages.charge_rating[1]; atol = 1e-4)
     @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
     @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
