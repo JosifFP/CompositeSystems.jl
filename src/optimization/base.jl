@@ -293,12 +293,6 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     else
         MOIU.reset_optimizer(pm.model)
     end
-
-    fill!(states.plc, 0)
-    fill!(states.qlc, 0)
-    fill!(states.se, 0)
-    fill!(states.loads, 1)
-    fill!(states.shunts, 1)
     return
 end
 
@@ -316,14 +310,6 @@ function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::Sys
     else
         MOIU.reset_optimizer(pm.model)
     end
-
-    fill!(states.plc, 0)
-    fill!(states.qlc, 0)
-    fill!(states.se, 0)
-    fill!(states.loads, 1)
-    fill!(states.shunts, 1)
-    update_arcs!(pm, system, states.branches, 1)
-    update_all_idxs!(pm, system, states, 1)
     return
 end
 

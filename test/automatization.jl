@@ -15,7 +15,7 @@ settings = CompositeSystems.Settings(
     powermodel_formulation = OPF.DCPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = false,
-    min_generators_off = 1,
+    min_generators_off = 0,
     set_string_names_on_creation = false
 )
 
@@ -25,6 +25,7 @@ Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 resultspecs = (Shortfall(), GeneratorAvailability())
 method = SequentialMCS(samples=5000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+
 run_mcs(system, method, settings, resultspecs, 2)
 
 

@@ -332,6 +332,7 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
             states.se[i,t] = states.se[i,t-1]
         end
     end
+
     return
 end
 
