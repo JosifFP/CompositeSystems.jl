@@ -8,7 +8,6 @@ struct Topology
     generators_idxs::Vector{UnitRange{Int}}
     storages_idxs::Vector{UnitRange{Int}}
     generatorstorages_idxs::Vector{UnitRange{Int}}
-
     bus_loads_init::Dict{Int, Vector{Int}}
     bus_loads::Dict{Int, Vector{Int}}
     bus_shunts::Dict{Int, Vector{Int}}
@@ -135,6 +134,7 @@ mutable struct Settings
     powermodel_formulation::Type
     select_largest_splitnetwork::Bool
     deactivate_isolated_bus_gens_stors::Bool
+    min_generators_off::Int
     set_string_names_on_creation::Bool
 
     function Settings(
@@ -143,11 +143,13 @@ mutable struct Settings
         powermodel_formulation::Type=OPF.DCPPowerModel,
         select_largest_splitnetwork::Bool=false,
         deactivate_isolated_bus_gens_stors::Bool=true,
+        min_generators_off::Int=1,
         set_string_names_on_creation::Bool=false
         )
-        new(optimizer, jump_modelmode, powermodel_formulation, select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, set_string_names_on_creation)
+        new(optimizer, jump_modelmode, powermodel_formulation, 
+        select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, 
+        min_generators_off, set_string_names_on_creation)
     end
-
 end
 
 "Constructor for an AbstractPowerModel modeling object"
@@ -191,7 +193,6 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :ohms_yt_from_upper_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_lower_p, field(system, :branches, :keys))
         add_con_container!(pm.con, :ohms_yt_to_upper_p, field(system, :branches, :keys))
-
         add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
@@ -237,7 +238,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :p, field(pm.topology, :arcs))
         add_var_container!(pm.var, :q, field(pm.topology, :arcs))
 
-
         add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
         add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
         add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
@@ -253,7 +253,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_con_container!(pm.con, :relaxation_cos_upper, field(system, :branches, :keys))
         add_con_container!(pm.con, :relaxation_cos_lower, field(system, :branches, :keys))
         add_con_container!(pm.con, :relaxation_cos, field(system, :branches, :keys))
-
         add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
@@ -294,44 +293,18 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     else
         MOIU.reset_optimizer(pm.model)
     end
-
-    fill!(getfield(states, :plc), 0)
-    fill!(getfield(states, :qlc), 0)
-    fill!(getfield(states, :se), 0)
-    fill!(getfield(states, :loads), 1)
-    fill!(getfield(states, :shunts), 1)
-    return
-
-end
-
-""
-function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
-
-    if iszero(s%100) && settings.optimizer == Ipopt
-        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-        initialize_pm_containers!(pm, system)
-        OPF.initialize_powermodel!(pm, system, states)
-    elseif iszero(s%200) && settings.optimizer == Gurobi
-        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-        initialize_pm_containers!(pm, system)
-        OPF.initialize_powermodel!(pm, system, states)
-    else
-        MOIU.reset_optimizer(pm.model)
-    end
-
-    fill!(getfield(states, :plc), 0)
-    fill!(getfield(states, :qlc), 0)
-    fill!(getfield(states, :se), 0)
-    fill!(getfield(states, :loads), 1)
-    fill!(getfield(states, :shunts), 1)
-    update_arcs!(pm, system, states.branches, 1)
-    update_all_idxs!(pm, system, states, 1)
+    fill!(states.plc, 0)
+    fill!(states.qlc, 0)
+    fill!(states.se, 0)
+    fill!(states.loads, 1)
+    fill!(states.storages, 1)
+    fill!(states.generatorstorages, 1)
     return
 end
 
 ""
 function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
-    if !check_availability(field(states, :branches), t, t-1)
+    if !check_availability(states.branches, t, t-1)
         simplify!(pm, system, states, settings, t)
         update_arcs!(pm, system, states.branches, t)
     end

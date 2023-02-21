@@ -1,7 +1,7 @@
 
-BaseModule.field(states::SystemStates, field::Symbol) = getfield(states, field)
-BaseModule.field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
-BaseModule.field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
+#BaseModule.field(states::SystemStates, field::Symbol) = getfield(states, field)
+#BaseModule.field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
+#BaseModule.field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
 BaseModule.field(method::SimulationSpec, field::Symbol) = getfield(method, field)
 
 function Base.map!(f, dict::Dict)

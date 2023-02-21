@@ -29,10 +29,10 @@
 
     @testset "G3, G7, G8 and G9 on outage" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :generators)[3,t] = 0
-        CompositeSystems.field(systemstates, :generators)[7,t] = 0
-        CompositeSystems.field(systemstates, :generators)[8,t] = 0
-        CompositeSystems.field(systemstates, :generators)[9,t] = 0
+        systemstates.generators[3,t] = 0
+        systemstates.generators[7,t] = 0
+        systemstates.generators[8,t] = 0
+        systemstates.generators[9,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.35; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -49,8 +49,8 @@
     
     @testset "L5 and L8 on outage" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[5,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        systemstates.branches[5,t] = 0
+        systemstates.branches[8,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.4; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -66,8 +66,8 @@
 
     @testset "L5 and L8 on outage" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[5,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        systemstates.branches[5,t] = 0
+        systemstates.branches[8,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.4; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -83,9 +83,9 @@
 
     @testset "L3, L4 and L8 on outage, largest system selected" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[3,t] = 0
-        CompositeSystems.field(systemstates, :branches)[4,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        systemstates.branches[3,t] = 0
+        systemstates.branches[4,t] = 0
+        systemstates.branches[8,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 0.750; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -101,9 +101,9 @@
 
     @testset "L3, L4 and L8 on outage" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[3,t] = 0
-        CompositeSystems.field(systemstates, :branches)[4,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        systemstates.branches[3,t] = 0
+        systemstates.branches[4,t] = 0
+        systemstates.branches[8,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.150; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -119,10 +119,10 @@
 
     @testset "G3, G7, G8 and G11 on outage" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :generators)[3,t] = 0
-        CompositeSystems.field(systemstates, :generators)[7,t] = 0
-        CompositeSystems.field(systemstates, :generators)[8,t] = 0
-        CompositeSystems.field(systemstates, :generators)[11,t] = 0
+        systemstates.generators[3,t] = 0
+        systemstates.generators[7,t] = 0
+        systemstates.generators[8,t] = 0
+        systemstates.generators[11,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.35; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -138,11 +138,11 @@
 
     @testset "L2 and L7 on outage, generation reduced" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[2,t] = 0
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :generators)[1,t] = 0
-        CompositeSystems.field(systemstates, :generators)[2,t] = 0
-        CompositeSystems.field(systemstates, :generators)[3,t] = 0
+        systemstates.branches[2,t] = 0
+        systemstates.branches[7,t] = 0
+        systemstates.generators[1,t] = 0
+        systemstates.generators[2,t] = 0
+        systemstates.generators[3,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.74; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -191,8 +191,8 @@ end
 
     @testset "Outages of L12, L13" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[12,t] = 0
-        CompositeSystems.field(systemstates, :branches)[13,t] = 0
+        systemstates.branches[12,t] = 0
+        systemstates.branches[13,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -225,8 +225,8 @@ end
     
     @testset "Outages of L12, L13" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[12,t] = 0
-        CompositeSystems.field(systemstates, :branches)[13,t] = 0
+        systemstates.branches[12,t] = 0
+        systemstates.branches[13,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 2.9600; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -259,9 +259,9 @@ end
 
     @testset "Outages of L1, L4, L10" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[1,t] = 0
-        CompositeSystems.field(systemstates, :branches)[4,t] = 0
-        CompositeSystems.field(systemstates, :branches)[10,t] = 0
+        systemstates.branches[1,t] = 0
+        systemstates.branches[4,t] = 0
+        systemstates.branches[10,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0.410; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -294,9 +294,9 @@ end
 
     @testset "Outages of L1, L8, L10" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[1,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
-        CompositeSystems.field(systemstates, :branches)[10,t] = 0
+        systemstates.branches[1,t] = 0
+        systemstates.branches[8,t] = 0
+        systemstates.branches[10,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 1.150; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -329,9 +329,9 @@ end
 
     @testset "Outages of L7, L19, L29" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :branches)[19,t] = 0
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
+        systemstates.branches[7,t] = 0
+        systemstates.branches[19,t] = 0
+        systemstates.branches[29,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -364,9 +364,9 @@ end
 
     @testset "Outages of L7, L23, L29" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :branches)[23,t] = 0
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
+        systemstates.branches[7,t] = 0
+        systemstates.branches[23,t] = 0
+        systemstates.branches[29,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 1.65; atol = 1e-2)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -399,9 +399,9 @@ end
 
     @testset "Outages of L25, L26, L28" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[25,t] = 0
-        CompositeSystems.field(systemstates, :branches)[26,t] = 0
-        CompositeSystems.field(systemstates, :branches)[28,t] = 0
+        systemstates.branches[25,t] = 0
+        systemstates.branches[26,t] = 0
+        systemstates.branches[28,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 5.45; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -434,9 +434,9 @@ end
 
     @testset "Outages of L25, L26, L28" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[25,t] = 0
-        CompositeSystems.field(systemstates, :branches)[26,t] = 0
-        CompositeSystems.field(systemstates, :branches)[28,t] = 0
+        systemstates.branches[25,t] = 0
+        systemstates.branches[26,t] = 0
+        systemstates.branches[28,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 2.12; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -469,9 +469,9 @@ end
 
     @testset "Outages of L29, L36, L37" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
-        CompositeSystems.field(systemstates, :branches)[36,t] = 0
-        CompositeSystems.field(systemstates, :branches)[37,t] = 0
+        systemstates.branches[29,t] = 0
+        systemstates.branches[36,t] = 0
+        systemstates.branches[37,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
         @test isapprox(sum(systemstates.plc[:]), 3.09; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -504,9 +504,9 @@ end
 
     @testset "Outages of L29, L36, L37" begin
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
-        CompositeSystems.field(systemstates, :branches)[36,t] = 0
-        CompositeSystems.field(systemstates, :branches)[37,t] = 0
+        systemstates.branches[29,t] = 0
+        systemstates.branches[36,t] = 0
+        systemstates.branches[37,t] = 0
         OPF._update!(pm, system, systemstates, settings_2, t)
         @test isapprox(sum(systemstates.plc[:]), 3.09; atol = 1e-4)
         @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -574,7 +574,7 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231; atol = 1e-4) 
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=2
@@ -591,14 +591,14 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231; atol = 1e-4) 
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=3
-        CompositeSystems.field(systemstates, :generators)[3,t] = 0
-        CompositeSystems.field(systemstates, :generators)[7,t] = 0
-        CompositeSystems.field(systemstates, :generators)[8,t] = 0
-        CompositeSystems.field(systemstates, :generators)[9,t] = 0
+        systemstates.generators[3,t] = 0
+        systemstates.generators[7,t] = 0
+        systemstates.generators[8,t] = 0
+        systemstates.generators[9,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
 
         @testset "G3, G7, G8 and G9 on outage" begin
@@ -614,12 +614,12 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
             @test isapprox(systemstates.qlc[3]/systemstates.plc[3], CompositeAdequacy.field(system, :loads, :pf)[2]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=4
-        CompositeSystems.field(systemstates, :branches)[5,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        systemstates.branches[5,t] = 0
+        systemstates.branches[8,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
         
         @testset "L5 and L8 on outage" begin
@@ -636,7 +636,7 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
             @test isapprox(systemstates.qlc[5]/systemstates.plc[5], CompositeAdequacy.field(system, :loads, :pf)[4]; atol = 1e-4)
             @test isapprox(systemstates.qlc[6]/systemstates.plc[6], CompositeAdequacy.field(system, :loads, :pf)[5]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=5
@@ -654,13 +654,13 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231; atol = 1e-4) 
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=6
-        CompositeSystems.field(systemstates, :branches)[3,t] = 0
-        CompositeSystems.field(systemstates, :branches)[4,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
+        systemstates.branches[3,t] = 0
+        systemstates.branches[4,t] = 0
+        systemstates.branches[8,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)  
 
         @testset "L3, L4 and L8 on outage" begin
@@ -676,15 +676,15 @@ end
             @test isapprox(systemstates.qlc[2]/systemstates.plc[2], CompositeAdequacy.field(system, :loads, :pf)[1]; atol = 1e-4)
             @test isapprox(systemstates.qlc[3]/systemstates.plc[3], CompositeAdequacy.field(system, :loads, :pf)[2]; atol = 1e-4)
             @test isapprox(systemstates.qlc[4]/systemstates.plc[4], CompositeAdequacy.field(system, :loads, :pf)[3]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=7
-        CompositeSystems.field(systemstates, :branches)[2,t] = 0
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :generators)[1,t] = 0
-        CompositeSystems.field(systemstates, :generators)[2,t] = 0
-        CompositeSystems.field(systemstates, :generators)[3,t] = 0
+        systemstates.branches[2,t] = 0
+        systemstates.branches[7,t] = 0
+        systemstates.generators[1,t] = 0
+        systemstates.generators[2,t] = 0
+        systemstates.generators[3,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)   
 
         @testset "L2 and L7 on outage, generation reduced" begin
@@ -699,7 +699,7 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
             @test isapprox(systemstates.qlc[4]/systemstates.plc[4], CompositeAdequacy.field(system, :loads, :pf)[3]; atol = 1e-4)
             @test isapprox(systemstates.qlc[6]/systemstates.plc[6], CompositeAdequacy.field(system, :loads, :pf)[5]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         t=8
@@ -716,7 +716,7 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 0.5231; atol = 1e-4) 
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
     end
 end
@@ -730,6 +730,7 @@ end
             powermodel_formulation = OPF.LPACCPowerModel,
             select_largest_splitnetwork = false,
             deactivate_isolated_bus_gens_stors = false,
+            min_generators_off = 0,
             set_string_names_on_creation = true
         )
 
@@ -825,14 +826,14 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         @testset "Outages of L29, L36, L37" begin
             t=3
-            CompositeSystems.field(systemstates, :branches)[29,t] = 0
-            CompositeSystems.field(systemstates, :branches)[36,t] = 0
-            CompositeSystems.field(systemstates, :branches)[37,t] = 0
+            systemstates.branches[29,t] = 0
+            systemstates.branches[36,t] = 0
+            systemstates.branches[37,t] = 0
             OPF._update!(pm, system, systemstates, settings, t)
             @test isapprox(sum(systemstates.plc[:]), 3.09; atol = 1e-4)
             @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -867,7 +868,7 @@ end
 
             @test isapprox(systemstates.qlc[19]/systemstates.plc[19], CompositeAdequacy.field(system, :loads, :pf)[16]; atol = 1e-4)
             @test isapprox(systemstates.qlc[20]/systemstates.plc[20], CompositeAdequacy.field(system, :loads, :pf)[17]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         @testset "No outages" begin
@@ -904,14 +905,14 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         @testset "Outages of L25, L26, L28" begin
             t=5
-            CompositeSystems.field(systemstates, :branches)[25,t] = 0
-            CompositeSystems.field(systemstates, :branches)[26,t] = 0
-            CompositeSystems.field(systemstates, :branches)[28,t] = 0
+            systemstates.branches[25,t] = 0
+            systemstates.branches[26,t] = 0
+            systemstates.branches[28,t] = 0
             OPF._update!(pm, system, systemstates, settings, t)
             @test isapprox(sum(systemstates.plc[:]), 2.3544; atol = 1e-4)
             @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -946,14 +947,14 @@ end
 
             @test isapprox(systemstates.qlc[9]/systemstates.plc[9], CompositeAdequacy.field(system, :loads, :pf)[9]; atol = 1e-4)
             @test isapprox(systemstates.qlc[14]/systemstates.plc[14], CompositeAdequacy.field(system, :loads, :pf)[12]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         @testset "Outages of L1, L8, L10" begin
             t=6
-            CompositeSystems.field(systemstates, :branches)[1,t] = 0
-            CompositeSystems.field(systemstates, :branches)[8,t] = 0
-            CompositeSystems.field(systemstates, :branches)[10,t] = 0
+            systemstates.branches[1,t] = 0
+            systemstates.branches[8,t] = 0
+            systemstates.branches[10,t] = 0
             OPF._update!(pm, system, systemstates, settings, t)
             @test isapprox(sum(systemstates.plc[:]), 1.1654; atol = 1e-4)
             @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -986,14 +987,14 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
             @test isapprox(systemstates.qlc[6]/systemstates.plc[6], CompositeAdequacy.field(system, :loads, :pf)[6]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         @testset "Outages of L7, L19, L29" begin
             t=7
-            CompositeSystems.field(systemstates, :branches)[7,t] = 0
-            CompositeSystems.field(systemstates, :branches)[19,t] = 0
-            CompositeSystems.field(systemstates, :branches)[29,t] = 0
+            systemstates.branches[7,t] = 0
+            systemstates.branches[19,t] = 0
+            systemstates.branches[29,t] = 0
             OPF._update!(pm, system, systemstates, settings, t)
             @test isapprox(sum(systemstates.plc[:]), 0; atol = 1e-4)
             @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -1025,14 +1026,14 @@ end
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
 
         @testset "Outages of L7, L23, L29" begin
             t=8
-            CompositeSystems.field(systemstates, :branches)[7,t] = 0
-            CompositeSystems.field(systemstates, :branches)[23,t] = 0
-            CompositeSystems.field(systemstates, :branches)[29,t] = 0
+            systemstates.branches[7,t] = 0
+            systemstates.branches[23,t] = 0
+            systemstates.branches[29,t] = 0
             OPF._update!(pm, system, systemstates, settings, t)
             @test isapprox(sum(systemstates.plc[:]), 1.9497; atol = 1e-4)
             @test isapprox(systemstates.plc[1], 0; atol = 1e-4)
@@ -1066,7 +1067,7 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
             @test isapprox(systemstates.qlc[9]/systemstates.plc[9], CompositeAdequacy.field(system, :loads, :pf)[9]; atol = 1e-4)
             @test isapprox(systemstates.qlc[14]/systemstates.plc[14], CompositeAdequacy.field(system, :loads, :pf)[12]; atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(CompositeSystems.field(systemstates, :branches)[:,t])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(systemstates.branches[:,t])
         end
     end
 
@@ -1173,9 +1174,9 @@ end
         end
 
         t=3
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
-        CompositeSystems.field(systemstates, :branches)[36,t] = 0
-        CompositeSystems.field(systemstates, :branches)[37,t] = 0
+        systemstates.branches[29,t] = 0
+        systemstates.branches[36,t] = 0
+        systemstates.branches[37,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
 
         @testset "Outages of L29, L36, L37" begin
@@ -1246,9 +1247,9 @@ end
         end
 
         t=5
-        CompositeSystems.field(systemstates, :branches)[25,t] = 0
-        CompositeSystems.field(systemstates, :branches)[26,t] = 0
-        CompositeSystems.field(systemstates, :branches)[28,t] = 0
+        systemstates.branches[25,t] = 0
+        systemstates.branches[26,t] = 0
+        systemstates.branches[28,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
 
         @testset "Outages of L25, L26, L28" begin
@@ -1284,9 +1285,9 @@ end
         end
 
         t=6
-        CompositeSystems.field(systemstates, :branches)[1,t] = 0
-        CompositeSystems.field(systemstates, :branches)[8,t] = 0
-        CompositeSystems.field(systemstates, :branches)[10,t] = 0
+        systemstates.branches[1,t] = 0
+        systemstates.branches[8,t] = 0
+        systemstates.branches[10,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
 
         @testset "Outages of L1, L8, L10" begin
@@ -1322,9 +1323,9 @@ end
         end
 
         t=7
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :branches)[19,t] = 0
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
+        systemstates.branches[7,t] = 0
+        systemstates.branches[19,t] = 0
+        systemstates.branches[29,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
 
         @testset "Outages of L7, L19, L29" begin
@@ -1360,9 +1361,9 @@ end
         end
 
         t=8
-        CompositeSystems.field(systemstates, :branches)[7,t] = 0
-        CompositeSystems.field(systemstates, :branches)[23,t] = 0
-        CompositeSystems.field(systemstates, :branches)[29,t] = 0
+        systemstates.branches[7,t] = 0
+        systemstates.branches[23,t] = 0
+        systemstates.branches[29,t] = 0
         OPF._update!(pm, system, systemstates, settings, t)
 
         @testset "Outages of L7, L23, L29" begin

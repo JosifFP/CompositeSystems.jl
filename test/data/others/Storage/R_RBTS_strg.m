@@ -3,12 +3,6 @@ function mpc = RBTS
 
 %%-----  Reliability Data  -----%%
 
-%% storage reliability data
-%	bus	energy_rating	λ	μ
-mpc.storage = [
-	6	40.0	0	0;
-];
-
 %% generator reliability data
 %	bus	pmax	state_model	λ_updn	μ_updn	λ_upde	μ_upde pde
 mpc.gen = [
@@ -52,5 +46,5 @@ mpc.load = [
 %% storage reliability data
 %	bus	energy_rating	λ_updn	μ_updn
 mpc.storage = [
-	6	200.0	0	0;
+	2	300.0	0	0;
 ];

@@ -51,7 +51,7 @@ function assess(
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-        println("s=$(s)")
+        #println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
@@ -83,10 +83,10 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
     singlestates = NextTransition(system)
     initialize_all_states!(rng, states, singlestates, system)
 
-    for t in 2:N
-        @inbounds @fastmath update_all_states!(rng, states, singlestates, system, t)
+    for t in 1:N
+        update_all_states!(rng, states, singlestates, system, t)
     end
-    initialize_availability!(field(states, :buses), field(system, :buses), N)
+    initialize_availability!(states.buses, field(system, :buses), N)
     fill!(states.storages, 1)
     return
 end
@@ -103,8 +103,7 @@ then updating the method and power model with update_method!, and finally optimi
 function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
     update_topology!(pm, system, states, settings, t)
     update_method!(pm, system, states, t)
-    optimize_method!(pm, system, states, t)
-    #optimize_method_2!(pm, system, states, t)
+    optimize_method!(pm, system, states, settings, t)
     return
 end
 
