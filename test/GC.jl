@@ -1386,3 +1386,26 @@ function T(rng, λ_updn::Float64, μ_updn::Float64)::Tuple{Int,Int}
 
     return ttf,ttr
 end
+
+""
+function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
+
+    if iszero(s%100) && settings.optimizer == Ipopt
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    elseif iszero(s%200) && settings.optimizer == Gurobi
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
+    fill!(states.plc, 0)
+    fill!(states.qlc, 0)
+    fill!(states.se, 0)
+    fill!(states.loads, 1)
+    fill!(states.storages, 1)
+    fill!(states.generatorstorages, 1)
+    return
+end

@@ -22,15 +22,26 @@ settings = CompositeSystems.Settings(
 timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
 rawfile = "test/data/others/Storage/RBTS_strg.m"
 Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 resultspecs = (Shortfall(), GeneratorAvailability())
-method = SequentialMCS(samples=5000, seed=100, threaded=true)
+method = SequentialMCS(samples=1000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+# system.storages.buses[1] =2
+# system.storages.charge_rating[1] = 0.25
+# system.storages.discharge_rating[1] = 0.25
+# system.storages.thermal_rating[1] = 0.25
+# system.storages.energy_rating[1] = 0.5
+# @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+# val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
+# val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 run_mcs(system, method, settings, resultspecs, 2)
 
 
 for bus in 1:0.5:6
     run_mcs(system, method, settings, resultspecs, bus)
+
 end
 
 function run_mcs(system, method, settings, resultspecs, bus::Int)

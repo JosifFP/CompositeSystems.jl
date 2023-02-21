@@ -332,12 +332,11 @@ function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::Sy
             states.se[i,t] = states.se[i,t-1]
         end
     end
-
     return
 end
 
 
-"This function is used to build the results of the optimization problem for the DC Power Model. 
+s"This function is used to build the results of the optimization problem for the DC Power Model. 
 It first checks if the optimization problem has been solved optimally or locally, and if so, it retrieves the values 
 of the variables z_demand and se from the solution and updates the corresponding fields in the states struct."
 function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)

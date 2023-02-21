@@ -10,12 +10,6 @@ function initialize_all_states!(rng::AbstractRNG, states::SystemStates, singlest
     view(states.shunts,:,1) .= singlestates.shunts_available[:]
     view(states.commonbranches,:,1) .= singlestates.commonbranches_available[:]
     view(states.generators,:,1) .= singlestates.generators_available[:]
-    fill!(states.plc, 0)
-    fill!(states.qlc, 0)
-    fill!(states.se, 0)
-    fill!(states.loads, 1)
-    fill!(states.storages, 1)
-    fill!(states.generatorstorages, 1)
     return
 end
 
@@ -24,8 +18,10 @@ function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, 
     for i in 1:length(asset)
         λ_updn = asset.λ_updn[i]/N
         μ_updn = asset.μ_updn[i]/N
-        online = rand(rng) < μ_updn / (λ_updn + μ_updn)
-        #online = true
+        online = false
+        while !online
+            online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+        end
         availability[i] = online
         transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
         nexttransition[i] = randtransitiontime(rng, transitionprobs[i], 1, N)
