@@ -397,8 +397,10 @@ function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel,
 
     z_branch = var(pm, :z_branch, nw)[i]
     if states.branches[i,t] == 0
-        JuMP.fix(z_branch, 0)
+        JuMP.fix(z_branch, 0, force=true)
+        #JuMP.fix(z_branch, 0)
     else
-        JuMP.fix(z_branch, 1)
+        JuMP.fix(z_branch, 1, force=true)
+        #JuMP.fix(z_branch, 1)
     end
 end

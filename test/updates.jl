@@ -36,9 +36,9 @@ bus_loads = Dict{Int, Any}()
 load_cost = Dict{Int, Any}()
 se_left = Dict{Int, Any}()
 for i in assetgrouplist(topology(pm, :buses_idxs))
-    bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
+    bus_loads[i] = sum((OPF.field(system, :loads, :cost)[k]*OPF.field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
     load_cost[i] = JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
-    se_left[i] = minimum(field(system, :loads, :cost))*sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
+    se_left[i] = minimum(OPF.field(system, :loads, :cost))*sum((OPF.field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
 end
 
 
@@ -46,7 +46,7 @@ var(pm, :z_demand, nw)
 bus_loads
 load_cost
 se_left
-minimum(field(system, :loads, :cost))
+minimum(OPF.field(system, :loads, :cost))
 
 
 states.branches[1] = 0

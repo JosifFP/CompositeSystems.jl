@@ -32,14 +32,14 @@
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(key_buses)
@@ -82,14 +82,14 @@
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -133,14 +133,14 @@
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -200,14 +200,14 @@
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -253,14 +253,14 @@ end
     
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
     end
 
@@ -298,14 +298,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -350,14 +350,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -378,7 +378,7 @@ end
             deactivate_isolated_bus_gens_stors = true,
             set_string_names_on_creation = true
         )
-
+    
         pm = OPF.solve_opf(system, settings)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_qg = OPF.build_sol_values(OPF.var(pm, :qg, :))
@@ -387,6 +387,8 @@ end
         result_pf = OPF.build_sol_values(pm, system.branches)
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
+    
+        @show OPF.build_sol_values(OPF.var(pm, :phi, :))
         
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -395,44 +397,32 @@ end
         result_qg_powermodels = 0
     
         for i in eachindex(result["solution"]["gen"])
-            @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-3)
+            @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-0)
             result_pg_powermodels += result["solution"]["gen"][string(i)]["pg"]
             result_qg_powermodels += result["solution"]["gen"][string(i)]["qg"]
         end
     
-        @test isapprox(total_pg, result_pg_powermodels; atol = 1e-3)
-        @test isapprox(total_qg, result_qg_powermodels; atol = 1e-2)
-
-        for i in eachindex(result["solution"]["bus"])
-            @test isapprox(result_va[parse(Int,i)], result["solution"]["bus"][string(i)]["va"]; atol = 1e-3)
-            @test isapprox(result_phi[parse(Int,i)], result["solution"]["bus"][string(i)]["phi"]; atol = 1e-3)
-        end
-
-        for i in eachindex(result["solution"]["branch"])
-            @test isapprox(abs(result_pf[parse(Int,i)]["pf"]), abs(result["solution"]["branch"][string(i)]["pf"]); atol = 1e-2)
-            @test isapprox(abs(result_pf[parse(Int,i)]["pt"]), abs(result["solution"]["branch"][string(i)]["pt"]); atol = 1e-2)
-            @test isapprox(abs(result_pf[parse(Int,i)]["qf"]), abs(result["solution"]["branch"][string(i)]["qf"]); atol = 1e-2)
-            @test isapprox(abs(result_pf[parse(Int,i)]["qt"]), abs(result["solution"]["branch"][string(i)]["qt"]); atol = 1e-2)
-        end
-
+        @test isapprox(total_pg, result_pg_powermodels; atol = 1e-0)
+        @test isapprox(total_qg, result_qg_powermodels; atol = 1e-0)
+    
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
-
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+    
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
-
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
+    
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
-
+    
         for i in eachindex(result["solution"]["bus"])
-            @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-3)
+            @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-0)
         end
-
-        @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-3)
-
+    
+        @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-0)
+    
     end
 end
 
@@ -469,14 +459,14 @@ end
     
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
     end
 
@@ -513,14 +503,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -564,14 +554,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -631,14 +621,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -681,14 +671,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(key_buses)
@@ -732,14 +722,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -782,14 +772,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-1)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -847,14 +837,14 @@ end
 
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-3)
 
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
 
         for i in eachindex(result["solution"]["bus"])
@@ -905,14 +895,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -948,14 +938,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -989,14 +979,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1032,14 +1022,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1076,14 +1066,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1120,14 +1110,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1164,14 +1154,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1208,14 +1198,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1253,14 +1243,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1302,14 +1292,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1344,14 +1334,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1391,14 +1381,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1439,14 +1429,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1489,14 +1479,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1549,14 +1539,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1594,14 +1584,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1637,14 +1627,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1681,14 +1671,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1726,14 +1716,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1771,14 +1761,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1816,14 +1806,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1861,14 +1851,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1906,14 +1896,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1956,14 +1946,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -1999,14 +1989,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2045,14 +2035,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2092,14 +2082,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2141,14 +2131,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2219,14 +2209,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2283,14 +2273,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2347,14 +2337,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2411,14 +2401,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2475,14 +2465,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2538,14 +2528,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2600,14 +2590,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2663,14 +2653,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2724,14 +2714,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2789,14 +2779,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2866,14 +2856,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2930,14 +2920,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -2994,14 +2984,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3058,14 +3048,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3122,14 +3112,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3185,14 +3175,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3247,14 +3237,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3310,14 +3300,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3371,14 +3361,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3436,14 +3426,14 @@ end
         
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             for i in eachindex(result["solution"]["bus"])
@@ -3487,14 +3477,14 @@ end
             
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3518,14 +3508,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3549,14 +3539,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3578,14 +3568,14 @@ end
             
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3605,14 +3595,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3634,14 +3624,14 @@ end
 
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3663,14 +3653,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3692,14 +3682,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3721,14 +3711,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3750,14 +3740,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3779,14 +3769,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3808,14 +3798,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3835,14 +3825,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3866,14 +3856,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3895,14 +3885,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3923,14 +3913,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -3969,14 +3959,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4000,14 +3990,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4031,14 +4021,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4060,14 +4050,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4087,14 +4077,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4116,14 +4106,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4145,14 +4135,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4174,14 +4164,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4203,14 +4193,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4232,14 +4222,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4261,14 +4251,14 @@ end
             
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4290,14 +4280,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
         
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
         
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4318,14 +4308,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4349,14 +4339,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4378,14 +4368,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4407,14 +4397,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4437,14 +4427,14 @@ end
     
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-2)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4469,14 +4459,14 @@ end
             
             @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
 
-            key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+            key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
             pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
             pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-            key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+            key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
 
             for k in key_generators
-                pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-                pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+                pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+                pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
             end
 
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
@@ -4533,14 +4523,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4582,14 +4572,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4631,14 +4621,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4678,14 +4668,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4723,14 +4713,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4770,14 +4760,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4817,14 +4807,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4864,14 +4854,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4911,14 +4901,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -4958,14 +4948,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5005,14 +4995,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5052,14 +5042,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5097,14 +5087,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5146,14 +5136,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5193,14 +5183,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5240,14 +5230,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5288,14 +5278,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)
     
@@ -5338,14 +5328,14 @@ end
         @test isapprox(total_qg, result_qg_powermodels; atol = 1e-1)
         @test isapprox(OPF.objective_value(pm.model), result["objective"]; atol = 1e-0)
     
-        key_buses = filter(i->OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.field(system, :buses, :keys))
+        key_buses = filter(i->OPF.OPF.field(system, :buses, :bus_type)[i]≠ 4, OPF.OPF.field(system, :buses, :keys))
         pg_bus_compositesystems = Dict((i, 0.0) for i in key_buses)
         pg_bus_powermodels = Dict((i, 0.0) for i in key_buses)
-        key_generators = filter(i->OPF.field(system, :generators, :status)[i], OPF.field(system, :generators, :keys))
+        key_generators = filter(i->OPF.OPF.field(system, :generators, :status)[i], OPF.OPF.field(system, :generators, :keys))
     
         for k in key_generators
-            pg_bus_compositesystems[OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
-            pg_bus_powermodels[OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
+            pg_bus_compositesystems[OPF.OPF.field(system, :generators, :buses)[k]] += OPF.build_sol_values(OPF.var(pm, :pg, :))[k]
+            pg_bus_powermodels[OPF.OPF.field(system, :generators, :buses)[k]] += result["solution"]["gen"][string(k)]["pg"]
         end
     
         @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-2)

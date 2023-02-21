@@ -31,7 +31,7 @@ system.storages.energy_rating[1] = 2
 pm = OPF.abstract_model(system, settings)
 systemstates = OPF.SystemStates(system, available=true)
 CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
-field(system, :storages, :energy)[1] = 0.0
+OPF.field(system, :storages, :energy)[1] = 0.0
 
 t=1
 OPF._update!(pm, system, systemstates, settings, t)
@@ -75,7 +75,7 @@ OPF._update!(pm, system, systemstates, settings, t)
 end
 
 t=3
-systemstates.se[t-1] = field(system, :storages, :energy_rating)[1] #se(t-1) = 2.0
+systemstates.se[t-1] = OPF.field(system, :storages, :energy_rating)[1] #se(t-1) = 2.0
 systemstates.generators[3,t] = 0
 systemstates.generators[7,t] = 0
 systemstates.generators[8,t] = 0
