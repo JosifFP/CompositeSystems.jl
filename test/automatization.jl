@@ -19,13 +19,13 @@ settings = CompositeSystems.Settings(
     set_string_names_on_creation = false
 )
 
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/others/Storage/RBTS_strg.m"
-Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#rawfile = "test/data/others/Storage/RBTS_strg.m"
+#Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 #rawfile = "test/data/RBTS/Base/RBTS_AC.m"
 #Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 resultspecs = (Shortfall(), GeneratorAvailability())
-method = SequentialMCS(samples=1000, seed=100, threaded=true)
+method = SequentialMCS(samples=15000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 # system.storages.buses[1] =2
 # system.storages.charge_rating[1] = 0.25
