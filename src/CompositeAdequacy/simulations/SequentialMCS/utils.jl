@@ -9,6 +9,8 @@ function initialize_all_states!(rng::AbstractRNG, states::SystemStates, singlest
     view(states.shunts,:,1) .= singlestates.shunts_available[:]
     view(states.commonbranches,:,1) .= singlestates.commonbranches_available[:]
     view(states.generators,:,1) .= singlestates.generators_available[:]
+    fill!(states.se, 0.0)
+    fill!(states.storages, 1.0)
     return
 end
 
