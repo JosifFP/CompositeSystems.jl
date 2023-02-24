@@ -6,11 +6,8 @@ function initialize_all_states!(rng::AbstractRNG, states::SystemStates, singlest
     initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
     initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
     view(states.branches,:,1) .= singlestates.branches_available[:]
-    view(states.shunts,:,1) .= singlestates.shunts_available[:]
     view(states.commonbranches,:,1) .= singlestates.commonbranches_available[:]
     view(states.generators,:,1) .= singlestates.generators_available[:]
-    fill!(states.se, 0.0)
-    fill!(states.storages, 1.0)
     return
 end
 
@@ -20,12 +17,17 @@ function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, 
         λ_updn = asset.λ_updn[i]/N
         μ_updn = asset.μ_updn[i]/N
         online = false
-        while !online
-            online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+        if λ_updn ≠ 0 && μ_updn ≠ 0
+            while !online
+                online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+            end
+            availability[i] = online
+            transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
+            nexttransition[i] = randtransitiontime(rng, transitionprobs[i], 1, N)
+        else
+            availability[i] = true
+            nexttransition[i] = N+1
         end
-        availability[i] = online
-        transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
-        nexttransition[i] = randtransitiontime(rng, transitionprobs[i], 1, N)
     end
     return availability
 end

@@ -51,7 +51,7 @@ function assess(
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-        #println("s=$(s)")
+        println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
@@ -87,6 +87,9 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
         update_all_states!(rng, states, singlestates, system, t)
     end
     initialize_availability!(states.buses, field(system, :buses), N)
+    fill!(states.se, 0.0)
+    fill!(states.storages, 1.0)
+    fill!(states.shunts, 1.0)
     return
 end
 
