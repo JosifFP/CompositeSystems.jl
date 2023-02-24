@@ -87,7 +87,8 @@ function initialize_states!(rng::AbstractRNG, states::SystemStates, system::Syst
         update_all_states!(rng, states, singlestates, system, t)
     end
     initialize_availability!(states.buses, field(system, :buses), N)
-    fill!(states.storages, 1)
+    fill!(states.se, 0.0)
+    fill!(states.storages, 1.0)
     return
 end
 

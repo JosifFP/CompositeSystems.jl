@@ -3,7 +3,6 @@
 a singlestates object of type NextTransition, and a system object of type SystemModel."
 function initialize_all_states!(rng::AbstractRNG, states::SystemStates, singlestates::NextTransition, system::SystemModel{N}) where N
     initialize_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, system.branches, N)
-    initialize_availability!(rng, singlestates.shunts_available, singlestates.shunts_nexttransition, system.shunts, N)
     initialize_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, system.commonbranches, N)
     initialize_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, system.generators, N)
     view(states.branches,:,1) .= singlestates.branches_available[:]
@@ -69,11 +68,8 @@ end
 
 ""
 function update_all_states!(rng::AbstractRNG, states::SystemStates, singlestates::NextTransition, system::SystemModel{N}, t::Int) where N
-    #if t == 3421 println("t=$(t), branches = $(states.branches[:,t]), singlestates_branches = $(singlestates.branches_available), branches_nexttransition = $(singlestates.branches_nexttransition)") end
     update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, field(system, :branches), t, N)
     update_availability!(rng, singlestates.shunts_available, singlestates.shunts_nexttransition, field(system, :shunts), t, N)
-    #if t == 3421 println("t=$(t), branches = $(states.branches[:,t]), singlestates_branches = $(singlestates.branches_available), branches_nexttransition = $(singlestates.branches_nexttransition)") end
-    #if t == 3438 println("t=$(t), branches = $(states.branches[:,t]), singlestates_branches = $(singlestates.branches_available), branches_nexttransition = $(singlestates.branches_nexttransition)") end
     update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, field(system, :commonbranches), t, N)
     update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, field(system, :generators), t, N)
     view(states.branches,:,t) .= singlestates.branches_available[:]
