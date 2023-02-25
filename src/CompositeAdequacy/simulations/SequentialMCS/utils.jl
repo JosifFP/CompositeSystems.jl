@@ -73,11 +73,9 @@ end
 ""
 function update_all_states!(rng::AbstractRNG, states::SystemStates, singlestates::NextTransition, system::SystemModel{N}, t::Int) where N
     update_availability!(rng, singlestates.branches_available, singlestates.branches_nexttransition, field(system, :branches), t, N)
-    update_availability!(rng, singlestates.shunts_available, singlestates.shunts_nexttransition, field(system, :shunts), t, N)
     update_availability!(rng, singlestates.commonbranches_available, singlestates.commonbranches_nexttransition, field(system, :commonbranches), t, N)
     update_availability!(rng, singlestates.generators_available, singlestates.generators_nexttransition, field(system, :generators), t, N)
     view(states.branches,:,t) .= singlestates.branches_available[:]
-    view(states.shunts,:,t) .= singlestates.shunts_available[:]
     view(states.commonbranches,:,t) .= singlestates.commonbranches_available[:]
     view(states.generators,:,t) .= singlestates.generators_available[:]
     apply_common_outages!(states, system, t)
