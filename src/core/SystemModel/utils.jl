@@ -212,7 +212,7 @@ end
 function extract_reliability_data(file::String)
 
     reliability_data = open(file) do io
-        matlab_data = InfrastructureModels.parse_matlab_string(read(io, String))
+        matlab_data = _IM.parse_matlab_string(read(io, String))
         reliability_data = _extract_reliability_data(matlab_data)
     end
 
@@ -228,7 +228,7 @@ function _extract_reliability_data(matlab_data::Dict{String, Any})
     if haskey(matlab_data, "mpc.gen")
         gens = []
         for (i, gen_row) in enumerate(matlab_data["mpc.gen"])
-            gen_data = InfrastructureModels.row_to_typed_dict(gen_row, r_gen)
+            gen_data = _IM.row_to_typed_dict(gen_row, r_gen)
             gen_data["index"] = i
             push!(gens, gen_data)
         end
@@ -240,7 +240,7 @@ function _extract_reliability_data(matlab_data::Dict{String, Any})
     if haskey(matlab_data, "mpc.storage")
         stors = []
         for (i, storage_row) in enumerate(matlab_data["mpc.storage"])
-            storage_data = InfrastructureModels.row_to_typed_dict(storage_row, r_storage)
+            storage_data = _IM.row_to_typed_dict(storage_row, r_storage)
             storage_data["index"] = i
             push!(stors, storage_data)
         end
@@ -250,7 +250,7 @@ function _extract_reliability_data(matlab_data::Dict{String, Any})
     if haskey(matlab_data, "mpc.branch")
         branches = []
         for (i, branch_row) in enumerate(matlab_data["mpc.branch"])
-            branch_data = InfrastructureModels.row_to_typed_dict(branch_row, r_branch)
+            branch_data = _IM.row_to_typed_dict(branch_row, r_branch)
             branch_data["index"] = i
             push!(branches, branch_data)
         end
@@ -263,7 +263,7 @@ function _extract_reliability_data(matlab_data::Dict{String, Any})
     if haskey(matlab_data, "mpc.load")
         loads = []
         for (i, loads_row) in enumerate(matlab_data["mpc.load"])
-            loadcost_data = InfrastructureModels.row_to_typed_dict(loads_row, r_load)
+            loadcost_data = _IM.row_to_typed_dict(loads_row, r_load)
             loadcost_data["index"] = i
             push!(loads, loadcost_data)
         end

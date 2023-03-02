@@ -43,9 +43,9 @@ function build_network(rawfile::String; replace::Bool=false, export_file::Bool=f
             file = rawfile[1:findlast(==('.'), rawfile)-1]
             new_file = file*"_CompositeSystems_"*format(now(),"HHMMSS")*"."*export_filetype
             @info("A new file: $(new_file) has been created.")
-            PowerModels.export_file(new_file, data)
+            _PM.export_file(new_file, data)
         elseif !export_file && replace
-            PowerModels.export_file(rawfile, data)
+            _PM.export_file(rawfile, data)
         end
 
         if symbol == true
@@ -66,9 +66,9 @@ PowerModels data structure. All fields from PTI files will be imported if
 function parse_model(io::IO, filetype::SubString{String})
     
     if filetype == "m"
-        pm_data = PowerModels.parse_matpower(io, validate=true)
+        pm_data = _PM.parse_matpower(io, validate=true)
     elseif filetype == "raw"
-        pm_data = PowerModels.parse_psse(io; import_all=false, validate=true)
+        pm_data = _PM.parse_psse(io; import_all=false, validate=true)
     else
         error("Unrecognized filetype: \".$filetype\", Supported extensions are \".raw\" and \".m\"")
     end
@@ -90,30 +90,30 @@ following basic network model requirements.
 """
 function DataSanityCheck(pm_data::Dict{String, <:Any})
 
-    if InfrastructureModels.ismultiinfrastructure(pm_data)
+    if _IM.ismultiinfrastructure(pm_data)
         @error("build_network function does not support multiinfrastructure data")
     end
 
-    if InfrastructureModels.ismultinetwork(pm_data)
+    if _IM.ismultinetwork(pm_data)
         @error("build_network function does not support multinetwork data")
     end
 
     # make a copy of data so that modifications do not change the input data
     data = deepcopy(pm_data)
 
-    PowerModels.make_per_unit!(data)
+    _PM.make_per_unit!(data)
 
     # ensure that branch components always have a rate_a value
-    PowerModels.calc_thermal_limits!(data)
+    _PM.calc_thermal_limits!(data)
 
     #checks that each branch has non-negative thermal ratings and removes zero thermal ratings.
-    PowerModels.correct_thermal_limits!(data)
+    _PM.correct_thermal_limits!(data)
 
     #checks that all buses are unique and other components link to valid buses.
-    PowerModels.check_connectivity(data)
+    _PM.check_connectivity(data)
 
     #checks that each branch has a reasonable transformer parameters.
-    PowerModels.correct_transformer_parameters!(data)
+    _PM.correct_transformer_parameters!(data)
 
     # TODO transform PWL costs into linear costs
     for (i,gen) in data["gen"]
@@ -123,16 +123,16 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     end
 
     "throws warnings if cost functions are malformed"
-    PowerModels.correct_cost_functions!(data)
+    _PM.correct_cost_functions!(data)
 
-    PowerModels.standardize_cost_terms!(data, order=1)
+    _PM.standardize_cost_terms!(data, order=1)
 
-    PowerModels.simplify_cost_terms!(data)
+    _PM.simplify_cost_terms!(data)
 
-    PowerModels.simplify_network!(data)
+    _PM.simplify_network!(data)
 
     # ensure single connected component.
-    #PowerModels.select_largest_component!(data)
+    #_PM.select_largest_component!(data)
 
     # ensure there is exactly one reference bus
     ref_buses = Set{Int}()
@@ -158,10 +158,10 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
     end
 
     # remove switches by merging buses
-    PowerModels.resolve_swithces!(data)
+    _PM.resolve_swithces!(data)
 
     # switch resolution can result in new parallel branches
-    PowerModels.correct_branch_directions!(data)
+    _PM.correct_branch_directions!(data)
 
     # set remaining unsupported components as inactive
     dcline_status_key = pm_component_status["dcline"]
@@ -195,7 +195,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
         bus_id_map[bus["index"]] = i
     end
 
-    PowerModels.update_bus_ids!(data, bus_id_map)
+    _PM.update_bus_ids!(data, bus_id_map)
 
     #add load power factors
     for (i,load) in data["load"]
