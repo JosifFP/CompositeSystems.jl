@@ -51,7 +51,7 @@ function assess(
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-        println("s=$(s)")
+        #println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
