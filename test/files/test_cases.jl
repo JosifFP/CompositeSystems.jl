@@ -9,9 +9,9 @@ using XLSX, Dates
 #using ProfileView, Profile
 
 include("solvers.jl")
-timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+#Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
 #timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
 #rawfile = "test/data/others/Storage/RBTS_strg.m"
@@ -21,9 +21,9 @@ Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
 #Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-#rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS3.m"
+timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
+Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 #timeseriesfile = "test/data/toysystem/Loads_system.xlsx"
 #rawfile = "test/data/toysystem/toysystem.m"
@@ -34,17 +34,17 @@ settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel,
-    powermodel_formulation = OPF.DCPPowerModel,
+    #powermodel_formulation = OPF.DCPPowerModel,
     #powermodel_formulation = OPF.DCMPPowerModel,
-    #powermodel_formulation = OPF.LPACCPowerModel,
+    powermodel_formulation = OPF.LPACCPowerModel,
     select_largest_splitnetwork = false,
-    deactivate_isolated_bus_gens_stors = false,
-    min_generators_off = 1,
+    deactivate_isolated_bus_gens_stors = true,
+    min_generators_off = 0,
     set_string_names_on_creation = false
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=15000, seed=100, threaded=true)
+method = SequentialMCS(samples=15000, seed=100, threaded=false)
 
 @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
 

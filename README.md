@@ -4,5 +4,5 @@ CompositeSystems.jl is the first open-source Composite System Reliability (CSR) 
 
 **Powered and inspired by PowerModels.jl and *NREL's* Probabilistic Resource Adequacy Suite ( *PRAS* )**
 
-[![Coverage](https://codecov.io/gh/JosifFP/PRATS.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JosifFP/PRATS.jl)
-[![Coverage](https://coveralls.io/repos/github/JosifFP/PRATS.jl/badge.svg?branch=master)](https://coveralls.io/github/JosifFP/PRATS.jl?branch=master)
+[![Coverage](https://codecov.io/gh/JosifFP/PRATS.jl/branch/master/graph/badge.svg)
+](https://codecov.io/gh/JosifFP/PRATS.jl)
