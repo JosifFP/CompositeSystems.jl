@@ -51,7 +51,7 @@ function assess(
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-        #println("s=$(s)")
+        settings.count_samples && println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
 
@@ -67,11 +67,9 @@ function assess(
 
         foreach(recorder -> reset!(recorder, s), recorders)
         reset_model!(pm, system, systemstates, settings, s)
-        
     end
 
     put!(results, recorders)
-
 end
 
 """
