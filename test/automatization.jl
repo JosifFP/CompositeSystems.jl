@@ -23,7 +23,7 @@ timeseriesfile = "test/data/RTS/Loads_system.xlsx"
 rawfile = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile = "test/data/others/Storage/R_RTS_strg.m"
 resultspecs = (Shortfall(), GeneratorAvailability())
-method = SequentialMCS(samples=2500, seed=100, threaded=false)
+method = SequentialMCS(samples=2500, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
 for bus in 1:1:9
