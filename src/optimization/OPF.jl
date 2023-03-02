@@ -4,18 +4,19 @@
     import LinearAlgebra: pinv
     import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE, MAX_SENSE, is_empty
     import MathOptInterface.Utilities: reset_optimizer
-    import Ipopt, Juniper, HiGHS, Gurobi
-    import InfrastructureModels: InfrastructureModels, @def
-    import PowerModels
     import JuMP.Containers: DenseAxisArray, SparseAxisArray
     import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
         optimize!, Model, direct_model, optimizer_with_attributes, ModelMode,
-        termination_status, AbstractModel, OPTIMAL, dual, LOCALLY_SOLVED
+        termination_status, AbstractModel, OPTIMAL, LOCALLY_SOLVED
+    
+    import Gurobi    
+    import InfrastructureModels
+    import PowerModels
 
-    const MOI = MathOptInterface
-    const MOIU = MathOptInterface.Utilities
     const _IM = InfrastructureModels
     const _PM = PowerModels
+    const MOI = MathOptInterface
+    const MOIU = MathOptInterface.Utilities
 
     export
 
@@ -34,7 +35,7 @@
         Topology,
 
         #reexports
-        PowerModels, reset_optimizer, MOI, MOIU, JuMP
+        reset_optimizer, MOI, MOIU, JuMP
 
     #
 

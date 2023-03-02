@@ -213,6 +213,8 @@ function Base.getproperty(e::Settings, s::Symbol)
         getfield(e, :min_generators_off)::Int        
     elseif s === :set_string_names_on_creation
         getfield(e, :set_string_names_on_creation)::Bool
+    elseif s === :count_samples
+        getfield(e, :count_samples)::Bool
     else
         @error("Configuration $(s) not supported")
     end

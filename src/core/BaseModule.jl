@@ -7,10 +7,8 @@
     import LinearAlgebra
     import Memento
     import SparseArrays: SparseMatrixCSC, sparse, nonzeros
-    import InfrastructureModels: InfrastructureModels, ismultiinfrastructure, 
-        ismultinetwork,parse_matlab_string, row_to_typed_dict
+    import InfrastructureModels
     import PowerModels
-
     const _IM = InfrastructureModels
     const _PM = PowerModels
 
@@ -30,8 +28,8 @@
         SystemModel, SystemStates, NextTransition, static_parameters,
 
         #utils
-        assetgrouplist, makeidxlist, field, extract_timeseriesload, 
-        build_network, calc_buspair_parameters, check_availability
+        assetgrouplist, makeidxlist, field, build_network, 
+        calc_buspair_parameters, check_availability
     #
 
     # Create our module level logger (this will get precompiled)

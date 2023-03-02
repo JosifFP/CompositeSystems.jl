@@ -4,7 +4,7 @@
     using ..OPF
 
     import Base: -, getindex, merge!
-    import Dates: DateTime, Period
+    import Dates: Dates, DateTime, Period
     import Decimals: Decimal, decimal
     import OnlineStatsBase: EqualWeight, fit!, Mean, value, Variance
     import OnlineStats: Series
@@ -12,8 +12,9 @@
     import Random: AbstractRNG, rand, seed!
     import Random123: Philox4x
     import StatsBase: mean, std, stderror
-    import TimeZones: ZonedDateTime, @tz_str
+    import TimeZones: ZonedDateTime
     import LinearAlgebra: qr
+    import XLSX
 
     export
         # CompositeAdequacy submoduleexport
@@ -31,10 +32,10 @@
         BranchAvailability, ShuntAvailability, BusAvailability,
 
         #utils
-        makeidxlist, 
+        makeidxlist, print_results
 
         # Convenience re-exports
-        ZonedDateTime, @tz_str
+        ZonedDateTime
     #
     include("statistics.jl")
     include("types.jl")

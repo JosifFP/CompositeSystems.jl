@@ -98,7 +98,7 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.delta_bounds == y.delta_bounds
 
 "a macro for adding the base AbstractPowerModels fields to a type definition"
-@def pm_fields begin
+_IM.@def pm_fields begin
     model::AbstractModel
     topology::Topology
     var::Dict{Symbol, AbstractArray}
@@ -136,6 +136,7 @@ mutable struct Settings
     deactivate_isolated_bus_gens_stors::Bool
     min_generators_off::Int
     set_string_names_on_creation::Bool
+    count_samples::Bool
 
     function Settings(
         optimizer::MOI.OptimizerWithAttributes;
@@ -144,11 +145,12 @@ mutable struct Settings
         select_largest_splitnetwork::Bool=false,
         deactivate_isolated_bus_gens_stors::Bool=true,
         min_generators_off::Int=1,
-        set_string_names_on_creation::Bool=false
+        set_string_names_on_creation::Bool=false,
+        count_samples::Bool=false
         )
         new(optimizer, jump_modelmode, powermodel_formulation, 
         select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, 
-        min_generators_off, set_string_names_on_creation)
+        min_generators_off, set_string_names_on_creation, count_samples)
     end
 end
 
@@ -282,11 +284,7 @@ end
 ""
 function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
 
-    if iszero(s%50) && settings.optimizer == Ipopt
-        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-        initialize_pm_containers!(pm, system)
-        OPF.initialize_powermodel!(pm, system, states)
-    elseif iszero(s%100) && settings.optimizer == Gurobi
+    if iszero(s%100) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
         OPF.initialize_powermodel!(pm, system, states)
