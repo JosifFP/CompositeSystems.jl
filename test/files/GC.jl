@@ -1409,3 +1409,9 @@ function reset_model!(pm::AbstractDCPowerModel, system::SystemModel, states::Sys
     fill!(states.generatorstorages, 1)
     return
 end
+
+data = OPF.build_network(rawfile, symbol=false)
+data["branch"]["1"]["br_status"] = 0
+result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
+pmi = PowerModels.instantiate_model(data, PowerModels.DCPPowerModel, PowerModels.build_opf)
+println(pmi.model)

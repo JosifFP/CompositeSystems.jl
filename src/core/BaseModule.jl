@@ -8,9 +8,8 @@
     import SparseArrays: SparseMatrixCSC, sparse, nonzeros
     import InfrastructureModels: InfrastructureModels, ismultiinfrastructure, ismultinetwork,
         parse_matlab_string, row_to_typed_dict
-    import PowerModels: PowerModels, simplify_network!, select_largest_component!, resolve_swithces!, 
-        correct_branch_directions!, update_bus_ids!, _cc_dfs, simplify_cost_terms!, correct_transformer_parameters!,
-        correct_cost_functions!, resolve_swithces!, export_file, make_per_unit!
+    import PowerModels: PowerModels, simplify_network!, select_largest_component!, 
+        correct_branch_directions!, update_bus_ids!
 
     export
         # System assets
