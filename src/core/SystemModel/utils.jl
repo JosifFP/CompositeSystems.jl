@@ -606,7 +606,5 @@ function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
     #for bp in buspair_indexes
     #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
     #end
-    
     return buspairs
-
 end

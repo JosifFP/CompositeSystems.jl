@@ -155,7 +155,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameter
                 data["cost"],
                 data["status"]
             )
-
         else
             timeseries_load::Dict{Int64, Vector{Float32}} = network[:timeseries_load]
             timeseries_pd = convert_array(data["index"], timeseries_load, baseMVA)
