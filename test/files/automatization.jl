@@ -32,51 +32,40 @@ end
 
 function run_mcs(system, method, settings, resultspecs, bus::Int)
     system.storages.buses[1] = bus
-    system.storages.charge_rating[1] = 1.00
-    system.storages.discharge_rating[1] = 1.00
-    system.storages.thermal_rating[1] = 1.00
-    for i in 1.0:1.0:4.0
+    system.storages.charge_rating[1] = 0.50
+    system.storages.discharge_rating[1] = 0.50
+    system.storages.thermal_rating[1] = 0.50
+    for i in 0.25:0.25:1.5
     #for i in 0.5:0.5:4.0
         system.storages.energy_rating[1] = i
         shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
-        print_results(shortfall)
+        CompositeAdequacy.print_results(system, shortfall)
     end
 
-    system.storages.charge_rating[1] = 1.50
-    system.storages.discharge_rating[1] = 1.50
-    system.storages.thermal_rating[1] = 1.50
-    for i in 1.0:1.0:4.0
+    system.storages.charge_rating[1] = 1.0
+    system.storages.discharge_rating[1] = 1.0
+    system.storages.thermal_rating[1] = 1.0
+    for i in 0.25:0.25:1.5
         system.storages.energy_rating[1] = i
         shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
-        print_results(shortfall)
+        CompositeAdequacy.print_results(system, shortfall)
+    end
+
+    system.storages.charge_rating[1] = 1.5
+    system.storages.discharge_rating[1] = 1.5
+    system.storages.thermal_rating[1] = 1.5
+    for i in 0.25:0.25:1.5
+        system.storages.energy_rating[1] = i
+        shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
+        CompositeAdequacy.print_results(system, shortfall)
     end
 
     system.storages.charge_rating[1] = 2.0
     system.storages.discharge_rating[1] = 2.0
     system.storages.thermal_rating[1] = 2.0
-    for i in 1.0:1.0:4.0
+    for i in 0.25:0.25:1.5
         system.storages.energy_rating[1] = i
         shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
-        print_results(shortfall)
+        CompositeAdequacy.print_results(system, shortfall)
     end
-
-    system.storages.charge_rating[1] = 2.5
-    system.storages.discharge_rating[1] = 2.5
-    system.storages.thermal_rating[1] = 2.5
-    for i in 1.0:1.0:4.0
-        system.storages.energy_rating[1] = i
-        shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
-        print_results(shortfall)
-    end
-
-    system.storages.charge_rating[1] = 3
-    system.storages.discharge_rating[1] = 3
-    system.storages.thermal_rating[1] = 3
-    for i in 1.0:1.0:4.0
-        system.storages.energy_rating[1] = i
-        shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
-        print_results(shortfall)
-    end
-
 end
-

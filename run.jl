@@ -1,8 +1,7 @@
 using Pkg
 import Gurobi
-Pkg.activate(".")
 Pkg.instantiate()
-Pkg.resolve()
+#Pkg.resolve()
 using CompositeSystems
 
 gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
@@ -16,9 +15,9 @@ gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
     "Threads"=>16
 )
 
-timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+#timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
+#rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
+#Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
 rawfile = "test/data/RBTS/Base/RBTS_AC.m"
@@ -39,15 +38,20 @@ settings = CompositeSystems.Settings(
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=500, seed=100, threaded=true)
+method = SequentialMCS(samples=16, seed=100, threaded=false)
 
-@time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+println("END")
 
-CompositeSystems.LOLE.(shortfall, system.buses.keys)
-CompositeSystems.EENS.(shortfall, system.buses.keys)
-CompositeSystems.LOLE.(shortfall)
-CompositeSystems.EENS.(shortfall)
-val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
-val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
+# CompositeSystems.LOLE.(shortfall, system.buses.keys)
+# CompositeSystems.EENS.(shortfall, system.buses.keys)
+# CompositeSystems.LOLE.(shortfall)
+# CompositeSystems.EENS.(shortfall)
+# val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
+# val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
-CompositeSystems.print_results(system, shortfall)
+# CompositeSystems.print_results(system, shortfall)
+
+#addprocs(SlurmManager(1), t="00:05:00", A="def-kbubbar", qos="short")
+#julia --project="." --startup-file=no "test/run.jl"
+#SBATCH --mem-per-cpu=8000M

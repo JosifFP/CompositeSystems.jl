@@ -16,6 +16,170 @@ BaseModule.field(topology::Topology, field::Symbol) = getfield(topology, field)
 BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield(getfield(topology, field), subfield)
 BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
 
+"Constructor for an AbstractPowerModel modeling object"
+function abstract_model(system::SystemModel, settings::Settings)
+    
+    @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
+    jump_model = Model(settings.optimizer; add_bridges = false)
+
+    JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
+    JuMP.set_silent(jump_model)
+    topology = Topology(system)
+    powermodel_formulation = pm(jump_model, topology, settings.powermodel_formulation)
+    initialize_pm_containers!(powermodel_formulation, system)
+
+    return powermodel_formulation
+
+end
+
+function pm(model::JuMP.Model, topology::Topology, ::Type{M}) where {M<:AbstractPowerModel}
+    var = Dict{Symbol, AbstractArray}()
+    con = Dict{Symbol, AbstractArray}()
+    return M(model, topology, var, con)
+end
+
+""
+function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel; timeseries=false)
+
+    if timeseries == true
+        @error("Timeseries containers not supported")
+        #add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+    else
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :va, field(system, :buses, :keys))
+        add_var_container!(pm.var, :z_branch, field(system, :branches, :keys))
+        add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
+        add_var_container!(pm.var, :z_shunt, field(system, :shunts, :keys))
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs))
+
+        add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_lower_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_upper_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_lower_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_upper_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
+
+        add_var_container!(pm.var, :ps, field(system, :storages, :keys))
+        add_var_container!(pm.var, :se, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd_on, field(system, :storages, :keys))
+
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_thermal_lower_limit, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_thermal_upper_limit, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+    end
+    return
+end
+
+""
+function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; timeseries=false)
+
+    if timeseries == true
+        @error("Timeseries containers not supported")
+        #add_var_container!(pm.var, :pg, field(system, :generators, :keys), timesteps = 1:N)
+    else
+        add_var_container!(pm.var, :pg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :qg, field(system, :generators, :keys))
+        add_var_container!(pm.var, :va, field(system, :buses, :keys))
+        add_var_container!(pm.var, :phi, field(system, :buses, :keys))
+        add_var_container!(pm.var, :z_branch, field(system, :branches, :keys))
+        add_var_container!(pm.var, :phi_fr, field(system, :branches, :keys))
+        add_var_container!(pm.var, :phi_to, field(system, :branches, :keys))
+        add_var_container!(pm.var, :td, field(system, :branches, :keys))
+        add_var_container!(pm.var, :cs, field(system, :branches, :keys))
+        add_var_container!(pm.var, :z_demand, field(system, :loads, :keys))
+        add_var_container!(pm.var, :z_shunt, field(system, :shunts, :keys))
+        add_var_container!(pm.var, :p, field(pm.topology, :arcs))
+        add_var_container!(pm.var, :q, field(pm.topology, :arcs))
+
+        add_con_container!(pm.con, :power_balance_p, field(system, :buses, :keys))
+        add_con_container!(pm.con, :power_balance_q, field(system, :buses, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_p, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_from_q, field(system, :branches, :keys))
+        add_con_container!(pm.con, :ohms_yt_to_q, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :voltage_angle_diff_lower, field(system, :branches, :keys))
+
+        add_con_container!(pm.con, :model_voltage, keys(field(system, :buspairs)))
+        add_con_container!(pm.con, :model_voltage_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :model_voltage_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :relaxation_cos_upper, field(system, :branches, :keys))
+        add_con_container!(pm.con, :relaxation_cos_lower, field(system, :branches, :keys))
+        add_con_container!(pm.con, :relaxation_cos, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_from, field(system, :branches, :keys))
+        add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
+
+        add_var_container!(pm.var, :ccms, field(system, :storages, :keys))
+        add_var_container!(pm.var, :ps, field(system, :storages, :keys))
+        add_var_container!(pm.var, :qs, field(system, :storages, :keys))
+        add_var_container!(pm.var, :qsc, field(system, :storages, :keys))
+        add_var_container!(pm.var, :se, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
+        add_var_container!(pm.var, :sd_on, field(system, :storages, :keys))
+
+        add_con_container!(pm.con, :storage_state, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_1, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_2, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_complementarity_mi_3, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_thermal_limit, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses_p, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses_q, field(system, :storages, :keys))
+        add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
+    end
+    return
+end
+
+""
+function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
+
+    if iszero(s%100) && settings.optimizer == Gurobi
+        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+        initialize_pm_containers!(pm, system)
+        OPF.initialize_powermodel!(pm, system, states)
+    else
+        MOIU.reset_optimizer(pm.model)
+    end
+    fill!(states.plc, 0)
+    fill!(states.qlc, 0)
+    fill!(states.se, 0)
+    fill!(states.loads, 1)
+    fill!(states.storages, 1)
+    fill!(states.generatorstorages, 1)
+    return
+end
+
+""
+function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    if !check_availability(states.branches, t, t-1)
+        simplify!(pm, system, states, settings, t)
+        update_arcs!(pm, system, states.branches, t)
+    end
+    update_all_idxs!(pm, system, states, t)
+    return
+end
+
+""
+function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    simplify!(pm, system, states, settings, t)
+    update_arcs!(pm, system, states.branches, t)
+    update_all_idxs!(pm, system, states, t)
+    return
+end
+
 ""
 function bus_asset!(asset_dict_nodes::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, asset_buses::Vector{Int})
     for k in key_assets

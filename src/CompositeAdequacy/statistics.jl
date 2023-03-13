@@ -21,15 +21,12 @@ function mean_std(x::AbstractArray{<:MeanVariance})
 
     means = similar(x, Float64)
     vars = similar(means)
-
     for i in eachindex(x)
         m, v = mean_std(x[i])
         means[i] = m
         vars[i] = v
     end
-
     return means, vars
-
 end
 
 struct MeanEstimate
@@ -38,14 +35,10 @@ struct MeanEstimate
     standarderror::Float64
 
     function MeanEstimate(est::Real, stderr::Real)
-
         stderr >= 0 || throw(DomainError(stderr,
             "Standard error of the estimate should be non-negative"))
-
         new(convert(Float64, est), convert(Float64, stderr))
-
     end
-
 end
 
 MeanEstimate(x::Real) = MeanEstimate(x, 0)
@@ -79,19 +72,18 @@ function stringprecision(x::MeanEstimate)
     else
 
         stderr_round = round(x.standarderror, sigdigits=1)
-
         digits = floor(Int, log(10, stderr_round))
-
         rounded = round(x.estimate, digits=-digits)
         reduced = round(Int, rounded / 10. ^ digits)
         v_rounded = string(Decimal(Int(x.estimate < 0), abs(reduced), digits))
-
         s_rounded = string(decimal(stderr_round))
+        #stderr_round_d = round(x.standarderror, digits=3)
+        #rounded_d = round(x.estimate, digits=3)
+        #v_rounded = string(decimal(rounded_d))
+        #s_rounded = string(decimal(stderr_round_d))
 
     end
-
     return v_rounded, s_rounded
-
 end
 
 Base.isapprox(x::ReliabilityMetric, y::ReliabilityMetric) =
@@ -143,27 +135,5 @@ function Base.show(io::IO, x::EENS{N,L,T,E}) where {N,L,T,E}
 
     print(io, "EENS = ", x.EENS, " ",
         unitsymbol(E), "/", N*L == 1 ? "" : N*L, unitsymbol(T))
-
-end
-
-
-struct EDNS{N,L,T<:Period,P<:PowerUnit} <: ReliabilityMetric
-
-    EDNS::MeanEstimate
-
-    function EDNS{N,L,T,P}(EDNS::MeanEstimate) where {N,L,T<:Period,P<:PowerUnit}
-        val(EDNS) >= 0 || throw(DomainError(
-            "$val is not a valid unserved energy expectation"))
-        new{N,L,T,P}(EDNS)
-    end
-
-end
-
-val(x::EDNS) = val(x.EDNS)
-stderror(x::EDNS) = stderror(x.EDNS)
-
-function Base.show(io::IO, x::EDNS{N,L,T,P}) where {N,L,T,P}
-
-    print(io, "EDNS = ", x.EDNS, " ", unitsymbol(P))
 
 end

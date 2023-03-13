@@ -14,17 +14,17 @@
     import StatsBase: mean, std, stderror
     import TimeZones: ZonedDateTime
     import LinearAlgebra: qr
-    import XLSX
+    import XLSX: rename!, addsheet!, openxlsx
 
     export
         # CompositeAdequacy submoduleexport
         assess, SimulationSpec,
         
         # Metrics
-        ReliabilityMetric, LOLE, EENS, EDNS, val, stderror,
+        ReliabilityMetric, LOLE, EENS, val, stderror,
 
         # Simulation specification
-        SequentialMCS, NonSequentialMCS, PreContingencies, accumulator,
+        SequentialMCS, NonSequentialMCS, accumulator,
 
         # Result specifications
         Shortfall, ShortfallSamples,

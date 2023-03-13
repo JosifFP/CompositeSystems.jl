@@ -1,7 +1,4 @@
 
-#BaseModule.field(states::SystemStates, field::Symbol) = getfield(states, field)
-#BaseModule.field(states::SystemStates, field::Symbol, ::Colon, t::Int) = getindex(getfield(states, field),:, t)
-#BaseModule.field(states::SystemStates, field::Symbol, i::Int, t::Int) = getindex(getfield(states, field),i, t)
 BaseModule.field(method::SimulationSpec, field::Symbol) = getfield(method, field)
 
 function Base.map!(f, dict::Dict)
@@ -16,19 +13,6 @@ function Base.map!(f, dict::Dict)
     return
 end
 
-""
-function check_status(a::SubArray{Bool, 1, Matrix{Bool}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true})
-    i_idx = @inbounds findfirst(isequal(0), a)
-    if i_idx === nothing i_idx=true else i_idx=false end
-    return i_idx
-end
-
-""
-function check_status(a::Vector{Bool})
-    i_idx = @inbounds findfirst(isequal(0), a)
-    if i_idx === nothing i_idx=true else i_idx=false end
-    return i_idx
-end
 
 ""
 function findfirstunique_directional(a::AbstractVector{<:Pair}, i::Pair)
@@ -59,6 +43,20 @@ function colsum(x::Matrix{T}, col::Integer) where {T}
 end
 
 ""
+function check_status(a::SubArray{Bool, 1, Matrix{Bool}, Tuple{Base.Slice{Base.OneTo{Int}}, Int}, true})
+    i_idx = @inbounds findfirst(isequal(0), a)
+    if i_idx === nothing i_idx=true else i_idx=false end
+    return i_idx
+end
+
+""
+function check_status(a::Vector{Bool})
+    i_idx = @inbounds findfirst(isequal(0), a)
+    if i_idx === nothing i_idx=true else i_idx=false end
+    return i_idx
+end
+
+""
 function _sol(sol::Dict, args...)
     for arg in args
         if haskey(sol, arg)
@@ -73,8 +71,8 @@ end
 
 ""
 function print_results(system::SystemModel, shortfall::CompositeAdequacy.ShortfallResult)
-    XLSX.openxlsx("results_shortfall"*Dates.format(Dates.now(),"HHMMSS")*".xlsx", mode="w") do xf
-        XLSX.rename!(xf[1], "summary")
+    openxlsx("results_shortfall"*Dates.format(Dates.now(),"HHMMSS")*".xlsx", mode="w") do xf
+        rename!(xf[1], "summary")
         xf[1]["A1"] = "eventperiod_mean"
         xf[1]["A2"] = shortfall.eventperiod_mean
         xf[1]["B1"] = "eventperiod_std"
@@ -111,13 +109,13 @@ function print_results(system::SystemModel, shortfall::CompositeAdequacy.Shortfa
             xf[1]["M5"] = system.storages.thermal_rating[1]
         end
 
-        XLSX.addsheet!(xf, "eventperiod_busperiod_mean")
+        addsheet!(xf, "eventperiod_busperiod_mean")
         xf[2]["A1"] = collect(shortfall.eventperiod_busperiod_mean')
-        XLSX.addsheet!(xf, "eventperiod_busperiod_std")
+        addsheet!(xf, "eventperiod_busperiod_std")
         xf[3]["A1"] = collect(shortfall.eventperiod_busperiod_std')
-        XLSX.addsheet!(xf, "shortfall_mean")
+        addsheet!(xf, "shortfall_mean")
         xf[4]["A1"] = collect(shortfall.shortfall_mean')
-        XLSX.addsheet!(xf, "shortfall_busperiod_std")
+        addsheet!(xf, "shortfall_busperiod_std")
         xf[5]["A1"] = collect(shortfall.shortfall_busperiod_std')
     end
     return

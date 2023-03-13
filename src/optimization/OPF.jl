@@ -24,22 +24,19 @@
         AbstractPowerModel, AbstractDCPowerModel, AbstractDCPModel, AbstractDCMPPModel, 
         AbstractNFAModel, AbstractAPLossLessModels, AbstractPolarModels,
 
-        #Settings
-        Settings,
+        #Other Containers
+        Settings, Topology,
 
         #functions
         solve_opf, abstract_model, build_method!, update_method!, build_result!, field,
         var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, optimize_method!,
-
-        #optimizationcontainers
-        Topology,
 
         #reexports
         reset_optimizer, MOI, MOIU, JuMP
 
     #
 
-    include("base.jl")
+    include("types.jl")
     include("utils.jl")
     include("shared_variables.jl")
     include("shared_constraints.jl")

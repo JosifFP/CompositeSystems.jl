@@ -13,5 +13,5 @@ end
 
 include("core/BaseModule.jl")
 include("optimization/OPF.jl")
-include("compositeadequacy/CompositeAdequacy.jl")
+include("CompositeAdequacy/CompositeAdequacy.jl")
 end
