@@ -1,4 +1,4 @@
-import Ipopt, Juniper, HiGHS, Gurobi
+import Ipopt, Juniper, Gurobi
 import JuMP: JuMP, optimizer_with_attributes
 #const GRB_ENV = Gurobi.Env()
 
@@ -24,10 +24,6 @@ ipopt_optimizer_4 = JuMP.optimizer_with_attributes(
     "max_cpu_time"=>5.0,
     "print_level"=>0,
     "hessian_approximation"=> "limited-memory"
-)
-
-highs_optimizer_1 = JuMP.optimizer_with_attributes(
-    HiGHS.Optimizer, "output_flag"=>false
 )
 
 juniper_optimizer_1 = optimizer_with_attributes(

@@ -18,9 +18,10 @@ function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, 
         μ_updn = asset.μ_updn[i]/N
         online = false
         if λ_updn ≠ 0 && μ_updn ≠ 0
-            while !online
-                online = rand(rng) < μ_updn / (λ_updn + μ_updn)
-            end
+            # while !online
+            #     online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+            # end
+            online = rand(rng) < μ_updn / (λ_updn + μ_updn)
             availability[i] = online
             transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
             nexttransition[i] = randtransitiontime(rng, transitionprobs[i], 1, N)
