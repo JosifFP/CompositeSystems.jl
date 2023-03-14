@@ -340,7 +340,7 @@ function reset_con_model_voltage(pm::AbstractPowerModel, buspair::Vector{Tuple{I
 end
 
 "Updates OPF formulation with Load Curtailment variables and constraints"
-function update_method!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_problem!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
     for i in field(system, :generators, :keys)
         update_var_gen_power_real(pm, system, states, i, t)
@@ -512,7 +512,7 @@ end
 ""
 function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
     if !check_availability(states.shunts, t, t-1)
-        @inbounds @views for i in field(system, :buses, :keys)
+        @views for i in field(system, :buses, :keys)
             update_con_power_balance_shunts(pm, system, states, i, t)
         end
     end
@@ -823,8 +823,8 @@ function con_ohms_yt_2(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::
     
     f_bus = field(system, :branches, :f_bus)[l]
     t_bus = field(system, :branches, :t_bus)[l]
-    g, b = calc_branch_y(field(system, :branches), l)
-    tr, ti = calc_branch_t(field(system, :branches), l)
+    g, b = calc_branch_y(system.branches, l)
+    tr, ti = calc_branch_t(system.branches, l)
     tm = field(system, :branches, :tap)[l]
     va_fr  = var(pm, :va, nw)[f_bus]
     va_to  = var(pm, :va, nw)[t_bus]
@@ -1415,3 +1415,188 @@ data["branch"]["1"]["br_status"] = 0
 result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
 pmi = PowerModels.instantiate_model(data, PowerModels.DCPPowerModel, PowerModels.build_opf)
 println(pmi.model)
+
+""
+function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+
+    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
+    
+    update_idxs!(
+        filter(i->states.generators[i,t]!=0, field(system, :generators, :keys)), 
+        topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses)
+    )
+
+    update_idxs!(
+        filter(i->states.storages[i,t], field(system, :storages, :keys)), 
+        topology(pm, :storages_idxs), topology(pm, :bus_storages), field(system, :storages, :buses)
+    )
+
+    update_idxs!(
+        filter(i->states.loads[i,t], field(system, :loads, :keys)), 
+        topology(pm, :loads_idxs), topology(pm, :bus_loads), field(system, :loads, :buses)
+    )
+
+    update_idxs!(
+        filter(i->states.shunts[i,t], field(system, :shunts, :keys)), 
+        topology(pm, :shunts_idxs), topology(pm, :bus_shunts), field(system, :shunts, :buses)
+    )
+
+    return
+
+end
+
+"It checks if the sum of the elements in the matrix is less than the number of generators for both the current 
+time step and the previous time step, and returns false if this condition is not met."
+function check_availability(generators::Generators, asset_states::Matrix{Float32}, t_now::Int, t_previous::Int)::Bool
+    if t_previous ≠ 0
+        if sum(@view(asset_states[:,t_now])) < length(generators) || sum(@view(asset_states[:,t_previous])) < length(generators)
+            return false
+        else
+            return true
+        end
+    else
+        if sum(@view(asset_states[:,t_now])) < length(generators)
+            return false
+        else
+            return true
+        end
+    end
+end
+
+
+
+import Random123: Philox4x
+import Random: AbstractRNG, rand, seed!
+using CompositeSystems
+using CompositeSystems.CompositeAdequacy
+
+systemstates = CompositeSystems.SystemStates(system)
+sum(systemstates.generators[:, 1])
+length(system.generators) - settings.min_generators_off
+sum(system.loads.pd)
+system.loads.pd[t]
+
+singlestate = CompositeSystems.SingleState(system)
+rng = Philox4x((0, 0), 10)
+singlestate.generators_nexttransition
+CompositeAdequacy.initialize_availability!(rng, systemstates.generators, singlestate.generators_nexttransition, system.generators, 8736)
+
+t_now=1
+t_last=8736
+
+i=1
+singlestate.generators_nexttransition
+singlestate.generators_nexttransition[i]
+
+view(systemstates.generators,:,t) 
+
+if singlestate.generators_nexttransition[i] == 95 # Unit switches states
+    println(singlestate.generators_available[i])
+    transitionprobs = (singlestate.generators_available[i] ⊻= true) ? field(system, :generators, :λ_updn)./t_last : field(system, :generators, :μ_updn)./t_last
+    println(singlestate.generators_available[i])
+    singlestate.generators_nexttransition[i] = CompositeAdequacy.randtransitiontime(rng, transitionprobs, i, t_now, t_last)
+end
+
+view(systemstates.generators,:,t) .= singlestate.generators_available[:]
+
+
+view(systemstates.generators,:,t)
+
+
+
+availability
+singlestate.generators_nexttransition
+
+t=1
+fill!(view(systemstates.branches,:,t), singlestate.branches_available[:])
+
+
+view(systemstates.branches,:,t)
+singlestate.branches_available
+
+
+# t=1
+# CompositeAdequacy.update_availability!(rng, systemstates.generators, singlestate.generators_nexttransition, system.generators, t, 8736)
+# @views availability = systemstates.generators[:, 1]
+# singlestate.generators_nexttransition
+
+# for t in 1:8736
+#     CompositeAdequacy.update_availability!(rng, systemstates.generators, singlestate.generators_nexttransition, system.generators, t, 8736)
+# end
+
+
+
+
+
+systemstates.generators
+
+
+singlestate = CompositeSystems.SingleState(system)
+recorders = CompositeSystems.accumulator.(system, method, resultspecs)
+rng = Philox4x((0, 0), 10)
+seed!(rng, (method.seed, 1))
+CompositeAdequacy.initialize!(rng, systemstates, singlestate, system)
+
+systemstates.generators
+sum(systemstates.generators[1,:])
+@views availability = systemstates.generators[:, 1]
+availability
+
+            # if  s > 445 && s <= 446
+            #     if systemstates.plc[6] > 1e-6
+            #         println("s=$(s), t=$(t), plc=$(systemstates.plc[6]), g=$(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))), d=$(Float64(sum(system.loads.pd[:,t]))), sum_gens=$(sum(systemstates.generators[:, t])), sum_branches=$(sum(systemstates.branches[:, t])), buses=$(systemstates.buses[:, t])") 
+            #     elseif length(system.storages) ≠ 0 || all(systemstates.branches[:,t]) ≠ true || sum(systemstates.generators[:, t]) < length(system.generators) - settings.min_generators_off
+            #         println("EUREKA, s=$(s), t=$(t), g=$(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))), d=$(Float64(sum(system.loads.pd[:,t]))), sum_gens=$(sum(systemstates.generators[:, t])), sum_branches=$(sum(systemstates.branches[:, t])), buses=$(systemstates.buses[:, t])") 
+            #     end
+            # end
+
+            if s==445 && t==1
+                println("s=$(s)")
+                println(pm.model)
+                println("EUREKA, s=$(s), t=$(t), d=$(Float64(sum(system.loads.pd[:,t]))), sum_gens=$(sum(systemstates.generators[:, t])), sum_branches=$(sum(systemstates.branches[:, t])), buses=$(systemstates.buses[:, t])") 
+                println("rate_a=$(field(system, :branches, :rate_a)), states_branches = $(systemstates.branches[:,t])")
+            end
+
+            if s==445 && t==8736
+                println("s=$(s)")
+                println(pm.model)
+                println("EUREKA, s=$(s), t=$(t), d=$(Float64(sum(system.loads.pd[:,t]))), sum_gens=$(sum(systemstates.generators[:, t])), sum_branches=$(sum(systemstates.branches[:, t])), buses=$(systemstates.buses[:, t])") 
+                println("rate_a=$(field(system, :branches, :rate_a)), states_branches = $(systemstates.branches[:,t])")
+            end            
+
+            if s==446 && t==1
+                println("s=$(s)")
+                println(pm.model)
+                println("EUREKA, s=$(s), t=$(t), d=$(Float64(sum(system.loads.pd[:,t]))), sum_gens=$(sum(systemstates.generators[:, t])), sum_branches=$(sum(systemstates.branches[:, t])), buses=$(systemstates.buses[:, t])") 
+                println("rate_a=$(field(system, :branches, :rate_a)), states_branches = $(systemstates.branches[:,t])")
+            end
+
+            if s==446 && t==50
+                println(pm.model)
+                println("EUREKA, s=$(s), t=$(t), g=$(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))), d=$(Float64(sum(system.loads.pd[:,t]))), sum_gens=$(sum(systemstates.generators[:, t])), sum_branches=$(sum(systemstates.branches[:, t])), buses=$(systemstates.buses[:, t])") 
+                println("rate_a=$(field(system, :branches, :rate_a)), states_branches = $(systemstates.branches[:,t])")
+            end
+
+
+            import Random123: Philox4x
+            import Random: AbstractRNG, rand, seed!
+            using CompositeSystems
+            using CompositeSystems.CompositeAdequacy
+            pm = abstract_model(system, settings)
+            systemstates = CompositeSystems.SystemStates(system)
+            singlestate = CompositeSystems.SingleState(system)
+            recorders = CompositeSystems.accumulator.(system, method, resultspecs)
+            rng = Philox4x((0, 0), 10)
+            s=446
+            seed!(rng, (method.seed, s))
+            CompositeAdequacy.initialize!(rng, systemstates, singlestate, system)
+            OPF.build_problem!(pm, system, 1)
+            t=1
+            CompositeAdequacy.update!(rng, systemstates, singlestate, system, pm, settings, t)
+            CompositeAdequacy.solve!(systemstates, system, pm, settings, t)
+            JuMP.optimize!(pm.model)
+            build_result!(pm, system, systemstates, t)
+            
+            println(pm.model)
+            

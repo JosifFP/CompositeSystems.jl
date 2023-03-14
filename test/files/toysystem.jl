@@ -22,7 +22,7 @@ Base_reliabilityfile = "test/data/toysystem/R_toysystem.m"
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile)
 pm = OPF.abstract_model(system, settings)
 systemstates = OPF.SystemStates(system, available=true)
-CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+OPF.build_problem!(pm, system, 1)
 t=1
 OPF._update!(pm, system, systemstates, settings, t)
 

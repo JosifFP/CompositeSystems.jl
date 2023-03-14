@@ -340,25 +340,7 @@ function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::
         @views t_previous_view = asset_states[:, t_previous]
         return !any(t_now_view .== 0) && !any(t_previous_view .== 0)
     else
-        return !any(t_now_view .== 0)
-    end
-end
-
-"It checks if the sum of the elements in the matrix is less than the number of generators for both the current 
-time step and the previous time step, and returns false if this condition is not met."
-function check_availability(generators::Generators, asset_states::Matrix{Float32}, t_now::Int, t_previous::Int)::Bool
-    if t_previous ≠ 0
-        if sum(@view(asset_states[:,t_now])) < length(generators) || sum(@view(asset_states[:,t_previous])) < length(generators)
-            return false
-        else
-            return true
-        end
-    else
-        if sum(@view(asset_states[:,t_now])) < length(generators)
-            return false
-        else
-            return true
-        end
+        return !any(t_now_view .== 0) && !true
     end
 end
 

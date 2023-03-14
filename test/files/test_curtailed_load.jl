@@ -24,7 +24,7 @@
     CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
     pm = OPF.abstract_model(system, settings)
     systemstates = OPF.SystemStates(system, available=true)
-    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+    OPF.build_problem!(pm, system, 1)
     t=1
 
     @testset "G3, G7, G8 and G9 on outage" begin
@@ -186,7 +186,7 @@ end
     
     pm = OPF.abstract_model(system, settings)
     systemstates = OPF.SystemStates(system, available=true)
-    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+    OPF.build_problem!(pm, system, 1)
     t=1
 
     @testset "Outages of L12, L13" begin
@@ -558,7 +558,7 @@ end
         for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
         pm = OPF.abstract_model(system, settings)
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+        OPF.build_problem!(pm, system, 1)
 
         t=1
         OPF._update!(pm, system, systemstates, settings, t)
@@ -754,7 +754,7 @@ end
         
         pm = OPF.abstract_model(system, settings)
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+        OPF.build_problem!(pm, system, 1)
 
         t=1
         OPF._update!(pm, system, systemstates, settings, t)
@@ -1102,7 +1102,7 @@ end
         
         pm = OPF.abstract_model(system, settings)
         systemstates = OPF.SystemStates(system, available=true)
-        CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+        OPF.build_problem!(pm, system, 1)
 
         t=1
         OPF._update!(pm, system, systemstates, settings, t)

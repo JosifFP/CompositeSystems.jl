@@ -331,21 +331,25 @@ end
 ""
 function update_con_thermal_limits(pm::AbstractAPLossLessModels, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
 
-    #p_fr = con(pm, :thermal_limit_from, nw)[l]
-    #p_to = con(pm, :thermal_limit_from, nw)[l]
     f_bus = field(system, :branches, :f_bus)[l] 
     t_bus = field(system, :branches, :t_bus)[l]
     rate_a = field(system, :branches, :rate_a)[l]
     f_idx = (l, f_bus, t_bus)
+    t_idx = (l, t_bus, f_bus)
     p_fr = var(pm, :p, nw)[f_idx]
+    p_to = var(pm, :p, nw)[t_idx]
 
-    if isa(p_fr, JuMP.VariableRef) && JuMP.has_lower_bound(p_fr)
+    if isa(p_fr, JuMP.VariableRef)
         JuMP.set_lower_bound(p_fr, (-rate_a)*states.branches[l,t])
-        if JuMP.has_upper_bound(p_fr) JuMP.set_upper_bound(p_fr, rate_a*states.branches[l,t]) end
+        JuMP.set_upper_bound(p_fr, rate_a*states.branches[l,t])  
+    elseif isa(p_to, JuMP.VariableRef)
+        JuMP.set_lower_bound(p_to, (-rate_a)*states.branches[l,t])
+        JuMP.set_upper_bound(p_to, rate_a*states.branches[l,t])
     else
         JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*states.branches[l,t])
         JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*states.branches[l,t])
     end
+    
 end
 
 
