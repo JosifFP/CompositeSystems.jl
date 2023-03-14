@@ -61,8 +61,8 @@ function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states:
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
-    g, b = calc_branch_y(field(system, :branches), i)
-    tr, ti = calc_branch_t(field(system, :branches), i)
+    g, b = calc_branch_y(system.branches, i)
+    tr, ti = calc_branch_t(system.branches, i)
     tm = field(system, :branches, :tap)[i]
     va_fr  = var(pm, :va, nw)[f_bus]
     va_to  = var(pm, :va, nw)[t_bus]

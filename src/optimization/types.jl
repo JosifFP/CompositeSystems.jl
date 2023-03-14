@@ -64,7 +64,7 @@ struct Topology
         busarcs = Dict((i, Tuple{Int, Int, Int}[]) for i in eachindex(key_buses))
         bus_asset!(busarcs, arcs)
 
-        vad_min,vad_max = calc_theta_delta_bounds(key_buses, key_branches, field(system, :branches))
+        vad_min,vad_max = calc_theta_delta_bounds(key_buses, key_branches, system.branches)
         delta_bounds = [vad_min,vad_max]
 
         return new(

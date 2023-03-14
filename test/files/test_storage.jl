@@ -19,7 +19,7 @@
     system.storages.energy_rating[1] = 2
     pm = OPF.abstract_model(system, settings)
     systemstates = OPF.SystemStates(system, available=true)
-    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+    OPF.build_problem!(pm, system, 1)
     OPF.OPF.field(system, :storages, :energy)[1] = 0.0
     
     t=1
@@ -248,7 +248,7 @@ end
     system.storages.energy_rating[1] = 2
     pm = OPF.abstract_model(system, settings)
     systemstates = OPF.SystemStates(system, available=true)
-    CompositeAdequacy.initialize_powermodel!(pm, system, systemstates)
+    OPF.build_problem!(pm, system, 1)
     OPF.OPF.field(system, :storages, :energy)[1] = 0.0
     
     t=1

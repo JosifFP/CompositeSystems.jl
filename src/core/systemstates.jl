@@ -9,7 +9,7 @@ struct SystemStates <: AbstractState
     branches::Matrix{Bool}
     commonbranches::Matrix{Bool}
     shunts::Matrix{Bool}
-    generators::Matrix{Float32}
+    generators::Matrix{Bool}
     storages::Matrix{Bool}
     generatorstorages::Matrix{Bool}
     se::Matrix{Float64}
@@ -34,7 +34,7 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     branches = Array{Bool, 2}(undef, length(system.branches), N)
     shunts = Array{Bool, 2}(undef, length(system.shunts), N)
     commonbranches = Array{Bool, 2}(undef, length(system.commonbranches), N)
-    generators = Array{Float32, 2}(undef, length(system.generators), N)
+    generators = Array{Bool, 2}(undef, length(system.generators), N)
     storages = Array{Bool, 2}(undef, length(system.storages), N)
     generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
 
@@ -49,8 +49,6 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     fill!(gse, 0)
     fill!(plc, 0)
     fill!(qlc, 0)
-
-
     
     if available==true
         fill!(branches, 1)
@@ -66,7 +64,7 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
 end
 
 ""
-struct NextTransition <: AbstractState
+struct SingleState <: AbstractState
 
     branches_available::Vector{Bool}
     branches_nexttransition::Vector{Int}
@@ -81,7 +79,7 @@ struct NextTransition <: AbstractState
     generatorstorages_available::Vector{Bool}
     generatorstorages_nexttransition::Vector{Int}
 
-    function NextTransition(system::SystemModel)
+    function SingleState(system::SystemModel)
 
         nbranches = length(system.branches)
         branches_available = Vector{Bool}(undef, nbranches)
@@ -106,7 +104,7 @@ struct NextTransition <: AbstractState
         ngenstors = length(system.generatorstorages)
         generatorstorages_available = Vector{Bool}(undef, ngenstors)
         generatorstorages_nexttransition = Vector{Int}(undef, ngenstors)
-
+        
         return new(
             branches_available, branches_nexttransition,
             shunts_available, shunts_nexttransition,

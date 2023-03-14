@@ -145,7 +145,6 @@ end
 
 ""
 function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
-
     if iszero(s%100) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
@@ -153,12 +152,6 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     else
         MOIU.reset_optimizer(pm.model)
     end
-    fill!(states.plc, 0)
-    fill!(states.qlc, 0)
-    fill!(states.se, 0)
-    fill!(states.loads, 1)
-    fill!(states.storages, 1)
-    fill!(states.generatorstorages, 1)
     return
 end
 
@@ -449,8 +442,8 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
     map!(x -> Int[], topology(pm, :busarcs))
     bus_asset!(topology(pm, :busarcs), arcs)
 
-    update_buspair_parameters!(topology(pm, :buspairs), field(system, :branches), key_branches)
-    #vad_min,vad_max = calc_theta_delta_bounds(pm, field(system, :branches))
+    update_buspair_parameters!(topology(pm, :buspairs), system.branches, key_branches)
+    #vad_min,vad_max = calc_theta_delta_bounds(pm, system.branches)
     #topology(pm, :delta_bounds)[1] = vad_min
     #topology(pm, :delta_bounds)[2] = vad_max
     return
@@ -513,7 +506,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         end
     end
 
-    ccs = calc_connected_components(pm.topology, field(system, :branches))
+    ccs = calc_connected_components(pm.topology, system.branches)
     ccs_order = sort(collect(ccs); by=length)
     largest_cc = ccs_order[end]
 
@@ -529,7 +522,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         length(largest_cc)
         length(system.buses)
     
-        if system.ref_buses[1] in largest_cc && length(largest_cc) < length(field(system, :buses))
+        if system.ref_buses[1] in largest_cc && length(largest_cc) < length(system.buses)
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
                     states.buses[i,t] = 4
@@ -615,7 +608,7 @@ function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::S
     update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
     
     update_idxs!(
-        filter(i->states.generators[i,t]!=0, field(system, :generators, :keys)), 
+        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
         topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses)
     )
 
@@ -689,10 +682,10 @@ function _update!(pm::AbstractPowerModel, system::SystemModel{N}, states::System
     
     if N == 1
         _update_topology!(pm, system, states, settings, t)
-        _update_method!(pm, system, states, t, force_pmin=force_pmin)
+        _update_problem!(pm, system, states, t, force_pmin=force_pmin)
     else
         update_topology!(pm, system, states, settings, t)
-        update_method!(pm, system, states, t)
+        update_problem!(pm, system, states, t)
     end
     JuMP.optimize!(pm.model)
     build_result!(pm, system, states, t)

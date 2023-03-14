@@ -26,7 +26,6 @@ function assess(
     end
 
     return finalize(results, system, method.threaded ? threads : 1)
-    
 end
 
 """
@@ -47,21 +46,23 @@ function assess(
 
     pm = abstract_model(system, settings)
     systemstates = SystemStates(system)
+    singlestate = SingleState(system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-        settings.count_samples && println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        initialize_states!(rng, systemstates, system) #creates the up/down sequence for each device.
+        initialize!(rng, systemstates, singlestate, system) #creates the up/down sequence for each device.
+
+        settings.count_samples && println("s=$(s)")
 
         if OPF.is_empty(pm.model.moi_backend)
-            initialize_powermodel!(pm, system, systemstates)
+            OPF.build_problem!(pm, system, 1)
         end
 
         for t in 1:N
-            #println("t=$(t)")
-            update!(pm, system, systemstates, settings, t)
+            update!(rng, systemstates, singlestate, system, pm, settings, t)
+            solve!(systemstates, system, pm, settings, t)
             foreach(recorder -> record!(recorder, systemstates, s, t), recorders)
         end
 
@@ -73,39 +74,64 @@ function assess(
 end
 
 """
-The initialize_states! function creates an initial state of the system by using the Philox4x random number generator to randomly determine the availability 
+The initialize! function creates an initial state of the system by using the Philox4x random number generator to randomly determine the availability 
 of different assets (buses, branches, common branches, generators, and storages) for each time step.
 """
-function initialize_states!(rng::AbstractRNG, states::SystemStates, system::SystemModel{N}) where N
+function initialize!(rng::AbstractRNG, states::SystemStates, singlestate::SingleState, system::SystemModel{N}) where N
 
-    singlestates = NextTransition(system)
-    initialize_all_states!(rng, states, singlestates, system)
+    initialize_availability!(rng, singlestate.branches_available, 
+        singlestate.branches_nexttransition, system.branches, N)
+    
+    initialize_availability!(rng, singlestate.commonbranches_available, 
+        singlestate.commonbranches_nexttransition, system.commonbranches, N)
+    
+    initialize_availability!(rng, singlestate.generators_available, 
+        singlestate.generators_nexttransition, system.generators, N)
+        
+    initialize_availability!(states.buses, system.buses, N)
 
-    for t in 1:N
-        update_all_states!(rng, states, singlestates, system, t)
-    end
-    initialize_availability!(states.buses, field(system, :buses), N)
-    fill!(states.se, 0.0)
-    fill!(states.storages, 1.0)
-    fill!(states.shunts, 1.0)
+    fill!(states.plc, 0)
+    fill!(states.qlc, 0)
+    fill!(states.se, 0)
+    fill!(states.loads, 1)
+    fill!(states.shunts, 1)
+    fill!(states.storages, 1)
+    fill!(states.generatorstorages, 1)
     return
 end
 
-""
-function initialize_powermodel!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates)
-    build_method!(pm, system, 1)
-    return
-end
+"The function update! updates the system states for a given time step t. 
+It updates the topology of the system with the function update_topology!, 
+then updates the method and power model with update_problem!"
+function update!(rng::AbstractRNG, states::SystemStates,
+    singlestate::SingleState, system::SystemModel{N}, pm::AbstractPowerModel, settings::Settings, t::Int) where N
 
-"The function update! updates the system states and power model for a given time step t. 
-It does this by first updating the topology of the system with the function update_topology!, 
-then updating the method and power model with update_method!, and finally optimizing the method with optimize_method!"
-function update!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    update_availability!(rng, states.branches,
+        singlestate.branches_available, singlestate.branches_nexttransition, system.branches, t, N)
+
+    update_availability!(rng, states.commonbranches,
+        singlestate.commonbranches_available, singlestate.commonbranches_nexttransition, system.commonbranches, t, N)
+
+    update_availability!(rng, states.generators,
+        singlestate.generators_available, singlestate.generators_nexttransition, system.generators, t, N)
+
+    apply_common_outages!(states, system.branches, t)
+
     update_topology!(pm, system, states, settings, t)
-    update_method!(pm, system, states, t)
-    optimize_method!(pm, system, states, settings, t)
-    return
+
+    update_problem!(pm, system, states, t)
+
 end
+
+
+"It updates the topology of the system with the function update_topology!, 
+then updates the method and power model with update_problem!, and finally optimizing the method with optimize_method!"
+function solve!(states::SystemStates,
+    system::SystemModel{N}, pm::AbstractPowerModel, settings::Settings, t::Int) where N
+
+    optimize_method!(pm, states, settings, system, t)
+end
+
 
 include("result_shortfall.jl")
 include("result_availability.jl")

@@ -156,8 +156,8 @@ function con_ohms_yt_on_off(pm::AbstractPowerModel, system::SystemModel, l::Int;
     
     f_bus = field(system, :branches, :f_bus)[l]
     t_bus = field(system, :branches, :t_bus)[l]
-    g, b = calc_branch_y(field(system, :branches), l)
-    tr, ti = calc_branch_t(field(system, :branches), l)
+    g, b = calc_branch_y(system.branches, l)
+    tr, ti = calc_branch_t(system.branches, l)
     tm = field(system, :branches, :tap)[l]
 
     va_fr  = var(pm, :va, nw)[f_bus]
@@ -175,8 +175,8 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::In
     
     f_bus = field(system, :branches, :f_bus)[l]
     t_bus = field(system, :branches, :t_bus)[l]
-    g, b = calc_branch_y(field(system, :branches), l)
-    tr, ti = calc_branch_t(field(system, :branches), l)
+    g, b = calc_branch_y(system.branches, l)
+    tr, ti = calc_branch_t(system.branches, l)
     tm = field(system, :branches, :tap)[l]
     va_fr  = var(pm, :va, nw)[f_bus]
     va_to  = var(pm, :va, nw)[t_bus]
