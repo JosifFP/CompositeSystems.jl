@@ -16,218 +16,26 @@ settings = CompositeSystems.Settings(
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCPPowerModel,
     select_largest_splitnetwork = false,
-    deactivate_isolated_bus_gens_stors = false,
+    deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
-    set_string_names_on_creation = true,
+    set_string_names_on_creation = false,
     count_samples = false
 )
 
-method = CompositeAdequacy.SequentialMCS(samples=15000, seed=100, threaded=true)
+timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
-run_mcs(method, resultspecs)
+method = CompositeAdequacy.SequentialMCS(samples=7500, seed=100, threaded=true)
+system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+@time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+CompositeSystems.print_results(system, shortfall)
+
+
+#run_mcs(method, resultspecs)
 
 
 function run_mcs(method, resultspecs)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = false,
-        min_generators_off = 0,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-    Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = false,
-        min_generators_off = 1,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 0,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-    Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 1,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.LPACCPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 0,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-
-    timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
-    Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = false,
-        min_generators_off = 0,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
-    Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = false,
-        min_generators_off = 1,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-
-    timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
-    Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 0,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-
-    timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
-    Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 1,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCMPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 0,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-    Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
-    settings = CompositeSystems.Settings(
-        gurobi_optimizer_3,
-        jump_modelmode = JuMP.AUTOMATIC,
-        powermodel_formulation = OPF.DCMPPowerModel,
-        select_largest_splitnetwork = false,
-        deactivate_isolated_bus_gens_stors = true,
-        min_generators_off = 1,
-        set_string_names_on_creation = false,
-        count_samples = false
-    )
-    timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-    Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    CompositeSystems.print_results(system, shortfall)
-
 end
 
 
