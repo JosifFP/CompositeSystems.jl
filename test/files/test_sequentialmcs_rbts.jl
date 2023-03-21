@@ -25,11 +25,29 @@ settings = CompositeSystems.Settings(
 timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
 rawfile = "test/data/RBTS/Base/RBTS_AC.m"
 Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-
-method = CompositeAdequacy.SequentialMCS(samples=7500, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-@time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-CompositeSystems.print_results(system, shortfall)
+method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=true)
+shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+@testset "Sequential MCS, 1000 samples, RBTS" begin
+    timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+    Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+    method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=true)
+    shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    system_EDLC_ps = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
+    system_EENS_ps = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.185849]
+    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys)), system_EDLC_ps; atol = 1e-4)
+    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys)), system_EENS_ps; atol = 1e-4)
+
+    method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=false)
+    shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    system_EDLC = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
+    system_EENS = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.185849]
+    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys)), system_EDLC; atol = 1e-4)
+    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys)), system_EENS; atol = 1e-4)
+end
 
 
 #run_mcs(method, resultspecs)
@@ -90,12 +108,3 @@ CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall, system.buses.keys)
 CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall))
 CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall))
 
-@testset "Sequential MCS, 1000 samples, RBTS" begin
-    timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
-    Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-    system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    @time shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys)), [0.0, 0.0, 1.182, 0.0, 0.002, 10.357]; atol = 1e-3)
-    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys)), [0.0, 0.0, 10.682, 0.0, 0.0194, 127.212]; atol = 1e-3)
-end

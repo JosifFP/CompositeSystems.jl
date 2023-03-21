@@ -75,14 +75,14 @@ function print_results(system::SystemModel, shortfall::ShortfallResult)
 
         rename!(xf[1], "summary")
 
-        xf[1]["A1"] = "mean system LOLE"
-        xf[1]["A2"] = val.(LOLE.(shortfall))
-        xf[1]["B1"] = "stderror LOLE"
-        xf[1]["B2"] = stderror.(LOLE.(shortfall))
-        xf[1]["C1"] = "LOLE-MEAN"
-        xf[1]["C2", dim=1] = collect(val.(LOLE.(shortfall, system.buses.keys)))
-        xf[1]["D1"] = "LOLE-STDERROR"
-        xf[1]["D2", dim=1] = collect(stderror.(LOLE.(shortfall, system.buses.keys)))
+        xf[1]["A1"] = "mean system EDLC"
+        xf[1]["A2"] = val.(EDLC.(shortfall))
+        xf[1]["B1"] = "stderror EDLC"
+        xf[1]["B2"] = stderror.(EDLC.(shortfall))
+        xf[1]["C1"] = "EDLC-MEAN"
+        xf[1]["C2", dim=1] = collect(val.(EDLC.(shortfall, system.buses.keys)))
+        xf[1]["D1"] = "EDLC-STDERROR"
+        xf[1]["D2", dim=1] = collect(stderror.(EDLC.(shortfall, system.buses.keys)))
 
         xf[1]["E1"] = "mean system EENS"
         xf[1]["E2"] = val.(EENS.(shortfall))

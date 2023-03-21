@@ -388,8 +388,6 @@ end
         total_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
         total_qg = sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :))))
     
-        @show OPF.build_sol_values(OPF.var(pm, :phi, :))
-        
         data = OPF.build_network(rawfile, symbol=false)
         result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
     

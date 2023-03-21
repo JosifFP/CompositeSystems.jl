@@ -48,11 +48,11 @@ method = SequentialMCS(samples=15000, seed=100, threaded=false)
 
 @time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
 
-CompositeSystems.LOLE.(shortfall, system.buses.keys)
+CompositeSystems.EDLC.(shortfall, system.buses.keys)
 CompositeSystems.EENS.(shortfall, system.buses.keys)
-CompositeSystems.LOLE.(shortfall)
+CompositeSystems.EDLC.(shortfall)
 CompositeSystems.EENS.(shortfall)
-val.(CompositeSystems.LOLE.(shortfall, system.buses.keys))
+val.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 
 
@@ -84,7 +84,7 @@ busescol = system.buses.keys
 println("SpatioTemporal LOLPs:")
 display(vcat(
     hcat("", timestamprow),
-    hcat(busescol, LOLE(shortfall, :, :))
+    hcat(busescol, EDLC(shortfall, :, :))
 )); println()
 
 println("SpatioTemporal EUEs:")

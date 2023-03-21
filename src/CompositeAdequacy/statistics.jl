@@ -91,25 +91,25 @@ Base.isapprox(x::ReliabilityMetric, y::ReliabilityMetric) =
 
 # Expected Duration of Load Curtailments
 
-struct LOLE{N,L,T<:Period} <: ReliabilityMetric
+struct EDLC{N,L,T<:Period} <: ReliabilityMetric
 
-    LOLE::MeanEstimate
+    EDLC::MeanEstimate
 
-    function LOLE{N,L,T}(LOLE::MeanEstimate) where {N,L,T<:Period}
-        val(LOLE) >= 0 || throw(DomainError(val,
+    function EDLC{N,L,T}(EDLC::MeanEstimate) where {N,L,T<:Period}
+        val(EDLC) >= 0 || throw(DomainError(val,
             "$val is not a valid expected count of event-periods"))
-        new{N,L,T}(LOLE)
+        new{N,L,T}(EDLC)
     end
 
 end
 
-val(x::LOLE) = val(x.LOLE)
-stderror(x::LOLE) = stderror(x.LOLE)
+val(x::EDLC) = val(x.EDLC)
+stderror(x::EDLC) = stderror(x.EDLC)
 
-function Base.show(io::IO, x::LOLE{N,L,T}) where {N,L,T}
+function Base.show(io::IO, x::EDLC{N,L,T}) where {N,L,T}
 
     t_symbol = unitsymbol(T)
-    print(io, "LOLE = ", x.LOLE, " ",
+    print(io, "EDLC = ", x.EDLC, " ",
           L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")", "/",
           N*L == 1 ? "" : N*L, t_symbol)
 
