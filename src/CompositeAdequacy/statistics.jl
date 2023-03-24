@@ -81,7 +81,6 @@ function stringprecision(x::MeanEstimate)
         #rounded_d = round(x.estimate, digits=3)
         #v_rounded = string(decimal(rounded_d))
         #s_rounded = string(decimal(stderr_round_d))
-
     end
     return v_rounded, s_rounded
 end

@@ -8,13 +8,12 @@ import BenchmarkTools: @btime
 using XLSX, Dates
 include("solvers.jl")
 
-resultspecs = (Shortfall(), GeneratorAvailability())
 settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
-    deactivate_isolated_bus_gens_stors = false,
+    deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
     set_string_names_on_creation = false
 )
@@ -22,7 +21,7 @@ settings = CompositeSystems.Settings(
 timeseriesfile = "test/data/RTS/Loads_system.xlsx"
 rawfile = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile = "test/data/others/Storage/R_RTS_strg.m"
-resultspecs = (Shortfall(), GeneratorAvailability())
+resultspecs = (Shortfall(), BranchAvailability())
 method = SequentialMCS(samples=5000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
