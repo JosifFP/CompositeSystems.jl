@@ -128,7 +128,6 @@ end
 then updates the method and power model with update_problem!, and finally optimizing the method with optimize_method!"
 function solve!(states::SystemStates,
     system::SystemModel{N}, pm::AbstractPowerModel, settings::Settings, t::Int) where N
-
     optimize_method!(pm, states, settings, system, t)
 end
 

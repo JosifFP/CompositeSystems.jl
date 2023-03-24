@@ -166,7 +166,8 @@ function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::S
 end
 
 ""
-function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+function _update_topology!(
+    pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
     simplify!(pm, system, states, settings, t)
     update_arcs!(pm, system, states.branches, t)
     update_all_idxs!(pm, system, states, t)
@@ -174,7 +175,8 @@ function _update_topology!(pm::AbstractPowerModel, system::SystemModel, states::
 end
 
 ""
-function bus_asset!(asset_dict_nodes::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, asset_buses::Vector{Int})
+function bus_asset!(
+    asset_dict_nodes::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, asset_buses::Vector{Int})
     for k in key_assets
         push!(asset_dict_nodes[asset_buses[k]], k)
     end
@@ -219,14 +221,17 @@ function container_spec(dictionary::Dict{Tuple{Int, Int}, Any}, timesteps::UnitR
 end
 
 ""
-function container_spec(dictionary::Dict{Tuple{Int, Int, Int}, Any}, timesteps::UnitRange{Int})
+function container_spec(
+    dictionary::Dict{Tuple{Int, Int, Int}, Any}, timesteps::UnitRange{Int})
     tmp = DenseAxisArray{Dict}(undef, [i for i in timesteps])
     cont = fill!(tmp, dictionary)
     return cont
 end
 
 ""
-function add_sol_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: Matrix{Float64}}
+function add_sol_container!(
+    container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: Matrix{Float64}}
 
     var_container = _container_spec(Float64, keys, timesteps)
     _assign_container!(container, var_key, var_container)
@@ -234,7 +239,9 @@ function add_sol_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::V
 end
 
 ""
-function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_con_container!(
+    container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Int}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
     con_container = container_spec(value, timesteps)
@@ -243,7 +250,9 @@ function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::V
 end
 
 ""
-function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Base.KeySet{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_con_container!(
+    container::Dict{Symbol, T}, con_key::Symbol, keys::Base.KeySet{Tuple{Int, Int}}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
     con_container = container_spec(value, timesteps)
@@ -252,7 +261,9 @@ function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::B
 end
 
 ""
-function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_con_container!(
+    container::Dict{Symbol, T}, con_key::Symbol, keys::Vector{Tuple{Int, Int}}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
     con_container = container_spec(value, timesteps)
@@ -261,7 +272,9 @@ function add_con_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::V
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_var_container!(
+    container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Int}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.VariableRef, keys)
     var_container = container_spec(value, timesteps)
@@ -271,7 +284,9 @@ end
 
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::Base.KeySet{Tuple{Int, Int}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_var_container!(
+    container::Dict{Symbol, T}, con_key::Symbol, keys::Base.KeySet{Tuple{Int, Int}}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.VariableRef, keys)
     con_container = container_spec(value, timesteps)
@@ -280,7 +295,9 @@ function add_var_container!(container::Dict{Symbol, T}, con_key::Symbol, keys::B
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, dict_keys::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_var_container!(
+    container::Dict{Symbol, T}, var_key::Symbol, dict_keys::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = Dict{Tuple{Int, Int}, Any}(((i,j), undef) for (i,j) in keys(dict_keys))
     var_container = container_spec(value, timesteps)
@@ -289,7 +306,9 @@ function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, dict_ke
 end
 
 ""
-function add_var_container!(container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function add_var_container!(
+    container::Dict{Symbol, T}, var_key::Symbol, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
     var_container = container_spec(value, timesteps)
@@ -378,7 +397,8 @@ function Base.getproperty(e::Settings, s::Symbol)
 end
 
 ""
-function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; timesteps::UnitRange{Int}=1:1) where {T <: Dict}
+function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: Dict}
 
     value = Dict{Tuple{Int, Int, Int}, Any}(((l,i,j), undef) for (l,i,j) in keys)
     for i in timesteps
@@ -388,7 +408,8 @@ function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Union{M
 end
 
 ""
-function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Int}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.VariableRef, keys)
     for i in timesteps
@@ -398,7 +419,8 @@ function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Int}; t
 end
 
 ""
-function reset_con_container!(container::DenseAxisArray{T}, keys::Vector{Int}; timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
+function reset_con_container!(container::DenseAxisArray{T}, keys::Vector{Int}; 
+    timesteps::UnitRange{Int}=1:1) where {T <: AbstractArray}
 
     value = _container_spec(JuMP.ConstraintRef, keys)
     for i in timesteps
@@ -413,7 +435,8 @@ function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int
 end
 
 "Update asset_idxs and asset_nodes"
-function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, asset_dict_nodes::Dict{Int, Vector{Int}}, asset_buses::Vector{Int})
+function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, 
+    asset_dict_nodes::Dict{Int, Vector{Int}}, asset_buses::Vector{Int})
 
     assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
     map!(x -> Int[], asset_dict_nodes)
@@ -477,13 +500,14 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     incident_active_edge = incident_branch_count
                 end
                 if incident_active_edge <= 1 && length(topology(pm, :bus_generators)[i]) == 0 && 
-                    length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 && length(topology(pm, :bus_shunts)[i]) == 0
+                    length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 && 
+                    length(topology(pm, :bus_shunts)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
                 end
                 if settings.deactivate_isolated_bus_gens_stors == true && incident_active_edge == 0 && 
-                    (length(topology(pm, :bus_generators)[i]) > 0 || length(topology(pm, :bus_storages)[i]) > 0)
+                    length(topology(pm, :bus_generators)[i]) > 0 && length(topology(pm, :bus_storages)[i]) == 0
                     states.buses[i,t] = 4
                     changed = true
                 end
@@ -501,8 +525,13 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
                     end
                 end
             end
-            revised == true && update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
-            changed == true && update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+            revised == true && update_idxs!(
+                filter(i-> states.branches[i,t], field(system, :branches, :keys)), 
+                topology(pm, :branches_idxs))
+
+            changed == true && update_idxs!(
+                filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), 
+                topology(pm, :buses_idxs))
         end
     end
 
@@ -570,8 +599,12 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
         end
     end
     
-    revised == true && update_idxs!(filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
-    changed == true && update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
+    revised == true && update_idxs!(
+        filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs)
+    )
+    changed == true && update_idxs!(
+        filter(i-> states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs)
+    )
 
     for i in field(system, :buses, :keys)
         if states.buses[i,t] == 4
@@ -604,28 +637,27 @@ end
 ""
 function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
 
-    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs))
-    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs))
+    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), 
+        topology(pm, :buses_idxs))
+
+    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), 
+        topology(pm, :branches_idxs))
     
     update_idxs!(
         filter(i->states.generators[i,t], field(system, :generators, :keys)), 
-        topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses)
-    )
+        topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses))
 
     update_idxs!(
         filter(i->states.storages[i,t], field(system, :storages, :keys)), 
-        topology(pm, :storages_idxs), topology(pm, :bus_storages), field(system, :storages, :buses)
-    )
+        topology(pm, :storages_idxs), topology(pm, :bus_storages), field(system, :storages, :buses))
 
     update_idxs!(
         filter(i->states.loads[i,t], field(system, :loads, :keys)), 
-        topology(pm, :loads_idxs), topology(pm, :bus_loads), field(system, :loads, :buses)
-    )
+        topology(pm, :loads_idxs), topology(pm, :bus_loads), field(system, :loads, :buses))
 
     update_idxs!(
         filter(i->states.shunts[i,t], field(system, :shunts, :keys)), 
-        topology(pm, :shunts_idxs), topology(pm, :bus_shunts), field(system, :shunts, :buses)
-    )
+        topology(pm, :shunts_idxs), topology(pm, :bus_shunts), field(system, :shunts, :buses))
 
     return
 
@@ -654,7 +686,8 @@ function _check_missing_keys(dict, keys, type)
         end
     end
     if length(missing) > 0
-        @error("the formulation $(type) requires the following varible(s) $(keys) but the $(missing) variable(s) were not found in the model")
+        @error("the formulation $(type) requires the following varible(s) $(keys) 
+                but the $(missing) variable(s) were not found in the model")
     end
 end
 
