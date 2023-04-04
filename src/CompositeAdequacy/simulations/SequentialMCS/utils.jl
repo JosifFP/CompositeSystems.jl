@@ -24,6 +24,21 @@ function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::In
     return availability
 end
 
+"Empty or Initialize other variables"
+function initialize_other_states!(states::ComponentStates)
+
+    fill!(states.loads, 1)
+    fill!(states.shunts, 1)
+    fill!(states.storages, 1)
+    fill!(states.generatorstorages, 1)
+    fill!(states.stored_energy, 0)
+    fill!(states.gstored_energy, 0)
+    fill!(states.p_curtailed, 0)
+    fill!(states.flow_from, 0)
+    fill!(states.flow_to, 0)
+end
+
+
 ""
 function update_availability!(rng::AbstractRNG, updown_cycle::Matrix{Bool},
     availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
@@ -60,9 +75,8 @@ function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now:
     return t_last + 1
 end
 
-
 ""
-function apply_common_outages!(states::SystemStates, branches::Branches, t::Int)
+function apply_common_outages!(states::ComponentStates, branches::Branches, t::Int)
     if all(view(states.commonbranches,:,t)) == false
         for k in branches.keys
             if branches.common_mode[k] ≠ 0 && states.commonbranches[branches.common_mode[k],t] == false

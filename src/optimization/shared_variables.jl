@@ -155,12 +155,12 @@ end
 ""
 function var_storage_energy(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    se = var(pm, :se)[nw] = @variable(pm.model, se[assetgrouplist(topology(pm, :storages_idxs))])
+    stored_energy = var(pm, :stored_energy)[nw] = @variable(pm.model, stored_energy[assetgrouplist(topology(pm, :storages_idxs))])
 
     if bounded
         for i in assetgrouplist(topology(pm, :storages_idxs))
-            JuMP.set_lower_bound(se[i], 0)
-            JuMP.set_upper_bound(se[i], field(system, :storages, :energy_rating)[i])
+            JuMP.set_lower_bound(stored_energy[i], 0)
+            JuMP.set_upper_bound(stored_energy[i], field(system, :storages, :energy_rating)[i])
         end
     end
 end

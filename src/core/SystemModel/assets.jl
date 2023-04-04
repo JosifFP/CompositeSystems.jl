@@ -36,7 +36,8 @@ struct Buses <: AbstractAssets
         @assert all(vm .> 0)
         @assert all(base_kv .>= 0)
 
-        new(keys, Int.(zone), Int.(bus_type), Int.(bus_i), Float32.(vmax), Float32.(vmin), Float32.(base_kv), Float32.(va), Float32.(vm))
+        new(keys, Int.(zone), Int.(bus_type), Int.(bus_i), Float32.(vmax), 
+        Float32.(vmin), Float32.(base_kv), Float32.(va), Float32.(vm))
     end
 end
 
@@ -203,7 +204,8 @@ function Base.vcat(gs::G...) where {N,L,T,G <: Generators{N,L,T}}
         status[rows] = g.status
         last_idx += n
     end
-    return Generators{N,L,T}(keys, buses, pg, qg, vg, pmax, pmin, qmax, qmin, mbase, cost, state_model, λ_updn, μ_updn, λ_upde, μ_upde, pde, status)
+    return Generators{N,L,T}(keys, buses, pg, qg, vg, pmax, pmin, qmax, qmin, mbase, 
+    cost, state_model, λ_updn, μ_updn, λ_upde, μ_upde, pde, status)
     
 end
 
@@ -275,9 +277,10 @@ struct Storages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
     function Storages{N,L,T}(
         keys::Vector{Int}, buses::Vector{Int}, ps::Vector{Float32}, qs::Vector{Float32},
         energy::Vector{Float32}, energy_rating::Vector{Float32}, charge_rating::Vector{Float32}, 
-        discharge_rating::Vector{Float32}, charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32}, 
-        thermal_rating::Vector{Float32}, qmax::Vector{Float32}, qmin::Vector{Float32}, r::Vector{Float32}, 
-        x::Vector{Float32}, ploss::Vector{Float32}, qloss::Vector{Float32}, λ_updn::Vector{Float64}, μ_updn::Vector{Float64}, status::Vector{Bool}
+        discharge_rating::Vector{Float32}, charge_efficiency::Vector{Float32}, 
+        discharge_efficiency::Vector{Float32}, thermal_rating::Vector{Float32}, qmax::Vector{Float32}, 
+        qmin::Vector{Float32}, r::Vector{Float32}, x::Vector{Float32}, ploss::Vector{Float32}, 
+        qloss::Vector{Float32}, λ_updn::Vector{Float64}, μ_updn::Vector{Float64}, status::Vector{Bool}
     ) where {N,L,T}
 
         nstors = length(keys)

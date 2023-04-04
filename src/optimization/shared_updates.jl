@@ -1,6 +1,6 @@
 #***************************************************** VARIABLES *************************************************************************
 ""
-function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     
     va = var(pm, :va, nw)[i]
     if states.buses[i,t] == 4
@@ -15,19 +15,19 @@ function update_var_bus_voltage_angle(pm::AbstractPowerModel, system::SystemMode
 end
 
 ""
-function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1, force_pmin=false)
+function update_var_gen_power_real(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1, force_pmin=false)
     JuMP.set_upper_bound(var(pm, :pg, nw)[i], field(system, :generators, :pmax)[i]*states.generators[i,t])
     force_pmin && JuMP.set_lower_bound(var(pm, :pg, nw)[i], field(system, :generators, :pmin)[i]*states.generators[i,t])
 end
 
 ""
-function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     JuMP.set_upper_bound(var(pm, :qg, nw)[i], field(system, :generators, :qmax)[i]*states.generators[i,t])
     JuMP.set_lower_bound(var(pm, :qg, nw)[i], field(system, :generators, :qmin)[i]*states.generators[i,t])
 end
 
 "Defines load power factor variables to represent curtailed load in objective function"
-function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     z_demand = var(pm, :z_demand, nw)[i]
     if states.buses[i,t] == 4 && isempty(topology(pm, :bus_loads)[i])
         JuMP.set_upper_bound(z_demand, 0)
@@ -38,18 +38,18 @@ end
 
 #***************************************************** STORAGE VAR UPDATES *************************************************************************
 ""
-function update_con_storage_state(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
-    t > 1 && JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], states.se[i,t-1])
+function update_con_storage_state(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+    t > 1 && JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], states.stored_energy[i,t-1])
 end
 
 ""
-function update_var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     sc = var(pm, :sc, nw)[i]
     JuMP.set_upper_bound(sc, field(system, :storages, :charge_rating)[i]*states.storages[i,t])
 end
 
 ""
-function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     sd = var(pm, :sd, nw)[i]
     JuMP.set_upper_bound(sd, field(system, :storages, :discharge_rating)[i]*states.storages[i,t])
 end
@@ -57,7 +57,7 @@ end
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
 
 "Branch - Ohm's Law Constraints"
-function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     
     f_bus = field(system, :branches, :f_bus)[i]
     t_bus = field(system, :branches, :t_bus)[i]
@@ -76,13 +76,13 @@ function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states:
 end
 
 ""
-function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
     JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l]^2)*states.branches[l,t])
     JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l]^2)*states.branches[l,t])
 end
 
 "Branch - Phase Angle Difference Constraints "
-function update_con_voltage_angle_difference(pm::AbstractPolarModels, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+function update_con_voltage_angle_difference(pm::AbstractPolarModels, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
     
     if states.branches[l,t] == false
         vad_min = topology(pm, :delta_bounds)[1]

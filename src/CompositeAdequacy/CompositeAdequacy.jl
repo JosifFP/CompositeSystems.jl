@@ -24,7 +24,7 @@
         ReliabilityMetric, EDLC, EENS, val, stderror,
 
         # Simulation specification
-        SequentialMCS, NonSequentialMCS, accumulator,
+        SequentialMCS, accumulator,
 
         # Result specifications
         Shortfall, ShortfallSamples,

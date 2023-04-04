@@ -1,8 +1,6 @@
-"Definition of States"
-abstract type AbstractState end
 
-"SystemStates structure with matrices for Sequential MCS"
-struct SystemStates <: AbstractState
+"ComponentStates structure with matrices for Sequential MCS"
+struct ComponentStates
 
     buses::Matrix{Int}
     loads::Matrix{Bool}
@@ -12,14 +10,17 @@ struct SystemStates <: AbstractState
     generators::Matrix{Bool}
     storages::Matrix{Bool}
     generatorstorages::Matrix{Bool}
-    se::Matrix{Float64}
-    gse::Matrix{Float64}
-    plc::Vector{Float64}
-    qlc::Vector{Float64}
+    stored_energy::Matrix{Float64}
+    gstored_energy::Matrix{Float64}
+    p_curtailed::Vector{Float64}
+    q_curtailed::Vector{Float64}
+    flow_from::Vector{Float64}
+    flow_to::Vector{Float64}
+
 end
 
-"SystemStates structure with matrices for Sequential MCS"
-function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
+"ComponentStates structure with matrices for Sequential MCS"
+function ComponentStates(system::SystemModel{N}; available::Bool=false) where {N}
 
     bus_type = field(system, :buses, :bus_type)
     buses = Array{Int, 2}(undef, length(system.buses), N)
@@ -38,33 +39,39 @@ function SystemStates(system::SystemModel{N}; available::Bool=false) where {N}
     storages = Array{Bool, 2}(undef, length(system.storages), N)
     generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
 
-    se = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
-    gse = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
-    plc = Array{Float64}(undef, length(system.buses))
-    qlc = Array{Float64}(undef, length(system.buses))
+    stored_energy = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
+    gstored_energy = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
+    p_curtailed = Array{Float64}(undef, length(system.buses)) #curtailed load in p.u. (active power)
+    q_curtailed = Array{Float64}(undef, length(system.buses)) #curtailed load in p.u. (reactive power)
+    flow_from = Array{Float64}(undef, length(system.branches)) # Active power withdrawn at the from bus
+    flow_to = Array{Float64}(undef, length(system.branches)) # Active power withdrawn at the from bus
 
     fill!(loads, 1)
     fill!(shunts, 1)
-    fill!(se, 0)
-    fill!(gse, 0)
-    fill!(plc, 0)
-    fill!(qlc, 0)
+    fill!(stored_energy, 0)
+    fill!(gstored_energy, 0)
+    fill!(p_curtailed, 0)
+    fill!(q_curtailed, 0)
+    fill!(flow_from, 0)
+    fill!(flow_to, 0)
     
     if available==true
         fill!(branches, 1)
         fill!(commonbranches, 1)
-        fill!(shunts, 1)
         fill!(generators, 1)
         fill!(storages, 1)
         fill!(generatorstorages, 1)
     end
 
-    return SystemStates(buses, loads, branches, commonbranches, shunts, generators, storages, generatorstorages, se, gse, plc, qlc)
-    
+    return ComponentStates(
+        buses, loads, branches, commonbranches, shunts, generators, 
+        storages, generatorstorages, stored_energy, gstored_energy, 
+        p_curtailed, q_curtailed, flow_from, flow_to
+    )
 end
 
 ""
-struct SingleState <: AbstractState
+struct StateTransition
 
     branches_available::Vector{Bool}
     branches_nexttransition::Vector{Int}
@@ -79,7 +86,7 @@ struct SingleState <: AbstractState
     generatorstorages_available::Vector{Bool}
     generatorstorages_nexttransition::Vector{Int}
 
-    function SingleState(system::SystemModel)
+    function StateTransition(system::SystemModel)
 
         nbranches = length(system.branches)
         branches_available = Vector{Bool}(undef, nbranches)

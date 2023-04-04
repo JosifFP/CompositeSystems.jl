@@ -25,12 +25,12 @@ resultspecs = (Shortfall(), BranchAvailability())
 method = SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
-for bus in 1:1:5
-    run_mcs(system, method, settings, resultspecs, bus)
-end
+
+
+
 
 function run_mcs(system, method, settings, resultspecs, bus::Int)
-    for j in 0.25:0.25:3.0
+    for j in 0.25:0.25:2.0
         system.storages.buses[1] = bus
         system.storages.charge_rating[1] = j
         system.storages.discharge_rating[1] = j
@@ -43,3 +43,9 @@ function run_mcs(system, method, settings, resultspecs, bus::Int)
         end
     end
 end
+
+for bus in 6:1:7
+    run_mcs(system, method, settings, resultspecs, bus)
+end
+
+#bus 6, power_rating=1.0

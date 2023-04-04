@@ -49,7 +49,7 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel, t)
 end
 
 ""
-function update_problem!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+function update_problem!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
     update_generators!(pm, system, states, t, force_pmin=force_pmin)
     update_branches!(pm, system, states, t)
     update_shunts!(pm, system, states, t)
@@ -58,7 +58,7 @@ function update_problem!(pm::AbstractPowerModel, system::SystemModel, states::Sy
     return pm
 end
 
-function _update_problem!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+function _update_problem!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
 
     for i in field(system, :generators, :keys)
         update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
@@ -82,7 +82,7 @@ function _update_problem!(pm::AbstractPowerModel, system::SystemModel, states::S
 end
 
 ""
-function update_generators!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; force_pmin::Bool=false)
+function update_generators!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
     if !check_availability(states.generators, t, t-1)
         for i in field(system, :generators, :keys)
             update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
@@ -92,7 +92,7 @@ function update_generators!(pm::AbstractPowerModel, system::SystemModel, states:
 end
 
 ""
-function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)
     if !check_availability(states.branches, t, t-1)
         for i in field(system, :branches, :keys)
             update_var_branch_indicator(pm, system, states, i, t)
@@ -104,7 +104,7 @@ function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::S
 end
 
 ""
-function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)
     if !check_availability(states.shunts, t, t-1) || !check_availability(states.branches, t, t-1)
         for i in field(system, :shunts, :keys)
             update_var_shunt_admittance_factor(pm, system, states, i, t)
@@ -113,7 +113,7 @@ function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::Sys
 end
 
 ""
-function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)
     for i in field(system, :storages, :keys)
         update_con_storage_state(pm, system, states, i, t)
         #if !check_availability(states.storages, t, t-1)
@@ -124,11 +124,13 @@ function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::S
 end
 
 ""
-function update_buses!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_buses!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)  
     for i in field(system, :buses, :keys)
-        update_var_load_power_factor(pm, system, states, i, t)
-        update_var_bus_voltage_angle(pm, system, states, i, t)
         update_con_power_balance(pm, system, states, i, t)
+        if !check_availability(states.buses, t, t-1)
+            update_var_load_power_factor(pm, system, states, i, t)
+            update_var_bus_voltage_angle(pm, system, states, i, t)
+        end
     end
 end
 
@@ -184,7 +186,7 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 end
 
 ""
-function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
     
     _update_topology!(pm, system, states, settings, t)
 
@@ -210,23 +212,6 @@ function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::Syste
     JuMP.optimize!(pm.model)
     return pm
 
-end
-
-"""
-Optimizes the power model and update the system states based on the results of the optimization. 
-The function first checks if there are any changes in the branch, storage, or generator states at time step t 
-compared to the previous time step. If there are any changes, the function calls JuMP.optimize!(pm.model) 
-to optimize the power model and then calls build_result!(pm, system, states, t) to update the system states. 
-If there are no changes, it fills the states.plc variable with zeros.
-"""
-function optimize_method!(pm::AbstractPowerModel, states::SystemStates, settings::Settings, system::SystemModel, t::Int)
-    if length(system.storages) ≠ 0 || all(states.branches[:,t]) ≠ true || sum(states.generators[:, t]) < length(system.generators) - settings.min_generators_off
-        JuMP.optimize!(pm.model)
-        build_result!(pm, system, states, t)
-    else
-        fill!(states.plc, 0.0)
-    end
-    return
 end
 
 "Classic OPF objective function without nonlinear equations"
@@ -275,7 +260,7 @@ function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::Sys
     for i in assetgrouplist(topology(pm, :buses_idxs))
         bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
         load_cost[i] = rescale*JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
-        se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :se, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
+        se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :stored_energy, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
     end
 
     fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
@@ -295,89 +280,67 @@ function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemMo
     return @objective(pm.model, MIN_SENSE, sum(load_cost[i] for i in field(system, :buses, :keys)))
 end
 
-""
-function build_result!(pm::AbstractDCPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
-
-    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
-        
-        plc = build_sol_values(var(pm, :z_demand, nw))
-        se = build_sol_values(var(pm, :se, nw))
-    
-        for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if states.buses[i,t] == 4
-                states.plc[i] = bus_pd
-            else
-                !haskey(plc, i) && get!(plc, i, bus_pd)
-                states.plc[i] = bus_pd*(1 - getindex(plc, i))
-            end
-        end
-        for i in field(system, :storages, :keys)
-            haskey(se, i) == false && get!(se, i, 0.0)
-            states.se[i,t] = getindex(se, i)
-        end
-    else
-        println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t])")
-        #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
-        for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if states.buses[i,t] == 4
-                states.plc[i] = bus_pd
-            else
-                states.plc[i] = 0
-            end
-        end
-        for i in field(system, :storages, :keys)
-            states.se[i,t] = states.se[i,t-1]
-        end
-    end
-    return
-end
-
-
 "This function is used to build the results of the optimization problem for the DC Power Model. 
-It first checks if the optimization problem has been solved optimally or locally, and if so, it retrieves the values 
-of the variables z_demand and se from the solution and updates the corresponding fields in the states struct."
-function build_result!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int; nw::Int=1)
+# It first checks if the optimization problem has been solved optimally or locally, and if so, it retrieves the values 
+# of the variables z_demand and stored_energy from the solution and updates the corresponding fields in the states struct."
+function build_result!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int; nw::Int=1, changes::Bool=true)
 
-    if termination_status(pm.model) == LOCALLY_SOLVED || termination_status(pm.model) == OPTIMAL
-        
-        plc = build_sol_values(var(pm, :z_demand, nw))
-        se = build_sol_values(var(pm, :se, nw))
-    
-        for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if states.buses[i,t] == 4
-                states.plc[i] = bus_pd
-                states.qlc[i] = bus_qd
-            else
-                !haskey(plc, i) && get!(plc, i, bus_pd)
-                states.plc[i] = bus_pd*(1 - getindex(plc, i))
-                states.qlc[i] = bus_qd*(1 - getindex(plc, i))
-            end
-        end
+    is_solved = any([
+        JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED, 
+        JuMP.termination_status(pm.model) == JuMP.OPTIMAL]) # Check if the problem was solved optimally or locally
 
-        for i in field(system, :storages, :keys)
-            haskey(se, i) == false && get!(se, i, 0.0)
-            states.se[i,t] = getindex(se, i)
-        end
-    else
-        println("not solved, t=$(t), status=$(termination_status(pm.model)), branches = $(states.branches[:,t])")
-        #@assert termination_status(pm.model) == OPTIMAL "A fatal error occurred"
-        for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if states.buses[i,t] == 4
-                states.plc[i] = bus_pd
-            else
-                states.plc[i] = 0
-            end
-        end
-    end
+    all([changes, !is_solved]) && println("not solved, t=$(t), status=$(termination_status(pm.model)), changes = $(changes)")
+
+    settings.record_branch_flow == true && fill_flow_branch!(pm, system, states, t, is_solved=is_solved)
+    fill_curtailed_load!(pm, system, states, t, is_solved=is_solved)
+    fill_stored_energy!(pm, system, states, t, is_solved=is_solved)
     return
+
 end
 
 ""
+function fill_curtailed_load!(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+
+    if is_solved
+        var = OPF.var(pm, :z_demand, nw)
+        for i in field(system, :buses, :keys)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
+            if states.buses[i,t] != 4
+                p_curtailed_factor = _IM.build_solution_values(var[i])
+                states.p_curtailed[i] = bus_pd*(1.0 - p_curtailed_factor)
+            else
+                states.p_curtailed[i] = bus_pd
+            end
+        end
+    else
+        fill!(states.p_curtailed, 0.0)
+    end
+end
+
+""
+function fill_curtailed_load!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+
+    if is_solved
+        var = OPF.var(pm, :z_demand, nw)
+        for i in field(system, :buses, :keys)
+            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
+            bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
+            if states.buses[i,t] != 4
+                p_curtailed_factor = _IM.build_solution_values(var[i])
+                states.p_curtailed[i] = bus_pd*(1.0 - p_curtailed_factor)
+                states.q_curtailed[i] = bus_qd*(1.0 - p_curtailed_factor)
+            else
+                states.p_curtailed[i] = bus_pd
+                states.q_curtailed[i] = bus_qd
+            end
+        end
+    else
+        fill!(states.p_curtailed, 0.0)
+        fill!(states.q_curtailed, 0.0)
+    end
+end
+
+"Build solution dictionary of the argunment of type DenseAxisArray"
 function build_sol_values(var::DenseAxisArray)
 
     axs =  axes(var)[1]
@@ -397,61 +360,131 @@ function build_sol_values(var::DenseAxisArray)
     return sol
 end
 
-"Build solution dictionary of active flows per branch"
-function build_sol_values(pm::AbstractDCPowerModel, branches::Branches)
+""
+build_sol_values(var::Dict{Tuple{Int, Int, Int}, Any}) = _IM.build_solution_values(var)
 
-    dict_p = sort(_IM.build_solution_values(var(pm, :p, :)))
-    tuples = keys(sort(OPF.var(pm, :p, :)))
+"Build solution dictionary of active flows per branch"
+function build_sol_values(var::Dict{Tuple{Int, Int, Int}, Any}, branches::Branches)
+
+    dict_p = sort(_IM.build_solution_values(var))
+    tuples = keys(sort(var))
     sol = Dict{Int, Any}()
 
     for (l,i,j) in tuples
         k = string((l,i,j))
         if !haskey(sol, l)
             if branches.f_bus[l] == i && branches.t_bus[l] == j
-                get!(sol, l, Dict{String, Any}("pf"=>dict_p[k]))
+                get!(sol, l, Dict{String, Any}("from"=>dict_p[k])) # Active power withdrawn at the from bus
             elseif branches.f_bus[l] == j && branches.t_bus[l] == i
-                get!(sol, l, Dict{String, Any}("pt"=>dict_p[k]))
+                get!(sol, l, Dict{String, Any}("to"=>dict_p[k])) # Active power withdrawn at the to bus
             end
         elseif haskey(sol, l)
             if branches.f_bus[l] == i && branches.t_bus[l] == j
-                get!(sol[l], "pf", dict_p[k])
+                get!(sol[l], "from", dict_p[k])
             elseif branches.f_bus[l] == j && branches.t_bus[l] == i
-                get!(sol[l], "pt", dict_p[k])
+                get!(sol[l], "to", dict_p[k])
             end
         end
     end
     return sol
 end
 
-"Build solution dictionary of active flows per branch"
-function build_sol_values(pm::AbstractLPACModel, branches::Branches)
 
-    dict_p = sort(_IM.build_solution_values(var(pm, :p, :)))
-    dict_q = sort(_IM.build_solution_values(var(pm, :q, :)))
-    sol = Dict{Int, Any}()
-    tuples = keys(sort(OPF.var(pm, :p, :)))
-    
-    for (l,i,j) in tuples
-    
-        k = string((l,i,j))
-        if !haskey(sol, l)
-            if (branches.f_bus[l],branches.t_bus[l]) == (i,j)
-                get!(sol, l, Dict{String, Any}("pf"=>dict_p[k], "qf"=>dict_q[k]))
-            elseif (branches.f_bus[l],branches.t_bus[l]) == (j,i)
-                get!(sol, l, Dict{String, Any}("pt"=>dict_p[k], "qt"=>dict_q[k]))
+
+""
+function fill_stored_energy!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+
+    for i in field(system, :storages, :keys)
+        if is_solved
+            var = OPF.var(pm, :stored_energy, nw)
+            axs =  axes(var)[1]
+            if i in axs
+                states.stored_energy[i,t] = _IM.build_solution_values(var[i])
+            else
+                states.stored_energy[i,t] = states.stored_energy[i,t-1]
             end
-    
-        elseif haskey(sol, l)
-            if (branches.f_bus[l],branches.t_bus[l]) == (i,j)
-                get!(sol[l], "pf", dict_p[k])
-                get!(sol[l], "qf", dict_q[k])
-            elseif (branches.f_bus[l],branches.t_bus[l]) == (j,i)
-                get!(sol[l], "pt", dict_p[k])
-                get!(sol[l], "qt", dict_q[k])
+        else
+            states.stored_energy[i,t] = states.stored_energy[i,t-1]
+        end
+    end
+end
+
+""
+function fill_flow_branch!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+
+    if is_solved
+        var = OPF.var(pm, :p, nw)
+        tuples = keys(var)
+        for (l,i,j) in tuples
+            if states.branches[l,t] == 0
+                states.flow_from[l] = 0.0
+                states.flow_to[l] = 0.0
+            else
+                f_bus = system.branches.f_bus[l]
+                t_bus = system.branches.t_bus[l]
+                #k = string((l,i,j))
+                if f_bus == i && t_bus == j
+                    states.flow_from[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the from bus
+                elseif f_bus == j && t_bus == i
+                    states.flow_to[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the to bus
+                end
             end
         end
-        
+    else
+        fill!(states.flow_from, 0.0)
+        fill!(states.flow_to, 0.0)
     end
+end
 
-    return sol
+""
+function fill_curtailed_load!(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, p_curtailed_factor::Dict{Int, Any}, t::Int)
+    for i in field(system, :buses, :keys)
+        bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
+        if states.buses[i,t] == 4
+            states.p_curtailed[i] = bus_pd
+        else
+            states.p_curtailed[i] = bus_pd*(1 - get(p_curtailed_factor, i, 1.0))
+        end
+    end
+end
+
+""
+function fill_curtailed_load!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, p_curtailed_factor::Dict{Int, Any}, t::Int)
+    for i in field(system, :buses, :keys)
+        bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
+        bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
+        if states.buses[i,t] == 4
+            states.p_curtailed[i] = bus_pd
+            states.q_curtailed[i] = bus_qd
+        else
+            states.p_curtailed[i] = bus_pd*(1 - get(p_curtailed_factor, i, 1.0))
+            states.q_curtailed[i] = bus_qd*(1 - get(p_curtailed_factor, i, 1.0))
+        end
+    end
+end
+
+""
+function fill_flow_branch!(system::SystemModel, states::ComponentStates, flow_branch::Dict{Int, Any}, t::Int)
+
+    for l in field(system, :branches, :keys)
+        if states.branches[l,t] == 0
+            states.flow_from[l] = 0.0
+            states.flow_to[l] = 0.0
+        else
+            flow_branch_dict = get(flow_branch, l, Dict{String, Any}("from"=>0.0, "to"=>0.0))
+            states.flow_from[l] = flow_branch_dict["from"]
+            states.flow_to[l] = flow_branch_dict["to"]
+        end
+    end
+end
+
+""
+function fill_stored_energy!(storages::Storages, states::ComponentStates, stored_energy::Dict, t::Int; is_solved::Bool=true)
+    for i in field(storages, :keys)
+        if is_solved
+            states.stored_energy[i,t] = get(stored_energy, i, 0.0)
+        else
+            states.stored_energy[i,t] = states.stored_energy[i,t-1]
+        end
+    end
 end

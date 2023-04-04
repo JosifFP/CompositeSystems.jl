@@ -204,8 +204,8 @@ function _con_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, ener
 
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
-    se = var(pm, :se, n)[i]
-    con(pm, :storage_state, n)[i] = @constraint(pm.model, se - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
+    stored_energy = var(pm, :stored_energy, n)[i]
+    con(pm, :storage_state, n)[i] = @constraint(pm.model, stored_energy - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
 end
 
 ""
