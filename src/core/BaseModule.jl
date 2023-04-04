@@ -25,7 +25,7 @@
         unitsymbol, conversionfactor, powertoenergy, energytopower,
 
         # Main data structure
-        SystemModel, SystemStates, SingleState, static_parameters,
+        SystemModel, ComponentStates, StateTransition, static_parameters,
 
         #utils
         assetgrouplist, makeidxlist, field, build_network, 
@@ -51,6 +51,6 @@
     include("SystemModel.jl")
     include("utils.jl")
     include("load.jl")
-    include("systemstates.jl")
+    include("componentstates.jl")
 
 end

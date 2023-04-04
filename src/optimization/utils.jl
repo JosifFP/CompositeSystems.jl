@@ -63,7 +63,7 @@ function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel
         add_con_container!(pm.con, :thermal_limit_to, field(system, :branches, :keys))
 
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
-        add_var_container!(pm.var, :se, field(system, :storages, :keys))
+        add_var_container!(pm.var, :stored_energy, field(system, :storages, :keys))
         add_var_container!(pm.var, :sc, field(system, :storages, :keys))
         add_var_container!(pm.var, :sd, field(system, :storages, :keys))
         add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
@@ -124,7 +124,7 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
         add_var_container!(pm.var, :ps, field(system, :storages, :keys))
         add_var_container!(pm.var, :qs, field(system, :storages, :keys))
         add_var_container!(pm.var, :qsc, field(system, :storages, :keys))
-        add_var_container!(pm.var, :se, field(system, :storages, :keys))
+        add_var_container!(pm.var, :stored_energy, field(system, :storages, :keys))
         add_var_container!(pm.var, :sc, field(system, :storages, :keys))
         add_var_container!(pm.var, :sd, field(system, :storages, :keys))
         add_var_container!(pm.var, :sc_on, field(system, :storages, :keys))
@@ -144,7 +144,7 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
 end
 
 ""
-function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, s)
+function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, s)
     if iszero(s%100) && settings.optimizer == Gurobi
         JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
         initialize_pm_containers!(pm, system)
@@ -156,7 +156,7 @@ function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::Syste
 end
 
 ""
-function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
     if !check_availability(states.branches, t, t-1)
         simplify!(pm, system, states, settings, t)
         update_arcs!(pm, system, states.branches, t)
@@ -167,7 +167,7 @@ end
 
 ""
 function _update_topology!(
-    pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
     simplify!(pm, system, states, settings, t)
     update_arcs!(pm, system, states.branches, t)
     update_all_idxs!(pm, system, states, t)
@@ -391,6 +391,8 @@ function Base.getproperty(e::Settings, s::Symbol)
         getfield(e, :set_string_names_on_creation)::Bool
     elseif s === :count_samples
         getfield(e, :count_samples)::Bool
+    elseif s === :record_branch_flow
+        getfield(e, :record_branch_flow)::Bool        
     else
         @error("Configuration $(s) not supported")
     end
@@ -435,13 +437,16 @@ function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int
 end
 
 "Update asset_idxs and asset_nodes"
-function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, 
+function update_idxs!(
+    key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}}, 
     asset_dict_nodes::Dict{Int, Vector{Int}}, asset_buses::Vector{Int})
 
     assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
-    map!(x -> Int[], asset_dict_nodes)
+    #map!(x -> Int[], asset_dict_nodes)
+    for (_,v) in asset_dict_nodes
+        empty!(v)
+    end
     bus_asset!(asset_dict_nodes, key_assets, asset_buses)
-
 end
 
 "This function updates the arcs of the power system model."
@@ -481,7 +486,7 @@ due to having only one active incident edge and no generation, loads, storages, 
 If any buses are deactivated, the function also deactivates any branches that are connected to those buses. 
 The function also checks for connected components of the system and deactivates any isolated sections of the network
 """
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, settings::Settings, t::Int)
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
 
     update_all_idxs!(pm, system, states, t)
     update_arcs!(pm, system, states.branches, t)
@@ -626,7 +631,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
             for k in topology(pm, :bus_storages)[i]
                 if states.storages[k,t] ≠ 0
                     states.storages[k,t] = 0
-                    if t > 1 states.se[k,t] = states.se[k,t-1] end
+                    if t > 1 states.stored_energy[k,t] = states.stored_energy[k,t-1] end
                 end
             end
         end
@@ -635,7 +640,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::SystemSt
 end
 
 ""
-function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::SystemStates, t::Int)
+function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)
 
     update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), 
         topology(pm, :buses_idxs))
@@ -711,7 +716,7 @@ function objective_value(opf_model::Model)
 end
 
 ""
-function _update!(pm::AbstractPowerModel, system::SystemModel{N}, states::SystemStates, settings::Settings, t::Int; force_pmin::Bool=true) where N
+function _update!(pm::AbstractPowerModel, system::SystemModel{N}, states::ComponentStates, settings::Settings, t::Int; force_pmin::Bool=true) where N
     
     if N == 1
         _update_topology!(pm, system, states, settings, t)
@@ -720,8 +725,14 @@ function _update!(pm::AbstractPowerModel, system::SystemModel{N}, states::System
         update_topology!(pm, system, states, settings, t)
         update_problem!(pm, system, states, t)
     end
+    
     JuMP.optimize!(pm.model)
-    build_result!(pm, system, states, t)
+
+    changes = any([
+        length(system.storages) ≠ 0, all(states.branches[:, t]) ≠ true, 
+        sum(states.generators[:, t]) < length(system.generators) - settings.min_generators_off])
+
+    build_result!(pm, system, states, settings, t; changes=changes)
     return
 end
 

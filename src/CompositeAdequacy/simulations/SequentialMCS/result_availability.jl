@@ -20,7 +20,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::GeneratorAva
 end
 
 ""
-function record!(acc::SMCSGenAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCSGenAvailabilityAccumulator, states::ComponentStates, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= view(states.generators, :, t)
     return
 end
@@ -53,7 +53,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::StorageAvail
 end
 
 ""
-function record!(acc::SMCSStorAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCSStorAvailabilityAccumulator, states::ComponentStates, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= view(states.storages, :, t)
     return
 end
@@ -86,7 +86,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::GeneratorSto
 end
 
 ""
-function record!(acc::SMCSGenStorAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCSGenStorAvailabilityAccumulator, states::ComponentStates, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= view(states.generatorstorages, :, t)
     return
 
@@ -120,7 +120,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::BranchAvaila
 end
 
 ""
-function record!(acc::SMCSBranchAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCSBranchAvailabilityAccumulator, states::ComponentStates, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= view(states.branches, :, t)
     return
 end
@@ -154,7 +154,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::ShuntAvailab
 end
 
 ""
-function record!(acc::SMCSShuntAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCSShuntAvailabilityAccumulator, states::ComponentStates, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= view(states.shunts, :, t)
     return
 end
@@ -187,7 +187,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::BusAvailabil
 end
 
 ""
-function record!(acc::SMCSBusAvailabilityAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCSBusAvailabilityAccumulator, states::ComponentStates, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= view(states.buses, :, t)
     return
 end

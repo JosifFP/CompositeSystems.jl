@@ -24,12 +24,13 @@
         ReliabilityMetric, EDLC, EENS, val, stderror,
 
         # Simulation specification
-        SequentialMCS, NonSequentialMCS, accumulator,
+        SequentialMCS, accumulator,
 
         # Result specifications
         Shortfall, ShortfallSamples,
         GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, 
         BranchAvailability, ShuntAvailability, BusAvailability,
+        Utilization, UtilizationSamples,
 
         #utils
         makeidxlist, print_results

@@ -24,13 +24,11 @@ struct ShortfallResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractShor
 
     eventperiod_mean::Float64
     eventperiod_std::Float64
-
     eventperiod_bus_mean::Vector{Float64}
     eventperiod_bus_std::Vector{Float64}
 
     eventperiod_period_mean::Vector{Float64}
     eventperiod_period_std::Vector{Float64}
-
     eventperiod_busperiod_mean::Matrix{Float64}
     eventperiod_busperiod_std::Matrix{Float64}
 
@@ -52,7 +50,6 @@ struct ShortfallResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractShor
         eventperiod_period_std::Vector{Float64},
         eventperiod_busperiod_mean::Matrix{Float64},
         eventperiod_busperiod_std::Matrix{Float64},
-
         shortfall_mean::Matrix{Float64},
         shortfall_std::Float64,
         shortfall_bus_std::Vector{Float64},
@@ -109,7 +106,8 @@ function getindex(x::ShortfallResult, r::Int, t::ZonedDateTime)
     return x.shortfall_mean[i_r, i_t], x.shortfall_busperiod_std[i_r, i_t]
 end
 
-EDLC(x::ShortfallResult{N,L,T}) where {N,L,T} = EDLC{N,L,T}(MeanEstimate(x.eventperiod_mean, x.eventperiod_std, x.nsamples))
+EDLC(x::ShortfallResult{N,L,T}) where {N,L,T} = 
+    EDLC{N,L,T}(MeanEstimate(x.eventperiod_mean, x.eventperiod_std, x.nsamples))
 
 function EDLC(x::ShortfallResult{N,L,T}, r::Int) where {N,L,T}
     i_r = getindex(x.buses, r)

@@ -137,6 +137,7 @@ mutable struct Settings
     min_generators_off::Int
     set_string_names_on_creation::Bool
     count_samples::Bool
+    record_branch_flow::Bool
 
     function Settings(
         optimizer::MOI.OptimizerWithAttributes;
@@ -146,10 +147,11 @@ mutable struct Settings
         deactivate_isolated_bus_gens_stors::Bool=true,
         min_generators_off::Int=1,
         set_string_names_on_creation::Bool=false,
-        count_samples::Bool=false
+        count_samples::Bool=false,
+        record_branch_flow::Bool=false
         )
         new(optimizer, jump_modelmode, powermodel_formulation, 
-        select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, 
-        min_generators_off, set_string_names_on_creation, count_samples)
+        select_largest_splitnetwork, deactivate_isolated_bus_gens_stors, min_generators_off, 
+        set_string_names_on_creation, count_samples, record_branch_flow)
     end
 end

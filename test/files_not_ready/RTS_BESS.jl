@@ -21,16 +21,26 @@ settings = CompositeSystems.Settings(
 timeseriesfile = "test/data/RTS/Loads_system.xlsx"
 rawfile = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile = "test/data/others/Storage/R_RTS_strg.m"
-resultspecs = (Shortfall(), BranchAvailability())
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 method = SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
-for bus in 1:1:5
-    run_mcs(system, method, settings, resultspecs, bus)
-end
+system.storages.buses[1] = 2
+system.storages.charge_rating[1] = 3
+system.storages.discharge_rating[1] = 3
+system.storages.thermal_rating[1] = 3
+system.storages.energy_rating[1] = 3
+shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
+CompositeAdequacy.print_results(system, shortfall)
+
+
+
+
+
+
 
 function run_mcs(system, method, settings, resultspecs, bus::Int)
-    for j in 0.25:0.25:3.0
+    for j in 0.25:0.25:2.0
         system.storages.buses[1] = bus
         system.storages.charge_rating[1] = j
         system.storages.discharge_rating[1] = j
@@ -43,3 +53,9 @@ function run_mcs(system, method, settings, resultspecs, bus::Int)
         end
     end
 end
+
+for bus in 6:1:7
+    run_mcs(system, method, settings, resultspecs, bus)
+end
+
+#bus 6, power_rating=1.0

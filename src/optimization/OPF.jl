@@ -28,8 +28,8 @@
         Settings, Topology,
 
         #functions
-        solve_opf, abstract_model, build_problem!, update_problem!, build_result!, field,
-        var, con, topology, update_topology!, reset_model!, initialize_pm_containers!, optimize_method!,
+        solve_opf, abstract_model, build_problem!, update_problem!, field, var, con, topology, 
+        build_result!, update_topology!, reset_model!, initialize_pm_containers!,
 
         #reexports
         reset_optimizer, MOI, MOIU, JuMP

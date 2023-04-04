@@ -16,18 +16,24 @@ settings = CompositeSystems.Settings(
     deactivate_isolated_bus_gens_stors = false
 )
 
-timeseriesfile = "test/data/toysystem/Loads_system.xlsx"
-rawfile = "test/data/toysystem/toysystem.m"
-Base_reliabilityfile = "test/data/toysystem/R_toysystem.m"
+timeseriesfile = "test/data/others/toysystem/Loads_system.xlsx"
+rawfile = "test/data/others/toysystem/toysystem.m"
+Base_reliabilityfile = "test/data/others/toysystem/R_toysystem.m"
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile)
 pm = OPF.abstract_model(system, settings)
-systemstates = OPF.SystemStates(system, available=true)
+componentstates = OPF.ComponentStates(system, available=true)
 OPF.build_problem!(pm, system, 1)
 t=1
-OPF._update!(pm, system, systemstates, settings, t)
+OPF._update!(pm, system, componentstates, settings, t)
 
-systemstates.plc[:]
+a = termination_status(pm.model)
+typeof(a) == JuMP.TerminationStatusCode
+a == JuMP.LOCALLY_SOLVED
+
+
+
+componentstates.p_curtailed[:]
 result_pg = sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :))))
 values(OPF.build_sol_values(OPF.var(pm, :pg, :)))
 result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
-result_pf = OPF.build_sol_values(pm, system.branches)
+result_p = OPF.build_sol_values(OPF.var(pm, :p, :), system.branches)

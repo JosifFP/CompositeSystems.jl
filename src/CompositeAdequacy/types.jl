@@ -30,26 +30,3 @@ struct SequentialMCS <: SimulationSpec
     end
 
 end
-
-"Definition of NonSequentialMCS method"
-struct NonSequentialMCS <: SimulationSpec
-
-    nsamples::Int
-    seed::UInt64
-    verbose::Bool
-    threaded::Bool
-
-    function NonSequentialMCS(;
-        samples::Int=1_000,
-        seed::Int=rand(UInt64),
-        verbose::Bool=false,
-        threaded::Bool=true
-    )
-        samples <= 0 && throw(DomainError("Sample count must be positive"))
-        seed < 0 && throw(DomainError("Random seed must be non-negative"))
-
-        new(samples, UInt64(seed), verbose, threaded)
-
-    end
-
-end

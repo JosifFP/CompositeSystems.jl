@@ -274,7 +274,7 @@ end
 #***************************************************** UPDATES *************************************************************************
 
 ""
-function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
 
     phi_fr = var(pm, :phi_fr, nw)[l]
 
@@ -289,7 +289,7 @@ function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system
 end
 
 ""
-function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
 
     phi_to = var(pm, :phi_to, nw)[l]
 
@@ -304,7 +304,7 @@ function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system
 end
 
 ""
-function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
 
     td = var(pm, :td, nw)[l]
 
@@ -318,7 +318,7 @@ function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, s
 end
 
 ""
-function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, l::Int, t::Int; nw::Int=1)
+function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
     
     z_shunt = var(pm, :z_shunt, nw)[l]
     @views t_now_view_shunts = states.shunts[:, t]
@@ -332,7 +332,7 @@ function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::Syste
 end
 
 ""
-function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
     #phi  = var(pm, :phi, nw)[i]
     z_demand   = var(pm, :z_demand, nw)[i]
     bus_loads = topology(pm, :bus_loads)[i]
@@ -352,7 +352,7 @@ function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, st
 end
 
 ""
-function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
 
     phi  = var(pm, :phi, nw)
     bus_loads = topology(pm, :bus_loads)[i]
@@ -371,7 +371,7 @@ function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemMode
 
 end
 
-function _update_con_ohms_yt_from(pm::AbstractLPACModel, states::SystemStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+function _update_con_ohms_yt_from(pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     if states.branches[l,t] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 0.0)
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[l], 0.0)
@@ -382,7 +382,7 @@ function _update_con_ohms_yt_from(pm::AbstractLPACModel, states::SystemStates, l
 end
 
 "AC Line Flow Constraints"
-function _update_con_ohms_yt_to(pm::AbstractLPACModel, states::SystemStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+function _update_con_ohms_yt_to(pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
     if states.branches[l,t] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[l], 0.0)
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[l], 0.0)
@@ -393,7 +393,7 @@ function _update_con_ohms_yt_to(pm::AbstractLPACModel, states::SystemStates, l::
 end
 
 ""
-function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel, states::SystemStates, i::Int, t::Int; nw::Int=1)
+function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
 
     z_branch = var(pm, :z_branch, nw)[i]
     if states.branches[i,t] == 0

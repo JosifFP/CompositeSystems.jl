@@ -3,6 +3,7 @@ Base.broadcastable(x::Result) = Ref(x)
 
 include("shortfall.jl")
 include("availability.jl")
+include("utilization.jl")
 
 function resultchannel(method::SimulationSpec, results::T, threads::Int) where T <: Tuple{Vararg{ResultSpec}}
     types = accumulatortype.(method, results)

@@ -1,6 +1,6 @@
 
 "Shortfall"
-mutable struct SMCSShortfallAccumulator <: ResultAccumulator{SequentialMCS,Shortfall}
+mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMCS,Shortfall}
 
     # Cross-simulation LOL period count mean/variances
     periodsdropped_total::MeanVariance
@@ -21,11 +21,10 @@ mutable struct SMCSShortfallAccumulator <: ResultAccumulator{SequentialMCS,Short
     # Running UE totals for current simulation
     unservedload_total_currentsim::Float64
     unservedload_bus_currentsim::Vector{Float64}
-
 end
 
 ""
-function merge!(x::SMCSShortfallAccumulator, y::SMCSShortfallAccumulator)
+function merge!(x::SMCShortfallAccumulator, y::SMCShortfallAccumulator)
     merge!(x.periodsdropped_total, y.periodsdropped_total)
     foreach(merge!, x.periodsdropped_bus, y.periodsdropped_bus)
     foreach(merge!, x.periodsdropped_period, y.periodsdropped_period)
@@ -34,10 +33,9 @@ function merge!(x::SMCSShortfallAccumulator, y::SMCSShortfallAccumulator)
     foreach(merge!, x.unservedload_bus, y.unservedload_bus)
     foreach(merge!, x.unservedload_period, y.unservedload_period)
     foreach(merge!, x.unservedload_busperiod, y.unservedload_busperiod)
-    return
 end
 
-accumulatortype(::SequentialMCS, ::Shortfall) = SMCSShortfallAccumulator
+accumulatortype(::SequentialMCS, ::Shortfall) = SMCShortfallAccumulator
 
 ""
 function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Shortfall) where {N}
@@ -59,7 +57,7 @@ function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Shortfall) where {N
     unservedload_total_currentsim = 0
     unservedload_bus_currentsim = zeros(Float32, nbuses)
 
-    return SMCSShortfallAccumulator(
+    return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,
         periodsdropped_period, periodsdropped_busperiod,
         periodsdropped_total_currentsim, periodsdropped_bus_currentsim,
@@ -71,12 +69,12 @@ function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Shortfall) where {N
 end
 
 ""
-function record!(acc::SMCSShortfallAccumulator, states::SystemStates, sampleid::Int, t::Int)
+function record!(acc::SMCShortfallAccumulator, states::ComponentStates, system::SystemModel, sampleid::Int, t::Int)
 
     totalshortfall = 0
     isshortfall = false
-    for r in eachindex(states.plc)
-        busshortfall = states.plc[r]
+    for r in eachindex(states.p_curtailed)
+        busshortfall = states.p_curtailed[r]
         isbusshortfall = sum(busshortfall) > 1e-6
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
@@ -100,7 +98,7 @@ function record!(acc::SMCSShortfallAccumulator, states::SystemStates, sampleid::
 end
 
 ""
-function reset!(acc::SMCSShortfallAccumulator, sampleid::Int)
+function reset!(acc::SMCShortfallAccumulator, sampleid::Int)
 
     # Store busal / total sums for current simulation
     fit!(acc.periodsdropped_total, acc.periodsdropped_total_currentsim)
@@ -120,7 +118,7 @@ function reset!(acc::SMCSShortfallAccumulator, sampleid::Int)
 end
 
 ""
-function finalize(acc::SMCSShortfallAccumulator, system::SystemModel{N,L,T}) where {N,L,T}
+function finalize(acc::SMCShortfallAccumulator, system::SystemModel{N,L,T}) where {N,L,T}
 
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
@@ -158,37 +156,37 @@ end
 
 
 "ShortfallSamples"
-struct SMCSShortfallSamplesAccumulator <:ResultAccumulator{SequentialMCS,ShortfallSamples}
+struct SMCShortfallSamplesAccumulator <:ResultAccumulator{SequentialMCS,ShortfallSamples}
     shortfall::Array{Float64,3}
 end
 
-function merge!(x::SMCSShortfallSamplesAccumulator, y::SMCSShortfallSamplesAccumulator)
+function merge!(x::SMCShortfallSamplesAccumulator, y::SMCShortfallSamplesAccumulator)
     x.shortfall .+= y.shortfall
     return
 end
 
-accumulatortype(::SequentialMCS, ::ShortfallSamples) = SMCSShortfallSamplesAccumulator
+accumulatortype(::SequentialMCS, ::ShortfallSamples) = SMCShortfallSamplesAccumulator
 
 ""
 function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::ShortfallSamples) where {N}
     nbuses = length(sys.buses)
     shortfall = zeros(Int, nbuses, N, simspec.nsamples)
-    return SMCSShortfallSamplesAccumulator(shortfall)
+    return SMCShortfallSamplesAccumulator(shortfall)
 end
 
 ""
-function record!(acc::SMCSShortfallSamplesAccumulator, states::SystemStates, sampleid::Int, t::Int)
-    for r in states.plc
-        acc.shortfall[r,t,sampleid] = states.plc[r]
+function record!(acc::SMCShortfallSamplesAccumulator, states::ComponentStates, sampleid::Int, t::Int)
+    for r in states.p_curtailed
+        acc.shortfall[r,t,sampleid] = states.p_curtailed[r]
     end
     return
 
 end
 
-reset!(acc::SMCSShortfallSamplesAccumulator, sampleid::Int) = nothing
+reset!(acc::SMCShortfallSamplesAccumulator, sampleid::Int) = nothing
 
 ""
-function finalize(acc::SMCSShortfallSamplesAccumulator, system::SystemModel{N,L,T}) where {N,L,T}
+function finalize(acc::SMCShortfallSamplesAccumulator, system::SystemModel{N,L,T}) where {N,L,T}
     P = BaseModule.powerunits["MW"]
     E = BaseModule.energyunits["MWh"]
     pu2p = conversionfactor(L,P,system.baseMVA)
