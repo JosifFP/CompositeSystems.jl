@@ -30,6 +30,7 @@
         Shortfall, ShortfallSamples,
         GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, 
         BranchAvailability, ShuntAvailability, BusAvailability,
+        Utilization, UtilizationSamples,
 
         #utils
         makeidxlist, print_results
