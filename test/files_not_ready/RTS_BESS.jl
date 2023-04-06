@@ -25,18 +25,13 @@ resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 method = SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
-system.storages.buses[1] = 2
-system.storages.charge_rating[1] = 3
-system.storages.discharge_rating[1] = 3
-system.storages.thermal_rating[1] = 3
+system.storages.buses[1] = 7
+system.storages.charge_rating[1] = 0.75
+system.storages.discharge_rating[1] = 0.75
+system.storages.thermal_rating[1] = 0.75
 system.storages.energy_rating[1] = 3
-shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
+shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
 CompositeAdequacy.print_results(system, shortfall)
-
-
-
-
-
 
 
 function run_mcs(system, method, settings, resultspecs, bus::Int)

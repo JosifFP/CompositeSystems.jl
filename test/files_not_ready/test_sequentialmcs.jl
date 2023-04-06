@@ -19,8 +19,7 @@ settings = CompositeSystems.Settings(
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
-    set_string_names_on_creation = true,
-    count_samples = true
+    set_string_names_on_creation = false
 )
 
 timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
@@ -29,7 +28,7 @@ Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
 
 method = CompositeAdequacy.SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-@time shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
+shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
 
 CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
 CompositeAdequacy.stderror.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
@@ -42,9 +41,6 @@ CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall))
 CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall))
 
 A = getindex(util, :)
-
-[x[1] for x in getindex(util, :)]
-
 B = CompositeAdequacy.PTV(util, :)
 
 Base.print_matrix(Base.stdout, A)
