@@ -1,14 +1,12 @@
 #!/bin/bash
-#SBATCH --time=0-00:01:00
-
-#SBATCH --job-name="rts_dc"
+#SBATCH --time=1-24:00:00
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=32000M
-#SBATCH --error="rts_dc_%a.err.out"
+#SBATCH --cpus-per-task=32
+#SBATCH --mem-per-cpu=40000M
 #SBATCH --mail-type=end
 #SBATCH --mail-user=josif.figueroa@unb.ca
 
-export JULIA_NUM_THREADS=16
-module load julia
+export JULIA_NUM_THREADS=32
+module load julia/1.8.5
+module load gurobi/10.0.1
 julia --project="." --startup-file=no "run.jl"
