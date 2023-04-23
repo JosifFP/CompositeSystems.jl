@@ -416,7 +416,7 @@ function extract_timeseriesload(file::String)
 end
 
 ""
-function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vector{Float32}}, baseMVA::Float32)
+function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vector{Float32}}, baseMVA::Float64)
 
     if length(index_keys) ≠ length(collect(keys(timeseries_load)))
         @error("Time-series Load data file does not match length of load in network data file")

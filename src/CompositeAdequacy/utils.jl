@@ -71,8 +71,10 @@ end
 
 ""
 function print_results(system::SystemModel, shortfall::ShortfallResult)
-    openxlsx("Shortfall"*Dates.format(Dates.now(),"HH_MM_SS")*".xlsx", mode="w") do xf
 
+    hour = Dates.format(Dates.now(),"HH_MM_SS")
+    
+    openxlsx("Shortfall_"*hour*".xlsx", mode="w") do xf
         rename!(xf[1], "summary")
 
         if length(system.storages) > 0
@@ -139,8 +141,10 @@ end
 
 ""
 function print_results(system::SystemModel, utilization::UtilizationResult)
-    openxlsx("Utilization"*Dates.format(Dates.now(),"HH_MM_SS")*".xlsx", mode="w") do xf
 
+    hour = Dates.format(Dates.now(),"HH_MM_SS")
+
+    openxlsx("Utilization_"*hour*".xlsx", mode="w") do xf
         rename!(xf[1], "summary")
 
         if length(system.storages) > 0

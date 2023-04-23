@@ -18,7 +18,7 @@
         deactivate_isolated_bus_gens_stors = false
     )
 
-    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+    rawfile = "test/data/RBTS/Base/RBTS.m"
     reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
     system = BaseModule.SystemModel(rawfile, reliabilityfile)
     CompositeSystems.field(system, :loads, :cost)[:] = [9632.5; 4376.9; 8026.7; 8632.3; 5513.2]
@@ -33,7 +33,7 @@
         componentstates.generators[7,t] = 0
         componentstates.generators[8,t] = 0
         componentstates.generators[9,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.35; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -51,7 +51,7 @@
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[5,t] = 0
         componentstates.branches[8,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.4; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -68,7 +68,7 @@
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[5,t] = 0
         componentstates.branches[8,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.4; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -86,7 +86,7 @@
         componentstates.branches[3,t] = 0
         componentstates.branches[4,t] = 0
         componentstates.branches[8,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.750; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0.2; atol = 1e-4)
@@ -104,7 +104,7 @@
         componentstates.branches[3,t] = 0
         componentstates.branches[4,t] = 0
         componentstates.branches[8,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.150; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -123,7 +123,7 @@
         componentstates.generators[7,t] = 0
         componentstates.generators[8,t] = 0
         componentstates.generators[11,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.35; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -143,7 +143,7 @@
         componentstates.generators[1,t] = 0
         componentstates.generators[2,t] = 0
         componentstates.generators[3,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.74; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -193,7 +193,7 @@ end
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[12,t] = 0
         componentstates.branches[13,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -227,7 +227,7 @@ end
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[12,t] = 0
         componentstates.branches[13,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 2.9600; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -262,7 +262,7 @@ end
         componentstates.branches[1,t] = 0
         componentstates.branches[4,t] = 0
         componentstates.branches[10,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0.410; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -297,7 +297,7 @@ end
         componentstates.branches[1,t] = 0
         componentstates.branches[8,t] = 0
         componentstates.branches[10,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 1.150; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -332,7 +332,7 @@ end
         componentstates.branches[7,t] = 0
         componentstates.branches[19,t] = 0
         componentstates.branches[29,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -367,7 +367,7 @@ end
         componentstates.branches[7,t] = 0
         componentstates.branches[23,t] = 0
         componentstates.branches[29,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 1.65; atol = 1e-2)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -402,7 +402,7 @@ end
         componentstates.branches[25,t] = 0
         componentstates.branches[26,t] = 0
         componentstates.branches[28,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 5.45; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -437,7 +437,7 @@ end
         componentstates.branches[25,t] = 0
         componentstates.branches[26,t] = 0
         componentstates.branches[28,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 2.12; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -472,7 +472,7 @@ end
         componentstates.branches[29,t] = 0
         componentstates.branches[36,t] = 0
         componentstates.branches[37,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 3.09; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -507,7 +507,7 @@ end
         componentstates.branches[29,t] = 0
         componentstates.branches[36,t] = 0
         componentstates.branches[37,t] = 0
-        OPF._update!(pm, system, componentstates, settings_2, t)
+        OPF.update!(pm, system, componentstates, settings_2, t)
         @test isapprox(sum(componentstates.p_curtailed[:]), 3.09; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
         @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -551,7 +551,7 @@ end
             set_string_names_on_creation = true
         )
 
-        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+        rawfile = "test/data/RBTS/Base/RBTS.m"
         reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
         timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
         system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
@@ -561,7 +561,7 @@ end
         OPF.build_problem!(pm, system, 1)
 
         t=1
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -578,7 +578,7 @@ end
         end
 
         t=2
-        OPF._update!(pm, system, componentstates, settings, t)  
+        OPF.update!(pm, system, componentstates, settings, t)  
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -599,7 +599,7 @@ end
         componentstates.generators[7,t] = 0
         componentstates.generators[8,t] = 0
         componentstates.generators[9,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "G3, G7, G8 and G9 on outage" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0.3716; atol = 1e-4)
@@ -620,7 +620,7 @@ end
         t=4
         componentstates.branches[5,t] = 0
         componentstates.branches[8,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         
         @testset "L5 and L8 on outage" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0.4; atol = 1e-4)
@@ -640,7 +640,7 @@ end
         end
 
         t=5
-        OPF._update!(pm, system, componentstates, settings, t)  
+        OPF.update!(pm, system, componentstates, settings, t)  
 
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
@@ -661,7 +661,7 @@ end
         componentstates.branches[3,t] = 0
         componentstates.branches[4,t] = 0
         componentstates.branches[8,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)  
+        OPF.update!(pm, system, componentstates, settings, t)  
 
         @testset "L3, L4 and L8 on outage" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0.7703; atol = 1e-4)
@@ -685,7 +685,7 @@ end
         componentstates.generators[1,t] = 0
         componentstates.generators[2,t] = 0
         componentstates.generators[3,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)   
+        OPF.update!(pm, system, componentstates, settings, t)   
 
         @testset "L2 and L7 on outage, generation reduced" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0.9792; atol = 1e-4)
@@ -703,7 +703,7 @@ end
         end
 
         t=8
-        OPF._update!(pm, system, componentstates, settings, t)  
+        OPF.update!(pm, system, componentstates, settings, t)  
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -757,7 +757,7 @@ end
         OPF.build_problem!(pm, system, 1)
 
         t=1
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -793,7 +793,7 @@ end
         end
         
         t=2
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
@@ -834,7 +834,7 @@ end
             componentstates.branches[29,t] = 0
             componentstates.branches[36,t] = 0
             componentstates.branches[37,t] = 0
-            OPF._update!(pm, system, componentstates, settings, t)
+            OPF.update!(pm, system, componentstates, settings, t)
             @test isapprox(sum(componentstates.p_curtailed[:]), 3.09; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -874,7 +874,7 @@ end
         @testset "No outages" begin
             
             t=4
-            OPF._update!(pm, system, componentstates, settings, t)
+            OPF.update!(pm, system, componentstates, settings, t)
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -913,7 +913,7 @@ end
             componentstates.branches[25,t] = 0
             componentstates.branches[26,t] = 0
             componentstates.branches[28,t] = 0
-            OPF._update!(pm, system, componentstates, settings, t)
+            OPF.update!(pm, system, componentstates, settings, t)
             @test isapprox(sum(componentstates.p_curtailed[:]), 2.3544; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -955,7 +955,7 @@ end
             componentstates.branches[1,t] = 0
             componentstates.branches[8,t] = 0
             componentstates.branches[10,t] = 0
-            OPF._update!(pm, system, componentstates, settings, t)
+            OPF.update!(pm, system, componentstates, settings, t)
             @test isapprox(sum(componentstates.p_curtailed[:]), 1.1654; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -995,7 +995,7 @@ end
             componentstates.branches[7,t] = 0
             componentstates.branches[19,t] = 0
             componentstates.branches[29,t] = 0
-            OPF._update!(pm, system, componentstates, settings, t)
+            OPF.update!(pm, system, componentstates, settings, t)
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1034,7 +1034,7 @@ end
             componentstates.branches[7,t] = 0
             componentstates.branches[23,t] = 0
             componentstates.branches[29,t] = 0
-            OPF._update!(pm, system, componentstates, settings, t)
+            OPF.update!(pm, system, componentstates, settings, t)
             @test isapprox(sum(componentstates.p_curtailed[:]), 1.9497; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1105,7 +1105,7 @@ end
         OPF.build_problem!(pm, system, 1)
 
         t=1
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -1139,7 +1139,7 @@ end
         end
         
         t=2
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
@@ -1177,7 +1177,7 @@ end
         componentstates.branches[29,t] = 0
         componentstates.branches[36,t] = 0
         componentstates.branches[37,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "Outages of L29, L36, L37" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 3.09; atol = 1e-4)
@@ -1212,7 +1212,7 @@ end
         end
 
         t=4
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
@@ -1250,7 +1250,7 @@ end
         componentstates.branches[25,t] = 0
         componentstates.branches[26,t] = 0
         componentstates.branches[28,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "Outages of L25, L26, L28" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 2.12; atol = 1e-4)
@@ -1288,7 +1288,7 @@ end
         componentstates.branches[1,t] = 0
         componentstates.branches[8,t] = 0
         componentstates.branches[10,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "Outages of L1, L8, L10" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 1.150; atol = 1e-4)
@@ -1326,7 +1326,7 @@ end
         componentstates.branches[7,t] = 0
         componentstates.branches[19,t] = 0
         componentstates.branches[29,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "Outages of L7, L19, L29" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
@@ -1364,7 +1364,7 @@ end
         componentstates.branches[7,t] = 0
         componentstates.branches[23,t] = 0
         componentstates.branches[29,t] = 0
-        OPF._update!(pm, system, componentstates, settings, t)
+        OPF.update!(pm, system, componentstates, settings, t)
 
         @testset "Outages of L7, L23, L29" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 1.65; atol = 1e-2)

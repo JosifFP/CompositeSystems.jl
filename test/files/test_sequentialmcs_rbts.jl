@@ -20,11 +20,11 @@ settings = CompositeSystems.Settings(
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
     set_string_names_on_creation = false,
-    count_samples = true
+    count_samples = false
 )
 
 timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+rawfile = "test/data/RBTS/Base/RBTS.m"
 Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 #getindex(util, :)
@@ -45,13 +45,6 @@ system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
     @test isapprox(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys)), system_EDLC; atol = 1e-4)
     @test isapprox(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys)), system_EENS; atol = 1e-4)
 end
-
-
-#run_mcs(method, resultspecs)
-
-#function run_mcs(method, resultspecs)
-#end
-
 
 # CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
 # CompositeAdequacy.stderror.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
