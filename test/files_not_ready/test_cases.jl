@@ -10,7 +10,7 @@ using XLSX, Dates
 
 include("solvers.jl")
 #timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
-#rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+#rawfile = "test/data/RBTS/Base/RBTS.m"
 #Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
 #timeseriesfile = "test/data/RBTS/Loads_system.xlsx"

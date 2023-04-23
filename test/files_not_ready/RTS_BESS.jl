@@ -25,17 +25,12 @@ resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 method = SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
-system.storages.buses[1] = 7
-system.storages.charge_rating[1] = 0.75
-system.storages.discharge_rating[1] = 0.75
-system.storages.thermal_rating[1] = 0.75
-system.storages.energy_rating[1] = 3
-shortfall, _ = CompositeSystems.assess(system, method, settings, resultspecs...)
-CompositeAdequacy.print_results(system, shortfall)
-
-
 function run_mcs(system, method, settings, resultspecs, bus::Int)
-    for j in 0.25:0.25:2.0
+    hour = Dates.format(Dates.now(),"HH_MM_SS")
+    current_dir = pwd()
+    new_dir = mkdir("new_job_"*hour)
+    cd(new_dir)
+    for j in 0.75:0.25:2.0
         system.storages.buses[1] = bus
         system.storages.charge_rating[1] = j
         system.storages.discharge_rating[1] = j
@@ -47,10 +42,9 @@ function run_mcs(system, method, settings, resultspecs, bus::Int)
             println("Bus: $(bus) power_rating: $(j), energy_rating: $(i)")
         end
     end
+    cd(current_dir)
 end
 
-for bus in 6:1:7
-    run_mcs(system, method, settings, resultspecs, bus)
-end
+run_mcs(system, method, settings, resultspecs, 7)
 
 #bus 6, power_rating=1.0

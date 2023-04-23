@@ -16,7 +16,7 @@ struct SystemModel{N,L,T<:Period}
     arcs::Vector{Tuple{Int, Int, Int}}
     buspairs::Dict{Tuple{Int, Int}, Vector{Any}}
 
-    baseMVA::Float32
+    baseMVA::Float64
     timestamps::StepRange{ZonedDateTime,T}
 
     function SystemModel{}(
@@ -33,7 +33,7 @@ struct SystemModel{N,L,T<:Period}
         arcs_to::Vector{Tuple{Int, Int, Int}},
         arcs::Vector{Tuple{Int, Int, Int}},
         buspairs::Dict{Tuple{Int, Int}, Vector{Any}},
-        baseMVA::Float32,
+        baseMVA::Float64,
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period}
     

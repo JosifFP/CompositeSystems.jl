@@ -24,7 +24,7 @@ pm = OPF.abstract_model(system, settings)
 componentstates = OPF.ComponentStates(system, available=true)
 OPF.build_problem!(pm, system, 1)
 t=1
-OPF._update!(pm, system, componentstates, settings, t)
+OPF.update!(pm, system, componentstates, settings, t)
 
 a = termination_status(pm.model)
 typeof(a) == JuMP.TerminationStatusCode

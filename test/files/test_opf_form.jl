@@ -2,7 +2,7 @@
 
 @testset "test OPF, RBTS system" begin
 
-    rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+    rawfile = "test/data/RBTS/Base/RBTS.m"
     system = BaseModule.SystemModel(rawfile)
 
     @testset "DC-OPF with NFAPowerModel, RBTS" begin
@@ -858,7 +858,7 @@ end
 
 @testset "RBTS system, OPF formulation, non-sequential outages" begin
     @testset "test OPF, RBTS system, DCPPowerModel, outages" begin
-        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+        rawfile = "test/data/RBTS/Base/RBTS.m"
         system = BaseModule.SystemModel(rawfile)
         settings = CompositeSystems.Settings(
             juniper_optimizer_2;
@@ -1501,7 +1501,7 @@ end
     
     @testset "test OPF, RBTS system, DCMPPowerModel, outages" begin
     
-        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+        rawfile = "test/data/RBTS/Base/RBTS.m"
         system = BaseModule.SystemModel(rawfile)
         settings = CompositeSystems.Settings(
             juniper_optimizer_2;
@@ -2153,7 +2153,7 @@ end
 
     @testset "test OPF, RBTS system, LPACCPowerModel, outages" begin
 
-        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+        rawfile = "test/data/RBTS/Base/RBTS.m"
         system = BaseModule.SystemModel(rawfile)
         settings = CompositeSystems.Settings(
             juniper_optimizer_2;
@@ -2780,7 +2780,7 @@ end
 
     @testset "test OPF, RBTS system, LPACCPowerModel, outages" begin
 
-        rawfile = "test/data/RBTS/Base/RBTS_AC.m"
+        rawfile = "test/data/RBTS/Base/RBTS.m"
         system = BaseModule.SystemModel(rawfile)
         settings = CompositeSystems.Settings(
             juniper_optimizer_2;

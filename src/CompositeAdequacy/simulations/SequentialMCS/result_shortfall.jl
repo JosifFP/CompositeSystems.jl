@@ -154,7 +154,6 @@ function finalize(acc::SMCShortfallAccumulator, system::SystemModel{N,L,T}) wher
         pu2e*ue_busperiod_std)
 end
 
-
 "ShortfallSamples"
 struct SMCShortfallSamplesAccumulator <:ResultAccumulator{SequentialMCS,ShortfallSamples}
     shortfall::Array{Float64,3}

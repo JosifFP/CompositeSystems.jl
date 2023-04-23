@@ -68,7 +68,7 @@ function conversionfactor(L::Int, P::Type{<:PowerUnit}, B::Float32)
     return powerconversion * L * B
 end
 
-function conversionfactor(L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit}, B::Float32)
+function conversionfactor(L::Int, T::Type{<:Period}, P::Type{<:PowerUnit}, E::Type{<:EnergyUnit}, B::Float64)
     to_power, to_time = subunits(E)
     powerconversion = conversionfactor(P, to_power)
     timeconversion = conversionfactor(T, to_time)

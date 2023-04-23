@@ -146,8 +146,10 @@ function _con_power_balance_nolc(
     - sum(qg[g] for g in bus_gens)
     )
 
-    con(pm, :power_balance_p, nw)[i] = @constraint(pm.model, exp_p == -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*(1.0 + 2*phi[i]))
-    con(pm, :power_balance_q, nw)[i] = @constraint(pm.model, exp_q == -sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0 + 2*phi[i]))
+    con(pm, :power_balance_p, nw)[i] = @constraint(
+        pm.model, exp_p == -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*(1.0 + 2*phi[i]))
+    con(pm, :power_balance_q, nw)[i] = @constraint(
+        pm.model, exp_q == -sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0 + 2*phi[i]))
 
 end
 
@@ -194,7 +196,8 @@ function con_relaxation_cos_on_off(pm::AbstractLPACModel, l::Int, td, cs, z, td_
 
     con(pm, :relaxation_cos_upper, nw)[l] = JuMP.@constraint(pm.model, cs <= z)
     con(pm, :relaxation_cos_lower, nw)[l] = JuMP.@constraint(pm.model, cs >= z*cos(max_ad))
-    con(pm, :relaxation_cos, nw)[l] = JuMP.@constraint(pm.model, cs <= z - (1-cos(max_ad))/(max_ad^2)*(td^2) + (1-z)*((1-cos(max_ad))/(max_ad^2)*(td_max^2)))
+    con(pm, :relaxation_cos, nw)[l] = JuMP.@constraint(
+        pm.model, cs <= z - (1-cos(max_ad))/(max_ad^2)*(td^2) + (1-z)*((1-cos(max_ad))/(max_ad^2)*(td_max^2)))
 end
 
 ""
@@ -207,8 +210,10 @@ function _con_ohms_yt_from_on_off(pm::AbstractLPACModel, l::Int, nw::Int, f_bus:
     td = var(pm, :td, nw)[l]
     cs = var(pm, :cs, nw)[l]
     z = var(pm, :z_branch, nw)[l]
-    con(pm, :ohms_yt_from_p, nw)[l] = @constraint(pm.model, p_fr ==  (g+g_fr)/tm^2*(z + 2*phi_fr) + (-g*tr+b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr-g*ti)/tm^2*(td))
-    con(pm, :ohms_yt_from_q, nw)[l] = @constraint(pm.model, q_fr == -(b+b_fr)/tm^2*(z + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(td))
+    con(pm, :ohms_yt_from_p, nw)[l] = @constraint(
+        pm.model, p_fr ==  (g+g_fr)/tm^2*(z + 2*phi_fr) + (-g*tr+b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr-g*ti)/tm^2*(td))
+    con(pm, :ohms_yt_from_q, nw)[l] = @constraint(
+        pm.model, q_fr == -(b+b_fr)/tm^2*(z + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(td))
 
 end
 
@@ -224,8 +229,10 @@ function _con_ohms_yt_to_on_off(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::I
     td = var(pm, :td, nw)[l]
     cs = var(pm, :cs, nw)[l]
     z = var(pm, :z_branch, nw)[l]
-    con(pm, :ohms_yt_to_p, nw)[l] = @constraint(pm.model, p_to ==  (g+g_to)*(z + 2*phi_to) + (-g*tr-b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr+g*ti)/tm^2*-(td))
-    con(pm, :ohms_yt_to_q, nw)[l] = @constraint(pm.model, q_to == -(b+b_to)*(z + 2*phi_to) - (-b*tr+g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr-b*ti)/tm^2*-(td))
+    con(pm, :ohms_yt_to_p, nw)[l] = @constraint(
+        pm.model, p_to ==  (g+g_to)*(z + 2*phi_to) + (-g*tr-b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr+g*ti)/tm^2*-(td))
+    con(pm, :ohms_yt_to_q, nw)[l] = @constraint(
+        pm.model, q_to == -(b+b_to)*(z + 2*phi_to) - (-b*tr+g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr-b*ti)/tm^2*-(td))
 
 end
 
@@ -238,8 +245,10 @@ function _con_ohms_yt_from(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t
     phi_to = var(pm, :phi_to, nw)[l]
     td = var(pm, :td, nw)[l]
     cs = var(pm, :cs, nw)[l]
-    con(pm, :ohms_yt_from_p, nw)[l] = @constraint(pm.model, p_fr ==  (g+g_fr)/tm^2*(1.0 + 2*phi_fr) + (-g*tr+b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr-g*ti)/tm^2*(td))
-    con(pm, :ohms_yt_from_q, nw)[l] = @constraint(pm.model, q_fr == -(b+b_fr)/tm^2*(1.0 + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(td))
+    con(pm, :ohms_yt_from_p, nw)[l] = @constraint(
+        pm.model, p_fr ==  (g+g_fr)/tm^2*(1.0 + 2*phi_fr) + (-g*tr+b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr-g*ti)/tm^2*(td))
+    con(pm, :ohms_yt_from_q, nw)[l] = @constraint(
+        pm.model, q_fr == -(b+b_fr)/tm^2*(1.0 + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(td))
 
 end
 
@@ -252,12 +261,15 @@ function _con_ohms_yt_to(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_b
     phi_to = var(pm, :phi_to, nw)[l]
     td = var(pm, :td, nw)[l]
     cs = var(pm, :cs, nw)[l]
-    con(pm, :ohms_yt_to_p, nw)[l] = @constraint(pm.model, p_to ==  (g+g_to)*(1.0 + 2*phi_to) + (-g*tr-b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr+g*ti)/tm^2*-(td))
-    con(pm, :ohms_yt_to_q, nw)[l] = @constraint(pm.model, q_to == -(b+b_to)*(1.0 + 2*phi_to) - (-b*tr+g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr-b*ti)/tm^2*-(td))
+    con(pm, :ohms_yt_to_p, nw)[l] = @constraint(
+        pm.model, p_to ==  (g+g_to)*(1.0 + 2*phi_to) + (-g*tr-b*ti)/tm^2*(cs + phi_fr + phi_to) + (-b*tr+g*ti)/tm^2*-(td))
+    con(pm, :ohms_yt_to_q, nw)[l] = @constraint(
+        pm.model, q_to == -(b+b_to)*(1.0 + 2*phi_to) - (-b*tr+g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr-b*ti)/tm^2*-(td))
 end
 
 ""
-function _con_storage_losses(pm::AbstractLPACModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+function _con_storage_losses(
+    pm::AbstractLPACModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
     ps = var(pm, :ps, n)[i]
     qs = var(pm, :qs, n)[i]
     sc = var(pm, :sc, n)[i]
@@ -274,7 +286,8 @@ end
 #***************************************************** UPDATES *************************************************************************
 
 ""
-function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+function update_branch_voltage_magnitude_fr_on_off(
+    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
 
     phi_fr = var(pm, :phi_fr, nw)[l]
 
@@ -289,7 +302,8 @@ function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system
 end
 
 ""
-function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+function update_branch_voltage_magnitude_to_on_off(
+    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
 
     phi_to = var(pm, :phi_to, nw)[l]
 
@@ -304,7 +318,8 @@ function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system
 end
 
 ""
-function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+function update_var_branch_voltage_product_angle_on_off(
+    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
 
     td = var(pm, :td, nw)[l]
 
@@ -318,7 +333,8 @@ function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, s
 end
 
 ""
-function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+function update_var_shunt_admittance_factor(
+    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
     
     z_shunt = var(pm, :z_shunt, nw)[l]
     @views t_now_view_shunts = states.shunts[:, t]
@@ -371,7 +387,8 @@ function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemMode
 
 end
 
-function _update_con_ohms_yt_from(pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+function _update_con_ohms_yt_from(
+    pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     if states.branches[l,t] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 0.0)
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[l], 0.0)
@@ -382,7 +399,8 @@ function _update_con_ohms_yt_from(pm::AbstractLPACModel, states::ComponentStates
 end
 
 "AC Line Flow Constraints"
-function _update_con_ohms_yt_to(pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+function _update_con_ohms_yt_to(
+    pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
     if states.branches[l,t] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[l], 0.0)
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[l], 0.0)
@@ -393,7 +411,8 @@ function _update_con_ohms_yt_to(pm::AbstractLPACModel, states::ComponentStates, 
 end
 
 ""
-function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_var_branch_indicator(
+    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
 
     z_branch = var(pm, :z_branch, nw)[i]
     if states.branches[i,t] == 0

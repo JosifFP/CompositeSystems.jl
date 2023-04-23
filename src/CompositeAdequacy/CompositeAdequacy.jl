@@ -15,13 +15,15 @@
     import TimeZones: ZonedDateTime
     import LinearAlgebra: qr
     import XLSX: rename!, addsheet!, openxlsx
+    import Distributions: ccdf, Normal
+    import Base: minimum, maximum, extrema
 
     export
         # CompositeAdequacy submoduleexport
         assess, SimulationSpec,
         
         # Metrics
-        ReliabilityMetric, EDLC, EENS, val, stderror,
+        ReliabilityMetric, EDLC, EENS, val, stderror, ELCC,
 
         # Simulation specification
         SequentialMCS, accumulator,
@@ -33,7 +35,7 @@
         Utilization, UtilizationSamples,
 
         #utils
-        makeidxlist, print_results
+        makeidxlist, print_results, allocate_loads, copy_load, update_load!
 
         # Convenience re-exports
         ZonedDateTime
@@ -41,6 +43,8 @@
     include("statistics.jl")
     include("types.jl")
     include("results/results.jl")
+    include("results/CapacityCreditResult.jl")
+    include("results/ELCC.jl")
     include("simulations/simulations.jl")
     include("utils.jl")
 end

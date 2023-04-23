@@ -23,7 +23,7 @@
     OPF.OPF.field(system, :storages, :energy)[1] = 0.0
     
     t=1
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=1, No outages" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -44,7 +44,7 @@
     end
     
     t=2
-    OPF._update!(pm, system, componentstates, settings, t)  
+    OPF.update!(pm, system, componentstates, settings, t)  
     @testset "t=2, No outages" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
@@ -68,7 +68,7 @@
     componentstates.generators[7,t] = 0
     componentstates.generators[8,t] = 0
     componentstates.generators[9,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=3, G3, G7, G8 and G9 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -90,7 +90,7 @@
     t=4
     componentstates.branches[5,t] = 0
     componentstates.branches[8,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=4, L5 and L8 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -113,7 +113,7 @@
     componentstates.branches[3,t] = 0
     componentstates.branches[4,t] = 0
     componentstates.branches[8,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t)  
+    OPF.update!(pm, system, componentstates, settings, t)  
     
     @testset "t=5, L3, L4 and L8 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -138,7 +138,7 @@
     componentstates.generators[1,t] = 0
     componentstates.generators[2,t] = 0
     componentstates.generators[3,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
     
     @testset "L2 and L7 on outage, generation reduced" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -161,7 +161,7 @@
     componentstates.branches[2,t] = 0
     componentstates.generators[1,t] = 0
     componentstates.generators[2,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L2 on outage, generation reduced" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -183,7 +183,7 @@
     t=8
     componentstates.branches[1,t] = 0
     componentstates.branches[6,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L1 and L6 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -206,7 +206,7 @@
 
     t=9
     componentstates.branches[4,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L4 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -252,7 +252,7 @@ end
     OPF.OPF.field(system, :storages, :energy)[1] = 0.0
     
     t=1
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=1, No outages" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -273,7 +273,7 @@ end
     end
     
     t=2
-    OPF._update!(pm, system, componentstates, settings, t)  
+    OPF.update!(pm, system, componentstates, settings, t)  
     @testset "t=2, No outages" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
@@ -297,7 +297,7 @@ end
     componentstates.generators[7,t] = 0
     componentstates.generators[8,t] = 0
     componentstates.generators[9,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=3, G3, G7, G8 and G9 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -319,7 +319,7 @@ end
     t=4
     componentstates.branches[5,t] = 0
     componentstates.branches[8,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=4, L5 and L8 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -342,7 +342,7 @@ end
     componentstates.branches[3,t] = 0
     componentstates.branches[4,t] = 0
     componentstates.branches[8,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t)
+    OPF.update!(pm, system, componentstates, settings, t)
 
     @testset "t=5, L3, L4 and L8 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -367,7 +367,7 @@ end
     componentstates.generators[1,t] = 0
     componentstates.generators[2,t] = 0
     componentstates.generators[3,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L2 and L7 on outage, generation reduced" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -391,7 +391,7 @@ end
     componentstates.branches[2,t] = 0
     componentstates.generators[1,t] = 0
     componentstates.generators[2,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L2 on outage, generation reduced" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -413,7 +413,7 @@ end
     t=8
     componentstates.branches[1,t] = 0
     componentstates.branches[6,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L1 and L6 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
@@ -436,7 +436,7 @@ end
 
     t=9
     componentstates.branches[4,t] = 0
-    OPF._update!(pm, system, componentstates, settings, t) 
+    OPF.update!(pm, system, componentstates, settings, t) 
 
     @testset "L1 and L6 on outage" begin
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR

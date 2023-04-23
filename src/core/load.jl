@@ -41,7 +41,7 @@ end
 ""
 function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
 
-    baseMVA::Float32 = Float32(network[:baseMVA])
+    baseMVA::Float64 = Float32(network[:baseMVA])
     network_bus::Dict{Int, Any} = network[:bus]
     network_branch::Dict{Int, Any} = network[:branch]
     network_commonbranch::Dict{Int, Any} = network[:commonbranch]
