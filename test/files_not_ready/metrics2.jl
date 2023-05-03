@@ -43,22 +43,7 @@ loads = [
     5 => 0.1081,
 ]
 
-smc = SequentialMCS(samples=100, seed=100, threaded=true)
+smc = SequentialMCS(samples=10, seed=100, threaded=true)
 #simulationspec = SequentialMCS(samples=500, seed=100, threaded=true)
-@time cc = assess(sys_before, sys_after, ELCC{SI}(50.0, loads; capacity_gap=10.0), settings, smc)
-
-cc
-
-minimum(cc)
-maximum(cc)
-extrema(cc)
-
-sys_after.baseMVA
-
-cc.target_metric
-cc.lowerbound
-cc.upperbound
-(cc.lowerbound, cc.upperbound)
-
-cc.bound_capacities
-cc.bound_metrics
+cc = assess(sys_before, sys_after, ELCC{SI}(50.0, loads; capacity_gap=10.0), settings, smc)
+CompositeAdequacy.print_results(sys_after, cc)

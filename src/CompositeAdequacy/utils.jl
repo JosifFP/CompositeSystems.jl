@@ -196,3 +196,53 @@ function print_results(system::SystemModel, utilization::UtilizationResult)
     end
     return
 end
+
+""
+function print_results(system::SystemModel, capcredit::CapacityCreditResult)
+
+    hour = Dates.format(Dates.now(),"HH_MM_SS")
+    
+    openxlsx("ELCC_"*hour*".xlsx", mode="w") do xf
+        rename!(xf[1], "summary")
+
+        if length(system.storages) > 0
+            xf[1]["A1"] =  "energy_rating"
+            xf[1]["B1"] = system.storages.energy_rating[1]
+            xf[1]["A2"] =  "buses"
+            xf[1]["B2"] = system.storages.buses[1]
+            xf[1]["A3"] =  "charge_rating"
+            xf[1]["B3"] = system.storages.charge_rating[1]
+            xf[1]["A4"] =  "discharge_rating"
+            xf[1]["B4"] = system.storages.discharge_rating[1]
+            xf[1]["A5"] =  "thermal_rating"
+            xf[1]["B5"] = system.storages.thermal_rating[1]
+        end
+
+        xf[1]["C1"] = "target_metric"
+        xf[1]["D1"] = string(capcredit.target_metric)
+        xf[1]["C2"] = "val (ELCC)"
+        xf[1]["D2"] = val(capcredit.target_metric)
+        xf[1]["C3"] = "stderror (ELCC)"
+        xf[1]["D3"] = stderror(capcredit.target_metric)
+        xf[1]["C4"] = "lowerbound"
+        xf[1]["D4"] = capcredit.lowerbound
+        xf[1]["C5"] = "upperbound"
+        xf[1]["D5"] = capcredit.upperbound
+        xf[1]["C6"] = "minimum"
+        xf[1]["D6"] = minimum(capcredit)
+        xf[1]["C7"] = "maximum"
+        xf[1]["D7"] = maximum(capcredit)
+        xf[1]["C8"] = "extrema"
+        xf[1]["D8"] = string(extrema(capcredit))
+
+        xf[1]["E1"] = "bound_capacities"
+        xf[1]["E2", dim=1] = collect(capcredit.bound_capacities)
+        xf[1]["F1"] = "bound_metrics - val"
+        xf[1]["F2", dim=1] = collect(val.(capcredit.bound_metrics))
+        xf[1]["G1"] = "bound_metrics - stderror"
+        xf[1]["G2", dim=1] = collect(stderror.(capcredit.bound_metrics))
+        xf[1]["H1"] = "bound_metrics"
+        xf[1]["H2"] = collect(string.(capcredit.bound_metrics))
+    end
+    return
+end
