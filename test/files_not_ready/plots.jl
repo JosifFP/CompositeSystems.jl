@@ -41,7 +41,7 @@ wireframe!(axs,(x), y, z, shading=false, color = :black, linewidth=0.7, overdraw
 xmin, ymin, zmin = minimum(axs.finallimits[])
 xmax, ymax, zmax = maximum(axs.finallimits[])
 #contour!(axs, x, y, z; colormap=:Spectral_11, levels=20,transformation=(:xy, zmax))
-#contourf!(axs, x, y, z; colormap=cmap,transformation=(:xy, zmin))
+contourf!(axs, x, y, z; colormap=cmap,transformation=(:xy, zmin))
 #Colorbar(f[1, 2], s, width=15, ticksize=15, height=Relative(0.5), flipaxis = false)
 
 #save("figure1.png", f)

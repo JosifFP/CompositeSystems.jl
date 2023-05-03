@@ -108,24 +108,33 @@ function print_results(system::SystemModel, shortfall::ShortfallResult)
         xf[1]["J1"] = "EDLC-STDERROR"
         xf[1]["J2", dim=1] = collect(stderror.(EDLC.(shortfall, system.buses.keys)))
 
-        xf[1]["K1"] = "eventperiod_mean"
-        xf[1]["K2"] = shortfall.eventperiod_mean
-        xf[1]["L1"] = "eventperiod_std"
-        xf[1]["L2"] = shortfall.eventperiod_std
-        xf[1]["M1"] = "eventperiod_bus_mean"
-        xf[1]["M2", dim=1] = collect(shortfall.eventperiod_bus_mean)
-        xf[1]["N1"] = "eventperiod_bus_std"
-        xf[1]["N2", dim=1] = collect(shortfall.eventperiod_bus_std)
-        xf[1]["O1"] = "eventperiod_period_mean"
-        xf[1]["O2", dim=1] = collect(shortfall.eventperiod_period_mean)
-        xf[1]["P1"] = "eventperiod_period_std"
-        xf[1]["P2", dim=1] = collect(shortfall.eventperiod_period_std)
-        xf[1]["Q1"] = "shortfall_std"
-        xf[1]["Q2"] = shortfall.shortfall_std
-        xf[1]["R1"] = "shortfall_bus_std"
-        xf[1]["R2", dim=1] = collect(shortfall.shortfall_bus_std)
-        xf[1]["S1"] = "shortfall_period_std"
-        xf[1]["S2", dim=1] = collect(shortfall.shortfall_period_std)
+        xf[1]["K1"] = "mean system SI"
+        xf[1]["K2"] = val.(SI.(shortfall))
+        xf[1]["L1"] = "stderror SI"
+        xf[1]["L2"] = stderror.(SI.(shortfall))
+        xf[1]["M1"] = "SI-MEAN"
+        xf[1]["M2", dim=1] = collect(val.(SI.(shortfall, system.buses.keys)))
+        xf[1]["N1"] = "SI-STDERROR"
+        xf[1]["N2", dim=1] = collect(stderror.(SI.(shortfall, system.buses.keys)))
+
+        xf[1]["O1"] = "eventperiod_mean"
+        xf[1]["O2"] = shortfall.eventperiod_mean
+        xf[1]["P1"] = "eventperiod_std"
+        xf[1]["P2"] = shortfall.eventperiod_std
+        xf[1]["Q1"] = "eventperiod_bus_mean"
+        xf[1]["Q2", dim=1] = collect(shortfall.eventperiod_bus_mean)
+        xf[1]["R1"] = "eventperiod_bus_std"
+        xf[1]["R2", dim=1] = collect(shortfall.eventperiod_bus_std)
+        xf[1]["S1"] = "eventperiod_period_mean"
+        xf[1]["S2", dim=1] = collect(shortfall.eventperiod_period_mean)
+        xf[1]["T1"] = "eventperiod_period_std"
+        xf[1]["T2", dim=1] = collect(shortfall.eventperiod_period_std)
+        xf[1]["U1"] = "shortfall_std"
+        xf[1]["U2"] = shortfall.shortfall_std
+        xf[1]["V1"] = "shortfall_bus_std"
+        xf[1]["V2", dim=1] = collect(shortfall.shortfall_bus_std)
+        xf[1]["W1"] = "shortfall_period_std"
+        xf[1]["W2", dim=1] = collect(shortfall.shortfall_period_std)
 
         addsheet!(xf, "eventperiod_busperiod_mean")
         xf[2]["A1"] = collect(shortfall.eventperiod_busperiod_mean')

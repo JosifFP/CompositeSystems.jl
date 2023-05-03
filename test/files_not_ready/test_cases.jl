@@ -35,26 +35,33 @@ settings = CompositeSystems.Settings(
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel,
     #powermodel_formulation = OPF.DCPPowerModel,
-    #powermodel_formulation = OPF.DCMPPowerModel,
-    powermodel_formulation = OPF.LPACCPowerModel,
+    powermodel_formulation = OPF.DCMPPowerModel,
+    #powermodel_formulation = OPF.LPACCPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
-    set_string_names_on_creation = false
+    set_string_names_on_creation = false,
+    count_samples=true,
 )
 
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = SequentialMCS(samples=15000, seed=100, threaded=false)
+method = SequentialMCS(samples=5, seed=100, threaded=true)
 
-@time shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+CompositeAdequacy.print_results(system, shortfall)
+
+
+
 
 CompositeSystems.EDLC.(shortfall, system.buses.keys)
 CompositeSystems.EENS.(shortfall, system.buses.keys)
-CompositeSystems.EDLC.(shortfall)
+CompositeSystems.SI.(shortfall, system.buses.keys)
+CompositeSystems.EDLC.(shortfall) 
 CompositeSystems.EENS.(shortfall)
+CompositeSystems.SI.(shortfall)
 val.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
 val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
-
+val.(CompositeSystems.SI.(shortfall, system.buses.keys))
 
 
 

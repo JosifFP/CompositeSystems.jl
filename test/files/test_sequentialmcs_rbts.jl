@@ -32,26 +32,60 @@ system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
 @testset "Sequential MCS, 1000 samples, RBTS" begin
     method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=true)
-    shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    system_EDLC_ps = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
-    system_EENS_ps = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.185849]
-    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys)), system_EDLC_ps; atol = 1e-4)
-    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys)), system_EENS_ps; atol = 1e-4)
+    shortfall_nonthreaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
 
+    system_EDLC_mean = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
+    system_EENS_mean = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.18585]
+    system_SI_mean = [0.0, 0.0, 3.46465, 0.0, 0.00629, 41.24946]
+
+    system_EDLC_stderror = [ 0.0, 0.0, 0.13081, 0.0, 0.00200, 0.45317]
+    system_EENS_stderror= [ 0.0, 0.0, 1.66407, 0.0, 0.01941, 5.61568]
+    system_SI_stderror = [ 0.0, 0.0, 0.53969, 0.0, 0.00629, 1.82130]
+
+    @test isapprox(
+        CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall_nonthreaded, system.buses.keys)), 
+        system_EDLC_mean; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall_nonthreaded, system.buses.keys)), 
+        system_EENS_mean; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.val.(CompositeSystems.SI.(shortfall_nonthreaded, system.buses.keys)), 
+        system_SI_mean; atol = 1e-4)
+
+    @test isapprox(
+        CompositeAdequacy.stderror.(CompositeSystems.EDLC.(shortfall_nonthreaded, system.buses.keys)), 
+        system_EDLC_stderror; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall_nonthreaded, system.buses.keys)), 
+        system_EENS_stderror; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.stderror.(CompositeSystems.SI.(shortfall_nonthreaded, system.buses.keys)), 
+        system_SI_stderror; atol = 1e-4)
+
+
+    
     method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=false)
-    shortfall,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-    system_EDLC = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
-    system_EENS = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.185849]
-    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys)), system_EDLC; atol = 1e-4)
-    @test isapprox(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys)), system_EENS; atol = 1e-4)
-end
+    shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
 
-# CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
-# CompositeAdequacy.stderror.(CompositeSystems.EDLC.(shortfall, system.buses.keys))
-# CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall))
-# CompositeAdequacy.stderror.(CompositeSystems.EDLC.(shortfall))
-# CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
-# CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall, system.buses.keys))
-# CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall))
-# CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall))
+    @test isapprox(
+        CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall_threaded, system.buses.keys)), 
+        system_EDLC_mean; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall_threaded, system.buses.keys)), 
+        system_EENS_mean; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.val.(CompositeSystems.SI.(shortfall_threaded, system.buses.keys)), 
+        system_SI_mean; atol = 1e-4)
+
+    @test isapprox(
+        CompositeAdequacy.stderror.(CompositeSystems.EDLC.(shortfall_threaded, system.buses.keys)), 
+        system_EDLC_stderror; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.stderror.(CompositeSystems.EENS.(shortfall_threaded, system.buses.keys)), 
+        system_EENS_stderror; atol = 1e-4)
+    @test isapprox(
+        CompositeAdequacy.stderror.(CompositeSystems.SI.(shortfall_threaded, system.buses.keys)), 
+        system_SI_stderror; atol = 1e-4)
+
+end
 

@@ -53,9 +53,7 @@ end
 val(est::MeanEstimate) = est.estimate
 stderror(est::MeanEstimate) = est.standarderror
 
-Base.isapprox(x::MeanEstimate, y::MeanEstimate) =
-        isapprox(x.estimate, y.estimate) &&
-        isapprox(x.standarderror, y.standarderror)
+Base.isapprox(x::MeanEstimate, y::MeanEstimate) = isapprox(x.estimate, y.estimate) && isapprox(x.standarderror, y.standarderror)
 
 function Base.show(io::IO, x::MeanEstimate)
     v, s = stringprecision(x)
@@ -85,11 +83,11 @@ function stringprecision(x::MeanEstimate)
     return v_rounded, s_rounded
 end
 
-Base.isapprox(x::ReliabilityMetric, y::ReliabilityMetric) =
-        isapprox(val(x), val(y)) && isapprox(stderror(x), stderror(y))
+Base.isapprox(x::ReliabilityMetric, y::ReliabilityMetric) = isapprox(val(x), val(y)) && isapprox(stderror(x), stderror(y))
 
-# Expected Duration of Load Curtailments
 
+###########################################################################################################################
+"Expected Duration of Load Curtailments (EDLC in hours/y)"
 struct EDLC{N,L,T<:Period} <: ReliabilityMetric
 
     EDLC::MeanEstimate
@@ -106,15 +104,14 @@ val(x::EDLC) = val(x.EDLC)
 stderror(x::EDLC) = stderror(x.EDLC)
 
 function Base.show(io::IO, x::EDLC{N,L,T}) where {N,L,T}
-
     t_symbol = unitsymbol(T)
-    print(io, "EDLC = ", x.EDLC, " ",
-          L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")", "/",
-          N*L == 1 ? "" : N*L, t_symbol)
-
+    print(io, "EDLC = ", x.EDLC, " ", L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")", "/", N*L == 1 ? "" : N*L, t_symbol)
 end
 
-# Expected Energy Not Supplied
+
+
+###########################################################################################################################
+"Expected Energy Not Supplied (EENS in MWh/y)"
 struct EENS{N,L,T<:Period,E<:EnergyUnit} <: ReliabilityMetric
 
     EENS::MeanEstimate
@@ -131,8 +128,29 @@ val(x::EENS) = val(x.EENS)
 stderror(x::EENS) = stderror(x.EENS)
 
 function Base.show(io::IO, x::EENS{N,L,T,E}) where {N,L,T,E}
+    print(io, "EENS = ", x.EENS, " ", unitsymbol(E), "/", N*L == 1 ? "" : N*L, unitsymbol(T))
+end
 
-    print(io, "EENS = ", x.EENS, " ",
-        unitsymbol(E), "/", N*L == 1 ? "" : N*L, unitsymbol(T))
 
+
+###########################################################################################################################
+"Severity Index (SI in system-minutes/y).
+A normalized form of EENS index divided by the system peak load. Its unit is expressed as a system-minutes."
+struct SI{N,L,T<:Period} <: ReliabilityMetric
+
+    SI::MeanEstimate
+
+    function SI{N,L,T}(SI::MeanEstimate) where {N,L,T<:Period}
+        val(SI) >= 0 || throw(DomainError(
+            "$val is not a valid unserved energy expectation"))
+        new{N,L,T}(SI)
+    end
+
+end
+
+val(x::SI) = val(x.SI)
+stderror(x::SI) = stderror(x.SI)
+
+function Base.show(io::IO, x::SI{N,L,T}) where {N,L,T}
+    print(io, "SI = ", x.SI, " ", "sys.mins", "/", N*L == 1 ? "" : N*L, unitsymbol(T))
 end

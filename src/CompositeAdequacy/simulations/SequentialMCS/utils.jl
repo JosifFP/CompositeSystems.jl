@@ -85,3 +85,27 @@ function apply_common_outages!(states::ComponentStates, branches::Branches, t::I
         end
     end
 end
+
+""
+function peakload(loads::Loads{N}, buses::Buses) where {N}
+    
+    key_buses = field(buses, :keys)
+    bus_loads_init = Dict{Int, Vector{Float64}}((i, Float64[]) for i in key_buses)
+    
+    for k in field(loads, :keys)
+        push!(bus_loads_init[field(loads, :buses)[k]], maximum(loads.pd[k,:]))
+    end
+
+    bus_peakload = Array{Float64}(undef, length(buses))
+
+    for (k,v) in bus_loads_init
+        if !isempty(v)
+            bus_peakload[k] = sum(v)
+        else
+            bus_peakload[k] = 0.0
+        end
+    end
+
+    system_peakload = Float64(maximum(sum(loads.pd, dims=1)))
+    return system_peakload, bus_peakload
+end
