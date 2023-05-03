@@ -52,7 +52,6 @@ CompositeAdequacy.print_results(system, shortfall)
 
 
 
-
 CompositeSystems.EDLC.(shortfall, system.buses.keys)
 CompositeSystems.EENS.(shortfall, system.buses.keys)
 CompositeSystems.SI.(shortfall, system.buses.keys)
@@ -64,27 +63,12 @@ val.(CompositeSystems.EENS.(shortfall, system.buses.keys))
 val.(CompositeSystems.SI.(shortfall, system.buses.keys))
 
 
-
 system.storages.buses[1] = 2
 system.storages.charge_rating[1] = 0.25
 system.storages.discharge_rating[1] = 0.25
 system.storages.thermal_rating[1] = 0.25
 system.storages.energy_rating[1] = 0.5
 
-
-shortfall.eventperiod_mean
-shortfall.eventperiod_std
-shortfall.eventperiod_bus_mean
-shortfall.eventperiod_bus_std
-shortfall.eventperiod_period_mean
-shortfall.eventperiod_period_std
-shortfall.eventperiod_busperiod_mean
-shortfall.eventperiod_busperiod_std
-shortfall.shortfall_mean
-shortfall.shortfall_std
-shortfall.shortfall_bus_std
-shortfall.shortfall_period_std
-shortfall.shortfall_busperiod_std
 
 timestamprow = permutedims(system.timestamps)
 busescol = system.buses.keys
