@@ -1,4 +1,3 @@
-
 "Shortfall"
 mutable struct SMCShortfallAccumulator <: ResultAccumulator{SequentialMCS,Shortfall}
 
@@ -120,6 +119,7 @@ end
 ""
 function finalize(acc::SMCShortfallAccumulator, system::SystemModel{N,L,T}) where {N,L,T}
 
+    buses = field(system, :buses, :keys)
     ep_total_mean, ep_total_std = mean_std(acc.periodsdropped_total)
     ep_bus_mean, ep_bus_std = mean_std(acc.periodsdropped_bus)
     ep_period_mean, ep_period_std = mean_std(acc.periodsdropped_period)
@@ -135,9 +135,11 @@ function finalize(acc::SMCShortfallAccumulator, system::SystemModel{N,L,T}) wher
     E = BaseModule.energyunits["MWh"]
     pu2e = conversionfactor(L,T,P,E,system.baseMVA)
 
+    system_peakload, bus_peakload = peakload(system.loads, system.buses)
+
     return ShortfallResult{N,L,T,P,E}(
         nsamples, 
-        field(system, :buses, :keys), 
+        buses, 
         field(system, :timestamps),
         ep_total_mean, 
         ep_total_std, 
@@ -147,6 +149,8 @@ function finalize(acc::SMCShortfallAccumulator, system::SystemModel{N,L,T}) wher
         ep_period_std,
         ep_busperiod_mean, 
         ep_busperiod_std,
+        system.baseMVA*system_peakload,
+        system.baseMVA.*bus_peakload,
         pu2e*ue_busperiod_mean, 
         pu2e*ue_total_std,
         pu2e*ue_bus_std, 

@@ -318,7 +318,6 @@ function calc_connected_components(topology::Topology, branches::Branches)
 
     ccs = Set(values(component_lookup))
     return ccs
-    
 end
 
 ""

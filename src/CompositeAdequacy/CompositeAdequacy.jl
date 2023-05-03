@@ -23,7 +23,7 @@
         assess, SimulationSpec,
         
         # Metrics
-        ReliabilityMetric, EDLC, EENS, val, stderror, ELCC,
+        ReliabilityMetric, EDLC, EENS, SI, ELCC, MeanEstimate, val, stderror,
 
         # Simulation specification
         SequentialMCS, accumulator,

@@ -16,7 +16,7 @@ settings = CompositeSystems.Settings(
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
     set_string_names_on_creation = false,
-    count_samples = true
+    count_samples = false
 )
 
 timeseriesfile_before = "test/data/RBTS/Loads_system.xlsx"
@@ -43,16 +43,17 @@ loads = [
     5 => 0.1081,
 ]
 
-smc = SequentialMCS(samples=300, seed=100, threaded=true)
+smc = SequentialMCS(samples=100, seed=100, threaded=true)
 #simulationspec = SequentialMCS(samples=500, seed=100, threaded=true)
-cc = assess(sys_before, sys_after, ELCC{EENS}(50.0, loads; capacity_gap=10.0), settings, smc)
+@time cc = assess(sys_before, sys_after, ELCC{SI}(50.0, loads; capacity_gap=10.0), settings, smc)
+
+cc
 
 minimum(cc)
 maximum(cc)
 extrema(cc)
 
 sys_after.baseMVA
-params.capacity_gap
 
 cc.target_metric
 cc.lowerbound
@@ -61,75 +62,3 @@ cc.upperbound
 
 cc.bound_capacities
 cc.bound_metrics
-
-
-
-
-
-
-
-
-
-
-params = ELCC{EENS}(50.0, loads)
-sys_baseline = sys_before
-sys_augmented = sys_after
-P = BaseModule.powerunits["MW"]
-
-loadskeys = sys_baseline.loads.keys
-loadskeys != sys_augmented.loads.keys && error("Systems provided do not have matching loads")
-
-target_metric = EENS(first(assess(sys_baseline, simulationspec, settings, Shortfall())))
-
-capacities = Int[]
-metrics = typeof(target_metric)[]
-
-elcc_loads, base_load, sys_variable = CompositeSystems.copy_load(sys_augmented, params.loads)
-
-elcc_loads
-base_load
-sys_variable.loads.pd[:,100] == base_load[:,100]
-
-
-lower_bound = 0
-lower_bound_metric = EENS(first(assess(sys_variable, simulationspec, settings, Shortfall())))
-push!(capacities, lower_bound)
-push!(metrics, lower_bound_metric)
-
-upper_bound = params.capacity_max
-CompositeSystems.update_load!(sys_variable, elcc_loads, base_load, upper_bound, sys_baseline.baseMVA)
-
-
-
-sys_variable.loads.pd[:,100] == base_load[:,100]
-upper_bound_metric = EENS(first(assess(sys_variable, simulationspec, settings, Shortfall())))
-push!(capacities, upper_bound)
-push!(metrics, upper_bound_metric)
-
-
-
-
-
-
-cc = assess(sys_before, sys_after, ELCC{EENS}(50.0, loads), settings, smc)
-
-#params = ELCC{EENS}(500.0, loads)
-#load_shares = params.loads
-#load_allocations = CompositeSystems.allocate_loads(sys_before.loads.keys, load_shares)
-
-
-minimum(cc)
-maximum(cc)
-extrema(cc)
-
-sys_after.baseMVA
-params.capacity_gap
-
-cc.target_metric
-cc.lowerbound
-cc.upperbound
-(cc.lowerbound, cc.upperbound)
-
-cc.bound_capacities
-cc.bound_metrics
-

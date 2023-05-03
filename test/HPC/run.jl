@@ -13,10 +13,10 @@ gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
     "LogToConsole"=>0, 
     "NonConvex"=>2, 
     "NumericFocus"=>3, 
-    "Threads"=>32
+    "Threads"=>48
 )
 
-resultspecs = (Shortfall(), GeneratorAvailability())
+resultspecs = (Shortfall(), Utilization())
 
 settings = CompositeSystems.Settings(
     gurobi_optimizer_3,
@@ -31,7 +31,6 @@ settings = CompositeSystems.Settings(
 timeseriesfile = "test/data/RTS/Loads_system.xlsx"
 rawfile = "test/data/others/Storage/RTS_strg_constrained.m"
 Base_reliabilityfile = "test/data/others/Storage/R_RTS_strg.m"
-resultspecs = (Shortfall(), BranchAvailability())
 method = SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
