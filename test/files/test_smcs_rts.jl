@@ -24,8 +24,11 @@ settings = CompositeSystems.Settings(
 )
 
 timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH_modified.m"
+rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
 Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+
+
+
 
 @testset "Sequential MCS, 1000 samples, RBTS" begin
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=false)

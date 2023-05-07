@@ -474,7 +474,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::Componen
                     #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
                 end
                 if settings.deactivate_isolated_bus_gens_stors == true && incident_active_edge == 0 && 
-                    length(topology(pm, :bus_generators)[i]) > 0 && length(topology(pm, :bus_storages)[i]) == 0
+                    length(topology(pm, :bus_generators)[i]) > 0
                     states.buses[i,t] = 4
                     changed = true
                 end
@@ -506,7 +506,7 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::Componen
     ccs_order = sort(collect(ccs); by=length)
     largest_cc = ccs_order[end]
 
-    for i in field(system, :shunts, :buses)
+    for i in field(system, :shunts, :buses)     # this step should be improved later. It ensures that the optimization algorithm solves the problem correctly.
         if !(i in largest_cc)
             for k in topology(pm, :bus_shunts)[i]
                 states.shunts[k,t] = false
@@ -515,9 +515,6 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::Componen
     end
 
     if length(ccs) > 1 && settings.select_largest_splitnetwork == true
-        length(largest_cc)
-        length(system.buses)
-    
         if system.ref_buses[1] in largest_cc && length(largest_cc) < length(system.buses)
             for i in field(system, :buses, :keys)
                 if states.buses[i,t] ≠ 4 && !(i in largest_cc)
@@ -593,7 +590,9 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::Componen
             for k in topology(pm, :bus_storages)[i]
                 if states.storages[k,t] ≠ 0
                     states.storages[k,t] = 0
-                    if t > 1 states.stored_energy[k,t] = states.stored_energy[k,t-1] end
+                    if t > 1 
+                        states.stored_energy[k,t] = states.stored_energy[k,t-1] 
+                    end
                 end
             end
         end

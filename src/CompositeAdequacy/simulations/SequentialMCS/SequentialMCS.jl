@@ -90,7 +90,10 @@ function initialize!(
     
     initialize_availability!(rng, statetransition.generators_available, 
         statetransition.generators_nexttransition, system.generators, N)
-        
+
+    initialize_availability!(rng, statetransition.storages_available, 
+        statetransition.storages_nexttransition, system.storages, N)
+
     initialize_availability!(states.buses, system.buses, N)
 
     initialize_other_states!(states)
@@ -114,12 +117,16 @@ function update!(
     update_availability!(rng, states.generators,
         statetransition.generators_available, statetransition.generators_nexttransition, system.generators, t, N)
 
+    update_availability!(rng, states.storages,
+        statetransition.storages_available, statetransition.storages_nexttransition, system.storages, t, N)
+
     apply_common_outages!(states, system.branches, t)
 
     update_topology!(pm, system, states, settings, t)
 
     update_problem!(pm, system, states, t)
 end
+
 
 
 """
@@ -134,15 +141,11 @@ function solve!(
     states::ComponentStates, settings::Settings, t::Int) where N
 
     changes = any([
-        length(system.storages) ≠ 0, all(states.branches[:, t]) ≠ true, 
+        length(system.storages) ≠ 0, 
+        all(states.branches[:, t]) ≠ true,
         sum(states.generators[:, t]) < length(system.generators) - settings.min_generators_off])
 
     changes && JuMP.optimize!(pm.model)
-
-    #if changes
-    #    update_problem!(pm, system, states, t)
-    #    JuMP.optimize!(pm.model)
-    #end
 
     OPF.build_result!(pm, system, states, settings, t; changes=changes)
     
