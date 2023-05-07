@@ -20,7 +20,7 @@
     pm = OPF.abstract_model(system, settings)
     componentstates = OPF.ComponentStates(system, available=true)
     OPF.build_problem!(pm, system, 1)
-    OPF.OPF.field(system, :storages, :energy)[1] = 0.0
+    OPF.field(system, :storages, :energy)[1] = 0.0
     
     t=1
     OPF.update!(pm, system, componentstates, settings, t)
@@ -249,7 +249,7 @@ end
     pm = OPF.abstract_model(system, settings)
     componentstates = OPF.ComponentStates(system, available=true)
     OPF.build_problem!(pm, system, 1)
-    OPF.OPF.field(system, :storages, :energy)[1] = 0.0
+    OPF.field(system, :storages, :energy)[1] = 0.0
     
     t=1
     OPF.update!(pm, system, componentstates, settings, t)

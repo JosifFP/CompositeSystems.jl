@@ -1,5 +1,6 @@
 
-"initialize the availability of different types of assets (buses, branches, generators, etc.) using an RNG and a system object of type SystemModel."
+"initialize the availability of different types of assets (buses, branches, generators, etc.) 
+using an RNG and a system object of type SystemModel."
 function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, N::Int)
     
     for i in 1:length(asset)
@@ -9,6 +10,26 @@ function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, 
         availability[i] = online
         transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
         nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
+    end
+    return availability
+end
+
+"initialize the availability of different storage assets (special case) 
+using an RNG and a system object of type SystemModel."
+function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::Storages, N::Int)
+    
+    for i in 1:length(asset)
+        λ_updn = asset.λ_updn[i]/N
+        μ_updn = asset.μ_updn[i]/N
+        if λ_updn ≠ 0 && μ_updn ≠ 0
+            online = rand(rng) < μ_updn / (λ_updn + μ_updn)
+            availability[i] = online
+            transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
+            nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
+        else
+            availability[i] = 1
+            nexttransition[i] = N + 1
+        end
     end
     return availability
 end
@@ -29,7 +50,6 @@ function initialize_other_states!(states::ComponentStates)
 
     fill!(states.loads, 1)
     fill!(states.shunts, 1)
-    fill!(states.storages, 1)
     fill!(states.generatorstorages, 1)
     fill!(states.stored_energy, 0)
     fill!(states.gstored_energy, 0)
@@ -38,8 +58,8 @@ function initialize_other_states!(states::ComponentStates)
     fill!(states.flow_to, 0)
 end
 
-
-""
+"Update the availability of different types of assets (buses, branches, generators, etc.) 
+using availability and nexttransition vectors"
 function update_availability!(rng::AbstractRNG, updown_cycle::Matrix{Bool},
     availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
 
@@ -51,10 +71,8 @@ function update_availability!(rng::AbstractRNG, updown_cycle::Matrix{Bool},
         end
 
         view(updown_cycle,i,t_now) .= availability[i]
-
     end
 end
-
 
 ""
 function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now::Int, t_last::Int)
