@@ -59,3 +59,36 @@ loads = [
 smc = SequentialMCS(samples=2000, seed=100, threaded=true)
 cc = assess(sys_before, sys_after, ELCC{SI}(100.0, loads; capacity_gap=10.0), settings, smc)
 CompositeAdequacy.print_results(sys_after, cc)
+
+
+
+###################################################################################################################
+
+timeseriesfile_before = "test/data/RBTS/Loads_system.xlsx"
+rawfile_before = "test/data/RBTS/Base/RBTS.m"
+Base_reliabilityfile_before = "test/data/RBTS/Base/R_RBTS.m"
+
+timeseriesfile_after = "test/data/RBTS/Loads_system.xlsx"
+rawfile_after = "test/data/others/Storage/RBTS_strg.m"
+Base_reliabilityfile_after = "test/data/others/Storage/R_RBTS_strg.m"
+
+sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
+sys_after = BaseModule.SystemModel(rawfile_after, Base_reliabilityfile_after, timeseriesfile_after)
+sys_after.storages.buses[1] = 6
+sys_after.storages.charge_rating[1] = 0.50
+sys_after.storages.discharge_rating[1] = 0.50
+sys_after.storages.thermal_rating[1] = 0.50
+sys_after.storages.energy_rating[1] = 2.00
+
+loads = [
+    1 => 0.1081,
+    2 => 0.4595,
+    3 => 0.2162,
+    4 => 0.1081,
+    5 => 0.1081,
+]
+
+smc = SequentialMCS(samples=10, seed=100, threaded=true)
+#simulationspec = SequentialMCS(samples=500, seed=100, threaded=true)
+cc = assess(sys_before, sys_after, ELCC{SI}(50.0, loads; capacity_gap=10.0), settings, smc)
+CompositeAdequacy.print_results(sys_after, cc)

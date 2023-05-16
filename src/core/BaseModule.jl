@@ -29,7 +29,7 @@
 
         #utils
         assetgrouplist, makeidxlist, field, build_network, 
-        calc_buspair_parameters, check_availability
+        calc_buspair_parameters
     #
 
     # Create our module level logger (this will get precompiled)

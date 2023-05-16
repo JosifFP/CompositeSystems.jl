@@ -685,7 +685,8 @@ function update!(pm::AbstractPowerModel, system::SystemModel{N}, states::Compone
     JuMP.optimize!(pm.model)
 
     changes = any([
-        length(system.storages) ≠ 0, all(states.branches[:, t]) ≠ true, 
+        length(system.storages) ≠ 0, 
+        all(states.branches[:, t]) ≠ true,
         sum(states.generators[:, t]) < length(system.generators) - settings.min_generators_off])
 
     build_result!(pm, system, states, settings, t; changes=changes)
@@ -996,4 +997,29 @@ function build_sol_values(var::Dict{Tuple{Int, Int, Int}, Any}, branches::Branch
         end
     end
     return sol
+end
+
+"It checks if all elements in the matrix are true for both the current time step and the previous time step, 
+and returns false if this condition is not met."
+function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::Int)::Bool
+    @views t_now_view = asset_states[:, t_now]
+    if t_previous ≠ 0
+        @views t_previous_view = asset_states[:, t_previous]
+        return !any(t_now_view .== 0) && !any(t_previous_view .== 0)
+    else
+        #return !any(t_now_view .== 0) && !any(t_now_view .== 0)
+        return false
+    end
+end
+
+""
+function check_availability(asset_states::Matrix{Int}, t_now::Int, t_previous::Int)::Bool
+    @views t_now_view = asset_states[:, t_now]
+    if t_previous ≠ 0
+        @views t_previous_view = asset_states[:, t_previous]
+        return !any(t_now_view .== 4) && !any(t_previous_view .== 4)
+    else
+        #return !any(t_now_view .== 4) && !any(t_now_view .== 4)
+        return false
+    end
 end

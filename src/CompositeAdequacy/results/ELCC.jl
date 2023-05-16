@@ -16,9 +16,7 @@ struct ELCC{M} <: CapacityValuationMethod{M}
         @assert sum(x.second for x in loads) ≈ 1.0
 
         return new{M}(capacity_max, capacity_gap, p_value, Tuple.(loads), verbose)
-
     end
-
 end
 
 function ELCC{M}(capacity_max::Float64, loads::Float64; kwargs...) where M
@@ -61,25 +59,6 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
         midpoint = div(lower_bound + upper_bound, 2)
         capacity_gap = upper_bound - lower_bound
 
-        # Stopping conditions
-
-        ## Return the bounds if they are within solution tolerance of each other
-        if capacity_gap <= params.capacity_gap
-            params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
-            break
-        end
-
-        # If the null hypothesis upper_bound_metric !>= lower_bound_metric
-        # cannot be rejected, terminate and return the loose bounds
-        pval = pvalue(lower_bound_metric, upper_bound_metric)
-        if pval >= params.p_value
-            @warn "Gap between upper and lower bound risk metrics is not " *
-                  "statistically significant (p_value=$pval), stopping bisection. " *
-                  "The gap between capacity bounds is $(capacity_gap) $P, " *
-                  "while the target stopping gap was $(params.capacity_gap) $P."
-            break
-        end
-
         # Evaluate metric at midpoint
         update_load!(sys_variable, elcc_loads, base_load, midpoint, sys_baseline.baseMVA)
         midpoint_metric = M(first(assess(sys_variable, simulationspec, settings, Shortfall())))
@@ -95,12 +74,37 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
             upper_bound_metric = midpoint_metric
         end
 
+        # Stopping conditions
+        stop = stopping_conditions(params, capacity_gap, lower_bound_metric, upper_bound_metric)
+        stop && break
     end
 
     return CapacityCreditResult{typeof(params), typeof(target_metric), P}(
         target_metric, Float64(lower_bound), 
         Float64(upper_bound), Float64.(capacities), metrics)
+end
 
+"Apply stopping conditions"
+function stopping_conditions(params::ELCC{M}, capacity_gap::Float64, lower_bound_metric::Float64, upper_bound_metric::Float64) where {M}
+
+    P = BaseModule.powerunits["MW"]
+
+    ## Return the bounds if they are within solution tolerance of each other
+    if capacity_gap <= params.capacity_gap
+        params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
+        return true
+    end
+
+    # If the null hypothesis upper_bound_metric !>= lower_bound_metric
+    # cannot be rejected, terminate and return the loose bounds
+    pval = pvalue(lower_bound_metric, upper_bound_metric)
+    if pval >= params.p_value
+        @warn "Gap between upper and lower bound risk metrics is not " *
+            "statistically significant (p_value=$pval), stopping bisection. " *
+            "The gap between capacity bounds is $(capacity_gap) $P, " *
+            "while the target stopping gap was $(params.capacity_gap) $P."
+        return true
+    end
 end
 
 ""
@@ -138,7 +142,6 @@ function allocate_loads(load_keys::Vector{Int}, load_shares::Vector{Tuple{Int,Fl
         isnothing(r) && error("$name is not a region name in the provided systems")
         load_allocations[i] = (r, share)
     end
-
     return sort!(load_allocations)
 end
 
@@ -158,7 +161,5 @@ function pvalue(lower::T, upper::T) where {T<:ReliabilityMetric}
         z = (vu - vl) / sqrt(su^2 + sl^2)
         result = ccdf(Normal(), z)
     end
-
     return result
-
 end

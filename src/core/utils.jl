@@ -332,34 +332,6 @@ function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)::Vector{Un
 
 end
 
-"It checks if all elements in the matrix are true for both the current time step and the previous time step, 
-and returns false if this condition is not met."
-function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::Int)::Bool
-    @views t_now_view = asset_states[:, t_now]
-    if t_previous ≠ 0
-        @views t_previous_view = asset_states[:, t_previous]
-        return !any(t_now_view .== 0) && !any(t_previous_view .== 0)
-    else
-        #return !any(t_now_view .== 0) && !any(t_now_view .== 0)
-        return false
-    end
-end
-
-""
-function check_availability(asset_states::Matrix{Int}, t_now::Int, t_previous::Int)::Bool
-    @views t_now_view = asset_states[:, t_now]
-    if t_previous ≠ 0
-        @views t_previous_view = asset_states[:, t_previous]
-        return !any(t_now_view .== 4) && !any(t_previous_view .== 4)
-    else
-        #return !any(t_now_view .== 4) && !any(t_now_view .== 4)
-        return false
-    end
-end
-
-
-
-
 "Extract a field from a composite value by name or position."
 field(system::SystemModel, field::Symbol) = getfield(system, field)
 field(system::SystemModel, field::Symbol, subfield::Symbol) = getfield(getfield(system, field), subfield)
