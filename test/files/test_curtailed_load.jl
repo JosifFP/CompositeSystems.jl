@@ -179,9 +179,10 @@ end
     reliabilityfile = "test/data/RTS/Base/R_RTS.m"
     system = BaseModule.SystemModel(rawfile, reliabilityfile)
 
-    CompositeSystems.field(system, :loads, :cost)[:] = 
-        [8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 7029.1; 
-        7774.2; 3662.3; 5194; 7281.3; 4371.7; 5974.4; 7230.5; 5614.9; 4543; 5683.6
+    CompositeSystems.field(system, :loads, :cost)[:] = [
+        8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 
+        7029.1; 7774.2; 3662.3; 5194; 7281.3; 4371.7; 
+        5974.4; 7230.5; 5614.9; 4543; 5683.6;
     ]
     
     pm = OPF.abstract_model(system, settings)
@@ -189,7 +190,7 @@ end
     OPF.build_problem!(pm, system, 1)
     t=1
 
-    @testset "Outages of L12, L13" begin
+    @testset "Outages on L12, L13" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[12,t] = 0
         componentstates.branches[13,t] = 0
@@ -223,7 +224,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end    
     
-    @testset "Outages of L12, L13" begin
+    @testset "Outages on L12, L13" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[12,t] = 0
         componentstates.branches[13,t] = 0
@@ -257,7 +258,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L1, L4, L10" begin
+    @testset "Outages on L1, L4, L10" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[1,t] = 0
         componentstates.branches[4,t] = 0
@@ -292,7 +293,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L1, L8, L10" begin
+    @testset "Outages on L1, L8, L10" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[1,t] = 0
         componentstates.branches[8,t] = 0
@@ -327,7 +328,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L7, L19, L29" begin
+    @testset "Outages on L7, L19, L29" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[7,t] = 0
         componentstates.branches[19,t] = 0
@@ -362,7 +363,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L7, L23, L29" begin
+    @testset "Outages on L7, L23, L29" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[7,t] = 0
         componentstates.branches[23,t] = 0
@@ -397,7 +398,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L25, L26, L28" begin
+    @testset "Outages on L25, L26, L28" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[25,t] = 0
         componentstates.branches[26,t] = 0
@@ -432,7 +433,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L25, L26, L28" begin
+    @testset "Outages on L25, L26, L28" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[25,t] = 0
         componentstates.branches[26,t] = 0
@@ -467,7 +468,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L29, L36, L37" begin
+    @testset "Outages on L29, L36, L37" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[29,t] = 0
         componentstates.branches[36,t] = 0
@@ -502,7 +503,7 @@ end
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
     end
 
-    @testset "Outages of L29, L36, L37" begin
+    @testset "Outages on L29, L36, L37" begin
         componentstates = OPF.ComponentStates(system, available=true)
         componentstates.branches[29,t] = 0
         componentstates.branches[36,t] = 0
@@ -736,8 +737,14 @@ end
 
         timeseriesfile = "test/data/RTS/Loads_system.xlsx"
         rawfile = "test/data/RTS/Base/RTS.m"
-        reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
-        system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)    
+        reliabilityfile = "test/data/RTS/Base/R_RTS.m"
+        system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+
+        CompositeSystems.field(system, :loads, :cost)[:] = [
+            8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 
+            7029.1; 7774.2; 3662.3; 5194; 7281.3; 4371.7; 
+            5974.4; 7230.5; 5614.9; 4543; 5683.6;
+        ]
 
         data = OPF.build_network(rawfile, symbol=false)
         load_pd = Dict{Int, Float64}()
@@ -829,7 +836,7 @@ end
             @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(componentstates.branches[:,t])
         end
 
-        @testset "Outages of L29, L36, L37" begin
+        @testset "Outages on L29, L36, L37" begin
             t=3
             componentstates.branches[29,t] = 0
             componentstates.branches[36,t] = 0
@@ -908,7 +915,7 @@ end
             @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(componentstates.branches[:,t])
         end
 
-        @testset "Outages of L25, L26, L28" begin
+        @testset "Outages on L25, L26, L28" begin
             t=5
             componentstates.branches[25,t] = 0
             componentstates.branches[26,t] = 0
@@ -950,7 +957,7 @@ end
             @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(componentstates.branches[:,t])
         end
 
-        @testset "Outages of L1, L8, L10" begin
+        @testset "Outages on L1, L8, L10" begin
             t=6
             componentstates.branches[1,t] = 0
             componentstates.branches[8,t] = 0
@@ -990,7 +997,7 @@ end
             @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(componentstates.branches[:,t])
         end
 
-        @testset "Outages of L7, L19, L29" begin
+        @testset "Outages on L7, L19, L29" begin
             t=7
             componentstates.branches[7,t] = 0
             componentstates.branches[19,t] = 0
@@ -1029,7 +1036,7 @@ end
             @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(componentstates.branches[:,t])
         end
 
-        @testset "Outages of L7, L23, L29" begin
+        @testset "Outages on L7, L23, L29" begin
             t=8
             componentstates.branches[7,t] = 0
             componentstates.branches[23,t] = 0
@@ -1070,7 +1077,6 @@ end
             @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(componentstates.branches[:,t])
         end
     end
-
     @testset "test sequentially split situations w/o isolated buses, RTS system, DCMPPowerModel" begin
 
         settings = CompositeSystems.Settings(
@@ -1081,12 +1087,24 @@ end
             deactivate_isolated_bus_gens_stors = true,
             set_string_names_on_creation = true
         )
-
+    
         timeseriesfile = "test/data/RTS/Loads_system.xlsx"
         rawfile = "test/data/RTS/Base/RTS.m"
-        reliabilityfile = "test/data/RTS/Base/R_RTS2.m"
-        system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)    
-
+        reliabilityfile = "test/data/RTS/Base/R_RTS.m"
+        system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
+    
+        CompositeSystems.field(system, :loads, :cost)[:] = [
+            8981.5; 7360.6; 5899; 9599.2; 9232.3; 6523.8; 
+            7029.1; 7774.2; 3662.3; 5194; 7281.3; 4371.7; 
+            5974.4; 7230.5; 5614.9; 4543; 5683.6;
+        ]
+    
+        # CompositeSystems.field(system, :loads, :cost)[:] = [
+        #     6200.0; 4890.0; 5300.0; 5620.0; 6110.0; 5500.0; 
+        #     5410.0; 5400.0; 2300.0; 4140.0; 5390.0; 3410.0;
+        #     3010.0; 3540.0; 3750.0; 2290.0; 3640.0;
+        # ]
+    
         data = OPF.build_network(rawfile, symbol=false)
         load_pd = Dict{Int, Float64}()
         for (k,v) in data["load"]
@@ -1103,7 +1121,7 @@ end
         pm = OPF.abstract_model(system, settings)
         componentstates = OPF.ComponentStates(system, available=true)
         OPF.build_problem!(pm, system, 1)
-
+    
         t=1
         OPF.update!(pm, system, componentstates, settings, t)
         @testset "No outages" begin
@@ -1140,7 +1158,7 @@ end
         
         t=2
         OPF.update!(pm, system, componentstates, settings, t)
-
+    
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -1172,14 +1190,14 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
         t=3
         componentstates.branches[29,t] = 0
         componentstates.branches[36,t] = 0
         componentstates.branches[37,t] = 0
         OPF.update!(pm, system, componentstates, settings, t)
-
-        @testset "Outages of L29, L36, L37" begin
+    
+        @testset "Outages on L29, L36, L37" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 3.09; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1210,10 +1228,10 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
         t=4
         OPF.update!(pm, system, componentstates, settings, t)
-
+    
         @testset "No outages" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
@@ -1245,14 +1263,14 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
         t=5
         componentstates.branches[25,t] = 0
         componentstates.branches[26,t] = 0
         componentstates.branches[28,t] = 0
         OPF.update!(pm, system, componentstates, settings, t)
-
-        @testset "Outages of L25, L26, L28" begin
+    
+        @testset "Outages on L25, L26, L28" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 2.12; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1283,14 +1301,14 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
         t=6
         componentstates.branches[1,t] = 0
         componentstates.branches[8,t] = 0
         componentstates.branches[10,t] = 0
         OPF.update!(pm, system, componentstates, settings, t)
-
-        @testset "Outages of L1, L8, L10" begin
+    
+        @testset "Outages on L1, L8, L10" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 1.150; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1321,14 +1339,14 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
         t=7
         componentstates.branches[7,t] = 0
         componentstates.branches[19,t] = 0
         componentstates.branches[29,t] = 0
         OPF.update!(pm, system, componentstates, settings, t)
-
-        @testset "Outages of L7, L19, L29" begin
+    
+        @testset "Outages on L7, L19, L29" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1359,14 +1377,14 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
         t=8
         componentstates.branches[7,t] = 0
         componentstates.branches[23,t] = 0
         componentstates.branches[29,t] = 0
         OPF.update!(pm, system, componentstates, settings, t)
-
-        @testset "Outages of L7, L23, L29" begin
+    
+        @testset "Outages on L7, L23, L29" begin
             @test isapprox(sum(componentstates.p_curtailed[:]), 1.65; atol = 1e-2)
             @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
@@ -1397,6 +1415,8 @@ end
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         end
-
+    
     end
 end
+
+

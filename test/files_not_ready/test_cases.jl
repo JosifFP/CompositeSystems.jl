@@ -44,10 +44,34 @@ settings = CompositeSystems.Settings(
     count_samples=true,
 )
 
+loads = [
+    1 => 0.038,
+    2 => 0.034,
+    3 => 0.063,
+    4 => 0.026,
+    5 => 0.025,
+    6 => 0.048,
+    7 => 0.044,
+    8 => 0.06,
+    9 => 0.061,
+    10 => 0.068,
+    11 => 0.093,
+    12 => 0.068,
+    13 => 0.111,
+    14 => 0.035,
+    15 => 0.117,
+    16 => 0.064,
+    17 => 0.045
+]
+
+cap = 6.0
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 method = SequentialMCS(samples=5, seed=100, threaded=true)
-
-shortfall,availability = CompositeSystems.assess(system, method, settings, resultspecs...)
+params = CompositeAdequacy.ELCC{SI}(cap, loads; capacity_gap=6.0)
+elcc_loads, base_load, sys_variable = copy_load(system, params.loads)
+upper_bound = params.capacity_max
+update_load!(sys_variable, elcc_loads, base_load, upper_bound, system.baseMVA)
+shortfall,availability = CompositeSystems.assess(sys_variable, method, settings, resultspecs...)
 CompositeAdequacy.print_results(system, shortfall)
 
 

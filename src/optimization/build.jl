@@ -114,10 +114,10 @@ end
 function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)
     for i in field(system, :storages, :keys)
         update_con_storage_state(pm, system, states, i, t)
-        #if !check_availability(states.storages, t, t-1)
-            #update_var_storage_charge(pm, system, states, i, t)
-            #update_var_storage_discharge(pm, system, states, i, t)
-        #end
+        if !check_availability(states.storages, t, t-1)
+            update_var_storage_charge(pm, system, states, i, t)
+            update_var_storage_discharge(pm, system, states, i, t)
+        end
     end
 end
 
@@ -139,7 +139,6 @@ function solve_opf(system::SystemModel, settings::Settings)
     build_opf!(pm, system)
     JuMP.optimize!(pm.model)
     return pm
-    
 end
 
 "Internal function to build classic OPF from _PM.jl. 
@@ -209,7 +208,6 @@ function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::Compo
 
     JuMP.optimize!(pm.model)
     return pm
-
 end
 
 "Classic OPF objective function without nonlinear equations"
@@ -251,13 +249,14 @@ function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::Sys
     se_left = Dict{Int, Any}()
     rescale = 1.0
 
-    if log10(maximum(system.loads.cost)) > 3
-        rescale = 10^(-modf(log10(maximum(system.loads.cost)))[2]+2)
-    end
+    #if log10(maximum(system.loads.cost)) > 3
+    #    rescale = 10^(-modf(log10(maximum(system.loads.cost)))[2]+2)
+    #end
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
         bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
-        load_cost[i] = rescale*JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
+        #bus_loads[i] = sum((field(system, :loads, :cost)[k] for k in topology(pm, :bus_loads)[i]); init=0)
+        load_cost[i] = JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
         se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :stored_energy, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
     end
 
@@ -293,5 +292,4 @@ function build_result!(pm::AbstractPowerModel, system::SystemModel, states::Comp
     fill_curtailed_load!(pm, system, states, t, is_solved=is_solved)
     fill_stored_energy!(pm, system, states, t, is_solved=is_solved)
     return
-
 end

@@ -29,10 +29,14 @@ settings = CompositeSystems.Settings(
 )
 
 timeseriesfile = "test/data/RTS/Loads_system.xlsx"
-rawfile = "test/data/others/Storage/RTS_strg_constrained.m"
+rawfile = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile = "test/data/others/Storage/R_RTS_strg.m"
 method = SequentialMCS(samples=2000, seed=100, threaded=true)
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+
+system.branches.rate_a[11] = system.branches.rate_a[11]*0.75
+system.branches.rate_a[12] = system.branches.rate_a[12]*0.75
+system.branches.rate_a[13] = system.branches.rate_a[13]*0.75
 
 function run_mcs(system, method, settings, resultspecs, bus::Int)
     for j in 0.25:0.25:2.0
