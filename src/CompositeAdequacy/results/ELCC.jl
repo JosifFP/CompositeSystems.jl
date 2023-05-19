@@ -32,23 +32,32 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
     loadskeys = sys_baseline.loads.keys
     loadskeys != sys_augmented.loads.keys && error("Systems provided do not have matching loads")
 
-    target_metric = M(first(assess(sys_baseline, simulationspec, settings, Shortfall())))
+    shortfall = first(assess(sys_baseline, simulationspec, settings, Shortfall()))
+    target_metric = M(shortfall)
+    eens_metric = EENS(shortfall)
 
     capacities = Int[]
-    metrics = typeof(target_metric)[]
+    target_metrics = typeof(target_metric)[]
+    eens_metrics = EENS[]
 
     elcc_loads, base_load, sys_variable = copy_load(sys_augmented, params.loads)
 
     lower_bound = 0
-    lower_bound_metric = M(first(assess(sys_variable, simulationspec, settings, Shortfall())))
+    shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+    lower_bound_metric = M(shortfall)
+    eens_lower_bound_metric = EENS(shortfall)
     push!(capacities, lower_bound)
-    push!(metrics, lower_bound_metric)
+    push!(target_metrics, lower_bound_metric)
+    push!(eens_metrics, eens_lower_bound_metric)
 
     upper_bound = params.capacity_max
     update_load!(sys_variable, elcc_loads, base_load, upper_bound, sys_baseline.baseMVA)
-    upper_bound_metric = M(first(assess(sys_variable, simulationspec, settings, Shortfall())))
+    shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+    upper_bound_metric = M(shortfall)
+    eens_upper_bound_metric = EENS(shortfall)
     push!(capacities, upper_bound)
-    push!(metrics, upper_bound_metric)
+    push!(target_metrics, upper_bound_metric)
+    push!(eens_metrics, eens_upper_bound_metric)
 
     while true
 
@@ -59,11 +68,18 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
         midpoint = div(lower_bound + upper_bound, 2)
         capacity_gap = upper_bound - lower_bound
 
+        # Stopping conditions
+        stop = stopping_conditions(params, capacity_gap, lower_bound_metric, upper_bound_metric)
+        stop && break
+
         # Evaluate metric at midpoint
         update_load!(sys_variable, elcc_loads, base_load, midpoint, sys_baseline.baseMVA)
-        midpoint_metric = M(first(assess(sys_variable, simulationspec, settings, Shortfall())))
+        shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+        midpoint_metric = M(shortfall)
+        eens_midpoint_metric = EENS(shortfall)
         push!(capacities, midpoint)
-        push!(metrics, midpoint_metric)
+        push!(target_metrics, midpoint_metric)
+        push!(eens_metrics, eens_midpoint_metric)
 
         # Tighten capacity bounds
         if val(midpoint_metric) < val(target_metric)
@@ -73,26 +89,25 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
             upper_bound = midpoint
             upper_bound_metric = midpoint_metric
         end
-
-        # Stopping conditions
-        stop = stopping_conditions(params, capacity_gap, lower_bound_metric, upper_bound_metric)
-        stop && break
     end
 
     return CapacityCreditResult{typeof(params), typeof(target_metric), P}(
-        target_metric, Float64(lower_bound), 
-        Float64(upper_bound), Float64.(capacities), metrics)
+        target_metric, eens_metric, Float64(lower_bound), 
+        Float64(upper_bound), Float64.(capacities), target_metrics, eens_metrics)
 end
 
 "Apply stopping conditions"
-function stopping_conditions(params::ELCC{M}, capacity_gap::Float64, lower_bound_metric::Float64, upper_bound_metric::Float64) where {M}
+function stopping_conditions(
+    params::ELCC{M}, capacity_gap::Float64, lower_bound_metric::M, upper_bound_metric::M
+    ) where {M <: ReliabilityMetric}
 
     P = BaseModule.powerunits["MW"]
+    stopping_conditions = false
 
     ## Return the bounds if they are within solution tolerance of each other
     if capacity_gap <= params.capacity_gap
         params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
-        return true
+        stopping_conditions = true
     end
 
     # If the null hypothesis upper_bound_metric !>= lower_bound_metric
@@ -103,8 +118,10 @@ function stopping_conditions(params::ELCC{M}, capacity_gap::Float64, lower_bound
             "statistically significant (p_value=$pval), stopping bisection. " *
             "The gap between capacity bounds is $(capacity_gap) $P, " *
             "while the target stopping gap was $(params.capacity_gap) $P."
-        return true
+        stopping_conditions = true
     end
+
+    return stopping_conditions
 end
 
 ""

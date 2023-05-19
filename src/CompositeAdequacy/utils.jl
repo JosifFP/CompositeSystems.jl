@@ -90,51 +90,42 @@ function print_results(system::SystemModel, shortfall::ShortfallResult)
             xf[1]["B5"] = system.storages.thermal_rating[1]
         end
 
-        xf[1]["C1"] = "mean system EENS"
-        xf[1]["C2"] = val.(EENS.(shortfall))
-        xf[1]["D1"] = "stderror EENS"
-        xf[1]["D2"] = stderror.(EENS.(shortfall))
-        xf[1]["E1"] = "EENS-MEAN"
-        xf[1]["E2", dim=1] = collect(val.(EENS.(shortfall, system.buses.keys)))
-        xf[1]["F1"] = "EENS-STDERROR"
-        xf[1]["F2", dim=1] = collect(stderror.(EENS.(shortfall, system.buses.keys)))
+        xf[1]["C1"] = "[mean bus EENS, mean system EENS]"
+        xf[1]["C2", dim=1] = append!(collect(val.(EENS.(shortfall, system.buses.keys))), [val.(EENS.(shortfall))])
 
-        xf[1]["G1"] = "mean system EDLC"
-        xf[1]["G2"] = val.(EDLC.(shortfall))
-        xf[1]["H1"] = "stderror EDLC"
-        xf[1]["H2"] = stderror.(EDLC.(shortfall))
-        xf[1]["I1"] = "EDLC-MEAN"
-        xf[1]["I2", dim=1] = collect(val.(EDLC.(shortfall, system.buses.keys)))
-        xf[1]["J1"] = "EDLC-STDERROR"
-        xf[1]["J2", dim=1] = collect(stderror.(EDLC.(shortfall, system.buses.keys)))
+        xf[1]["D1"] = "[mean bus EDLC, mean system EDLC]"
+        xf[1]["D2", dim=1] = append!(collect(val.(EDLC.(shortfall, system.buses.keys))), [val.(EDLC.(shortfall))])
 
-        xf[1]["K1"] = "mean system SI"
-        xf[1]["K2"] = val.(SI.(shortfall))
-        xf[1]["L1"] = "stderror SI"
-        xf[1]["L2"] = stderror.(SI.(shortfall))
-        xf[1]["M1"] = "SI-MEAN"
-        xf[1]["M2", dim=1] = collect(val.(SI.(shortfall, system.buses.keys)))
-        xf[1]["N1"] = "SI-STDERROR"
-        xf[1]["N2", dim=1] = collect(stderror.(SI.(shortfall, system.buses.keys)))
+        xf[1]["E1"] = "[mean bus SI, mean system SI]"
+        xf[1]["E2", dim=1] = append!(collect(val.(SI.(shortfall, system.buses.keys))), [val.(SI.(shortfall))])
 
-        xf[1]["O1"] = "eventperiod_mean"
-        xf[1]["O2"] = shortfall.eventperiod_mean
-        xf[1]["P1"] = "eventperiod_std"
-        xf[1]["P2"] = shortfall.eventperiod_std
-        xf[1]["Q1"] = "eventperiod_bus_mean"
-        xf[1]["Q2", dim=1] = collect(shortfall.eventperiod_bus_mean)
-        xf[1]["R1"] = "eventperiod_bus_std"
-        xf[1]["R2", dim=1] = collect(shortfall.eventperiod_bus_std)
-        xf[1]["S1"] = "eventperiod_period_mean"
-        xf[1]["S2", dim=1] = collect(shortfall.eventperiod_period_mean)
-        xf[1]["T1"] = "eventperiod_period_std"
-        xf[1]["T2", dim=1] = collect(shortfall.eventperiod_period_std)
-        xf[1]["U1"] = "shortfall_std"
-        xf[1]["U2"] = shortfall.shortfall_std
-        xf[1]["V1"] = "shortfall_bus_std"
-        xf[1]["V2", dim=1] = collect(shortfall.shortfall_bus_std)
-        xf[1]["W1"] = "shortfall_period_std"
-        xf[1]["W2", dim=1] = collect(shortfall.shortfall_period_std)
+        xf[1]["F1"] = "[stderror bus EENS, stderror system EENS]"
+        xf[1]["F2", dim=1] = append!(collect(stderror.(EENS.(shortfall, system.buses.keys))), [stderror.(EENS.(shortfall))])
+
+        xf[1]["G1"] = "[stderror bus EDLC, stderror system EDLC]"
+        xf[1]["G2", dim=1] = append!(collect(stderror.(EDLC.(shortfall, system.buses.keys))), [stderror.(EDLC.(shortfall))])        
+
+        xf[1]["H1"] = "[stderror bus SI, stderror system SI]"
+        xf[1]["H2", dim=1] = append!(collect(stderror.(SI.(shortfall, system.buses.keys))), [stderror.(SI.(shortfall))])    
+
+        xf[1]["I1"] = "eventperiod_mean"
+        xf[1]["I2"] = shortfall.eventperiod_mean
+        xf[1]["J1"] = "eventperiod_std"
+        xf[1]["J2"] = shortfall.eventperiod_std
+        xf[1]["K1"] = "eventperiod_bus_mean"
+        xf[1]["K2", dim=1] = collect(shortfall.eventperiod_bus_mean)
+        xf[1]["L1"] = "eventperiod_bus_std"
+        xf[1]["L2", dim=1] = collect(shortfall.eventperiod_bus_std)
+        xf[1]["M1"] = "eventperiod_period_mean"
+        xf[1]["M2", dim=1] = collect(shortfall.eventperiod_period_mean)
+        xf[1]["N1"] = "eventperiod_period_std"
+        xf[1]["N2", dim=1] = collect(shortfall.eventperiod_period_std)
+        xf[1]["O1"] = "shortfall_std"
+        xf[1]["O2"] = shortfall.shortfall_std
+        xf[1]["P1"] = "shortfall_bus_std"
+        xf[1]["P2", dim=1] = collect(shortfall.shortfall_bus_std)
+        xf[1]["Q1"] = "shortfall_period_std"
+        xf[1]["Q2", dim=1] = collect(shortfall.shortfall_period_std)
 
         addsheet!(xf, "eventperiod_busperiod_mean")
         xf[2]["A1"] = collect(shortfall.eventperiod_busperiod_mean')
@@ -171,13 +162,10 @@ function print_results(system::SystemModel, utilization::UtilizationResult)
 
         xf[1]["C1"] = "Utilization (Mean) per branch per year"
         xf[1]["C2", dim=1] = collect([x[1] for x in getindex(utilization, :)])
-
         xf[1]["D1"] = "Utilization (Std) per branch per year"
         xf[1]["D2", dim=1] = collect([x[2] for x in getindex(utilization, :)])
-
         xf[1]["E1"] = "Prob of thermal violation (Mean) per branch per year"
         xf[1]["E2", dim=1] = collect([x[1] for x in CompositeAdequacy.PTV(utilization, :)])
-
         xf[1]["F1"] = "Prob of thermal violation (Std) per branch per year"
         xf[1]["F2", dim=1] = collect([x[2] for x in CompositeAdequacy.PTV(utilization, :)])
 
@@ -220,29 +208,35 @@ function print_results(system::SystemModel, capcredit::CapacityCreditResult)
 
         xf[1]["C1"] = "target_metric"
         xf[1]["D1"] = string(capcredit.target_metric)
-        xf[1]["C2"] = "val (ELCC)"
+        xf[1]["C2"] = "val (target_metric)"
         xf[1]["D2"] = val(capcredit.target_metric)
-        xf[1]["C3"] = "stderror (ELCC)"
+        xf[1]["C3"] = "stderror (target_metric)"
         xf[1]["D3"] = stderror(capcredit.target_metric)
-        xf[1]["C4"] = "lowerbound"
-        xf[1]["D4"] = capcredit.lowerbound
-        xf[1]["C5"] = "upperbound"
-        xf[1]["D5"] = capcredit.upperbound
-        xf[1]["C6"] = "minimum"
-        xf[1]["D6"] = minimum(capcredit)
-        xf[1]["C7"] = "maximum"
-        xf[1]["D7"] = maximum(capcredit)
-        xf[1]["C8"] = "extrema"
-        xf[1]["D8"] = string(extrema(capcredit))
+        xf[1]["C4"] = "val (EENS_metric)"
+        xf[1]["D4"] = val(capcredit.eens_metric)
+        xf[1]["C5"] = "stderror (EENS_metric)"
+        xf[1]["D5"] = stderror(capcredit.eens_metric)
+        xf[1]["C6"] = "lowerbound"
+        xf[1]["D6"] = capcredit.lowerbound
+        xf[1]["C7"] = "upperbound"
+        xf[1]["D7"] = capcredit.upperbound
+        xf[1]["C8"] = "minimum"
+        xf[1]["D8"] = minimum(capcredit)
+        xf[1]["C9"] = "maximum"
+        xf[1]["D9"] = maximum(capcredit)
+        xf[1]["C10"] = "extrema"
+        xf[1]["D10"] = string(extrema(capcredit))
 
-        xf[1]["E1"] = "bound_capacities"
-        xf[1]["E2", dim=1] = collect(capcredit.bound_capacities)
-        xf[1]["F1"] = "bound_metrics - val"
-        xf[1]["F2", dim=1] = collect(val.(capcredit.bound_metrics))
-        xf[1]["G1"] = "bound_metrics - stderror"
-        xf[1]["G2", dim=1] = collect(stderror.(capcredit.bound_metrics))
-        xf[1]["H1"] = "bound_metrics"
-        xf[1]["H2"] = collect(string.(capcredit.bound_metrics))
+        xf[1]["F1"] = "bound_capacities"
+        xf[1]["F2", dim=1] = collect(capcredit.bound_capacities)
+        xf[1]["G1"] = "bound_metrics - val"
+        xf[1]["G2", dim=1] = collect(val.(capcredit.bound_metrics))
+        xf[1]["H1"] = "bound_metrics - stderror"
+        xf[1]["H2", dim=1] = collect(stderror.(capcredit.bound_metrics))
+        xf[1]["I1"] = "EENS_metrics - val"
+        xf[1]["I2", dim=1] = collect(val.(capcredit.eens_metrics))
+        xf[1]["J1"] = "EENS_metrics - stderror"
+        xf[1]["J2", dim=1] = collect(stderror.(capcredit.eens_metrics))
     end
     return
 end

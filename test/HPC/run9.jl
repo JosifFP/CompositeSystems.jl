@@ -1,6 +1,5 @@
 #module load gurobi
-#gurobi_cl 1> /dev/null && echo Success || echo
-#gurobi_cl --tokens
+#gurobi_cl 1> /dev/null && echo Success || echo 
 using Pkg
 import Gurobi, JuMP, Dates
 Pkg.activate(".")
@@ -63,8 +62,8 @@ loads = [
     17 => 0.045
 ]
 
-smc = CompositeAdequacy.SequentialMCS(samples=2000, seed=100, threaded=false)
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+smc = SequentialMCS(samples=2000, seed=100, threaded=true)
+resultspecs = (Shortfall(), Utilization())
 
 sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
 sys_after_100 = BaseModule.SystemModel(rawfile_after_100, Base_reliabilityfile_after_100, timeseriesfile_after_100)
@@ -84,7 +83,7 @@ sys_after_96.branches.rate_a[13] = sys_after_96.branches.rate_a[13]*0.75
 
 hour = Dates.format(Dates.now(),"HH_MM")
 current_dir = pwd()
-new_dir = mkdir(string("job1_bus8_time_",hour))
+new_dir = mkdir(string("job_bus8_time_",hour))
 
 shortfall_before, util_before = CompositeSystems.assess(sys_before, smc, settings, resultspecs...)
 CompositeAdequacy.print_results(sys_before, shortfall_before)
