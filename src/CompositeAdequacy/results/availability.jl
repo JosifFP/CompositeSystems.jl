@@ -44,25 +44,6 @@ function getindex(x::StorageAvailabilityResult, s::Int, t::ZonedDateTime)
     return vec(x.available[i_s, i_t, :])
 end
 
-"Full GeneratorStorage availability data"
-struct GeneratorStorageAvailability <: ResultSpec end
-
-""
-struct GeneratorStorageAvailabilityResult{N,L,T<:Period} <: AbstractAvailabilityResult{N,L,T}
-    generatorstorages::Vector{Int}
-    timestamps::StepRange{ZonedDateTime,T}
-    available::Array{Bool,3}
-end
-
-keys(x::GeneratorStorageAvailabilityResult) = x.generatorstorages
-
-""
-function getindex(x::GeneratorStorageAvailabilityResult, gs::Int, t::ZonedDateTime)
-    i_gs = findfirstunique(x.generatorstorages, gs)
-    i_t = findfirstunique(x.timestamps, t)
-    return vec(x.available[i_gs, i_t, :])
-end
-
 "Full Branch availability data"
 struct BranchAvailability <: ResultSpec end
 

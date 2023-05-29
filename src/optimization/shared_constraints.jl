@@ -36,7 +36,8 @@ function con_power_balance_nolc(pm::AbstractPowerModel, system::SystemModel, i::
     bus_gs = [field(system, :shunts, :gs)[k] for k in bus_shunts]
     bus_bs = [field(system, :shunts, :bs)[k] for k in bus_shunts]
 
-    _con_power_balance_nolc(pm, system, i, nw, bus_arcs, bus_generators, bus_loads, bus_shunts, bus_storages, bus_pd, bus_qd, bus_gs, bus_bs)
+    _con_power_balance_nolc(
+        pm, system, i, nw, bus_arcs, bus_generators, bus_loads, bus_shunts, bus_storages, bus_pd, bus_qd, bus_gs, bus_bs)
 end
 
 
@@ -54,7 +55,8 @@ function con_voltage_angle_difference_on_off(pm::AbstractPolarModels, system::Sy
 end
 
 ""
-function _con_voltage_angle_difference_on_off(pm::AbstractPolarModels, nw::Int, l::Int, f_bus::Int, t_bus::Int, angmin, angmax, vad_min, vad_max)
+function _con_voltage_angle_difference_on_off(
+    pm::AbstractPolarModels, nw::Int, l::Int, f_bus::Int, t_bus::Int, angmin, angmax, vad_min, vad_max)
 
     va_fr = var(pm, :va, nw)[f_bus]
     va_to = var(pm, :va, nw)[t_bus]
@@ -82,7 +84,9 @@ function con_voltage_angle_difference(pm::AbstractNFAModel, system::SystemModel,
 end
 
 ""
-function _con_voltage_angle_difference(pm::AbstractPolarModels, nw::Int, l::Int, f_bus::Int, t_bus::Int, angmin, angmax, vad_min, vad_max)
+function _con_voltage_angle_difference(
+    pm::AbstractPolarModels, nw::Int, l::Int, f_bus::Int, t_bus::Int, angmin, angmax, vad_min, vad_max)
+
     va_fr = var(pm, :va, nw)[f_bus]
     va_to = var(pm, :va, nw)[t_bus]
     con(pm, :voltage_angle_diff_upper, nw)[l] = @constraint(pm.model, va_fr - va_to <= angmax)
@@ -200,12 +204,15 @@ function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i
 end
 
 ""
-function _con_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
+function _con_storage_state_initial(
+    pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
 
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
     stored_energy = var(pm, :stored_energy, n)[i]
-    con(pm, :storage_state, n)[i] = @constraint(pm.model, stored_energy - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
+    
+    con(pm, :storage_state, n)[i] = @constraint(
+        pm.model, stored_energy - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
 end
 
 ""

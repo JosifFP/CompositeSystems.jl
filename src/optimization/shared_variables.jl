@@ -178,7 +178,7 @@ function var_storage_power_control_imaginary(pm::AbstractPowerModel, system::Sys
         for i in assetgrouplist(topology(pm, :storages_idxs))
             qmin = field(system, :storages, :qmin)[i]
             qmax = field(system, :storages, :qmax)[i]
-            if nand(qmin == 0, qmax == 0)
+            if ~(qmin == 0 && qmax == 0)
                 qmin = -Inf
                 qmax = Inf
             end
@@ -218,10 +218,10 @@ end
 function var_storage_complementary_indicator(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     if bounded
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 0.0)
-        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 0.0)
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, sc_on[assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 0.0)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, sd_on[assetgrouplist(topology(pm, :storages_idxs))], binary = true, start = 0.0)
     else
-        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1, start = 0.0)
-        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, [assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1, start = 0.0)
+        sc_on = var(pm, :sc_on)[nw] = @variable(pm.model, sc_on[assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1, start = 0.0)
+        sd_on = var(pm, :sd_on)[nw] = @variable(pm.model, sd_on[assetgrouplist(topology(pm, :storages_idxs))], lower_bound = 0, upper_bound = 1, start = 0.0)
     end
 end

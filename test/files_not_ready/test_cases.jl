@@ -9,23 +9,23 @@ using XLSX, Dates
 #using ProfileView, Profile
 
 include("solvers.jl")
-#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
 #rawfile = "test/data/RBTS/Base/RBTS.m"
 #Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
 
-#timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+#timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
 #rawfile = "test/data/others/Storage/RBTS_strg.m"
 #Base_reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 
-#timeseriesfile = "test/data/SMCS/MRBTS/Loads_system.xlsx"
+#timeseriesfile = "test/data/SMCS/MRBTS/SYSTEM_LOADS.xlsx"
 #rawfile = "test/data/SMCS/MRBTS/MRBTS_AC.m"
 #Base_reliabilityfile = "test/data/SMCS/MRBTS/R_MRBTS.m"
 
-timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+timeseriesfile = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
+rawfile = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
+Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
 
-#timeseriesfile = "test/data/toysystem/Loads_system.xlsx"
+#timeseriesfile = "test/data/toysystem/SYSTEM_LOADS.xlsx"
 #rawfile = "test/data/toysystem/toysystem.m"
 #Base_reliabilityfile = "test/data/toysystem/R_toysystem.m"
 

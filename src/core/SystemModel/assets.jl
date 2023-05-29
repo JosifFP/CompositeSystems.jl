@@ -340,93 +340,6 @@ Base.:(==)(x::T, y::T) where {T <: Storages} =
     x.status == y.status
 #
 
-"GeneratorStorages"
-struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
-
-    keys::Vector{Int}
-    buses::Vector{Int}
-    ps::Vector{Float32}  # Active power in per unit
-    qs::Vector{Float32}
-    energy::Vector{Float32}
-    energy_rating::Vector{Float32} # energy_capacity
-    charge_rating::Vector{Float32}
-    discharge_rating::Vector{Float32}
-    charge_efficiency::Vector{Float32}
-    discharge_efficiency::Vector{Float32}
-
-    inflow::Matrix{Float32}
-    gridwithdrawal_rating::Matrix{Float32}
-    gridinjection_rating::Matrix{Float32}
-
-    λ_updn::Vector{Float64} #Failure rate in failures per year
-    μ_updn::Vector{Float64} #Repair rate in hours per year
-    status::Vector{Bool}
-    #carryover_efficiency::Vector{Float32}
-    #thermal_rating::Vector{Float32}
-    #qmax::Vector{Float32}
-    #qmin::Vector{Float32}
-    #r::Vector{Float32}
-    #x::Vector{Float32}
-    #ploss::Vector{Float32}
-    #qloss::Vector{Float32}
-
-    function GeneratorStorages{N,L,T}(
-        keys::Vector{Int}, buses::Vector{Int},
-        ps::Vector{Float32}, qs::Vector{Float32},
-        energy::Vector{Float32}, energy_rating::Vector{Float32},
-        charge_rating::Vector{Float32}, discharge_rating::Vector{Float32},
-        charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32},
-        inflow::Matrix{Float32}, gridwithdrawal_rating::Matrix{Float32}, 
-        gridinjection_rating::Matrix{Float32}, λ_updn::Vector{Float64}, 
-        μ_updn::Vector{Float64}, status::Vector{Bool}
-    ) where {N,L,T}
-
-        nstors = length(keys)
-        @assert allunique(keys)
-        @assert length(buses) == (nstors)
-        @assert length(ps) == (nstors)
-        @assert length(qs) == (nstors)
-        @assert length(energy) == (nstors)
-        @assert length(energy_rating) == (nstors)
-        @assert length(charge_rating) == (nstors)
-        @assert length(discharge_rating) == (nstors)
-        @assert size(inflow) == (nstors, N)
-        @assert size(gridwithdrawal_rating) == (nstors, N)
-        @assert size(gridinjection_rating) == (nstors, N)
-        @assert length(λ_updn) == (nstors)
-        @assert length(μ_updn) == (nstors)
-        @assert length(status) == (nstors)
-        @assert all(0 .<= energy)
-        @assert all(0 .<= energy_rating)
-        @assert all(0 .<= charge_rating)
-        @assert all(0 .<= discharge_rating)
-        @assert all(0 .<= charge_efficiency)
-        @assert all(0 .<= discharge_efficiency)
-
-        new{N,L,T}(Int.(keys), Int.(buses), Float32.(ps), Float32.(qs),
-        Float32.(energy), Float32.(energy_rating), Float32.(charge_rating),
-        Float32.(discharge_rating), Float32.(charge_efficiency), Float32.(discharge_efficiency),
-        inflow, gridwithdrawal_rating, gridinjection_rating, Float64.(λ_updn), Float64.(μ_updn), Bool.(status))
-    end
-end
-
-Base.:(==)(x::T, y::T) where {T <: GeneratorStorages} =
-    x.keys == y.keys &&
-    x.buses == y.buses &&
-    x.ps == y.ps &&
-    x.qs == y.qs &&
-    x.energy == y.energy &&
-    x.energy_rating == y.energy_rating &&
-    x.charge_rating == y.charge_rating &&
-    x.discharge_rating == y.discharge_rating &&
-    x.inflow == y.inflow &&
-    x.gridwithdrawal_capacity == y.gridwithdrawal_capacity &&
-    x.gridinjection_capacity == y.gridinjection_capacity &&
-    x.λ_updn == y.λ_updn &&
-    x.μ_updn == y.μ_updn &&
-    x.status == y.status
-#
-
 "Branches"
 struct Branches <: AbstractAssets
 
@@ -580,3 +493,91 @@ Base.:(==)(x::T, y::T) where {T <: CommonBranches} =
     x.λ_updn == y.λ_updn &&
     x.μ_updn == y.μ_updn
 #
+
+
+
+# "GeneratorStorages"
+# struct GeneratorStorages{N,L,T<:Period} <: TimeSeriesAssets{N,L,T}
+
+#     keys::Vector{Int}
+#     buses::Vector{Int}
+#     ps::Vector{Float32}  # Active power in per unit
+#     qs::Vector{Float32}
+#     energy::Vector{Float32}
+#     energy_rating::Vector{Float32} # energy_capacity
+#     charge_rating::Vector{Float32}
+#     discharge_rating::Vector{Float32}
+#     charge_efficiency::Vector{Float32}
+#     discharge_efficiency::Vector{Float32}
+
+#     inflow::Matrix{Float32}
+#     gridwithdrawal_rating::Matrix{Float32}
+#     gridinjection_rating::Matrix{Float32}
+
+#     λ_updn::Vector{Float64} #Failure rate in failures per year
+#     μ_updn::Vector{Float64} #Repair rate in hours per year
+#     status::Vector{Bool}
+#     #carryover_efficiency::Vector{Float32}
+#     #thermal_rating::Vector{Float32}
+#     #qmax::Vector{Float32}
+#     #qmin::Vector{Float32}
+#     #r::Vector{Float32}
+#     #x::Vector{Float32}
+#     #ploss::Vector{Float32}
+#     #qloss::Vector{Float32}
+
+#     function GeneratorStorages{N,L,T}(
+#         keys::Vector{Int}, buses::Vector{Int},
+#         ps::Vector{Float32}, qs::Vector{Float32},
+#         energy::Vector{Float32}, energy_rating::Vector{Float32},
+#         charge_rating::Vector{Float32}, discharge_rating::Vector{Float32},
+#         charge_efficiency::Vector{Float32}, discharge_efficiency::Vector{Float32},
+#         inflow::Matrix{Float32}, gridwithdrawal_rating::Matrix{Float32}, 
+#         gridinjection_rating::Matrix{Float32}, λ_updn::Vector{Float64}, 
+#         μ_updn::Vector{Float64}, status::Vector{Bool}
+#     ) where {N,L,T}
+
+#         nstors = length(keys)
+#         @assert allunique(keys)
+#         @assert length(buses) == (nstors)
+#         @assert length(ps) == (nstors)
+#         @assert length(qs) == (nstors)
+#         @assert length(energy) == (nstors)
+#         @assert length(energy_rating) == (nstors)
+#         @assert length(charge_rating) == (nstors)
+#         @assert length(discharge_rating) == (nstors)
+#         @assert size(inflow) == (nstors, N)
+#         @assert size(gridwithdrawal_rating) == (nstors, N)
+#         @assert size(gridinjection_rating) == (nstors, N)
+#         @assert length(λ_updn) == (nstors)
+#         @assert length(μ_updn) == (nstors)
+#         @assert length(status) == (nstors)
+#         @assert all(0 .<= energy)
+#         @assert all(0 .<= energy_rating)
+#         @assert all(0 .<= charge_rating)
+#         @assert all(0 .<= discharge_rating)
+#         @assert all(0 .<= charge_efficiency)
+#         @assert all(0 .<= discharge_efficiency)
+
+#         new{N,L,T}(Int.(keys), Int.(buses), Float32.(ps), Float32.(qs),
+#         Float32.(energy), Float32.(energy_rating), Float32.(charge_rating),
+#         Float32.(discharge_rating), Float32.(charge_efficiency), Float32.(discharge_efficiency),
+#         inflow, gridwithdrawal_rating, gridinjection_rating, Float64.(λ_updn), Float64.(μ_updn), Bool.(status))
+#     end
+# end
+
+# Base.:(==)(x::T, y::T) where {T <: GeneratorStorages} =
+#     x.keys == y.keys &&
+#     x.buses == y.buses &&
+#     x.ps == y.ps &&
+#     x.qs == y.qs &&
+#     x.energy == y.energy &&
+#     x.energy_rating == y.energy_rating &&
+#     x.charge_rating == y.charge_rating &&
+#     x.discharge_rating == y.discharge_rating &&
+#     x.inflow == y.inflow &&
+#     x.gridwithdrawal_capacity == y.gridwithdrawal_capacity &&
+#     x.gridinjection_capacity == y.gridinjection_capacity &&
+#     x.λ_updn == y.λ_updn &&
+#     x.μ_updn == y.μ_updn &&
+#     x.status == y.status

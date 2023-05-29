@@ -9,9 +9,7 @@ struct ComponentStates
     shunts::Matrix{Bool}
     generators::Matrix{Bool}
     storages::Matrix{Bool}
-    generatorstorages::Matrix{Bool}
     stored_energy::Matrix{Float64}
-    gstored_energy::Matrix{Float64}
     p_curtailed::Vector{Float64}
     q_curtailed::Vector{Float64}
     flow_from::Vector{Float64}
@@ -37,10 +35,8 @@ function ComponentStates(system::SystemModel{N}; available::Bool=false) where {N
     commonbranches = Array{Bool, 2}(undef, length(system.commonbranches), N)
     generators = Array{Bool, 2}(undef, length(system.generators), N)
     storages = Array{Bool, 2}(undef, length(system.storages), N)
-    generatorstorages = Array{Bool, 2}(undef, length(system.generatorstorages), N)
 
     stored_energy = Array{Float64, 2}(undef, length(system.storages), N) #stored energy
-    gstored_energy = Array{Float64, 2}(undef, length(system.generatorstorages), N) #stored energy
     p_curtailed = Array{Float64}(undef, length(system.buses)) #curtailed load in p.u. (active power)
     q_curtailed = Array{Float64}(undef, length(system.buses)) #curtailed load in p.u. (reactive power)
     flow_from = Array{Float64}(undef, length(system.branches)) # Active power withdrawn at the from bus
@@ -49,7 +45,6 @@ function ComponentStates(system::SystemModel{N}; available::Bool=false) where {N
     fill!(loads, 1)
     fill!(shunts, 1)
     fill!(stored_energy, 0)
-    fill!(gstored_energy, 0)
     fill!(p_curtailed, 0)
     fill!(q_curtailed, 0)
     fill!(flow_from, 0)
@@ -60,13 +55,11 @@ function ComponentStates(system::SystemModel{N}; available::Bool=false) where {N
         fill!(commonbranches, 1)
         fill!(generators, 1)
         fill!(storages, 1)
-        fill!(generatorstorages, 1)
     end
 
     return ComponentStates(
         buses, loads, branches, commonbranches, shunts, generators, 
-        storages, generatorstorages, stored_energy, gstored_energy, 
-        p_curtailed, q_curtailed, flow_from, flow_to
+        storages, stored_energy, p_curtailed, q_curtailed, flow_from, flow_to
     )
 end
 
@@ -83,8 +76,6 @@ struct StateTransition
     commonbranches_nexttransition::Vector{Int}
     storages_available::Vector{Bool}
     storages_nexttransition::Vector{Int}
-    generatorstorages_available::Vector{Bool}
-    generatorstorages_nexttransition::Vector{Int}
 
     function StateTransition(system::SystemModel)
 
@@ -107,18 +98,13 @@ struct StateTransition
         nstors = length(system.storages)
         storages_available = Vector{Bool}(undef, nstors)
         storages_nexttransition = Vector{Int}(undef, nstors)
-
-        ngenstors = length(system.generatorstorages)
-        generatorstorages_available = Vector{Bool}(undef, ngenstors)
-        generatorstorages_nexttransition = Vector{Int}(undef, ngenstors)
         
         return new(
             branches_available, branches_nexttransition,
             shunts_available, shunts_nexttransition,
             generators_available, generators_nexttransition,
             commonbranches_available, commonbranches_nexttransition,
-            storages_available, storages_nexttransition,
-            generatorstorages_available, generatorstorages_nexttransition
+            storages_available, storages_nexttransition
         )
     end
 end

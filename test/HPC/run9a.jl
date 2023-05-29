@@ -64,13 +64,9 @@ resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
 
-sys_before.branches.rate_a[11] = sys_before.branches.rate_a[11]*0.75
-sys_before.branches.rate_a[12] = sys_before.branches.rate_a[12]*0.75
-sys_before.branches.rate_a[13] = sys_before.branches.rate_a[13]*0.75
-
 hour = Dates.format(Dates.now(),"HH_MM")
 current_dir = pwd()
-new_dir = mkdir(string("job9_bus8_time_",hour))
+new_dir = mkdir(string("job9a_bus8_time_",hour))
 cd(new_dir)
 
 shortfall_before, util_before = CompositeSystems.assess(sys_before, smc, settings, resultspecs...)

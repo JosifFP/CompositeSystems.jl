@@ -1,15 +1,4 @@
-import CompositeSystems
-import CompositeSystems.BaseModule
-import CompositeSystems.OPF
-import CompositeSystems.CompositeAdequacy
-import PowerModels, Ipopt, BenchmarkTools, JuMP
-import JuMP: termination_status
-import BenchmarkTools: @btime
-import Dates, XLSX
-using Test, BenchmarkTools
-using ProfileView, Profile
 
-include("solvers.jl")
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(
@@ -20,12 +9,12 @@ settings = CompositeSystems.Settings(
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
     set_string_names_on_creation = false,
-    count_samples = true
+    #count_samples = true
 )
 
 @testset "Sequential MCS, 1000 samples, RBTS" begin
 
-    timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+    timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
     rawfile = "test/data/RBTS/Base/RBTS.m"
     Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
@@ -90,11 +79,11 @@ settings = CompositeSystems.Settings(
 
 end
 
-@testset "Sequential MCS, 1000 samples, RTS" begin
+@testset "Sequential MCS, 100 samples, RTS" begin
     
-    timeseriesfile = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-    rawfile = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-    Base_reliabilityfile = "test/data/SMCS/RTS_79_A/R_RTS.m"
+    timeseriesfile = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
+    rawfile = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
+    Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=false)

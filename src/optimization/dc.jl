@@ -258,13 +258,16 @@ end
 
 "Nothing to do, this model is symetric"
 function _con_ohms_yt_to(
-    pm::AbstractAPLossLessModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+    pm::AbstractAPLossLessModels, i::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end
 
 #************************************************** CONSTRAINTS STORAGE **********************************************************************
 ""
 function _con_storage_losses(
-    pm::AbstractAPLossLessModels, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+    pm::AbstractAPLossLessModels, n::Int, i::Int, bus::Int, r::Float32, x::Float32, 
+    p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+
     ps = var(pm, :ps, n)[i]
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
@@ -273,7 +276,9 @@ end
 
 ""
 function _con_storage_losses(
-    pm::AbstractDCPowerModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+    pm::AbstractDCPowerModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, 
+    p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+
     ps = var(pm, :ps, n)[i]
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
@@ -291,15 +296,18 @@ end
 
 #***************************************************** UPDATES *************************************************************************
 ""
-function update_var_branch_indicator(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_var_branch_indicator(
+    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
 end
 
 ""
-function update_var_bus_voltage_angle(pm::AbstractNFAModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+function update_var_bus_voltage_angle(
+    pm::AbstractNFAModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
 end
 
 "Do nothing"
-function update_var_bus_voltage_magnitude(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+function update_var_bus_voltage_magnitude(
+    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
 end
 
 "Model ignores reactive power flows"
@@ -317,11 +325,13 @@ end
 
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
 ""
-function update_con_power_balance_shunts(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance_shunts(
+    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
 end
 
 ""
-function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance(
+    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
     bus_loads = topology(pm, :bus_loads)[i]
@@ -331,7 +341,8 @@ function update_con_power_balance(pm::AbstractDCPowerModel, system::SystemModel,
 end
 
 ""
-function update_con_power_balance_nolc(pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+function update_con_power_balance_nolc(
+    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
 
     bus_loads = topology(pm, :bus_loads)[i]
     bus_shunts = topology(pm, :bus_shunts)[i]
@@ -368,12 +379,14 @@ end
 
 "Nothing to do, no voltage angle variables"
 function _update_con_ohms_yt_from(
-    pm::AbstractNFAModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+    pm::AbstractNFAModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 end
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(
-    pm::AbstractDCPModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+    pm::AbstractDCPModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
@@ -389,7 +402,8 @@ end
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(
-    pm::AbstractDCMPPModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+    pm::AbstractDCMPPModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
@@ -401,5 +415,6 @@ end
 
 "Nothing to do, this model is symetric"
 function _update_con_ohms_yt_to(
-    pm::AbstractAPLossLessModels, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+    pm::AbstractAPLossLessModels, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end

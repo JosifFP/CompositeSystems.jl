@@ -6,7 +6,11 @@
 #SBATCH --mail-type=end
 #SBATCH --mail-user=josif.figueroa@unb.ca
 
-export JULIA_NUM_THREADS=64
+# Load the required modules
 module load julia/1.8.5
 module load gurobi/10.0.1
+
+# Set the number of threads
+export JULIA_NUM_THREADS=64
+
 julia --project="." --startup-file=no "run.jl"

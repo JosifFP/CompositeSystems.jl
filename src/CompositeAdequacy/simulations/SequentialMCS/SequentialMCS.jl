@@ -1,9 +1,11 @@
 include("utils.jl")
 
 """
-This code snippet is using multi-threading to parallelize the assess function by running multiple instances of it simultaneously on different threads.
-The Threads.@spawn macro is used to create new threads, each of which will execute the assess function using a different seed from the sampleseeds channel. 
-The results of each thread are stored in the results channel, and the function finalize is called on the results after all threads have finished executing.
+This code snippet is using multi-threading to parallelize the assess function by running 
+multiple instances of it simultaneously on different threads. The Threads.@spawn macro is 
+used to create new threads, each of which will execute the assess function using a different 
+seed from the sampleseeds channel. The results of each thread are stored in the results channel, 
+and the function finalize is called on the results after all threads have finished executing.
 """
 function assess(
     system::SystemModel{N},
@@ -30,11 +32,12 @@ function assess(
 end
 
 """
-This assess function is designed to perform a Monte Carlo simulation using the Sequential Monte Carlo (SMC) method.
-The function uses the pm variable to store an abstract model of the system, 
-and the componentstates variable to store the system's states. It also creates several recorders using the 
-accumulator function, and an RNG (random number generator) of type Philox4x. The function then iterates over the sampleseeds 
-channel, using each seed to initialize the RNG and the system states, and performs the Monte Carlo simulation for each sample.
+This assess function is designed to perform a Monte Carlo simulation using the Sequential Monte 
+Carlo (SMC) method. The function uses the pm variable to store an abstract model of the system, 
+and the componentstates variable to store the system's states. It also creates several recorders 
+using the accumulator function, and an RNG (random number generator) of type Philox4x. The function 
+then iterates over the sampleseeds channel, using each seed to initialize the RNG and the system states, 
+and performs the Monte Carlo simulation for each sample.
 """
 function assess(
     system::SystemModel{N},
@@ -68,10 +71,11 @@ function assess(
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        reset_model!(pm, system, componentstates, settings, s)
+        reset_model!(pm, system, settings, s, method.nsamples)
     end
 
     put!(results, recorders)
+
 end
 
 """
@@ -92,7 +96,7 @@ function initialize!(
         statetransition.generators_nexttransition, system.generators, N)
 
     initialize_availability!(rng, statetransition.storages_available, 
-        statetransition.storages_nexttransition, system.storages, N)
+    statetransition.storages_nexttransition, system.storages, N)
 
     initialize_availability!(states.buses, system.buses, N)
 
@@ -127,8 +131,6 @@ function update!(
     update_problem!(pm, system, states, t)
 end
 
-
-
 """
 Optimizes the power model and update the system states based on the results of the optimization. 
 The function first checks if there are any changes in the branch, storage, or generator states at time step t 
@@ -145,7 +147,8 @@ function solve!(
         all(states.branches[:, t]) ≠ true,
         sum(states.generators[:, t]) < length(system.generators) - settings.min_generators_off])
 
-    changes && JuMP.optimize!(pm.model)
+    #changes && JuMP.optimize!(pm.model)
+    JuMP.optimize!(pm.model)
 
     OPF.build_result!(pm, system, states, settings, t; changes=changes)
     

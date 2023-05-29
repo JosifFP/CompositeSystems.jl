@@ -1,29 +1,43 @@
 using CompositeSystems, CompositeSystems.OPF, CompositeSystems.BaseModule
 using CompositeSystems.OPF
 using CompositeSystems.CompositeAdequacy
-import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP
+import PowerModels, Ipopt, Juniper, BenchmarkTools, JuMP, Gurobi, MathOptInterface
 import JuMP: termination_status
 import PowerModels
 import BenchmarkTools: @btime
 using XLSX, Dates
-include("solvers.jl")
+
+# Set up the Gurobi environment
+#const GRB_ENV = Gurobi.Env()
+
+gurobi_optimizer = JuMP.optimizer_with_attributes(
+    Gurobi.Optimizer,
+    #"gurobi_env" => GRB_ENV, 
+    "Presolve"=>1, 
+    "PreCrush"=>1, 
+    "OutputFlag"=>0, 
+    "LogToConsole"=>0, 
+    "NonConvex"=>2, 
+    "NumericFocus"=>3, 
+    "Threads"=>5
+)
 
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
     set_string_names_on_creation = false,
-    count_samples = false
+    count_samples = true
 )
 
-timeseriesfile_before = "test/data/RBTS/Loads_system.xlsx"
+timeseriesfile_before = "test/data/RBTS/SYSTEM_LOADS.xlsx"
 rawfile_before = "test/data/RBTS/Base/RBTS.m"
 Base_reliabilityfile_before = "test/data/RBTS/Base/R_RBTS.m"
 
-timeseriesfile_after = "test/data/RBTS/Loads_system.xlsx"
+timeseriesfile_after = "test/data/RBTS/SYSTEM_LOADS.xlsx"
 rawfile_after = "test/data/others/Storage/RBTS_strg.m"
 Base_reliabilityfile_after = "test/data/others/Storage/R_RBTS_strg.m"
 
@@ -43,8 +57,22 @@ loads = [
     5 => 0.1081,
 ]
 
-smc = SequentialMCS(samples=10, seed=100, threaded=true)
-cc = assess(sys_before, sys_after, ELCC{SI}(50.0, loads; capacity_gap=5.0, p_value=0.5), settings, smc)
+smc = SequentialMCS(samples=200, seed=100, threaded=true)
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+shortfall, _ = CompositeSystems.assess(sys_after, smc, settings, resultspecs...)
+CompositeAdequacy.print_results(sys_after, shortfall)
+
+
+
+
+
+
+
+
+
+
+
+@time cc = assess(sys_before, sys_after, ELCC{SI}(50.0, loads; capacity_gap=5.0, p_value=0.5), settings, smc)
 CompositeAdequacy.print_results(sys_after, cc)
 
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())

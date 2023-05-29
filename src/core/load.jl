@@ -210,12 +210,6 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameter
         #
     end
 
-
-    generatorstorages = GeneratorStorages{N,L,T}(
-        Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
-        Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Array{Float32}(undef, 0, N), Float64[], Float64[], Vector{Bool}())
-
-
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
     _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
@@ -231,7 +225,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameter
     buspairs = calc_buspair_parameters(branches, key_branches)
 
     return SystemModel(
-        loads, generators, storages, generatorstorages, buses, branches, commonbranches, shunts, 
+        loads, generators, storages, buses, branches, commonbranches, shunts, 
         ref_buses, arcs_from, arcs_to, arcs, buspairs, baseMVA, SParametrics.timestamps
     )
     

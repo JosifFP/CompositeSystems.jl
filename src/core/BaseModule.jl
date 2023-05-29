@@ -14,8 +14,7 @@
 
     export
         # System assets
-        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, 
-        Storages, GeneratorStorages, CommonBranches,
+        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, CommonBranches,
 
         # Units
         Period, Hour, Day, Year,

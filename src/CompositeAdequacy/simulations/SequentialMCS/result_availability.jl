@@ -65,40 +65,6 @@ function finalize(acc::SMCSStorAvailabilityAccumulator, system::SystemModel{N,L,
     return StorageAvailabilityResult{N,L,T}(field(system, :storages, :keys), field(system, :timestamps), acc.available)
 end
 
-"GeneratorStorageAvailability"
-struct SMCSGenStorAvailabilityAccumulator <: ResultAccumulator{SequentialMCS,GeneratorStorageAvailability}
-    available::Array{Bool,3}
-end
-
-""
-function merge!(x::SMCSGenStorAvailabilityAccumulator, y::SMCSGenStorAvailabilityAccumulator)
-    x.available .|= y.available
-    return
-end
-
-accumulatortype(::SequentialMCS, ::GeneratorStorageAvailability) = SMCSGenStorAvailabilityAccumulator
-
-""
-function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::GeneratorStorageAvailability) where {N}
-    ngenstors = length(sys.generatorstorages)
-    available = zeros(Bool, ngenstors, N, simspec.nsamples)
-    return SMCSGenStorAvailabilityAccumulator(available)
-end
-
-""
-
-function record!(acc::SMCSGenStorAvailabilityAccumulator, states::ComponentStates, system::SystemModel, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= view(states.generatorstorages, :, t)
-    return
-end
-
-reset!(acc::SMCSGenStorAvailabilityAccumulator, sampleid::Int) = nothing
-
-""
-function finalize(acc::SMCSGenStorAvailabilityAccumulator, system::SystemModel{N,L,T}) where {N,L,T}
-    return GeneratorStorageAvailabilityResult{N,L,T}(field(system, :generatorstorages, :keys), field(system, :timestamps), acc.available)
-end
-
 "BranchAvailability"
 struct SMCSBranchAvailabilityAccumulator <: ResultAccumulator{SequentialMCS,BranchAvailability}
     available::Array{Bool,3}

@@ -37,8 +37,11 @@ function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemMode
 end
 
 #***************************************************** STORAGE VAR UPDATES *************************************************************************
+
 ""
-function update_con_storage_state(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_con_storage_state(
+    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+    
     t > 1 && JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], states.stored_energy[i,t-1]*states.storages[i,t])
 end
 

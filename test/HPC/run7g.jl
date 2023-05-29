@@ -9,7 +9,7 @@ Pkg.instantiate()
 using CompositeSystems
 
 # Set up the Gurobi environment
-#const GRB_ENV = Gurobi.Env()
+#const GRB_ENV = Gurobi.Env()()
 
 gurobi_optimizer = JuMP.optimizer_with_attributes(
     Gurobi.Optimizer,
@@ -39,20 +39,20 @@ timeseriesfile_before = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
 rawfile_before = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
 Base_reliabilityfile_before = "test/data/RTS_79_A/R_RTS.m"
 
-timeseriesfile_after_96 = "test/data/RTS/SYSTEM_LOADS.xlsx"
-rawfile_after_96 = "test/data/others/Storage/RTS_strg.m"
-Base_reliabilityfile_after_96 = "test/data/others/Storage/R_RTS_strg_2.m"
+timeseriesfile_after_100 = "test/data/RTS/SYSTEM_LOADS.xlsx"
+rawfile_after_100 = "test/data/others/Storage/RTS_strg.m"
+Base_reliabilityfile_after_100 = "test/data/others/Storage/R_RTS_strg.m"
 
 sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
-sys_after_96 = BaseModule.SystemModel(rawfile_after_96, Base_reliabilityfile_after_96, timeseriesfile_after_96)
+sys_after_100 = BaseModule.SystemModel(rawfile_after_100, Base_reliabilityfile_after_100, timeseriesfile_after_100)
 
 sys_before.branches.rate_a[11] = sys_before.branches.rate_a[11]*0.75
 sys_before.branches.rate_a[12] = sys_before.branches.rate_a[12]*0.75
 sys_before.branches.rate_a[13] = sys_before.branches.rate_a[13]*0.75
 
-sys_after_96.branches.rate_a[11] = sys_after_96.branches.rate_a[11]*0.75
-sys_after_96.branches.rate_a[12] = sys_after_96.branches.rate_a[12]*0.75
-sys_after_96.branches.rate_a[13] = sys_after_96.branches.rate_a[13]*0.75
+sys_after_100.branches.rate_a[11] = sys_after_100.branches.rate_a[11]*0.75
+sys_after_100.branches.rate_a[12] = sys_after_100.branches.rate_a[12]*0.75
+sys_after_100.branches.rate_a[13] = sys_after_100.branches.rate_a[13]*0.75
 
 loads = [
     1 => 0.038,
@@ -80,9 +80,9 @@ resultspecs = (Shortfall(), Utilization())
 function run_elcc(sys_before, sys_after, loads, method, settings, resultspecs, bus::Int)
     hour = Dates.format(Dates.now(),"HH_MM")
     current_dir = pwd()
-    new_dir = mkdir(string("Job3_ELCC_after96_bus_",bus,"PR_0_25"))
+    new_dir = mkdir(string("Job7f_ELCC_after100_bus_",bus,"PR_2_00"))
     cd(new_dir)
-    j = 0.25
+    j = 2.00
     sys_after.storages.buses[1] = bus
     sys_after.storages.charge_rating[1] = j
     sys_after.storages.discharge_rating[1] = j
@@ -98,4 +98,4 @@ function run_elcc(sys_before, sys_after, loads, method, settings, resultspecs, b
 end
 
 println("bus = 8")
-run_elcc(sys_before, sys_after_96, loads, smc, settings, resultspecs, 8)
+run_elcc(sys_before, sys_after_100, loads, smc, settings, resultspecs, 8)

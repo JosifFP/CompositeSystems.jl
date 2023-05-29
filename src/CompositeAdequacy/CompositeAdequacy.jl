@@ -17,6 +17,7 @@
     import XLSX: rename!, addsheet!, openxlsx
     import Distributions: ccdf, Normal
     import Base: minimum, maximum, extrema
+    import Gurobi
 
     export
         # CompositeAdequacy submoduleexport
@@ -30,8 +31,8 @@
 
         # Result specifications
         Shortfall, ShortfallSamples,
-        GeneratorAvailability, StorageAvailability, GeneratorStorageAvailability, 
-        BranchAvailability, ShuntAvailability, BusAvailability,
+        GeneratorAvailability, StorageAvailability, BranchAvailability, 
+        ShuntAvailability, BusAvailability,
         Utilization, UtilizationSamples,
 
         #utils
