@@ -19,11 +19,11 @@ settings = CompositeSystems.Settings(
     count_samples = true
 )
 
-timeseriesfile_before = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile_before = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile_before = "test/data/SMCS/RTS_79_A/R_RTS.m"
+timeseriesfile_before = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
+rawfile_before = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
+Base_reliabilityfile_before = "test/data/RTS_79_A/R_RTS.m"
 
-timeseriesfile_after = "test/data/RTS/Loads_system.xlsx"
+timeseriesfile_after = "test/data/RTS/SYSTEM_LOADS.xlsx"
 rawfile_after = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile_after = "test/data/others/Storage/R_RTS_strg.m"
 
@@ -64,11 +64,11 @@ CompositeAdequacy.print_results(sys_after, cc)
 
 ###################################################################################################################
 
-timeseriesfile_before = "test/data/RBTS/Loads_system.xlsx"
+timeseriesfile_before = "test/data/RBTS/SYSTEM_LOADS.xlsx"
 rawfile_before = "test/data/RBTS/Base/RBTS.m"
 Base_reliabilityfile_before = "test/data/RBTS/Base/R_RBTS.m"
 
-timeseriesfile_after = "test/data/RBTS/Loads_system.xlsx"
+timeseriesfile_after = "test/data/RBTS/SYSTEM_LOADS.xlsx"
 rawfile_after = "test/data/others/Storage/RBTS_strg.m"
 Base_reliabilityfile_after = "test/data/others/Storage/R_RBTS_strg.m"
 

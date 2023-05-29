@@ -20,14 +20,15 @@ function pm(model::JuMP.Model, topology::Topology, ::Type{M}) where {M<:Abstract
 end
 
 """
-Given a JuMP model and a PowerModels network data structure,
-Builds an DC-OPF or AC-OPF (+Min Load Curtailment) formulation of the given data and returns the JuMP model
+Given a JuMP model and a PowerModels network data structure, it builds an DC-OPF or AC-OPF 
+(+Min Load Curtailment) formulation of the given data and returns the JuMP model. 
 It constructs the power model with the given method by adding variables and constraints to the model. 
 It adds optimization and state variables such as branch indicator, bus voltage, load power factor, 
-shunt admittance factor, generator power, branch power, and storage power.
-It also adds objectives and constraints such as power balance, thermal limits, voltage angle difference, and storage state. 
-It uses the topology() function to get the indices of the different assets in the system such as buses, storages, and branches, 
-and then iterates over those indices to add the corresponding variables and constraints to the model.
+shunt admittance factor, generator power, branch power, and storage power. It also adds objectives 
+and constraints such as power balance, thermal limits, voltage angle difference, and storage state. 
+It uses the topology() function to get the indices of the different assets in the system such as buses, 
+storages, and branches, and then iterates over those indices to add the corresponding variables and 
+constraints to the model.
 """
 function build_problem!(pm::AbstractPowerModel, system::SystemModel, t)
 
@@ -70,23 +71,29 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel, t)
 end
 
 ""
-function update_problem!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
+function update_problem!(
+    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
+
     update_generators!(pm, system, states, t, force_pmin=force_pmin)
     update_branches!(pm, system, states, t)
     update_shunts!(pm, system, states, t)
     update_storages!(pm, system, states, t)
     update_buses!(pm, system, states, t)
+    objective_min_stor_load_curtailment(pm, system, t)
     return pm
 end
 
 ""
-function update_generators!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
+function update_generators!(
+    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; force_pmin::Bool=false)
+
     if !check_availability(states.generators, t, t-1)
         for i in field(system, :generators, :keys)
             update_var_gen_power_real(pm, system, states, i, t, force_pmin=force_pmin)
             update_var_gen_power_imaginary(pm, system, states, i, t)
         end
     end
+
 end
 
 ""
@@ -141,8 +148,8 @@ function solve_opf(system::SystemModel, settings::Settings)
     return pm
 end
 
-"Internal function to build classic OPF from _PM.jl. 
-It requires internal function 'con_power_balance_nolc' since it does not have power curtailment variables."
+"Internal function to build classic OPF from _PM.jl. It requires internal function 
+'con_power_balance_nolc' since it does not have power curtailment variables."
 function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 
     # Add Optimization and State Variables
@@ -183,7 +190,8 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 end
 
 ""
-function _update_opf!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
+function _update_opf!(
+    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
     
     update_topology!(pm, system, states, settings, t)
 
@@ -234,35 +242,38 @@ end
 
 """
 Creates an objective function to minimize the load curtailment and energy storage usage in a power system. 
-It starts by creating two dictionaries: load_cost and bus_load. The bus_load dictionary stores the total load cost for each bus, 
-calculated as the sum of the product of the load cost and active power for each load connected to the bus. The load_cost dictionary 
-stores an expression for the load cost for each bus, calculated as the product of the total load cost for the bus and the complement 
-of the load curtailment variable for the bus. Then, it creates an expression fd for the total load cost, which is the sum of the load 
-cost for each bus. Additionally, it creates an expression fe for the total energy storage usage, which is the sum of the difference 
-between the energy rating and the state of charge for each energy storage unit in the system. 
-Finally, it returns an objective function to minimize the sum of fd and fe.
+It starts by creating two dictionaries: load_cost and bus_load. The bus_load dictionary stores the total 
+load cost for each bus, calculated as the sum of the product of the load cost and active power for each 
+load connected to the bus. The load_cost dictionary stores an expression for the load cost for each bus, 
+calculated as the product of the total load cost for the bus and the complement of the load curtailment 
+variable for the bus. Then, it creates an expression fd for the total load cost, which is the sum of the 
+load cost for each bus. Additionally, it creates an expression fe for the total energy storage usage, 
+which is the sum of the difference between the energy rating and the state of charge for each energy 
+storage unit in the system. Finally, it returns an objective function to minimize the sum of fd and fe.
 """
 function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    bus_loads = Dict{Int, Any}()
-    load_cost = Dict{Int, Any}()
-    se_left = Dict{Int, Any}()
-    rescale = 1.0
-
-    #if log10(maximum(system.loads.cost)) > 3
-    #    rescale = 10^(-modf(log10(maximum(system.loads.cost)))[2]+2)
-    #end
+    exp_load_stor = Dict{Int, Any}()
+    z_demand   = var(pm, :z_demand, nw)
+    z_stor   = var(pm, :stored_energy, nw)
 
     for i in assetgrouplist(topology(pm, :buses_idxs))
-        bus_loads[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
-        #bus_loads[i] = sum((field(system, :loads, :cost)[k] for k in topology(pm, :bus_loads)[i]); init=0)
-        load_cost[i] = JuMP.@expression(pm.model, bus_loads[i]*(1 - var(pm, :z_demand, nw)[i]))
-        se_left[i] = sum((field(system, :storages, :energy_rating)[k] - var(pm, :stored_energy, nw)[k] for k in topology(pm, :bus_storages)[i]); init=0)
+
+        bus_load = topology(pm, :bus_loads)[i]
+        bus_storage = topology(pm, :bus_storages)[i]
+
+        bus_load_cost = Dict{Int, Any}(k => field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in bus_load)
+        bus_stor_rating = Dict{Int, Any}(k => field(system, :storages, :energy_rating)[k] for k in bus_storage)
+
+        exp_load_stor[i] = @expression(pm.model, 
+        sum(bus_load_cost[a] for a in bus_load)*(1 - z_demand[i]) +
+        sum(bus_stor_rating[a]-z_stor[a] for a in bus_storage)
+        )
     end
 
-    fd = @expression(pm.model, sum(load_cost[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
-    fe = @expression(pm.model, sum(se_left[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
-    return @objective(pm.model, MIN_SENSE, fd + fe)
+    return @objective(pm.model, MIN_SENSE, 
+        sum(exp_load_stor[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
+
 end
 
 ""
@@ -271,22 +282,26 @@ function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemMo
     load_cost = Dict{Int, Any}()
     bus_load = Dict{Int, Any}()
     for i in field(system, :buses, :keys)
-        bus_load[i] = sum((field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads)[i]); init=0)
+        bus_load[i] = sum((field(system, :loads, :cost)[k] for k in topology(pm, :bus_loads)[i]); init=0)
         load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
     end
     return @objective(pm.model, MIN_SENSE, sum(load_cost[i] for i in field(system, :buses, :keys)))
 end
 
 "This function is used to build the results of the optimization problem for the DC Power Model. 
-# It first checks if the optimization problem has been solved optimally or locally, and if so, it retrieves the values 
-# of the variables z_demand and stored_energy from the solution and updates the corresponding fields in the states struct."
-function build_result!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int; nw::Int=1, changes::Bool=true)
+It first checks if the optimization problem has been solved optimally or locally, and if so, 
+it retrieves the values of the variables z_demand and stored_energy from the solution and updates 
+the corresponding fields in the states struct."
+function build_result!(
+    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, 
+    t::Int; nw::Int=1, changes::Bool=true)
 
     is_solved = any([
         JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED, 
         JuMP.termination_status(pm.model) == JuMP.OPTIMAL]) # Check if the problem was solved optimally or locally
 
-    all([changes, !is_solved]) && println("not solved, t=$(t), status=$(termination_status(pm.model)), changes = $(changes)")
+    all([changes, !is_solved]) && println(
+        "not solved, t=$(t), status=$(termination_status(pm.model)), changes = $(changes)")
 
     settings.record_branch_flow == true && fill_flow_branch!(pm, system, states, t, is_solved=is_solved)
     fill_curtailed_load!(pm, system, states, t, is_solved=is_solved)

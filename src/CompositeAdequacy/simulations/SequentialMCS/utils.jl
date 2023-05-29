@@ -14,26 +14,6 @@ function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, 
     return availability
 end
 
-"initialize the availability of different storage assets (special case) 
-using an RNG and a system object of type SystemModel."
-function initialize_availability!(rng::AbstractRNG, availability::Vector{Bool}, nexttransition::Vector{Int}, asset::Storages, N::Int)
-    
-    for i in 1:length(asset)
-        λ_updn = asset.λ_updn[i]/N
-        μ_updn = asset.μ_updn[i]/N
-        if λ_updn ≠ 0 && μ_updn ≠ 0
-            online = rand(rng) < μ_updn / (λ_updn + μ_updn)
-            availability[i] = online
-            transitionprobs = online ? asset.λ_updn./N  : asset.μ_updn./N
-            nexttransition[i] = randtransitiontime(rng, transitionprobs, i, 1, N)
-        else
-            availability[i] = 1
-            nexttransition[i] = N + 1
-        end
-    end
-    return availability
-end
-
 "initialize the availability of buses using an RNG and a system object of type SystemModel."
 function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::Int)
     bus_type = field(asset, :bus_type)
@@ -50,9 +30,7 @@ function initialize_other_states!(states::ComponentStates)
 
     fill!(states.loads, 1)
     fill!(states.shunts, 1)
-    fill!(states.generatorstorages, 1)
     fill!(states.stored_energy, 0)
-    fill!(states.gstored_energy, 0)
     fill!(states.p_curtailed, 0)
     fill!(states.flow_from, 0)
     fill!(states.flow_to, 0)

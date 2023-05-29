@@ -8,8 +8,12 @@ Pkg.activate(".")
 Pkg.instantiate()
 using CompositeSystems
 
-gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
-    Gurobi.Optimizer, 
+# Set up the Gurobi environment
+#const GRB_ENV = Gurobi.Env()
+
+gurobi_optimizer = JuMP.optimizer_with_attributes(
+    Gurobi.Optimizer,
+    #"gurobi_env" => GRB_ENV, 
     "Presolve"=>1, 
     "PreCrush"=>1, 
     "OutputFlag"=>0, 
@@ -22,24 +26,25 @@ gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
 resultspecs = (Shortfall(), Utilization())
 
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
     min_generators_off = 0,
-    set_string_names_on_creation = false
+    set_string_names_on_creation = false,
+    count_samples = true
 )
 
-timeseriesfile_before = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile_before = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile_before = "test/data/SMCS/RTS_79_A/R_RTS.m"
+timeseriesfile_before = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
+rawfile_before = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
+Base_reliabilityfile_before = "test/data/RTS_79_A/R_RTS.m"
 
-timeseriesfile_after_100 = "test/data/RTS/Loads_system.xlsx"
+timeseriesfile_after_100 = "test/data/RTS/SYSTEM_LOADS.xlsx"
 rawfile_after_100 = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile_after_100 = "test/data/others/Storage/R_RTS_strg.m"
 
-timeseriesfile_after_96 = "test/data/RTS/Loads_system.xlsx"
+timeseriesfile_after_96 = "test/data/RTS/SYSTEM_LOADS.xlsx"
 rawfile_after_96 = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile_after_96 = "test/data/others/Storage/R_RTS_strg_2.m"
 
@@ -63,7 +68,7 @@ loads = [
     17 => 0.045
 ]
 
-smc = CompositeAdequacy.SequentialMCS(samples=2000, seed=100, threaded=false)
+smc = CompositeAdequacy.SequentialMCS(samples=5000, seed=100, threaded=true)
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
@@ -85,6 +90,7 @@ sys_after_96.branches.rate_a[13] = sys_after_96.branches.rate_a[13]*0.75
 hour = Dates.format(Dates.now(),"HH_MM")
 current_dir = pwd()
 new_dir = mkdir(string("job1_bus8_time_",hour))
+cd(new_dir)
 
 shortfall_before, util_before = CompositeSystems.assess(sys_before, smc, settings, resultspecs...)
 CompositeAdequacy.print_results(sys_before, shortfall_before)
@@ -108,13 +114,14 @@ sys_after_96.storages.energy_rating[1] = 2.0
 shortfall_after_96, _ = CompositeSystems.assess(sys_after_96, smc, settings, resultspecs...)
 CompositeAdequacy.print_results(sys_after_96, shortfall_after_96)
 
-
+cd(current_dir)
 sys_before_2 = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
 sys_before_2.branches.rate_a[7] = sys_before_2.branches.rate_a[7]*0.50
 sys_before_2.branches.rate_a[14] = sys_before_2.branches.rate_a[14]*0.50
 sys_before_2.branches.rate_a[15] = sys_before_2.branches.rate_a[15]*0.50
 sys_before_2.branches.rate_a[16] = sys_before_2.branches.rate_a[16]*0.50
 sys_before_2.branches.rate_a[17] = sys_before_2.branches.rate_a[17]*0.50
+cd(new_dir)
 shortfall_before_2, util_before_2 = CompositeSystems.assess(sys_before_2, smc, settings, resultspecs...)
 CompositeAdequacy.print_results(sys_before_2, shortfall_before_2)
 CompositeAdequacy.print_results(sys_before_2, util_before_2)

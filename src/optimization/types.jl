@@ -7,13 +7,11 @@ struct Topology
     shunts_idxs::Vector{UnitRange{Int}}
     generators_idxs::Vector{UnitRange{Int}}
     storages_idxs::Vector{UnitRange{Int}}
-    generatorstorages_idxs::Vector{UnitRange{Int}}
     bus_loads_init::Dict{Int, Vector{Int}}
     bus_loads::Dict{Int, Vector{Int}}
     bus_shunts::Dict{Int, Vector{Int}}
     bus_generators::Dict{Int, Vector{Int}}
     bus_storages::Dict{Int, Vector{Int}}
-    bus_generatorstorages::Dict{Int, Vector{Int}}
 
     arcs_from::Vector{Union{Missing, Tuple{Int, Int, Int}}}
     arcs_to::Vector{Union{Missing, Tuple{Int, Int, Int}}}
@@ -48,11 +46,6 @@ struct Topology
         bus_storages = Dict((i, Int[]) for i in key_buses)
         bus_asset!(bus_storages, key_storages, field(system, :storages, :buses))
 
-        key_generatorstorages = filter(i->field(system, :generatorstorages, :status)[i], field(system, :generatorstorages, :keys))
-        generatorstorages_idxs = makeidxlist(key_generatorstorages, length(system.generatorstorages))
-        bus_generatorstorages = Dict((i, Int[]) for i in key_buses)
-        bus_asset!(bus_generatorstorages, key_generatorstorages, field(system, :generatorstorages, :buses))
-
         key_branches = filter(i->field(system, :branches, :status)[i], field(system, :branches, :keys))
         branches_idxs = makeidxlist(key_branches, length(system.branches))
 
@@ -71,8 +64,7 @@ struct Topology
             buses_idxs::Vector{UnitRange{Int}}, loads_idxs::Vector{UnitRange{Int}}, 
             branches_idxs::Vector{UnitRange{Int}}, shunts_idxs::Vector{UnitRange{Int}}, 
             generators_idxs::Vector{UnitRange{Int}}, storages_idxs::Vector{UnitRange{Int}}, 
-            generatorstorages_idxs::Vector{UnitRange{Int}}, bus_loads_init,
-            bus_loads, bus_shunts, bus_generators, bus_storages, bus_generatorstorages, 
+            bus_loads_init, bus_loads, bus_shunts, bus_generators, bus_storages, 
             arcs_from, arcs_to, arcs, busarcs, buspairs, delta_bounds)
     end
 end
@@ -83,13 +75,11 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
     x.shunts_idxs == y.shunts_idxs &&
     x.generators_idxs == y.generators_idxs &&
     x.storages_idxs == y.storages_idxs &&
-    x.generatorstorages_idxs == y.generatorstorages_idxs &&
     x.bus_loads_init == y.bus_loads_init &&
     x.bus_loads == y.bus_loads &&
     x.bus_shunts == y.bus_shunts &&
     x.bus_generators == y.bus_generators &&
     x.bus_storages == y.bus_storages &&
-    x.bus_generatorstorages == y.bus_generatorstorages &&
     x.busarcs == y.busarcs &&
     x.arcs_from == y.arcs_from &&
     x.arcs_to == y.arcs_to &&

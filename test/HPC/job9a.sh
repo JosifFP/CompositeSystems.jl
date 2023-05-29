@@ -9,4 +9,4 @@
 export JULIA_NUM_THREADS=64
 module load julia/1.8.5
 module load gurobi/10.0.1
-julia --project="." --startup-file=no "run9.jl"
+julia --project="." --startup-file=no "run9a.jl"

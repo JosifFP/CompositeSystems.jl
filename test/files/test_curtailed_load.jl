@@ -554,7 +554,7 @@ end
 
         rawfile = "test/data/RBTS/Base/RBTS.m"
         reliabilityfile = "test/data/RBTS/Base/R_RBTS_FULL.m"
-        timeseriesfile = "test/data/RBTS/Loads_system.xlsx"
+        timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
         system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
         for t in 1:8736 system.loads.pd[:,t] = [0.2; 0.85; 0.4; 0.2; 0.2] end
         pm = OPF.abstract_model(system, settings)
@@ -735,7 +735,7 @@ end
             set_string_names_on_creation = true
         )
 
-        timeseriesfile = "test/data/RTS/Loads_system.xlsx"
+        timeseriesfile = "test/data/RTS/SYSTEM_LOADS.xlsx"
         rawfile = "test/data/RTS/Base/RTS.m"
         reliabilityfile = "test/data/RTS/Base/R_RTS.m"
         system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
@@ -867,8 +867,8 @@ end
             @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
             @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 26.9103; atol = 1e-4)
-            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 12.3375; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 26.9107; atol = 1e-4)
+            @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 12.3390; atol = 1e-4)
             @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
             @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
             @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
@@ -1088,7 +1088,7 @@ end
             set_string_names_on_creation = true
         )
     
-        timeseriesfile = "test/data/RTS/Loads_system.xlsx"
+        timeseriesfile = "test/data/RTS/SYSTEM_LOADS.xlsx"
         rawfile = "test/data/RTS/Base/RTS.m"
         reliabilityfile = "test/data/RTS/Base/R_RTS.m"
         system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)

@@ -116,14 +116,14 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
 end
 
 ""
-function reset_model!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, s)
-    if iszero(s%100) && settings.optimizer == Gurobi
-        JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-        initialize_pm_containers!(pm, system)
-        OPF.initialize_powermodel!(pm, system, states)
-    else
-        MOIU.reset_optimizer(pm.model)
-    end
+function reset_model!(pm::AbstractPowerModel, system::SystemModel, settings::Settings, sampleid::Int, nsamples::Int)
+
+    settings.optimizer ≠ Gurobi && MOIU.reset_optimizer(pm.model)
+    sampleid == nsamples && Base.finalize(JuMP.backend(pm.model).optimizer)
+    # if iszero(sampleid%100) && settings.optimizer ≠ Gurobi
+    #     JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
+    #     initialize_pm_containers!(pm, system)
+    # end
     return
 end
 
@@ -784,6 +784,7 @@ function fill_curtailed_load!(
 
     if is_solved
         var = OPF.var(pm, :z_demand, nw)
+
         for i in field(system, :buses, :keys)
             bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
             if states.buses[i,t] != 4
@@ -793,6 +794,9 @@ function fill_curtailed_load!(
                 states.p_curtailed[i] = bus_pd
             end
         end
+        #if sum(states.p_curtailed) > 0
+        #    println("t=$(t),$(states.p_curtailed)")
+        #end
     else
         fill!(states.p_curtailed, 0.0)
     end
@@ -800,7 +804,8 @@ end
 
 ""
 function fill_curtailed_load!(
-    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+    pm::AbstractPowerModel, system::SystemModel, 
+    states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
 
     if is_solved
         var = OPF.var(pm, :z_demand, nw)
@@ -824,19 +829,22 @@ end
 
 ""
 function fill_stored_energy!(
-    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
-
-    for i in field(system, :storages, :keys)
-        if is_solved
-            var = OPF.var(pm, :stored_energy, nw)
-            axs =  axes(var)[1]
-            if i in axs
-                states.stored_energy[i,t] = _IM.build_solution_values(var[i])
-            else
-                states.stored_energy[i,t] = states.stored_energy[i,t-1]
+    pm::AbstractPowerModel, system::SystemModel, 
+    states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+    
+    if is_solved
+        for i in field(system, :storages, :keys)
+            if states.storages[i,t]
+                var = OPF.var(pm, :stored_energy, nw)
+                axs =  axes(var)[1]
+                if i in axs
+                    states.stored_energy[i,t] = _IM.build_solution_values(var[i])
+                end
             end
-        else
-            states.stored_energy[i,t] = states.stored_energy[i,t-1]
+        end
+    else
+        if length(system.storages) ≠ 0 
+            states.stored_energy[:,t] .= states.stored_energy[:,t-1]
         end
     end
 end

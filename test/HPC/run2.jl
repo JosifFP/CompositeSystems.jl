@@ -1,5 +1,6 @@
 #module load gurobi
-#gurobi_cl 1> /dev/null && echo Success || echo 
+#gurobi_cl 1> /dev/null && echo Success || echo
+#gurobi_cl --tokens
 using Pkg
 import Gurobi, JuMP, Dates
 Pkg.activate(".")
@@ -7,8 +8,12 @@ Pkg.activate(".")
 Pkg.instantiate()
 using CompositeSystems
 
-gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
-    Gurobi.Optimizer, 
+# Set up the Gurobi environment
+#const GRB_ENV = Gurobi.Env()
+
+gurobi_optimizer = JuMP.optimizer_with_attributes(
+    Gurobi.Optimizer,
+    #"gurobi_env" => GRB_ENV,
     "Presolve"=>1, 
     "PreCrush"=>1, 
     "OutputFlag"=>0, 
@@ -21,7 +26,7 @@ gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
 resultspecs = (Shortfall(), Utilization())
 
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
@@ -30,15 +35,15 @@ settings = CompositeSystems.Settings(
     set_string_names_on_creation = false
 )
 
-timeseriesfile_before = "test/data/SMCS/RTS_79_A/Loads_system.xlsx"
-rawfile_before = "test/data/SMCS/RTS_79_A/RTS_AC_HIGH.m"
-Base_reliabilityfile_before = "test/data/SMCS/RTS_79_A/R_RTS.m"
+timeseriesfile_before = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
+rawfile_before = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
+Base_reliabilityfile_before = "test/data/RTS_79_A/R_RTS.m"
 
-timeseriesfile_after_100 = "test/data/RTS/Loads_system.xlsx"
+timeseriesfile_after_100 = "test/data/RTS/SYSTEM_LOADS.xlsx"
 rawfile_after_100 = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile_after_100 = "test/data/others/Storage/R_RTS_strg.m"
 
-timeseriesfile_after_96 = "test/data/RTS/Loads_system.xlsx"
+timeseriesfile_after_96 = "test/data/RTS/SYSTEM_LOADS.xlsx"
 rawfile_after_96 = "test/data/others/Storage/RTS_strg.m"
 Base_reliabilityfile_after_96 = "test/data/others/Storage/R_RTS_strg_2.m"
 

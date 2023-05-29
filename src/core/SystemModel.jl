@@ -4,7 +4,7 @@ struct SystemModel{N,L,T<:Period}
     loads::Loads{N,L,T}
     generators::Generators{N,L,T}
     storages::Storages{N,L,T}
-    generatorstorages::GeneratorStorages{N,L,T}
+    #generatorstorages::GeneratorStorages{N,L,T}
     buses::Buses
     branches::Branches
     commonbranches::CommonBranches
@@ -23,7 +23,6 @@ struct SystemModel{N,L,T<:Period}
         loads::Loads{N,L,T},
         generators::Generators{N,L,T},
         storages::Storages{N,L,T},
-        generatorstorages::GeneratorStorages{N,L,T},
         buses::Buses,
         branches::Branches,
         commonbranches::CommonBranches,
@@ -43,7 +42,7 @@ struct SystemModel{N,L,T<:Period}
     end
 
     new{N,L,T}(
-        loads, generators, storages, generatorstorages, buses, branches, commonbranches, shunts, 
+        loads, generators, storages, buses, branches, commonbranches, shunts, 
         ref_buses, arcs_from, arcs_to, arcs, buspairs, baseMVA, timestamps)
     end
 
@@ -53,7 +52,6 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.loads == y.loads &&
     x.generators == y.generators &&
     x.storages == y.storages &&
-    x.generatorstorages == y.generatorstorages &&
     x.buses == y.buses &&
     x.branches == y.branches &&
     x.commonbranches == y.commonbranches &&

@@ -134,7 +134,7 @@ function copy_load(sys::SystemModel{N,L,T}, load_shares::Vector{Tuple{Int,Float6
         sys.loads.pf, sys.loads.cost, sys.loads.status)
 
     return load_allocations, sys.loads.pd, SystemModel(
-        new_loads, sys.generators, sys.storages, sys.generatorstorages, sys.buses,
+        new_loads, sys.generators, sys.storages, sys.buses,
         sys.branches, sys.commonbranches, sys.shunts, sys.ref_buses,
         sys.arcs_from, sys.arcs_to, sys.arcs, sys.buspairs, sys.baseMVA, sys.timestamps)
 end
