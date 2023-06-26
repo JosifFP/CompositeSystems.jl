@@ -65,7 +65,7 @@ end
 
 "do nothing"
 function update_var_shunt_admittance_factor(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, l::Int; nw::Int=1)
 end
 
 #***************************************************** CONSTRAINTS *************************************************************************
@@ -74,12 +74,12 @@ function con_theta_ref(pm::AbstractNFAModel, system::SystemModel, i::Int; nw::In
 end
 
 "Nothing to do, no Ohm's Law Constraints"
-function update_con_ohms_yt(pm::AbstractNFAModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_con_ohms_yt(pm::AbstractNFAModel, system::SystemModel, states::States, i::Int; nw::Int=1)
 end
 
 "Nothing to do, no Phase Angle Difference Constraints "
 function update_con_voltage_angle_difference(
-    pm::AbstractNFAModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractNFAModel, system::SystemModel, states::States, l::Int; nw::Int=1)
 end
 
 """
@@ -297,27 +297,27 @@ end
 #***************************************************** UPDATES *************************************************************************
 ""
 function update_var_branch_indicator(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
 end
 
 ""
 function update_var_bus_voltage_angle(
-    pm::AbstractNFAModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+    pm::AbstractNFAModel, system::SystemModel, states::States, i::Int)
 end
 
 "Do nothing"
 function update_var_bus_voltage_magnitude(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int)
 end
 
 "Model ignores reactive power flows"
 function update_var_gen_power_imaginary(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int)
 end
 
 "DC models ignore reactive power flows"
 function update_var_branch_power_imaginary(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, arc::Tuple{Int, Int, Int}, t::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, arc::Tuple{Int, Int, Int})
 end
 
 #************************************************** STORAGE VAR UPDATES ****************************************************************
@@ -326,12 +326,12 @@ end
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
 ""
 function update_con_power_balance_shunts(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
 end
 
 ""
 function update_con_power_balance(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
     bus_loads = topology(pm, :bus_loads)[i]
@@ -342,7 +342,7 @@ end
 
 ""
 function update_con_power_balance_nolc(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, i::Int, t::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int)
 
     bus_loads = topology(pm, :bus_loads)[i]
     bus_shunts = topology(pm, :bus_shunts)[i]
@@ -353,7 +353,7 @@ end
 
 ""
 function update_con_thermal_limits(
-    pm::AbstractAPLossLessModels, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractAPLossLessModels, system::SystemModel, states::States, l::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[l] 
     t_bus = field(system, :branches, :t_bus)[l]
@@ -364,57 +364,56 @@ function update_con_thermal_limits(
     p_to = var(pm, :p, nw)[t_idx]
 
     if isa(p_fr, JuMP.VariableRef)
-        JuMP.set_lower_bound(p_fr, (-rate_a)*states.branches[l,t])
-        JuMP.set_upper_bound(p_fr, rate_a*states.branches[l,t])  
+        JuMP.set_lower_bound(p_fr, -rate_a*states.branches_available[l])
+        JuMP.set_upper_bound(p_fr, rate_a*states.branches_available[l])  
     elseif isa(p_to, JuMP.VariableRef)
-        JuMP.set_lower_bound(p_to, (-rate_a)*states.branches[l,t])
-        JuMP.set_upper_bound(p_to, rate_a*states.branches[l,t])
+        JuMP.set_lower_bound(p_to, -rate_a*states.branches_available[l])
+        JuMP.set_upper_bound(p_to, rate_a*states.branches_available[l])
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*states.branches[l,t])
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*states.branches[l,t])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*states.branches_available[l])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*states.branches_available[l])
     end
-    
 end
 
 
 "Nothing to do, no voltage angle variables"
 function _update_con_ohms_yt_from(
-    pm::AbstractNFAModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractNFAModel, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int,
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 end
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(
-    pm::AbstractDCPModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractDCPModel, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int,
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
 
     if b <= 0
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-states.branches[l,t]))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-states.branches[l,t]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-states.branches_available[l]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-states.branches_available[l]))
     else # account for bound reversal when b is positive
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-states.branches[l,t]))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-states.branches[l,t]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-states.branches_available[l]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-states.branches_available[l]))
     end
 end
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(
-    pm::AbstractDCMPPModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractDCMPPModel, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max*(1-states.branches[l,t]))/(x*tm))
-    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min*(1-states.branches[l,t]))/(x*tm))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max*(1-states.branches_available[l]))/(x*tm))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min*(1-states.branches_available[l]))/(x*tm))
 end
 
 "Nothing to do, this model is symetric"
 function _update_con_ohms_yt_to(
-    pm::AbstractAPLossLessModels, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractAPLossLessModels, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end

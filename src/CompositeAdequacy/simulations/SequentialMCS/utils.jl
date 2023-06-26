@@ -25,30 +25,28 @@ function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::In
     return availability
 end
 
-"Empty or Initialize other variables"
-function initialize_other_states!(states::ComponentStates)
-
-    fill!(states.loads, 1)
-    fill!(states.shunts, 1)
-    fill!(states.stored_energy, 0)
-    fill!(states.p_curtailed, 0)
-    fill!(states.flow_from, 0)
-    fill!(states.flow_to, 0)
+""
+function apply_common_outages!(states::States, branches::Branches, t::Int)
+    if !all(states.commonbranches_available)
+        for k in eachindex(branches.keys)
+            if branches.common_mode[k] ≠ 0 && states.commonbranches_available[branches.common_mode[k]] == false
+                states.branches_available[k] = false
+            end
+        end
+    end
 end
 
-"Update the availability of different types of assets (buses, branches, generators, etc.) 
+"Update the availability of different types of assets (branches, generators, etc.) 
 using availability and nexttransition vectors"
-function update_availability!(rng::AbstractRNG, updown_cycle::Matrix{Bool},
-    availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
+function update_availability!(
+    rng::AbstractRNG, availability::Vector{Bool}, 
+    nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
 
     for i in 1:length(asset)
-
         if nexttransition[i] == t_now # Unit switches states
             transitionprobs = (availability[i] ⊻= true) ? asset.λ_updn./t_last : asset.μ_updn./t_last
             nexttransition[i] = randtransitiontime(rng, transitionprobs, i, t_now, t_last)
         end
-
-        view(updown_cycle,i,t_now) .= availability[i]
     end
 end
 
@@ -69,17 +67,6 @@ function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now:
     end
 
     return t_last + 1
-end
-
-""
-function apply_common_outages!(states::ComponentStates, branches::Branches, t::Int)
-    if all(view(states.commonbranches,:,t)) == false
-        for k in branches.keys
-            if branches.common_mode[k] ≠ 0 && states.commonbranches[branches.common_mode[k],t] == false
-                states.branches[k,t] = false
-            end
-        end
-    end
 end
 
 ""
@@ -104,4 +91,58 @@ function peakload(loads::Loads{N}, buses::Buses) where {N}
 
     system_peakload = Float64(maximum(sum(loads.pd, dims=1)))
     return system_peakload, bus_peakload
+end
+
+###################################### NEW FUNCTIONS #################################
+
+""
+function update_container!(availability::Vector{Int}, asset::Buses)
+
+    for i in eachindex(availability)
+        availability[i] = field(asset, :bus_type)[i]
+    end
+end
+
+""
+function update_container!(stored_energy::Vector{Float64}, storages_available::Vector{Bool}, asset::Storages)
+    for i in 1:length(asset)
+        if !storages_available[i]
+            stored_energy[i] = 0.0
+        end
+    end
+end
+
+""
+function update_other_states!(states::States, statetransition::StateTransition, system::SystemModel; sampleid::Int=0)
+
+    sampleid==1 && fill!(states.stored_energy, 0.0)
+
+    fill!(states.branches_flow_from, 0.0)
+    fill!(states.branches_flow_to, 0.0)
+    fill!(states.buses_cap_curtailed_p, 0.0)
+    fill!(states.buses_cap_curtailed_q, 0.0)
+    fill!(states.commonbranches_available, 1)
+    fill!(states.loads_available, 1)
+    fill!(states.shunts_available, 1)
+
+    states.branches_available .= statetransition.branches_available
+    states.commonbranches_available .= statetransition.commonbranches_available
+    states.generators_available .= statetransition.generators_available
+    states.storages_available .= statetransition.storages_available
+    states.buses_available .= field(system, :buses, :bus_type)
+
+    return
+end
+
+""
+function record_other_states!(states::States, system::SystemModel)
+    
+    states.branches_pasttransition .= states.branches_available
+    states.commonbranches_pasttransition .= states.commonbranches_available
+    states.generators_pasttransition .= states.generators_available
+    states.storages_pasttransition .= states.storages_available
+    states.buses_pasttransition .= states.buses_available
+    states.loads_pasttransition .= states.loads_available
+    states.shunts_pasttransition .= states.shunts_available
+    return
 end

@@ -18,211 +18,221 @@
     system.storages.thermal_rating[1] = 0.25
     system.storages.energy_rating[1] = 2
     pm = OPF.abstract_model(system, settings)
-    componentstates = OPF.ComponentStates(system, available=true)
-    OPF.build_problem!(pm, system, 1)
+    state = OPF.States(system)
+    OPF.build_problem!(pm, system)
     OPF.field(system, :storages, :energy)[1] = 0.0
     
-    t=1
-    OPF.update!(pm, system, componentstates, settings, t)
-    
     @testset "t=1, No outages" begin
+        t=1
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
         @test isapprox(system.storages.charge_rating[1], 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.25
     end
     
-    t=2
-    OPF.update!(pm, system, componentstates, settings, t)  
     @testset "t=2, No outages" begin
+        t=2
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
-        @test isapprox(componentstates.stored_energy[t], 0.5; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
+        @test isapprox(state.stored_energy[1], 0.5; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.50
     end
-    
-    t=3
-    componentstates.stored_energy[t-1] = OPF.field(system, :storages, :energy_rating)[1] #stored_energy(t-1) = 2.0
-    componentstates.generators[3,t] = 0
-    componentstates.generators[7,t] = 0
-    componentstates.generators[8,t] = 0
-    componentstates.generators[9,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=3, G3, G7, G8 and G9 on outage" begin
+        t=3
+        state.stored_energy[1] = OPF.field(system, :storages, :energy_rating)[1] #stored_energy(t-1) = 2.0
+        state.generators_available[3] = 0
+        state.generators_available[7] = 0
+        state.generators_available[8] = 0
+        state.generators_available[9] = 0
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.1; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0.1; atol = 1e-4) #without storage it should be 0.35
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - system.storages.charge_rating[1]; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 2.0 - system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.1; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0.1; atol = 1e-4) #without storage it should be 0.35
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.75
     end
-    
-    t=4
-    componentstates.branches[5,t] = 0
-    componentstates.branches[8,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=4, L5 and L8 on outage" begin
+        t=4
+        state.branches_available[5] = 0
+        state.branches_available[8] = 0
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.15; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4) #without storage it should be 0.35
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0.15; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - system.storages.charge_rating[1]; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.75 - system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.15; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4) #without storage it should be 0.35
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0.15; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.50; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
-    end
-    
-    t=5
-    componentstates.branches[3,t] = 0
-    componentstates.branches[4,t] = 0
-    componentstates.branches[8,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)  
+        OPF._reset!(state, system)
+        #state.stored_energy[1] =  1.50
+    end  
     
     @testset "t=5, L3, L4 and L8 on outage" begin
+        t=5
+        state.branches_available[3] = 0
+        state.branches_available[4] = 0
+        state.branches_available[8] = 0
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - 0.15; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.5 - 0.15; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - 0.15; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.35; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.15; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.15; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.35
     end
     
-    t=6
-    componentstates.branches[2,t] = 0
-    componentstates.branches[7,t] = 0
-    componentstates.generators[1,t] = 0
-    componentstates.generators[2,t] = 0
-    componentstates.generators[3,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-    
-    @testset "L2 and L7 on outage, generation reduced" begin
+    @testset "t=6, L2 and L7 on outage, generation reduced" begin
+        t=6
+        state.branches_available[2] = 0
+        state.branches_available[7] = 0
+        state.generators_available[1] = 0
+        state.generators_available[2] = 0
+        state.generators_available[3] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.49; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0.49; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.5 - 0.15 - 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.49; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0.49; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.1; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.25; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.1
     end
 
-    t=7
-    componentstates.branches[2,t] = 0
-    componentstates.generators[1,t] = 0
-    componentstates.generators[2,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
-    @testset "L2 on outage, generation reduced" begin
+    @testset "t=7, L2 on outage, generation reduced" begin
+        t=7
+        state.branches_available[2] = 0
+        state.generators_available[1] = 0
+        state.generators_available[2] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.5 - 0.15 - 0.25 - 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.85; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.85
     end
 
-    t=8
-    componentstates.branches[1,t] = 0
-    componentstates.branches[6,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
-    @testset "L1 and L6 on outage" begin
+    @testset "t=8, L1 and L6 on outage" begin
+        t=8
+        state.branches_available[1] = 0
+        state.branches_available[6] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - 0.23; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.5 - 0.15 - 0.25 - 0.25 - 0.23; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - 0.23; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.62; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.23; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.23; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), system.branches)[2]["from"], 0.71; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), system.branches)[7]["from"], 0.71; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.62
     end
 
-    t=9
-    componentstates.branches[4,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
-    @testset "L4 on outage" begin
+    @testset "t=9, L4 on outage" begin
+        t=9
+        state.branches_available[4] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.5 - 0.15 - 0.25 - 0.25 - 0.23 + 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.62 + 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.62 + 0.25
     end
 
 end
@@ -247,214 +257,223 @@ end
     system.storages.thermal_rating[1] = 0.25
     system.storages.energy_rating[1] = 2
     pm = OPF.abstract_model(system, settings)
-    componentstates = OPF.ComponentStates(system, available=true)
-    OPF.build_problem!(pm, system, 1)
+    state = OPF.States(system)
+    OPF.build_problem!(pm, system)
     OPF.field(system, :storages, :energy)[1] = 0.0
     
-    t=1
-    OPF.update!(pm, system, componentstates, settings, t)
-    
     @testset "t=1, No outages" begin
+        t=1
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
         @test isapprox(system.storages.charge_rating[1], 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.25
     end
     
-    t=2
-    OPF.update!(pm, system, componentstates, settings, t)  
     @testset "t=2, No outages" begin
+        t=2
+        OPF._update!(pm, system, state, settings, t)  
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
-        @test isapprox(componentstates.stored_energy[t], 0.5; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + system.storages.charge_rating[1]; atol = 1e-4) 
+        @test isapprox(state.stored_energy[1], 0.5; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.00; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.50
     end
-    
-    t=3
-    componentstates.stored_energy[t-1] = 1.0 #stored_energy(t-1) = 2.0
-    componentstates.generators[3,t] = 0
-    componentstates.generators[7,t] = 0
-    componentstates.generators[8,t] = 0
-    componentstates.generators[9,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
     
     @testset "t=3, G3, G7, G8 and G9 on outage" begin
+        t=3
+        state.stored_energy[1] = 1.0 #stored_energy(t-1) = 2.0
+        state.generators_available[3] = 0
+        state.generators_available[7] = 0
+        state.generators_available[8] = 0
+        state.generators_available[9] = 0
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.1; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0.1; atol = 1e-4) #without storage it should be 0.35
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - system.storages.charge_rating[1]; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.0 - system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.1; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0.1; atol = 1e-4) #without storage it should be 0.35
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.75
     end
     
-    t=4
-    componentstates.branches[5,t] = 0
-    componentstates.branches[8,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
-    
     @testset "t=4, L5 and L8 on outage" begin
+        t=4
+        state.branches_available[5] = 0
+        state.branches_available[8] = 0
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.40; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4) #without storage it should be 0.35
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0.20; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0.20; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + system.storages.charge_rating[1]; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 0.75 + system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.40; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4) #without storage it should be 0.35
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0.20; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0.20; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + system.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.75 + 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.75 + 0.25
     end
-    
-    t=5
-    componentstates.branches[3,t] = 0
-    componentstates.branches[4,t] = 0
-    componentstates.branches[8,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
 
     @testset "t=5, L3, L4 and L8 on outage" begin
+        t=5
+        state.branches_available[3] = 0
+        state.branches_available[4] = 0
+        state.branches_available[8] = 0
+        OPF._update!(pm, system, state, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.15; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0.15; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.0 + 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.15; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0.15; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.0 + 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.0 + 0.25
     end
 
-    t=6
-    componentstates.branches[2,t] = 0
-    componentstates.branches[7,t] = 0
-    componentstates.generators[1,t] = 0
-    componentstates.generators[2,t] = 0
-    componentstates.generators[3,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
     @testset "L2 and L7 on outage, generation reduced" begin
+        t=6
+        state.branches_available[2] = 0
+        state.branches_available[7] = 0
+        state.generators_available[1] = 0
+        state.generators_available[2] = 0
+        state.generators_available[3] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.74; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0.74; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.0 + 0.25 + 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.74; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0.74; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.25 + 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), system.branches)[3]["from"], 0.71; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.25 + 0.25
     end
 
-    t=7
-    componentstates.branches[2,t] = 0
-    componentstates.generators[1,t] = 0
-    componentstates.generators[2,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
     @testset "L2 on outage, generation reduced" begin
+        t=7
+        state.branches_available[2] = 0
+        state.generators_available[1] = 0
+        state.generators_available[2] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) - 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.0 + 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) - 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.0 + 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.0 + 0.25
     end
 
-    t=8
-    componentstates.branches[1,t] = 0
-    componentstates.branches[6,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
     @testset "L1 and L6 on outage" begin
+        t=8
+        state.branches_available[1] = 0
+        state.branches_available[6] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.23; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0.23; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.0 + 0.25 + 0.25; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.23; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0.23; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.25 + 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), system.branches)[2]["from"], 0.71; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), system.branches)[7]["from"], 0.71; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.25 + 0.25
     end
 
-    t=9
-    componentstates.branches[4,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t) 
-
     @testset "L1 and L6 on outage" begin
+        t=9
+        state.branches_available[4] = 0
+        OPF._update!(pm, system, state, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(componentstates.p_curtailed[:]) + 0.25; atol = 1e-4)
-        @test isapprox(componentstates.stored_energy[t], 1.74989; atol = 1e-4)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(state.buses_cap_curtailed_p[:]) + 0.25; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.7499; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], system.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.7499
     end
-
 end
 
 @testset "RTS system, sequential outages, storage at bus 8" begin
@@ -499,418 +518,417 @@ end
     system.storages.thermal_rating[1] = 1.0
     system.storages.energy_rating[1] = 2.0
     pm = OPF.abstract_model(system, settings)
-    componentstates = OPF.ComponentStates(system, available=true)
-    OPF.build_problem!(pm, system, 1)
+    state = OPF.States(system)
+    OPF.build_problem!(pm, system)
     OPF.field(system, :storages, :energy)[1] = 0.0
 
-    t=1
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "No outages" begin
-    @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-    @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
-    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-    @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-    @test isapprox(componentstates.stored_energy[t], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
-    end
-
-    t=2
-    componentstates.branches[11,t] = 0 #(7,8)
-    componentstates.branches[12,t] = 0 #(8,9)
-    componentstates.branches[13,t] = 0 #(8,10)
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "Outages on L11, L12, L13" begin
-        @test isapprox(sum(componentstates.p_curtailed[:]), 1.96; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 1.25; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0.71; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -1.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 1.0; atol = 1e-4)
-    end
-
-    t=3
-    componentstates.branches[11,t] = 0 #(7,8)
-    componentstates.branches[12,t] = 0 #(8,9)
-    componentstates.branches[13,t] = 0 #(8,10)
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "Outages on L11, L12, L13" begin
-    @test isapprox(sum(componentstates.p_curtailed[:]), 2.96; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[7], 1.25; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[8], 1.71; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-    @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-    @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
-    end
-
-    t=4
-    componentstates.branches[11,t] = 0 #(7,8)
-    componentstates.branches[12,t] = 0 #(8,9)
-    componentstates.branches[13,t] = 0 #(8,10)
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "Outages on L11, L12, L13" begin
-    @test isapprox(sum(componentstates.p_curtailed[:]), 2.96; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[7], 1.25; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[8], 1.71; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-    @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-    @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
-    end
-
-    t=5
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "No outages" begin
-    @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-    @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
-    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-    @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-    @test isapprox(componentstates.stored_energy[t], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
-    end
-
-    t=6
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "No outages" begin
-    @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-    @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
-    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-    @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-    @test isapprox(componentstates.stored_energy[t], 2.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
-    end
-
-    t=7
-    componentstates.storages[1,t] = 0
-    componentstates.branches[29,t] = 0
-    componentstates.branches[36,t] = 0
-    componentstates.branches[37,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "Outages on storage device and lines L29, L36, L37" begin
-        @test isapprox(OPF.check_availability(componentstates.storages, t, t-1), false; atol = 1e-4)
-        @test isapprox(sum(componentstates.p_curtailed[:]), 3.09; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 1.81; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 1.28; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+    @testset "t=1, No outages" begin
+        t=1
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.0
     end
 
-    t=8
-    componentstates.storages[1,t] = 0
-    componentstates.branches[5,t] = 0
-    componentstates.branches[11,t] = 0
-    componentstates.branches[12,t] = 0
-    componentstates.branches[13,t] = 0
-    componentstates.branches[15,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "Outages on L5, L11, L12, L13, L15" begin
-        @test isapprox(sum(componentstates.p_curtailed[:]), 2.210+0.75; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 1.25; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0.96+0.75; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+    @testset "t=2, Outages on L11, L12, L13" begin
+        t=2
+        state.branches_available[11] = 0 #(7,8)
+        state.branches_available[12] = 0 #(8,9)
+        state.branches_available[13] = 0 #(8,10)
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 1.96; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 1.25; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0.71; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -1.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 1.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
     end
 
-    t=9
-    componentstates.branches[5,t] = 0
-    componentstates.branches[11,t] = 0
-    componentstates.branches[12,t] = 0
-    componentstates.branches[13,t] = 0
-    componentstates.branches[15,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
-
-    @testset "Outages on L5, L11, L12, L13, L15" begin
-        @test isapprox(sum(componentstates.p_curtailed[:]), 2.210+0.75; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 1.25; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0.96+0.75; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+    @testset "t=3, Outages on L11, L12, L13" begin
+        t=3
+        state.branches_available[11] = 0 #(7,8)
+        state.branches_available[12] = 0 #(8,9)
+        state.branches_available[13] = 0 #(8,10)
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 2.96; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 1.25; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 1.71; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
     end
 
-    t=10
-    OPF.update!(pm, system, componentstates, settings, t)
+    @testset "t=4, Outages on L11, L12, L13" begin
+        t=4
+        state.branches_available[11] = 0 #(7,8)
+        state.branches_available[12] = 0 #(8,9)
+        state.branches_available[13] = 0 #(8,10)
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 2.96; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 1.25; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 1.71; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
+    end
 
-    @testset "No outages" begin
-    @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-    @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
-    @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
-    @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
-    @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+    @testset "t=5, No outages" begin
+        t=5
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.0
+    end
 
-    @test isapprox(componentstates.stored_energy[t], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
-    @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+    @testset "t=6, No outages" begin
+        t=6
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 2.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 2.0
+    end
+
+    @testset "t=7, Outages on storage device and lines L29, L36, L37" begin
+        t=7
+        state.storages_available[1] = 0
+        state.branches_available[29] = 0
+        state.branches_available[36] = 0
+        state.branches_available[37] = 0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 3.09; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 1.81; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 1.28; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
+    end
+
+    @testset "t=8, Outages on L5, L11, L12, L13, L15" begin
+        t=8
+        state.storages_available[1] = 0
+        state.branches_available[5] = 0
+        state.branches_available[11] = 0
+        state.branches_available[12] = 0
+        state.branches_available[13] = 0
+        state.branches_available[15] = 0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 2.210+0.75; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 1.25; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0.96+0.75; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
+    end
+
+    @testset "t=9, Outages on L5, L11, L12, L13, L15" begin
+        t=9
+        state.branches_available[5] = 0
+        state.branches_available[11] = 0
+        state.branches_available[12] = 0
+        state.branches_available[13] = 0
+        state.branches_available[15] = 0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 2.210+0.75; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 1.25; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0.96+0.75; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
+    end
+
+    @testset "t=10, No outages" begin
+        t=10
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
+        @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
+        @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
+        @test isapprox(state.stored_energy[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 1.0
     end
 end
 
@@ -958,254 +976,250 @@ end
 
 
     pm = OPF.abstract_model(system, settings)
-    componentstates = OPF.ComponentStates(system, available=true)
-    OPF.build_problem!(pm, system, 1)
+    state = OPF.States(system)
+    OPF.build_problem!(pm, system)
     OPF.field(system, :storages, :energy)[1] = 0.0
 
-    t=1
-    OPF.update!(pm, system, componentstates, settings, t)
-
     @testset "No outages" begin
-        #@test isapprox(check_availability(componentstates.storages, t, t-1), false; atol = 1e-4)
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+        t=1
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.75; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.75
     end
 
-    t=2
-    componentstates.storages[1,t] = 0
-    componentstates.branches[15,t] = 0.0
-    componentstates.branches[16,t] = 0.0
-    componentstates.branches[17,t] = 0.0
-    OPF.update!(pm, system, componentstates, settings, t)
-
     @testset "Outages on T15, T16, L17" begin
-        @test isapprox(sum(componentstates.p_curtailed[:]), 1.38; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 1.38; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+        t=2
+        state.storages_available[1] = 0
+        state.branches_available[15] = 0.0
+        state.branches_available[16] = 0.0
+        state.branches_available[17] = 0.0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 1.38; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 1.38; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
     end
 
-    t=3
-    OPF.update!(pm, system, componentstates, settings, t)
-
     @testset "No outages" begin
-        #@test isapprox(check_availability(componentstates.storages, t, t-1), false; atol = 1e-4)
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+        t=3
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.75; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.75
     end
 
-    t=4
-    componentstates.branches[15,t] = 0.0
-    componentstates.branches[16,t] = 0.0
-    componentstates.branches[17,t] = 0.0
-    OPF.update!(pm, system, componentstates, settings, t)
-
     @testset "Outages on T15, T16, L17" begin
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0.63; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0.63; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+        t=4
+        state.branches_available[15] = 0.0
+        state.branches_available[16] = 0.0
+        state.branches_available[17] = 0.0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0.63; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0.63; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.75; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
     end
 
-
-    t=5
-    componentstates.storages[1,t] = 0
-    OPF.update!(pm, system, componentstates, settings, t)
-
     @testset "No outages" begin
-        #@test isapprox(check_availability(componentstates.storages, t, t-1), false; atol = 1e-4)
-        @test isapprox(sum(componentstates.p_curtailed[:]), 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+        t=5
+        state.storages_available[1] = 0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
     end
 
-    t=6
-    componentstates.storages[1,t] = 0
-    componentstates.branches[15,t] = 0.0
-    componentstates.branches[16,t] = 0.0
-    componentstates.branches[17,t] = 0.0
-    OPF.update!(pm, system, componentstates, settings, t)
-
     @testset "Outages on T15, T16, L17" begin
-        @test isapprox(sum(componentstates.p_curtailed[:]), 1.38; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[1], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[2], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[3], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[4], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[5], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[6], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[7], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[8], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[9], 1.38; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[10], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[11], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[12], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[13], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[14], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[15], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[16], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[17], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[18], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[19], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[20], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[21], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[22], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[23], 0; atol = 1e-4)
-        @test isapprox(componentstates.p_curtailed[24], 0; atol = 1e-4)
+        t=6
+        state.storages_available[1] = 0
+        state.branches_available[15] = 0.0
+        state.branches_available[16] = 0.0
+        state.branches_available[17] = 0.0
+        OPF._update!(pm, system, state, settings, t)
+        @test isapprox(sum(state.buses_cap_curtailed_p[:]), 1.38; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[1], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[2], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[3], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[4], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[5], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[6], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[7], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[8], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[9], 1.38; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[10], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[11], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[12], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[13], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[14], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[15], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[16], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[17], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[18], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[19], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[20], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[21], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[22], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[23], 0; atol = 1e-4)
+        @test isapprox(state.buses_cap_curtailed_p[24], 0; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
-
-        @test isapprox(componentstates.stored_energy[t], 0.0; atol = 1e-4)
+        @test isapprox(state.stored_energy[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
+        OPF._reset!(state, system)
+        #state.stored_energy[1] = 0.0
     end
 end

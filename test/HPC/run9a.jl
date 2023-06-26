@@ -6,7 +6,7 @@ import Gurobi, JuMP, Dates
 Pkg.activate(".")
 #Pkg.precompile()
 Pkg.instantiate()
-using CompositeSystems
+using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
 # Set up the Gurobi environment
 #const GRB_ENV = Gurobi.Env()()
@@ -23,7 +23,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
     "Threads"=>64
 )
 
-resultspecs = (Shortfall(), Utilization())
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(
     gurobi_optimizer,
@@ -60,7 +60,6 @@ loads = [
 ]
 
 smc = CompositeAdequacy.SequentialMCS(samples=2000, seed=100, threaded=true)
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
 
@@ -73,7 +72,7 @@ shortfall_before, util_before = CompositeSystems.assess(sys_before, smc, setting
 CompositeAdequacy.print_results(sys_before, shortfall_before)
 
 for max_load in 10:10:200
-    params = CompositeAdequacy.ELCC{SI}(max_load, loads; capacity_gap=3.0, p_value=0.5)
+    params = CompositeAdequacy.ELCC{CompositeAdequacy.SI}(max_load, loads; capacity_gap=3.0, p_value=0.5)
     elcc_loads, base_load, sys_variable = CompositeAdequacy.copy_load(system, params.loads)
     upper_bound = params.capacity_max
     CompositeAdequacy.update_load!(sys_variable, elcc_loads, base_load, upper_bound, system.baseMVA)

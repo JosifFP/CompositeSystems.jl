@@ -32,7 +32,7 @@
         # Result specifications
         Shortfall, ShortfallSamples,
         GeneratorAvailability, StorageAvailability, BranchAvailability, 
-        ShuntAvailability, BusAvailability,
+        ShuntAvailability,
         Utilization, UtilizationSamples,
 
         #utils

@@ -6,7 +6,7 @@ import Gurobi, JuMP, Dates
 Pkg.activate(".")
 #Pkg.precompile()
 Pkg.instantiate()
-using CompositeSystems
+using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
 # Set up the Gurobi environment
 #const GRB_ENV = Gurobi.Env()()
@@ -23,7 +23,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
     "Threads"=>64
 )
 
-resultspecs = (Shortfall(), Utilization())
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(
     gurobi_optimizer,
@@ -74,8 +74,7 @@ loads = [
     17 => 0.045
 ]
 
-smc = SequentialMCS(samples=2000, seed=100, threaded=true)
-resultspecs = (Shortfall(), Utilization())
+smc = CompositeAdequacy.SequentialMCS(samples=2000, seed=100, threaded=true)
 
 function run_elcc(sys_before, sys_after, loads, method, settings, resultspecs, bus::Int)
     hour = Dates.format(Dates.now(),"HH_MM")
@@ -91,7 +90,7 @@ function run_elcc(sys_before, sys_after, loads, method, settings, resultspecs, b
         sys_after.storages.energy_rating[1] = i
         max_load = j*100
         capacity_gap = 3.0
-        cc = assess(sys_before, sys_after, ELCC{SI}(max_load, loads; capacity_gap=capacity_gap, p_value=0.5), settings, method)
+        cc = assess(sys_before, sys_after, CompositeAdequacy.ELCC{CompositeAdequacy.SI}(max_load, loads; capacity_gap=capacity_gap, p_value=0.5), settings, method)
         CompositeAdequacy.print_results(sys_after, cc)
         println("Bus: $(bus) power_rating: $(j), energy_rating: $(i)")
     end

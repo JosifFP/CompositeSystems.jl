@@ -82,21 +82,21 @@ function getindex(x::ShuntAvailabilityResult, l::Int, t::ZonedDateTime)
     return vec(x.available[i_l, i_t, :])
 end
 
-"Full Bus availability data"
-struct BusAvailability <: ResultSpec end
+#"Full Bus availability data"
+# struct BusAvailability <: ResultSpec end
 
-""
-struct BusAvailabilityResult{N,L,T<:Period} <: AbstractAvailabilityResult{N,L,T}
-    buses::Vector{Int}
-    timestamps::StepRange{ZonedDateTime,T}
-    available::Array{Bool,3}
-end
+# ""
+# struct BusAvailabilityResult{N,L,T<:Period} <: AbstractAvailabilityResult{N,L,T}
+#     buses::Vector{Int}
+#     timestamps::StepRange{ZonedDateTime,T}
+#     available::Array{Bool,3}
+# end
 
-keys(x::BusAvailabilityResult) = x.buses
+# keys(x::BusAvailabilityResult) = x.buses
 
-""
-function getindex(x::BusAvailabilityResult, l::Int, t::ZonedDateTime)
-    i_l = findfirstunique(x.buses, l)
-    i_t = findfirstunique(x.timestamps, t)
-    return vec(x.available[i_l, i_t, :])
-end
+# ""
+# function getindex(x::BusAvailabilityResult, l::Int, t::ZonedDateTime)
+#     i_l = findfirstunique(x.buses, l)
+#     i_t = findfirstunique(x.timestamps, t)
+#     return vec(x.available[i_l, i_t, :])
+# end

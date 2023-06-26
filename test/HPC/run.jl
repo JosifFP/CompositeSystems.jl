@@ -4,9 +4,8 @@
 using Pkg
 import Gurobi, JuMP, Dates
 Pkg.activate(".")
-#Pkg.precompile()
 Pkg.instantiate()
-using CompositeSystems
+using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
 # Set up the Gurobi environment
 #const GRB_ENV = Gurobi.Env()
@@ -23,7 +22,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
     "Threads"=>64
 )
 
-resultspecs = (Shortfall(), Utilization())
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(
     gurobi_optimizer,
@@ -68,7 +67,7 @@ loads = [
     17 => 0.045
 ]
 
-smc = CompositeAdequacy.SequentialMCS(samples=5000, seed=100, threaded=true)
+smc = CompositeAdequacy.SequentialMCS(samples=5, seed=100, threaded=true)
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 sys_before = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)

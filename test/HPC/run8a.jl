@@ -6,7 +6,7 @@ import Gurobi, JuMP, Dates
 Pkg.activate(".")
 #Pkg.precompile()
 Pkg.instantiate()
-using CompositeSystems
+using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
 # Set up the Gurobi environment
 #const GRB_ENV = Gurobi.Env()()
@@ -23,7 +23,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
     "Threads"=>64
 )
 
-resultspecs = (Shortfall(), Utilization())
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(
     gurobi_optimizer,

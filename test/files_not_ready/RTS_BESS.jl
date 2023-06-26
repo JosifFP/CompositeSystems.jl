@@ -17,7 +17,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
     "LogToConsole"=>0, 
     "NonConvex"=>2, 
     "NumericFocus"=>3, 
-    "Threads"=>8
+    "Threads"=>4
 )
 
 resultspecs = (Shortfall(), Utilization())

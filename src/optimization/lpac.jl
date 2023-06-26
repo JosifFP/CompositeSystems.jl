@@ -1,7 +1,10 @@
 #***************************************************** VARIABLES *************************************************************************
 ""
-function var_branch_indicator(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
-    var(pm, :z_branch)[nw] = @variable(pm.model, z_branch[assetgrouplist(topology(pm, :branches_idxs))], binary = true, start =1.0)   
+function var_branch_indicator(
+    pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+
+    var(pm, :z_branch)[nw] = @variable(
+        pm.model, z_branch[assetgrouplist(topology(pm, :branches_idxs))], binary = true, start =1.0)   
 end
 
 ""
@@ -16,53 +19,82 @@ end
 
 
 ""
-function var_bus_voltage_magnitude(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_bus_voltage_magnitude(
+    pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     phi = var(pm, :phi)[nw] = @variable(pm.model, phi[assetgrouplist(topology(pm, :buses_idxs))])
+
     if bounded
         for i in assetgrouplist(topology(pm, :buses_idxs))
             JuMP.set_lower_bound(phi[i], field(system, :buses, :vmin)[i] - 1.0)
             JuMP.set_upper_bound(phi[i], field(system, :buses, :vmax)[i] - 1.0)
         end
     end
-
 end
 
 ""
-function var_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system::SystemModel; nw::Int=1)
+function var_branch_voltage_magnitude_fr_on_off(
+    pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    var(pm, :phi_fr)[nw] = @variable(pm.model, phi_fr[l in assetgrouplist(topology(pm, :branches_idxs))],
-    lower_bound = min(0, field(system, :buses, :vmin)[field(system, :branches, :f_bus)[l]] - 1.0),
-    upper_bound = max(0, field(system, :buses, :vmax)[field(system, :branches, :f_bus)[l]] - 1.0)
-    )
+    phi_fr = var(pm, :phi_fr)[nw] = @variable(pm.model, phi_fr[assetgrouplist(topology(pm, :branches_idxs))])
+
+    if bounded
+        for l in assetgrouplist(topology(pm, :branches_idxs))
+            JuMP.set_lower_bound(
+                phi_fr[l], min(0, field(system, :buses, :vmin)[field(system, :branches, :f_bus)[l]] - 1.0))
+
+            JuMP.set_upper_bound(
+                phi_fr[l], max(0, field(system, :buses, :vmax)[field(system, :branches, :f_bus)[l]] - 1.0))
+        end
+    end
 end
 
 ""
-function var_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system::SystemModel; nw::Int=1)
+function var_branch_voltage_magnitude_to_on_off(
+    pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    var(pm, :phi_to)[nw] = @variable(pm.model, phi_to[l in assetgrouplist(topology(pm, :branches_idxs))],
-    lower_bound = min(0, field(system, :buses, :vmin)[field(system, :branches, :t_bus)[l]] - 1.0),
-    upper_bound = max(0, field(system, :buses, :vmax)[field(system, :branches, :t_bus)[l]] - 1.0)
-    )
+    phi_to = var(pm, :phi_to)[nw] = @variable(pm.model, phi_to[assetgrouplist(topology(pm, :branches_idxs))])
+
+    if bounded
+        for l in assetgrouplist(topology(pm, :branches_idxs))
+            JuMP.set_lower_bound(
+                phi_to[l], min(0, field(system, :buses, :vmin)[field(system, :branches, :t_bus)[l]] - 1.0))
+
+            JuMP.set_upper_bound(
+                phi_to[l], max(0, field(system, :buses, :vmax)[field(system, :branches, :t_bus)[l]] - 1.0))
+        end
+    end
 end
 
 ""
-function var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_branch_voltage_product_angle_on_off(
+    pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    var(pm, :td)[nw] = @variable(pm.model, td[l in assetgrouplist(topology(pm, :branches_idxs))],
-    lower_bound = min(0, field(system, :branches, :angmin)[l]),
-    upper_bound = max(0, field(system, :branches, :angmax)[l])
-    )
+    td = var(pm, :td)[nw] = @variable(pm.model, td[assetgrouplist(topology(pm, :branches_idxs))])
+
+    if bounded
+        for l in assetgrouplist(topology(pm, :branches_idxs))
+            JuMP.set_lower_bound(
+                td[l], min(0, field(system, :branches, :angmin)[l]))
+
+            JuMP.set_upper_bound(
+                td[l], max(0, field(system, :branches, :angmax)[l]))
+        end
+    end
 end
 
 ""
-function var_branch_cosine_on_off(pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
+function var_branch_cosine_on_off(
+    pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
     branches = assetgrouplist(topology(pm, :branches_idxs))
     cos_min = Dict((l, -Inf) for l in branches)
     cos_max = Dict((l,  Inf) for l in branches)
 
+    cs = var(pm, :cs)[nw] = @variable(pm.model, cs[branches], start=1.0)
+
     for l in branches
+
         angmin = field(system, :branches, :angmin)[l]
         angmax = field(system, :branches, :angmax)[l]
         if angmin >= 0
@@ -77,9 +109,16 @@ function var_branch_cosine_on_off(pm::AbstractLPACModel, system::SystemModel; nw
             cos_max[l] = 1.0
             cos_min[l] = min(cos(angmin), cos(angmax))
         end
+
+        JuMP.set_lower_bound(
+            cs[l], min(0, cos_min[l]))
+
+        JuMP.set_upper_bound(
+            cs[l], max(0, cos_max[l]))
     end
-    #var(pm, :cs)[nw] = @variable(pm.model, cs[l in branches], lower_bound = cos_min[l], upper_bound = max(0, cos_max[l]), start=1.0)
-    var(pm, :cs)[nw] = @variable(pm.model, cs[l in branches], lower_bound = min(0, cos_min[l]), upper_bound = max(0, cos_max[l]), start=1.0)
+
+    #var(pm, :cs)[nw] = @variable(
+    #   pm.model, cs[l in branches], lower_bound = cos_min[l], upper_bound = max(0, cos_max[l]), start=1.0)
 end
 
 #***************************************************** CONSTRAINTS ************************************************************************
@@ -201,7 +240,8 @@ function con_relaxation_cos_on_off(pm::AbstractLPACModel, l::Int, td, cs, z, td_
 end
 
 ""
-function _con_ohms_yt_from_on_off(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+function _con_ohms_yt_from_on_off(
+    pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     p_fr  = var(pm, :p, nw)[l, f_bus, t_bus]
     q_fr  = var(pm, :q, nw)[l, f_bus, t_bus]
@@ -220,7 +260,8 @@ end
 """
 Creates Ohms constraints (yt post fix indicates that Y and T values are in rectangular form)
 """
-function _con_ohms_yt_to_on_off(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+function _con_ohms_yt_to_on_off(
+    pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 
     p_to  = var(pm, :p, nw)[l, t_bus, f_bus]
     q_to  = var(pm, :q, nw)[l, t_bus, f_bus]
@@ -237,7 +278,8 @@ function _con_ohms_yt_to_on_off(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::I
 end
 
 ""
-function _con_ohms_yt_from(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+function _con_ohms_yt_from(
+    pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     p_fr  = var(pm, :p, nw)[l, f_bus, t_bus]
     q_fr  = var(pm, :q, nw)[l, f_bus, t_bus]
@@ -253,7 +295,8 @@ function _con_ohms_yt_from(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t
 end
 
 ""
-function _con_ohms_yt_to(pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+function _con_ohms_yt_to(
+    pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 
     p_to  = var(pm, :p, nw)[l, t_bus, f_bus]
     q_to  = var(pm, :q, nw)[l, t_bus, f_bus]
@@ -269,7 +312,9 @@ end
 
 ""
 function _con_storage_losses(
-    pm::AbstractLPACModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+    pm::AbstractLPACModel, n::Int, i::Int, bus::Int, r::Float32, x::Float32, 
+    p_loss::Float32, q_loss::Float32, vmin::Float32, vmax::Float32)
+
     ps = var(pm, :ps, n)[i]
     qs = var(pm, :qs, n)[i]
     sc = var(pm, :sc, n)[i]
@@ -287,11 +332,11 @@ end
 
 ""
 function update_branch_voltage_magnitude_fr_on_off(
-    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int, t::Int; nw::Int=1)
 
     phi_fr = var(pm, :phi_fr, nw)[l]
 
-    if states.branches[l,t] == 0
+    if state.branches_available[l] == 0
         JuMP.set_upper_bound(phi_fr, 0)
         JuMP.set_lower_bound(phi_fr, 0)
     else
@@ -303,11 +348,11 @@ end
 
 ""
 function update_branch_voltage_magnitude_to_on_off(
-    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int, t::Int; nw::Int=1)
 
     phi_to = var(pm, :phi_to, nw)[l]
 
-    if states.branches[l,t] == 0
+    if state.branches_available[l] == 0
         JuMP.set_upper_bound(phi_to, 0)
         JuMP.set_lower_bound(phi_to, 0)
     else
@@ -319,11 +364,11 @@ end
 
 ""
 function update_var_branch_voltage_product_angle_on_off(
-    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int, t::Int; nw::Int=1)
 
     td = var(pm, :td, nw)[l]
 
-    if states.branches[l,t] == 0
+    if state.branches_available[l] == 0
         JuMP.set_upper_bound(td, 0)
         JuMP.set_lower_bound(td, 0)
     else
@@ -334,13 +379,10 @@ end
 
 ""
 function update_var_shunt_admittance_factor(
-    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, l::Int, t::Int; nw::Int=1)
+    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int; nw::Int=1)
     
     z_shunt = var(pm, :z_shunt, nw)[l]
-    @views t_now_view_shunts = states.shunts[:, t]
-    @views t_now_view_branches = states.branches[:, t]
-    
-    if any(t_now_view_shunts .== 0) || any(t_now_view_branches .== 0)
+    if !all([state.shunts_available;state.branches_available])
         if JuMP.is_fixed(z_shunt) JuMP.unfix(z_shunt) end
     else
         if !JuMP.is_fixed(z_shunt) JuMP.fix(z_shunt, 1.0) end
@@ -348,7 +390,8 @@ function update_var_shunt_admittance_factor(
 end
 
 ""
-function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance(
+    pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
     #phi  = var(pm, :phi, nw)[i]
     z_demand   = var(pm, :z_demand, nw)[i]
     bus_loads = topology(pm, :bus_loads)[i]
@@ -358,7 +401,7 @@ function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, st
     bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
     #bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
     #bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
-    if states.buses[i,t] == 4
+    if state.buses_available[i] == 4
         JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand, 0)
         JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand, 0)
     else
@@ -368,7 +411,8 @@ function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, st
 end
 
 ""
-function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance_nolc(
+    pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
 
     phi  = var(pm, :phi, nw)
     bus_loads = topology(pm, :bus_loads)[i]
@@ -388,8 +432,10 @@ function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemMode
 end
 
 function _update_con_ohms_yt_from(
-    pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
-    if states.branches[l,t] == false
+    pm::AbstractLPACModel, state::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+
+    if state.branches_available[l] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 0.0)
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[l], 0.0)
     else
@@ -400,8 +446,10 @@ end
 
 "AC Line Flow Constraints"
 function _update_con_ohms_yt_to(
-    pm::AbstractLPACModel, states::ComponentStates, l::Int, t::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
-    if states.branches[l,t] == false
+    pm::AbstractLPACModel, state::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
+
+    if state.branches_available[l] == false
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[l], 0.0)
         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[l], 0.0)
     else
@@ -412,10 +460,10 @@ end
 
 ""
 function update_var_branch_indicator(
-    pm::AbstractLPACModel, system::SystemModel, states::ComponentStates, i::Int, t::Int; nw::Int=1)
+    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int; nw::Int=1)
 
-    z_branch = var(pm, :z_branch, nw)[i]
-    if states.branches[i,t] == 0
+    z_branch = var(pm, :z_branch, nw)[l]
+    if state.branches_available[l] == 0
         JuMP.fix(z_branch, 0, force=true)
         #JuMP.fix(z_branch, 0)
     else

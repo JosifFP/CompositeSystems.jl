@@ -67,7 +67,7 @@ loads = [
 cap = 6.0
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 method = SequentialMCS(samples=5, seed=100, threaded=true)
-params = CompositeAdequacy.ELCC{SI}(cap, loads; capacity_gap=6.0)
+params = CompositeAdequacy.ELCC{CompositeAdequacy.SI}(cap, loads; capacity_gap=6.0)
 elcc_loads, base_load, sys_variable = copy_load(system, params.loads)
 upper_bound = params.capacity_max
 update_load!(sys_variable, elcc_loads, base_load, upper_bound, system.baseMVA)

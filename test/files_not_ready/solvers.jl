@@ -51,7 +51,7 @@ gurobi_optimizer_2 = JuMP.optimizer_with_attributes(
     "OutputFlag"=>0, 
     "LogToConsole"=>0, 
     "NonConvex"=>2, 
-    "Threads"=>8
+    "Threads"=>4
 )
 
 gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
@@ -62,7 +62,7 @@ gurobi_optimizer_3 = JuMP.optimizer_with_attributes(
     "LogToConsole"=>0, 
     "NonConvex"=>2, 
     "NumericFocus"=>3, 
-    "Threads"=>8
+    "Threads"=>4
 )
 
 # GLPK_optimizer =
