@@ -37,11 +37,15 @@ function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Utilization) where 
 end
 
 ""
-function record!(acc::SMCUtilizationAccumulator, states::ComponentStates, system::SystemModel, sampleid::Int, t::Int)
+function record!(
+    acc::SMCUtilizationAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
 
-    for l in eachindex(states.flow_from)
-        util = utilization(states.flow_from[l], states.flow_to[l], system.branches.rate_a[l])
-        ptv = prob_thermal_violation(states.flow_from[l], states.flow_to[l], system.branches.rate_a[l])
+    for l in eachindex(topology(pm, :branches_flow_from))
+
+        util = utilization(
+            topology(pm, :branches_flow_from)[l], topology(pm, :branches_flow_to)[l], system.branches.rate_a[l])
+        ptv = prob_thermal_violation(
+            topology(pm, :branches_flow_from)[l], topology(pm, :branches_flow_to)[l], system.branches.rate_a[l])
         acc.util_branch_currentsim[l] += util
         acc.ptv_branch_currentsim[l] += ptv
         fit!(acc.util_branchperiod[l,t], util)
@@ -107,10 +111,12 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::UtilizationS
 end
 
 ""
-function record!(acc::SMCUtilizationSamplesAccumulator, states::ComponentStates, system::SystemModel, sampleid::Int, t::Int)
+function record!(
+    acc::SMCUtilizationSamplesAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
 
-    for l in eachindex(states.flow_from)
-        acc.utilization[l, t, sampleid] = utilization(states.flow_from[l], states.flow_to[l], system.branches.rate_a[l])
+    for l in eachindex(topology(pm, :branches_flow_from))
+        acc.utilization[l, t, sampleid] = utilization(
+            topology(pm, :branches_flow_from)[l], topology(pm, :branches_flow_to)[l], system.branches.rate_a[l])
     end
     return
 end

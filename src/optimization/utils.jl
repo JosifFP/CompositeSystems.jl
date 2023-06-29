@@ -17,6 +17,44 @@ BaseModule.field(topology::Topology, field::Symbol, subfield::Symbol) = getfield
 BaseModule.field(settings::Settings, field::Symbol) = getfield(settings, field)
 
 ""
+function Base.getproperty(e::AbstractPowerModel, s::Symbol) 
+    if s === :model 
+        getfield(e, :model)::JuMP.Model
+    elseif s===:topology 
+        getfield(e, :topology)::Topology
+    elseif s === :var
+        getfield(e, :var)
+    elseif s === :con
+        getfield(e, :con) 
+    elseif s === :sol
+        getfield(e, :sol) 
+    end
+end
+
+""
+function Base.getproperty(e::Settings, s::Symbol) 
+    if s === :optimizer 
+        getfield(e, :optimizer)::MOI.OptimizerWithAttributes
+    elseif s === :jump_modelmode 
+        getfield(e, :jump_modelmode)::JuMP.ModelMode
+    elseif s === :powermodel_formulation
+        getfield(e, :powermodel_formulation)::Type
+    elseif s === :select_largest_splitnetwork
+        getfield(e, :select_largest_splitnetwork)::Bool
+    elseif s === :deactivate_isolated_bus_gens_stors
+        getfield(e, :deactivate_isolated_bus_gens_stors)::Bool  
+    elseif s === :set_string_names_on_creation
+        getfield(e, :set_string_names_on_creation)::Bool
+    elseif s === :count_samples
+        getfield(e, :count_samples)::Bool
+    elseif s === :record_branch_flow
+        getfield(e, :record_branch_flow)::Bool        
+    else
+        @error("Configuration $(s) not supported")
+    end
+end
+
+""
 function initialize_pm_containers!(pm::AbstractDCPowerModel, system::SystemModel; timeseries=false)
 
     @assert !timeseries "Timeseries containers not supported"
@@ -113,45 +151,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
     add_con_container!(pm.con, :storage_losses_q, field(system, :storages, :keys))
     add_con_container!(pm.con, :storage_losses, field(system, :storages, :keys))
     return
-end
-
-""
-function reset_model!(pm::AbstractPowerModel, system::SystemModel, settings::Settings, sampleid::Int, nsamples::Int)
-
-    settings.optimizer ≠ Gurobi && MOIU.reset_optimizer(pm.model)
-    sampleid == nsamples && Base.finalize(JuMP.backend(pm.model).optimizer)
-    # if iszero(sampleid%100) && settings.optimizer ≠ Gurobi
-    #     JuMP.set_optimizer(pm.model, deepcopy(settings.optimizer); add_bridges = false)
-    #     initialize_pm_containers!(pm, system)
-    # end
-    return
-end
-
-""
-function update_topology!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
-    if !check_availability(states.branches, t, t-1)
-        simplify!(pm, system, states, settings, t)
-        update_arcs!(pm, system, states.branches, t)
-    end
-    update_all_idxs!(pm, system, states, t)
-    return
-end
-
-""
-function bus_asset!(
-    asset_dict_nodes::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, asset_buses::Vector{Int})
-    for k in key_assets
-        push!(asset_dict_nodes[asset_buses[k]], k)
-    end
-    return asset_dict_nodes
-end
-
-""
-function bus_asset!(busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}})
-    for (l,i,j) in arcs
-        push!(busarcs[i], (l,i,j))
-    end
-    return busarcs
 end
 
 """
@@ -288,78 +287,6 @@ function _assign_container!(container::Dict, key::Symbol, value)
     return
 end
 
-"""
-computes the connected components of the network graph
-returns a set of sets of bus ids, each set is a connected component
-"""
-function calc_connected_components(topology::Topology, branches::Branches)
-
-    active_bus_ids = assetgrouplist(topology.buses_idxs)
-    active_branches_ids = assetgrouplist(topology.branches_idxs)
-    neighbors = Dict(i => Int[] for i in active_bus_ids)
-
-    for i in active_branches_ids
-        edge_f_bus = field(branches, :f_bus)[i]
-        edge_t_bus = field(branches, :t_bus)[i]
-        if edge_f_bus in active_bus_ids && edge_t_bus in active_bus_ids
-            push!(neighbors[edge_f_bus], edge_t_bus)
-            push!(neighbors[edge_t_bus], edge_f_bus)
-        end
-    end
-
-    component_lookup = Dict(i => Set{Int}([i]) for i in active_bus_ids)
-    touched = Set{Int}()
-
-    for i in active_bus_ids
-        if !(i in touched)
-            _PM._cc_dfs(i, neighbors, component_lookup, touched)
-        end
-    end
-
-    ccs = Set(values(component_lookup))
-    return ccs
-end
-
-""
-function Base.getproperty(e::AbstractPowerModel, s::Symbol) 
-    if s === :model 
-        getfield(e, :model)::JuMP.Model
-    elseif s===:topology 
-        getfield(e, :topology)::Topology
-    elseif s === :var
-        getfield(e, :var)
-    elseif s === :con
-        getfield(e, :con) 
-    elseif s === :sol
-        getfield(e, :sol) 
-    end
-end
-
-""
-function Base.getproperty(e::Settings, s::Symbol) 
-    if s === :optimizer 
-        getfield(e, :optimizer)::MOI.OptimizerWithAttributes
-    elseif s === :jump_modelmode 
-        getfield(e, :jump_modelmode)::JuMP.ModelMode
-    elseif s === :powermodel_formulation
-        getfield(e, :powermodel_formulation)::Type
-    elseif s === :select_largest_splitnetwork
-        getfield(e, :select_largest_splitnetwork)::Bool
-    elseif s === :deactivate_isolated_bus_gens_stors
-        getfield(e, :deactivate_isolated_bus_gens_stors)::Bool
-    elseif s === :min_generators_off
-        getfield(e, :min_generators_off)::Int        
-    elseif s === :set_string_names_on_creation
-        getfield(e, :set_string_names_on_creation)::Bool
-    elseif s === :count_samples
-        getfield(e, :count_samples)::Bool
-    elseif s === :record_branch_flow
-        getfield(e, :record_branch_flow)::Bool        
-    else
-        @error("Configuration $(s) not supported")
-    end
-end
-
 ""
 function reset_var_container!(container::DenseAxisArray{T}, keys::Vector{Union{Missing, Tuple{Int, Int, Int}}}; 
     timesteps::UnitRange{Int}=1:1) where {T <: Dict}
@@ -393,6 +320,282 @@ function reset_con_container!(container::DenseAxisArray{T}, keys::Vector{Int};
     return
 end
 
+
+"update_topology! function updates the whole topology after outages have been identified.
+This process requires to simplify the grid (disconnect buses and other components) in case 
+of extreme events, using an iterative approach. simplify! function is not required without
+transmission outages."
+function update_topology!(
+    pm::AbstractPowerModel, system::SystemModel, states::States, settings::Settings, t::Int)
+
+    any([states.branches_available; states.branches_pasttransition].== 0) && simplify!(pm, system, states, settings)
+    update_all_buses_assets!(pm, system, states)
+
+    update_stored_energy!(topology(pm, :stored_energy), states.storages_available, system.storages)
+
+    return
+end
+
+"""
+The simplify! function is used to simplify the power system model by removing inactive elements from the model. 
+This is done by checking the availability of generators, loads, shunts, and branches and removing any that are not active. 
+The function starts by updating the indices of the active elements, and then iteratively checks if any buses can be deactivated 
+due to having only one active incident edge and no generation, loads, storages, or shunts. 
+If any buses are deactivated, the function also deactivates any branches that are connected to those buses. 
+The function also checks for connected components of the system and deactivates any isolated sections of the network
+"""
+function simplify!(pm::AbstractPowerModel, system::SystemModel, states::States, settings::Settings)
+
+    update_all_buses_assets!(pm, system, states)
+    update_arcs!(pm, system, states.branches_available)
+    key_buses = field(system, :buses, :keys)
+    key_branches = field(system, :branches, :keys)
+
+    revised = false
+    changed = true
+
+    while changed
+
+        changed = false
+
+        for i in key_buses
+            if states.buses_available[i] ≠ 4
+                incident_active_edge = 0
+                busarcs_i = topology(pm, :busarcs)[i]
+                if length(busarcs_i) > 0
+                    incident_branch_count = sum([0; [states.branches_available[l] for (l,u,v) in busarcs_i]])
+                    incident_active_edge = incident_branch_count
+                end
+                if incident_active_edge <= 1 && length(topology(pm, :buses_generators_available)[i]) == 0 && 
+                    length(topology(pm, :buses_loads_available)[i]) == 0 && length(topology(pm, :buses_storages_available)[i]) == 0 && 
+                    length(topology(pm, :buses_shunts_available)[i]) == 0
+                    states.buses_available[i] = 4
+                    changed = true
+                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
+                end
+                if settings.deactivate_isolated_bus_gens_stors == true && incident_active_edge == 0 && 
+                    length(topology(pm, :buses_generators_available)[i]) > 0
+                    states.buses_available[i] = 4
+                    changed = true
+                end
+            end
+        end
+
+        if changed
+            for l in key_branches
+                if states.branches_available[l] ≠ 0
+                    f_bus = states.buses_available[field(system, :branches, :f_bus)[l]]
+                    t_bus = states.buses_available[field(system, :branches, :t_bus)[l]]
+                    if f_bus == 4 || t_bus == 4
+                        states.branches_available[l] = 0
+                        revised = true
+                    end
+                end
+            end
+            
+            revised == true && update_idxs!(
+                filter(l-> states.branches_available[l], key_branches), topology(pm, :branches_idxs))
+
+            changed == true && update_idxs!(
+                filter(i->states.buses_available[i] ≠ 4, key_buses), topology(pm, :buses_idxs))
+        end
+    end
+
+    ccs = calc_connected_components(pm.topology, system.branches)
+    ccs_order = sort(collect(ccs); by=length)
+    largest_cc = ccs_order[end]
+
+    for i in field(system, :shunts, :buses)     # this step should be improved later. It ensures that the optimization algorithm solves the problem correctly.
+        if !(i in largest_cc)
+            for k in topology(pm, :buses_shunts_available)[i]
+                states.shunts_available[k] = false
+            end
+        end
+    end
+
+    if length(ccs) > 1 && settings.select_largest_splitnetwork == true
+        if system.ref_buses[1] in largest_cc && length(largest_cc) < length(system.buses)
+            for i in key_buses
+                if states.buses_available[i] ≠ 4 && !(i in largest_cc)
+                    states.buses_available[i] = 4
+                    #@info("select_largest_splitnetwork section: deactivating bus $(i) due to dangling isolated network section")            
+                end
+            end
+        end
+    end
+
+    for cc in ccs
+        cc_active_loads = [0]
+        cc_active_shunts = [0]
+        cc_active_gens = [0]
+        cc_active_strg = [0]
+
+        for i in cc
+            cc_active_loads = push!(cc_active_loads, length(topology(pm, :buses_loads_available)[i]))
+            cc_active_shunts = push!(cc_active_shunts, length(topology(pm, :buses_shunts_available)[i]))
+            cc_active_gens = push!(cc_active_gens, length(topology(pm, :buses_generators_available)[i]))
+            cc_active_strg = push!(cc_active_strg, length(topology(pm, :buses_storages_available)[i]))
+        end
+
+        active_load_count = sum(cc_active_loads)
+        active_shunt_count = sum(cc_active_shunts)
+        active_gen_count = sum(cc_active_gens)
+        active_strg_count = sum(cc_active_strg)
+
+        if (active_load_count == 0 && active_shunt_count == 0) || (active_gen_count == 0 && active_strg_count == 0)
+            #@info("deactivating connected component $(cc) due to isolation without generation, load or storage, active_strg_count=$(active_strg_count)")
+            for i in cc
+                states.buses_available[i] = 4
+                changed = true
+            end
+        end
+    end
+
+    for l in key_branches
+        if states.branches_available[l] ≠ 0
+            f_bus = states.buses_available[field(system, :branches, :f_bus)[l]]
+            t_bus = states.buses_available[field(system, :branches, :t_bus)[l]]
+            if f_bus == 4 || t_bus == 4
+                states.branches_available[l] = 0
+                revised = true
+            end
+        end
+    end
+    
+    revised == true && update_idxs!(
+        filter(l-> states.branches_available[l], key_branches), topology(pm, :branches_idxs))
+
+    changed == true && update_idxs!(
+        filter(i-> states.buses_available[i] ≠ 4, key_buses), topology(pm, :buses_idxs))
+
+    revised == true && update_arcs!(pm, system, states.branches_available)
+
+    for i in key_buses
+        if states.buses_available[i] == 4
+            for k in topology(pm, :buses_loads_available)[i]
+                if states.loads_available[k] ≠ 0
+                    states.loads_available[k] = 0
+                end
+            end
+            for k in topology(pm, :buses_shunts_available)[i]
+                if states.shunts_available[k] ≠ 0
+                    states.shunts_available[k] = 0
+                end
+            end
+            for k in topology(pm, :buses_generators_available)[i]
+                if states.generators_available[k] ≠ 0
+                    states.generators_available[k] = 0
+                end
+            end
+            for k in topology(pm, :buses_storages_available)[i]
+                if states.storages_available[k] ≠ 0
+                    states.storages_available[k] = 0
+                end
+                topology(pm, :stored_energy)[k] = 0  #ES is discharged once it gets disconnected from the grid.
+            end
+        end
+    end
+    return
+end
+
+""
+function update_all_buses_assets!(pm::AbstractPowerModel, system::SystemModel, states::States)
+
+    update_idxs!(
+        filter(i->states.branches_available[i], field(system, :branches, :keys)), 
+        topology(pm, :branches_idxs))
+
+    update_idxs!(
+        filter(i->states.buses_available[i] ≠ 4, field(system, :buses, :keys)), 
+        topology(pm, :buses_idxs))
+
+    update_idxs!(
+        filter(i->states.generators_available[i], field(system, :generators, :keys)), 
+        topology(pm, :generators_idxs), 
+        topology(pm, :buses_generators_available), 
+        field(system, :generators, :buses))
+
+    update_idxs!(
+        filter(i->states.storages_available[i], field(system, :storages, :keys)), 
+        topology(pm, :storages_idxs), 
+        topology(pm, :buses_storages_available), 
+        field(system, :storages, :buses))
+
+    update_idxs!(
+        filter(i->states.loads_available[i], field(system, :loads, :keys)), 
+        topology(pm, :loads_idxs), 
+        topology(pm, :buses_loads_available), 
+        field(system, :loads, :buses))
+
+    update_idxs!(
+        filter(i->states.shunts_available[i], field(system, :shunts, :keys)), 
+        topology(pm, :shunts_idxs), 
+        topology(pm, :buses_shunts_available), 
+        field(system, :shunts, :buses))
+    return
+end
+
+"This function is required in case reconnected storage devices are completely discharged."
+function update_stored_energy!(
+    stored_energy::Vector{Float64}, storages_available::Vector{Bool}, asset::Storages)
+
+    for i in field(asset, :keys)
+        if !storages_available[i]
+            stored_energy[i] = 0.0
+        end
+    end
+    return
+end
+
+""
+function buses_asset!(
+    asset_dict_nodes::Dict{Int, Vector{Int}}, key_assets::Vector{Int}, asset_buses::Vector{Int})
+    for k in key_assets
+        push!(asset_dict_nodes[asset_buses[k]], k)
+    end
+    return asset_dict_nodes
+end
+
+""
+function buses_asset!(busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}})
+    for (l,i,j) in arcs
+        push!(busarcs[i], (l,i,j))
+    end
+    return busarcs
+end
+
+"""
+computes the connected components of the network graph
+returns a set of sets of bus ids, each set is a connected component
+"""
+function calc_connected_components(topology::Topology, branches::Branches)
+
+    active_bus_ids = assetgrouplist(topology.buses_idxs)
+    active_branches_ids = assetgrouplist(topology.branches_idxs)
+    neighbors = Dict(i => Int[] for i in active_bus_ids)
+
+    for i in active_branches_ids
+        edge_f_bus = field(branches, :f_bus)[i]
+        edge_t_bus = field(branches, :t_bus)[i]
+        if edge_f_bus in active_bus_ids && edge_t_bus in active_bus_ids
+            push!(neighbors[edge_f_bus], edge_t_bus)
+            push!(neighbors[edge_t_bus], edge_f_bus)
+        end
+    end
+
+    component_lookup = Dict(i => Set{Int}([i]) for i in active_bus_ids)
+    touched = Set{Int}()
+
+    for i in active_bus_ids
+        if !(i in touched)
+            _PM._cc_dfs(i, neighbors, component_lookup, touched)
+        end
+    end
+
+    ccs = Set(values(component_lookup))
+    return ccs
+end
+
 ""
 function update_idxs!(key_assets::Vector{Int}, assets_idxs::Vector{UnitRange{Int}})
     assets_idxs .= makeidxlist(key_assets, length(assets_idxs))
@@ -408,16 +611,14 @@ function update_idxs!(
     for (_,v) in asset_dict_nodes
         empty!(v)
     end
-    bus_asset!(asset_dict_nodes, key_assets, asset_buses)
+    buses_asset!(asset_dict_nodes, key_assets, asset_buses)
 end
 
 "This function updates the arcs of the power system model."
-function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states::Matrix{Bool}, t::Int)
-    
-    key_branches = assetgrouplist(topology(pm, :branches_idxs))
+function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states::Vector{Bool})
 
     for i in field(system, :branches, :keys)
-        if asset_states[i,t] == false
+        if asset_states[i] == false
             topology(pm, :arcs_from)[i] = missing
             topology(pm, :arcs_to)[i] = missing
         else
@@ -429,204 +630,17 @@ function update_arcs!(pm::AbstractPowerModel, system::SystemModel, asset_states:
     topology(pm, :arcs)[:] = [topology(pm, :arcs_from); topology(pm, :arcs_to)]
 
     arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
-    map!(x -> Int[], topology(pm, :busarcs))
-    bus_asset!(topology(pm, :busarcs), arcs)
 
-    update_buspair_parameters!(topology(pm, :buspairs), system.branches, key_branches)
+    map!(x -> Int[], topology(pm, :busarcs))
+
+    buses_asset!(topology(pm, :busarcs), arcs)
+
+    update_buspair_parameters!(
+        topology(pm, :buspairs), system.branches, assetgrouplist(topology(pm, :branches_idxs)))
     #vad_min,vad_max = calc_theta_delta_bounds(pm, system.branches)
     #topology(pm, :delta_bounds)[1] = vad_min
     #topology(pm, :delta_bounds)[2] = vad_max
     return
-
-end
-
-"""
-The simplify! function is used to simplify the power system model by removing inactive elements from the model. 
-This is done by checking the availability of generators, loads, shunts, and branches and removing any that are not active. 
-The function starts by updating the indices of the active elements, and then iteratively checks if any buses can be deactivated 
-due to having only one active incident edge and no generation, loads, storages, or shunts. 
-If any buses are deactivated, the function also deactivates any branches that are connected to those buses. 
-The function also checks for connected components of the system and deactivates any isolated sections of the network
-"""
-function simplify!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, settings::Settings, t::Int)
-
-    update_all_idxs!(pm, system, states, t)
-    update_arcs!(pm, system, states.branches, t)
-
-    revised = false
-    changed = true
-
-    while changed
-        changed = false
-        for i in field(system, :buses, :keys)
-            if states.buses[i,t] ≠ 4
-                incident_active_edge = 0
-                busarcs_i = topology(pm, :busarcs)[i]
-                if length(busarcs_i) > 0
-                    incident_branch_count = sum([0; [states.branches[l,t] for (l,u,v) in busarcs_i]])
-                    incident_active_edge = incident_branch_count
-                end
-                if incident_active_edge <= 1 && length(topology(pm, :bus_generators)[i]) == 0 && 
-                    length(topology(pm, :bus_loads)[i]) == 0 && length(topology(pm, :bus_storages)[i]) == 0 && 
-                    length(topology(pm, :bus_shunts)[i]) == 0
-                    states.buses[i,t] = 4
-                    changed = true
-                    #@info("deactivating bus $(i) due to dangling bus without generation, load or storage")
-                end
-                if settings.deactivate_isolated_bus_gens_stors == true && incident_active_edge == 0 && 
-                    length(topology(pm, :bus_generators)[i]) > 0
-                    states.buses[i,t] = 4
-                    changed = true
-                end
-            end
-        end
-
-        if changed
-            for i in field(system, :branches, :keys)
-                if states.branches[i,t] ≠ 0
-                    f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
-                    t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
-                    if f_bus == 4 || t_bus == 4
-                        states.branches[i,t] = 0
-                        revised = true
-                    end
-                end
-            end
-            revised == true && update_idxs!(
-                filter(i-> states.branches[i,t], field(system, :branches, :keys)), 
-                topology(pm, :branches_idxs))
-
-            changed == true && update_idxs!(
-                filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), 
-                topology(pm, :buses_idxs))
-        end
-    end
-
-    ccs = calc_connected_components(pm.topology, system.branches)
-    ccs_order = sort(collect(ccs); by=length)
-    largest_cc = ccs_order[end]
-
-    for i in field(system, :shunts, :buses)     # this step should be improved later. It ensures that the optimization algorithm solves the problem correctly.
-        if !(i in largest_cc)
-            for k in topology(pm, :bus_shunts)[i]
-                states.shunts[k,t] = false
-            end
-        end
-    end
-
-    if length(ccs) > 1 && settings.select_largest_splitnetwork == true
-        if system.ref_buses[1] in largest_cc && length(largest_cc) < length(system.buses)
-            for i in field(system, :buses, :keys)
-                if states.buses[i,t] ≠ 4 && !(i in largest_cc)
-                    states.buses[i,t] = 4
-                    #@info("select_largest_splitnetwork section: deactivating bus $(i) due to dangling isolated network section")            
-                end
-            end
-        end
-    end
-
-    for cc in ccs
-        cc_active_loads = [0]
-        cc_active_shunts = [0]
-        cc_active_gens = [0]
-        cc_active_strg = [0]
-
-        for i in cc
-            cc_active_loads = push!(cc_active_loads, length(topology(pm, :bus_loads)[i]))
-            cc_active_shunts = push!(cc_active_shunts, length(topology(pm, :bus_shunts)[i]))
-            cc_active_gens = push!(cc_active_gens, length(topology(pm, :bus_generators)[i]))
-            cc_active_strg = push!(cc_active_strg, length(topology(pm, :bus_storages)[i]))
-        end
-
-        active_load_count = sum(cc_active_loads)
-        active_shunt_count = sum(cc_active_shunts)
-        active_gen_count = sum(cc_active_gens)
-        active_strg_count = sum(cc_active_strg)
-
-        if (active_load_count == 0 && active_shunt_count == 0) || (active_gen_count == 0 && active_strg_count == 0)
-            #@info("deactivating connected component $(cc) due to isolation without generation, load or storage, active_strg_count=$(active_strg_count)")
-            for i in cc
-                states.buses[i,t] = 4
-                changed = true
-            end
-        end
-    end
-
-    for i in field(system, :branches, :keys)
-        if states.branches[i,t] ≠ 0
-            f_bus = states.buses[field(system, :branches, :f_bus)[i], t]
-            t_bus = states.buses[field(system, :branches, :t_bus)[i], t]
-            if f_bus == 4 || t_bus == 4
-                states.branches[i,t] = 0
-                revised = true
-            end
-        end
-    end
-    
-    revised == true && update_idxs!(
-        filter(i-> states.branches[i,t], field(system, :branches, :keys)), topology(pm, :branches_idxs)
-    )
-    changed == true && update_idxs!(
-        filter(i-> states.buses[i,t] ≠ 4, field(system, :buses, :keys)), topology(pm, :buses_idxs)
-    )
-
-    for i in field(system, :buses, :keys)
-        if states.buses[i,t] == 4
-            for k in topology(pm, :bus_loads)[i]
-                if states.loads[k,t] ≠ 0
-                    states.loads[k,t] = 0
-                end
-            end
-            for k in topology(pm, :bus_shunts)[i]
-                if states.shunts[k,t] ≠ 0
-                    states.shunts[k,t] = 0
-                end
-            end
-            for k in topology(pm, :bus_generators)[i]
-                if states.generators[k,t] ≠ 0
-                    states.generators[k,t] = 0
-                end
-            end
-            for k in topology(pm, :bus_storages)[i]
-                if states.storages[k,t] ≠ 0
-                    states.storages[k,t] = 0
-                    if t > 1 
-                        states.stored_energy[k,t] = states.stored_energy[k,t-1] 
-                    end
-                end
-            end
-        end
-    end
-    return
-end
-
-""
-function update_all_idxs!(pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int)
-
-    update_idxs!(filter(i->states.buses[i,t] ≠ 4, field(system, :buses, :keys)), 
-        topology(pm, :buses_idxs))
-
-    update_idxs!(filter(i->states.branches[i,t], field(system, :branches, :keys)), 
-        topology(pm, :branches_idxs))
-    
-    update_idxs!(
-        filter(i->states.generators[i,t], field(system, :generators, :keys)), 
-        topology(pm, :generators_idxs), topology(pm, :bus_generators), field(system, :generators, :buses))
-
-    update_idxs!(
-        filter(i->states.storages[i,t], field(system, :storages, :keys)), 
-        topology(pm, :storages_idxs), topology(pm, :bus_storages), field(system, :storages, :buses))
-
-    update_idxs!(
-        filter(i->states.loads[i,t], field(system, :loads, :keys)), 
-        topology(pm, :loads_idxs), topology(pm, :bus_loads), field(system, :loads, :buses))
-
-    update_idxs!(
-        filter(i->states.shunts[i,t], field(system, :shunts, :keys)), 
-        topology(pm, :shunts_idxs), topology(pm, :bus_shunts), field(system, :shunts, :buses))
-
-    return
-
 end
 
 ""
@@ -677,23 +691,6 @@ function objective_value(opf_model::Model)
 end
 
 ""
-function update!(pm::AbstractPowerModel, system::SystemModel{N}, states::ComponentStates, settings::Settings, t::Int; force_pmin::Bool=true) where N
-    
-    update_topology!(pm, system, states, settings, t)
-    update_problem!(pm, system, states, t)
-    
-    JuMP.optimize!(pm.model)
-
-    changes = any([
-        length(system.storages) ≠ 0, 
-        all(states.branches[:, t]) ≠ true,
-        sum(states.generators[:, t]) < length(system.generators) - settings.min_generators_off])
-
-    build_result!(pm, system, states, settings, t; changes=changes)
-    return
-end
-
-""
 function update_buspair_parameters!(buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}, branches::Branches, branch_lookup::Vector{Int})
  
     buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
@@ -732,8 +729,8 @@ function calc_theta_delta_bounds(pm::AbstractPowerModel, branches::Branches)
     branches_idxs = assetgrouplist(topology(pm, :branches_idxs))
     angle_min = Real[]
     angle_max = Real[]
-    angle_mins = [field(branches, :angmin)[l] for l in branches_idxs]
-    angle_maxs = [field(branches, :angmax)[l] for l in branches_idxs]
+    angle_mins = Float32[field(branches, :angmin)[l] for l in branches_idxs]
+    angle_maxs = Float32[field(branches, :angmax)[l] for l in branches_idxs]
     sort!(angle_mins)
     sort!(angle_maxs, rev=true)
     
@@ -759,8 +756,8 @@ function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{I
     bus_count = length(key_buses)
     angle_min = Real[]
     angle_max = Real[]
-    angle_mins = [field(branches, :angmin)[l] for l in branches_idxs]
-    angle_maxs = [field(branches, :angmax)[l] for l in branches_idxs]
+    angle_mins = Float32[field(branches, :angmin)[l] for l in branches_idxs]
+    angle_maxs = Float32[field(branches, :angmax)[l] for l in branches_idxs]
     sort!(angle_mins)
     sort!(angle_maxs, rev=true)
     
@@ -778,157 +775,126 @@ function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{I
     return angle_min[1], angle_max[1]
 end
 
+"This function is used to build the results of the optimization problem for the DC Power Model. 
+It first checks if the optimization problem has been solved optimally or locally, and if so, 
+it retrieves the values of the variables z_demand and stored_energy from the solution and updates 
+the corresponding fields in the states struct."
+function build_result!(
+    pm::AbstractPowerModel, system::SystemModel, 
+    states::States, settings::Settings, t::Int; nw::Int=1)
+
+    is_solved = any([
+        JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED, 
+        JuMP.termination_status(pm.model) == JuMP.OPTIMAL]) 
+        # Check if the problem was solved optimally or locally
+
+    settings.record_branch_flow == true && fill_flow_branch!(
+        pm, system, states, is_solved=is_solved, record_branch_flow=settings.record_branch_flow)
+
+    record_curtailed_load!(pm, system, states, t, is_solved=is_solved)
+
+    record_stored_energy!(pm, system, states, is_solved=is_solved)
+
+    return
+end
+
 ""
-function fill_curtailed_load!(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+function record_curtailed_load!(
+    pm::AbstractDCPowerModel, system::SystemModel, 
+    states::States, t::Int; nw::Int=1, is_solved::Bool=true)
 
     if is_solved
         var = OPF.var(pm, :z_demand, nw)
-
         for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
-            if states.buses[i,t] != 4
-                p_curtailed_factor = _IM.build_solution_values(var[i])
-                states.p_curtailed[i] = bus_pd*(1.0 - p_curtailed_factor)
-            else
-                states.p_curtailed[i] = bus_pd
-            end
+            
+            buses_loads_base = topology(pm, :buses_loads_base)[i]
+
+            topology(pm, :buses_curtailed_pd)[i] = sum(
+                field(system, :loads, :pd)[k,t]*
+                (1.0 - _IM.build_solution_values(var[k])) 
+                for k in buses_loads_base; init=0.0)
+
         end
-        #if sum(states.p_curtailed) > 0
-        #    println("t=$(t),$(states.p_curtailed)")
-        #end
     else
-        fill!(states.p_curtailed, 0.0)
+        fill!(topology(pm, :buses_curtailed_pd), 0.0)
     end
 end
 
 ""
-function fill_curtailed_load!(
+function record_curtailed_load!(
     pm::AbstractPowerModel, system::SystemModel, 
-    states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+    states::States, t::Int; nw::Int=1, is_solved::Bool=true)
+
 
     if is_solved
         var = OPF.var(pm, :z_demand, nw)
         for i in field(system, :buses, :keys)
-            bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
-            bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
-            if states.buses[i,t] != 4
-                p_curtailed_factor = _IM.build_solution_values(var[i])
-                states.p_curtailed[i] = bus_pd*(1.0 - p_curtailed_factor)
-                states.q_curtailed[i] = bus_qd*(1.0 - p_curtailed_factor)
-            else
-                states.p_curtailed[i] = bus_pd
-                states.q_curtailed[i] = bus_qd
-            end
+            
+            buses_loads_base = topology(pm, :buses_loads_base)[i]
+
+            topology(pm, :buses_curtailed_pd)[i] = sum(
+                field(system, :loads, :pd)[k,t]*
+                (1.0 - _IM.build_solution_values(var[k])) 
+                for k in buses_loads_base; init=0.0)
+
+            topology(pm, :buses_curtailed_qd)[i] = sum(
+                field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k]*
+                (1.0 - _IM.build_solution_values(var[k])) 
+                for k in buses_loads_base; init=0.0)
+
         end
     else
-        fill!(states.p_curtailed, 0.0)
-        fill!(states.q_curtailed, 0.0)
+        fill!(topology(pm, :buses_curtailed_pd), 0.0)
+        fill!(topology(pm, :buses_curtailed_qd), 0.0)
     end
 end
 
 ""
-function fill_stored_energy!(
-    pm::AbstractPowerModel, system::SystemModel, 
-    states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+function record_stored_energy!(
+    pm::AbstractPowerModel, system::SystemModel, states::States; nw::Int=1, is_solved::Bool=true)
     
     if is_solved
         for i in field(system, :storages, :keys)
-            if states.storages[i,t]
+            if states.storages_available[i]
                 var = OPF.var(pm, :stored_energy, nw)
                 axs =  axes(var)[1]
                 if i in axs
-                    states.stored_energy[i,t] = _IM.build_solution_values(var[i])
+                    topology(pm, :stored_energy)[i] = _IM.build_solution_values(var[i])
                 end
+            else
+                topology(pm, :stored_energy)[i] = 0.0
             end
         end
     else
-        if length(system.storages) ≠ 0 
-            states.stored_energy[:,t] .= states.stored_energy[:,t-1]
-        end
+        fill!(topology(pm, :stored_energy), 0.0)
     end
 end
 
 ""
 function fill_flow_branch!(
-    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, t::Int; nw::Int=1, is_solved::Bool=true)
+    pm::AbstractPowerModel, system::SystemModel, states::States; 
+    nw::Int=1, is_solved::Bool=true, record_branch_flow::Bool=false)
 
-    if is_solved
+    if is_solved && record_branch_flow
         var = OPF.var(pm, :p, nw)
         tuples = keys(var)
         for (l,i,j) in tuples
-            if states.branches[l,t] == 0
-                states.flow_from[l] = 0.0
-                states.flow_to[l] = 0.0
-            else
+            if states.branches_available[l] ≠ 0
                 f_bus = system.branches.f_bus[l]
                 t_bus = system.branches.t_bus[l]
-                #k = string((l,i,j))
                 if f_bus == i && t_bus == j
-                    states.flow_from[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the from bus
+                    topology(pm, :branches_flow_from)[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the from bus
                 elseif f_bus == j && t_bus == i
-                    states.flow_to[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the to bus
+                    topology(pm, :branches_flow_to)[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the to bus
                 end
+            else
+                topology(pm, :branches_flow_from)[l] = 0.0
+                topology(pm, :branches_flow_to)[l] =  0.0
             end
         end
-    else
-        fill!(states.flow_from, 0.0)
-        fill!(states.flow_to, 0.0)
-    end
-end
-
-""
-function fill_curtailed_load!(
-    pm::AbstractDCPowerModel, system::SystemModel, states::ComponentStates, p_curtailed_factor::Dict{Int, Any}, t::Int)
-    for i in field(system, :buses, :keys)
-        bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0.0)
-        if states.buses[i,t] == 4
-            states.p_curtailed[i] = bus_pd
-        else
-            states.p_curtailed[i] = bus_pd*(1 - get(p_curtailed_factor, i, 1.0))
-        end
-    end
-end
-
-""
-function fill_curtailed_load!(
-    pm::AbstractPowerModel, system::SystemModel, states::ComponentStates, p_curtailed_factor::Dict{Int, Any}, t::Int)
-    for i in field(system, :buses, :keys)
-        bus_pd = sum(field(system, :loads, :pd)[k,t] for k in topology(pm, :bus_loads_init)[i]; init=0)
-        bus_qd = sum(field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :bus_loads_init)[i]; init=0)
-        if states.buses[i,t] == 4
-            states.p_curtailed[i] = bus_pd
-            states.q_curtailed[i] = bus_qd
-        else
-            states.p_curtailed[i] = bus_pd*(1 - get(p_curtailed_factor, i, 1.0))
-            states.q_curtailed[i] = bus_qd*(1 - get(p_curtailed_factor, i, 1.0))
-        end
-    end
-end
-
-""
-function fill_flow_branch!(system::SystemModel, states::ComponentStates, flow_branch::Dict{Int, Any}, t::Int)
-
-    for l in field(system, :branches, :keys)
-        if states.branches[l,t] == 0
-            states.flow_from[l] = 0.0
-            states.flow_to[l] = 0.0
-        else
-            flow_branch_dict = get(flow_branch, l, Dict{String, Any}("from"=>0.0, "to"=>0.0))
-            states.flow_from[l] = flow_branch_dict["from"]
-            states.flow_to[l] = flow_branch_dict["to"]
-        end
-    end
-end
-
-""
-function fill_stored_energy!(storages::Storages, states::ComponentStates, stored_energy::Dict, t::Int; is_solved::Bool=true)
-    for i in field(storages, :keys)
-        if is_solved
-            states.stored_energy[i,t] = get(stored_energy, i, 0.0)
-        else
-            states.stored_energy[i,t] = states.stored_energy[i,t-1]
-        end
+    elseif !is_solved && record_branch_flow
+        fill(topology(pm, :branches_flow_from), 0.0)
+        fill(topology(pm, :branches_flow_to), 0.0)
     end
 end
 
@@ -1007,27 +973,55 @@ function build_sol_values(var::Dict{Tuple{Int, Int, Int}, Any}, branches::Branch
     return sol
 end
 
-"It checks if all elements in the matrix are true for both the current time step and the previous time step, 
-and returns false if this condition is not met."
-function check_availability(asset_states::Matrix{Bool}, t_now::Int, t_previous::Int)::Bool
-    @views t_now_view = asset_states[:, t_now]
-    if t_previous ≠ 0
-        @views t_previous_view = asset_states[:, t_previous]
-        return !any(t_now_view .== 0) && !any(t_previous_view .== 0)
-    else
-        #return !any(t_now_view .== 0) && !any(t_now_view .== 0)
-        return false
+""
+function peakload(loads::Loads{N}, buses::Buses) where {N}
+    
+    key_buses = field(buses, :keys)
+    buses_loads_base = Dict{Int, Vector{Float64}}((i, Float64[]) for i in key_buses)
+    
+    for k in field(loads, :keys)
+        push!(buses_loads_base[field(loads, :buses)[k]], maximum(loads.pd[k,:]))
     end
+
+    bus_peakload = Array{Float64}(undef, length(buses))
+
+    for (k,v) in buses_loads_base
+        if !isempty(v)
+            bus_peakload[k] = sum(v)
+        else
+            bus_peakload[k] = 0.0
+        end
+    end
+
+    system_peakload = Float64(maximum(sum(loads.pd, dims=1)))
+    return system_peakload, bus_peakload
 end
 
 ""
-function check_availability(asset_states::Matrix{Int}, t_now::Int, t_previous::Int)::Bool
-    @views t_now_view = asset_states[:, t_now]
-    if t_previous ≠ 0
-        @views t_previous_view = asset_states[:, t_previous]
-        return !any(t_now_view .== 4) && !any(t_previous_view .== 4)
-    else
-        #return !any(t_now_view .== 4) && !any(t_now_view .== 4)
-        return false
+function reset_model!(
+    pm::AbstractPowerModel, settings::Settings, sampleid::Int, nsamples::Int)
+
+    settings.optimizer ≠ Gurobi && MOIU.reset_optimizer(pm.model)
+    sampleid == nsamples && Base.finalize(JuMP.backend(pm.model).optimizer)
+    return
+end
+
+function _reset!(
+    pm::AbstractPowerModel, state::States, system::SystemModel)
+
+    fill!(state.branches_available, 1)
+    fill!(topology(pm, :branches_flow_from), 0)
+    fill!(topology(pm, :branches_flow_to), 0)
+    fill!(state.generators_available, 1)
+    fill!(state.storages_available, 1)
+    fill!(topology(pm, :buses_curtailed_pd), 0)
+    fill!(topology(pm, :buses_curtailed_qd), 0)
+    fill!(state.loads_available, 1)
+    fill!(state.shunts_available, 1)
+    fill!(state.commonbranches_available, 1)
+
+    for k in 1:length(system.buses)
+        state.buses_available[k] = field(system, :buses, :bus_type)[k]
     end
+    return
 end

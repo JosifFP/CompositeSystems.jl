@@ -24,11 +24,11 @@
         unitsymbol, conversionfactor, powertoenergy, energytopower,
 
         # Main data structure
-        SystemModel, ComponentStates, StateTransition, static_parameters,
+        SystemModel, States, StateTransition,
 
         #utils
         assetgrouplist, makeidxlist, field, build_network, 
-        calc_buspair_parameters
+        update_other_states!, record_other_states!
     #
 
     # Create our module level logger (this will get precompiled)
@@ -50,6 +50,6 @@
     include("SystemModel.jl")
     include("utils.jl")
     include("load.jl")
-    include("componentstates.jl")
+    include("states.jl")
 
 end

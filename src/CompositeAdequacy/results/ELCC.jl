@@ -30,7 +30,7 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
     P = BaseModule.powerunits["MW"]
 
     loadskeys = sys_baseline.loads.keys
-    loadskeys != sys_augmented.loads.keys && error("Systems provided do not have matching loads")
+    loadskeys ≠ sys_augmented.loads.keys && error("Systems provided do not have matching loads")
 
     shortfall = first(assess(sys_baseline, simulationspec, settings, Shortfall()))
     target_metric = M(shortfall)

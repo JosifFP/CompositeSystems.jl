@@ -31,7 +31,7 @@ Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), GeneratorAvailability())
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer_2,
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel,
     #powermodel_formulation = OPF.DCPPowerModel,
@@ -39,7 +39,6 @@ settings = CompositeSystems.Settings(
     #powermodel_formulation = OPF.LPACCPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
-    min_generators_off = 0,
     set_string_names_on_creation = false,
     count_samples=true,
 )
@@ -67,7 +66,7 @@ loads = [
 cap = 6.0
 system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 method = SequentialMCS(samples=5, seed=100, threaded=true)
-params = CompositeAdequacy.ELCC{SI}(cap, loads; capacity_gap=6.0)
+params = CompositeAdequacy.ELCC{CompositeAdequacy.SI}(cap, loads; capacity_gap=6.0)
 elcc_loads, base_load, sys_variable = copy_load(system, params.loads)
 upper_bound = params.capacity_max
 update_load!(sys_variable, elcc_loads, base_load, upper_bound, system.baseMVA)

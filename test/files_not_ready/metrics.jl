@@ -9,12 +9,11 @@ using XLSX, Dates
 include("solvers.jl")
 
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer_2,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
-    min_generators_off = 0,
     set_string_names_on_creation = false,
     count_samples = true
 )

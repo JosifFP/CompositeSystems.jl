@@ -25,30 +25,17 @@ function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::In
     return availability
 end
 
-"Empty or Initialize other variables"
-function initialize_other_states!(states::ComponentStates)
-
-    fill!(states.loads, 1)
-    fill!(states.shunts, 1)
-    fill!(states.stored_energy, 0)
-    fill!(states.p_curtailed, 0)
-    fill!(states.flow_from, 0)
-    fill!(states.flow_to, 0)
-end
-
-"Update the availability of different types of assets (buses, branches, generators, etc.) 
+"Update the availability of different types of assets (branches, generators, etc.) 
 using availability and nexttransition vectors"
-function update_availability!(rng::AbstractRNG, updown_cycle::Matrix{Bool},
-    availability::Vector{Bool}, nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
+function update_availability!(
+    rng::AbstractRNG, availability::Vector{Bool}, 
+    nexttransition::Vector{Int}, asset::AbstractAssets, t_now::Int, t_last::Int)
 
     for i in 1:length(asset)
-
         if nexttransition[i] == t_now # Unit switches states
             transitionprobs = (availability[i] ⊻= true) ? asset.λ_updn./t_last : asset.μ_updn./t_last
             nexttransition[i] = randtransitiontime(rng, transitionprobs, i, t_now, t_last)
         end
-
-        view(updown_cycle,i,t_now) .= availability[i]
     end
 end
 
@@ -72,36 +59,12 @@ function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now:
 end
 
 ""
-function apply_common_outages!(states::ComponentStates, branches::Branches, t::Int)
-    if all(view(states.commonbranches,:,t)) == false
-        for k in branches.keys
-            if branches.common_mode[k] ≠ 0 && states.commonbranches[branches.common_mode[k],t] == false
-                states.branches[k,t] = false
+function apply_common_outages!(states::States, branches::Branches, t::Int)
+    if !all(states.commonbranches_available)
+        for k in eachindex(branches.keys)
+            if branches.common_mode[k] ≠ 0 && states.commonbranches_available[branches.common_mode[k]] == false
+                states.branches_available[k] = false
             end
         end
     end
-end
-
-""
-function peakload(loads::Loads{N}, buses::Buses) where {N}
-    
-    key_buses = field(buses, :keys)
-    bus_loads_init = Dict{Int, Vector{Float64}}((i, Float64[]) for i in key_buses)
-    
-    for k in field(loads, :keys)
-        push!(bus_loads_init[field(loads, :buses)[k]], maximum(loads.pd[k,:]))
-    end
-
-    bus_peakload = Array{Float64}(undef, length(buses))
-
-    for (k,v) in bus_loads_init
-        if !isempty(v)
-            bus_peakload[k] = sum(v)
-        else
-            bus_peakload[k] = 0.0
-        end
-    end
-
-    system_peakload = Float64(maximum(sum(loads.pd, dims=1)))
-    return system_peakload, bus_peakload
 end

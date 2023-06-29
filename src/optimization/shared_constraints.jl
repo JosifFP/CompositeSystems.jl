@@ -1,45 +1,47 @@
 
 #***************************************************** CONSTRAINTS *************************************************************************
 "Fix the voltage angle to zero at the reference bus"
-function con_theta_ref(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+function con_theta_ref(
+    pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
+
     @constraint(pm.model, var(pm, :va, nw)[i] == 0)
 end
 
 "Nodal power balance constraints"
-function con_power_balance(pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
+function con_power_balance(
+    pm::AbstractPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     bus_arcs = topology(pm, :busarcs)[i]
-    bus_gens = topology(pm, :bus_generators)[i]
-    bus_loads = topology(pm, :bus_loads)[i]
-    bus_shunts = topology(pm, :bus_shunts)[i]
-    bus_storage = topology(pm, :bus_storages)[i]
+    bus_gens = topology(pm, :buses_generators_base)[i]
+    buses_loads_base = topology(pm, :buses_loads_base)[i]
+    buses_shunts_base = topology(pm, :buses_shunts_base)[i]
+    buses_storages_base = topology(pm, :buses_storages_base)[i]
 
-    bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
-    bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
-    bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in bus_shunts)
-    bus_bs = Dict{Int, Float32}(k => field(system, :shunts, :bs)[k] for k in bus_shunts)
+    bus_pd = Dict{Int, Float32}(k => field(system, :loads, :pd)[k,t] for k in buses_loads_base)
+    bus_qd = Dict{Int, Float32}(k => field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in buses_loads_base)
+    bus_gs = Dict{Int, Float32}(k => field(system, :shunts, :gs)[k] for k in buses_shunts_base)
+    bus_bs = Dict{Int, Float32}(k => field(system, :shunts, :bs)[k] for k in buses_shunts_base)
 
-    _con_power_balance(pm, system, i, nw, bus_arcs, bus_gens, bus_loads, bus_shunts, bus_storage, bus_pd, bus_qd, bus_gs, bus_bs)
+    _con_power_balance(pm, i, nw, bus_arcs, bus_gens, buses_storages_base, bus_pd, bus_qd, bus_gs, bus_bs)
 end
 
 "Nodal power balance constraints without load curtailment variables"
 function con_power_balance_nolc(pm::AbstractPowerModel, system::SystemModel, i::Int; nw::Int=1)
 
     bus_arcs = topology(pm, :busarcs)[i]
-    bus_generators = topology(pm, :bus_generators)[i]
-    bus_loads = topology(pm, :bus_loads)[i]
-    bus_shunts = topology(pm, :bus_shunts)[i]
-    bus_storages = topology(pm, :bus_storages)[i]
+    buses_generators = topology(pm, :buses_generators_base)[i]
+    buses_loads = topology(pm, :buses_loads_base)[i]
+    buses_shunts = topology(pm, :buses_shunts_base)[i]
+    buses_storages = topology(pm, :buses_storages_base)[i]
 
-    bus_pd = [field(system, :loads, :pd)[k] for k in bus_loads]
-    bus_qd = [field(system, :loads, :qd)[k] for k in bus_loads]
-    bus_gs = [field(system, :shunts, :gs)[k] for k in bus_shunts]
-    bus_bs = [field(system, :shunts, :bs)[k] for k in bus_shunts]
+    bus_pd = Float32[field(system, :loads, :pd)[k] for k in buses_loads]
+    bus_qd = Float32[field(system, :loads, :qd)[k] for k in buses_loads]
+    bus_gs = Float32[field(system, :shunts, :gs)[k] for k in buses_shunts]
+    bus_bs = Float32[field(system, :shunts, :bs)[k] for k in buses_shunts]
 
     _con_power_balance_nolc(
-        pm, system, i, nw, bus_arcs, bus_generators, bus_loads, bus_shunts, bus_storages, bus_pd, bus_qd, bus_gs, bus_bs)
+        pm, i, nw, bus_arcs, buses_generators, buses_storages, bus_pd, bus_qd, bus_gs, bus_bs)
 end
-
 
 "Branch - Phase Angle Difference Constraints (per branch)"
 function con_voltage_angle_difference_on_off(pm::AbstractPolarModels, system::SystemModel, l::Int; nw::Int=1)
@@ -188,6 +190,7 @@ function con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::In
     b_fr = field(system, :branches, :b_fr)[l]
     g_to = field(system, :branches, :g_to)[l]
     b_to = field(system, :branches, :b_to)[l]
+    
     _con_ohms_yt_from(pm, l, nw, f_bus, t_bus, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
     _con_ohms_yt_to(pm, l, nw, f_bus, t_bus, g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end
