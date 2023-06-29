@@ -3,7 +3,7 @@
 @testset "test 5 Split situations with isolated buses, RBTS system" begin
 
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = true,
@@ -11,7 +11,7 @@
     )
 
     settings_2 = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -32,7 +32,7 @@
         state.generators_available[7] = 0
         state.generators_available[8] = 0
         state.generators_available[9] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.35; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -49,7 +49,7 @@
     @testset "L5 and L8 on outage" begin
         state.branches_available[5] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.4; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -66,7 +66,7 @@
     @testset "L5 and L8 on outage" begin
         state.branches_available[5] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.4; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -84,7 +84,7 @@
         state.branches_available[3] = 0
         state.branches_available[4] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.750; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0.2; atol = 1e-4)
@@ -102,7 +102,7 @@
         state.branches_available[3] = 0
         state.branches_available[4] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.150; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -121,7 +121,7 @@
         state.generators_available[7] = 0
         state.generators_available[8] = 0
         state.generators_available[11] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.35; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -141,7 +141,7 @@
         state.generators_available[1] = 0
         state.generators_available[2] = 0
         state.generators_available[3] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.74; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -159,7 +159,7 @@ end
 @testset "test 7 Split situations with isolated buses, IEEE-RTS system" begin
     
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = true,
@@ -167,7 +167,7 @@ end
     )
 
     settings_2 = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -192,7 +192,7 @@ end
     @testset "Outages on L12, L13" begin
         state.branches_available[12] = 0
         state.branches_available[13] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -226,7 +226,7 @@ end
     @testset "Outages on L12, L13" begin
         state.branches_available[12] = 0
         state.branches_available[13] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.9600; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -261,7 +261,7 @@ end
         state.branches_available[1] = 0
         state.branches_available[4] = 0
         state.branches_available[10] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.410; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -296,7 +296,7 @@ end
         state.branches_available[1] = 0
         state.branches_available[8] = 0
         state.branches_available[10] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.150; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -331,7 +331,7 @@ end
         state.branches_available[7] = 0
         state.branches_available[19] = 0
         state.branches_available[29] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -366,7 +366,7 @@ end
         state.branches_available[7] = 0
         state.branches_available[23] = 0
         state.branches_available[29] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.65; atol = 1e-2)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -401,7 +401,7 @@ end
         state.branches_available[25] = 0
         state.branches_available[26] = 0
         state.branches_available[28] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 5.45; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -436,7 +436,7 @@ end
         state.branches_available[25] = 0
         state.branches_available[26] = 0
         state.branches_available[28] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.12; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -471,7 +471,7 @@ end
         state.branches_available[29] = 0
         state.branches_available[36] = 0
         state.branches_available[37] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 3.09; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -506,7 +506,7 @@ end
         state.branches_available[29] = 0
         state.branches_available[36] = 0
         state.branches_available[37] = 0
-        OPF._update!(pm, system, state, settings_2, t)
+        OPF.solve!(pm, state, system, settings_2, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 3.09; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -541,7 +541,7 @@ end
 @testset "RBTS system, test sequentially split situations w/o isolated buses, RBTS system, LPACCPowerModel" begin
 
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.LPACCPowerModel,
         select_largest_splitnetwork = true,
@@ -560,7 +560,7 @@ end
 
     @testset "t=1, No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -577,7 +577,7 @@ end
 
     @testset "t=2, No outages" begin
         t=2
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -598,7 +598,7 @@ end
         state.generators_available[7] = 0
         state.generators_available[8] = 0
         state.generators_available[9] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.3716; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -618,7 +618,7 @@ end
         t=4
         state.branches_available[5] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.4; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -637,7 +637,7 @@ end
 
     @testset "t=5, No outages" begin
         t=5
-        OPF._update!(pm, system, state, settings, t)  
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -657,7 +657,7 @@ end
         state.branches_available[3] = 0
         state.branches_available[4] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)  
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.7703; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0.2000; atol = 1e-4)
@@ -680,7 +680,7 @@ end
         state.generators_available[1] = 0
         state.generators_available[2] = 0
         state.generators_available[3] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.9792; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -697,7 +697,7 @@ end
 
     @testset "t=8, No outages" begin
         t=8
-        OPF._update!(pm, system, state, settings, t)  
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -716,7 +716,7 @@ end
 @testset "RTS system, test sequentially split situations w/o isolated buses, RTS system, LPACCPowerModel" begin
 
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.LPACCPowerModel,
         select_largest_splitnetwork = false,
@@ -754,7 +754,7 @@ end
 
     @testset "t=1, No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -790,7 +790,7 @@ end
 
     @testset "t=2, No outages" begin
         t=2
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -829,7 +829,7 @@ end
         state.branches_available[29] = 0
         state.branches_available[36] = 0
         state.branches_available[37] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 3.09; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -855,8 +855,8 @@ end
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[22], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[23], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[24], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 26.9101; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 12.3378; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 26.9107; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 12.3390; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
@@ -868,7 +868,7 @@ end
 
     @testset "t=4, No outages" begin
         t=4
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -907,8 +907,8 @@ end
         state.branches_available[25] = 0
         state.branches_available[26] = 0
         state.branches_available[28] = 0
-        OPF._update!(pm, system, state, settings, t)
-        @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.3544; atol = 1e-4)
+        OPF.solve!(pm, state, system, settings, t)
+        @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.3543; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[3], 0; atol = 1e-4)
@@ -922,7 +922,7 @@ end
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[11], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[12], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[13], 0; atol = 1e-4)
-        @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[14], 0.6044; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[14], 0.6043; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[15], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[16], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[17], 0; atol = 1e-4)
@@ -934,7 +934,7 @@ end
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[23], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[24], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 26.8532; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 6.6031; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 6.6026; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
@@ -949,7 +949,7 @@ end
         state.branches_available[1] = 0
         state.branches_available[8] = 0
         state.branches_available[10] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.1654; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -989,7 +989,7 @@ end
         state.branches_available[7] = 0
         state.branches_available[19] = 0
         state.branches_available[29] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1028,8 +1028,8 @@ end
         state.branches_available[7] = 0
         state.branches_available[23] = 0
         state.branches_available[29] = 0
-        OPF._update!(pm, system, state, settings, t)
-        @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.9497; atol = 1e-4)
+        OPF.solve!(pm, state, system, settings, t)
+        @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.9487; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[3], 0; atol = 1e-4)
@@ -1043,7 +1043,7 @@ end
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[11], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[12], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[13], 0; atol = 1e-4)
-        @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[14], 0.1997; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[14], 0.1987; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[15], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[16], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[17], 0; atol = 1e-4)
@@ -1055,7 +1055,7 @@ end
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[23], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[24], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 27.4628; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 8.3110; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :qg, :)))), 8.2908; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :z_shunt, :)))), 1; atol = 1e-4)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
@@ -1068,7 +1068,7 @@ end
 @testset "test sequentially split situations w/o isolated buses, RTS system, DCMPPowerModel" begin
 
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCMPPowerModel,
         select_largest_splitnetwork = false,
@@ -1112,7 +1112,7 @@ end
 
     @testset "t=1, No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1147,7 +1147,7 @@ end
 
     @testset "t=2, No outages" begin
         t=2
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1185,7 +1185,7 @@ end
         state.branches_available[29] = 0
         state.branches_available[36] = 0
         state.branches_available[37] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 3.09; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1220,7 +1220,7 @@ end
 
     @testset "t=4, No outages" begin
         t=4
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1258,7 +1258,7 @@ end
         state.branches_available[25] = 0
         state.branches_available[26] = 0
         state.branches_available[28] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.12; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1296,7 +1296,7 @@ end
         state.branches_available[1] = 0
         state.branches_available[8] = 0
         state.branches_available[10] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.150; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1334,7 +1334,7 @@ end
         state.branches_available[7] = 0
         state.branches_available[19] = 0
         state.branches_available[29] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1372,7 +1372,7 @@ end
         state.branches_available[7] = 0
         state.branches_available[23] = 0
         state.branches_available[29] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.65; atol = 1e-2)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)

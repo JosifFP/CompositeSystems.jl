@@ -56,7 +56,7 @@ function assess(
     for s in sampleseeds
 
         settings.count_samples && println("s=$(s)")
-        OPF.is_empty(pm.model.moi_backend) && build_problem!(pm, system) #This function MUST be placed below the sampleseeds loop.
+        is_empty(pm.model.moi_backend) && build_problem!(pm, system) #This function MUST be placed below the sampleseeds loop.
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, state, statetransition, system) #creates the up/down sequence for each device.
 
@@ -118,35 +118,6 @@ function update!(
 
     update_other_states!(states, statetransition, system)
     #apply_common_outages!(states, system.branches, t)
-
-    return
-end
-
-"""
-Optimizes the power model and update the system states based on the results of the optimization. 
-The function first checks if there are any changes in the branch, storage, or generator states at time step t 
-compared to the previous time step. If there are any changes, the function calls JuMP.optimize!(pm.model) 
-to optimize the power model and then calls optimize_model! to update the results. 
-If there are no changes, it fills the states.buses_curtailed_pd variable with zeros.
-"""
-function solve!(
-    pm::AbstractPowerModel, 
-    states::States, system::SystemModel{N}, settings::Settings, t::Int) where N
-
-    update_topology!(pm, system, states, settings, t)
-
-    update_problem!(pm, system, states, t)
-
-    changes = any([
-        states.branches_available; 
-        states.generators_available; 
-        states.storages_available].== 0)
-    
-    changes && JuMP.optimize!(pm.model)
-
-    build_result!(pm, system, states, settings, t; changes=changes)
-
-    record_other_states!(states, system)
 
     return
 end

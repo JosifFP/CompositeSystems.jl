@@ -25,17 +25,6 @@ function initialize_availability!(availability::Matrix{Int}, asset::Buses, N::In
     return availability
 end
 
-""
-function apply_common_outages!(states::States, branches::Branches, t::Int)
-    if !all(states.commonbranches_available)
-        for k in eachindex(branches.keys)
-            if branches.common_mode[k] ≠ 0 && states.commonbranches_available[branches.common_mode[k]] == false
-                states.branches_available[k] = false
-            end
-        end
-    end
-end
-
 "Update the availability of different types of assets (branches, generators, etc.) 
 using availability and nexttransition vectors"
 function update_availability!(
@@ -70,29 +59,12 @@ function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now:
 end
 
 ""
-function update_other_states!(states::States, statetransition::StateTransition, system::SystemModel)
-
-    states.branches_available .= statetransition.branches_available
-    states.commonbranches_available .= statetransition.commonbranches_available
-    states.generators_available .= statetransition.generators_available
-    states.storages_available .= statetransition.storages_available
-    states.buses_available .= field(system, :buses, :bus_type)
-    fill!(states.commonbranches_available, 1)
-    fill!(states.loads_available, 1)
-    fill!(states.shunts_available, 1)
-
-    return
-end
-
-""
-function record_other_states!(states::States, system::SystemModel)
-    
-    states.branches_pasttransition .= states.branches_available
-    states.commonbranches_pasttransition .= states.commonbranches_available
-    states.generators_pasttransition .= states.generators_available
-    states.storages_pasttransition .= states.storages_available
-    states.buses_pasttransition .= states.buses_available
-    states.loads_pasttransition .= states.loads_available
-    states.shunts_pasttransition .= states.shunts_available
-    return
+function apply_common_outages!(states::States, branches::Branches, t::Int)
+    if !all(states.commonbranches_available)
+        for k in eachindex(branches.keys)
+            if branches.common_mode[k] ≠ 0 && states.commonbranches_available[branches.common_mode[k]] == false
+                states.branches_available[k] = false
+            end
+        end
+    end
 end

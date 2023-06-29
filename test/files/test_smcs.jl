@@ -1,7 +1,7 @@
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer_2,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,

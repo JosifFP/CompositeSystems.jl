@@ -124,9 +124,10 @@ end
 #***************************************************** CONSTRAINTS ************************************************************************
 ""
 function _con_power_balance(
-    pm::AbstractLPACModel, system::SystemModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
-    bus_gens::Vector{Int}, buses_loads_available::Vector{Int}, buses_shunts_available::Vector{Int}, bus_storage::Vector{Int},
-    bus_pd::Dict{Int, Float64}, bus_qd::Dict{Int, Float64}, bus_gs::Dict{Int, Float32}, bus_bs::Dict{Int, Float32})
+    pm::AbstractLPACModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
+    bus_gens::Vector{Int}, bus_storage::Vector{Int}, 
+    bus_pd::Dict{Int, Float32}, bus_qd::Dict{Int, Float32}, 
+    bus_gs::Dict{Int, Float32}, bus_bs::Dict{Int, Float32})
 
     phi  = var(pm, :phi, nw)
     p    = var(pm, :p, nw)
@@ -161,8 +162,8 @@ end
 
 ""
 function _con_power_balance_nolc(
-    pm::AbstractLPACModel, system::SystemModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
-    bus_gens::Vector{Int}, bus_loads::Vector{Int}, bus_shunts::Vector{Int}, bus_storage::Vector{Int},
+    pm::AbstractLPACModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
+    bus_gens::Vector{Int}, bus_storage::Vector{Int},
     bus_pd, bus_qd, bus_gs, bus_bs)
 
     phi  = var(pm, :phi, nw)
@@ -393,12 +394,18 @@ end
 function update_con_power_balance(
     pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
 
-    bus_pd = Dict{Int, Float64}(k => field(system, :loads, :pd)[k,t] for k in topology(pm, :buses_loads_base)[i])
-    bus_qd = Dict{Int, Float64}(k => field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :buses_shunts_base)[i])
 
-    for w in keys(bus_pd)
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], bus_pd[w])
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], bus_qd[w])
+    keys_loads = topology(pm, :buses_loads_base)[i]
+
+    bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in keys_loads]
+    bus_qd = Float32[field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in keys_loads]
+
+    for w in keys_loads
+        JuMP.set_normalized_coefficient(
+            con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], bus_pd[w])
+
+        JuMP.set_normalized_coefficient(
+            con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], bus_qd[w])
     end
 
 end
@@ -411,16 +418,20 @@ function update_con_power_balance_nolc(
     bus_loads = topology(pm, :buses_loads_available)[i]
     bus_shunts = topology(pm, :buses_shunts_available)[i]
 
-    bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
-    bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
-    bus_gs = [field(system, :shunts, :gs)[k] for k in bus_shunts]
-    bus_bs = [field(system, :shunts, :bs)[k] for k in bus_shunts]
+    bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in bus_loads]
+    bus_qd = Float32[field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
+    bus_gs = Float32[field(system, :shunts, :gs)[k] for k in bus_shunts]
+    bus_bs = Float32[field(system, :shunts, :bs)[k] for k in bus_shunts]
 
-    JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], phi[i], -sum(gs for gs in bus_gs)*2)
-    JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], phi[i], +sum(bs for bs in bus_bs)*2)
+    JuMP.set_normalized_coefficient(
+        con(pm, :power_balance_p, nw)[i], phi[i], -sum(gs for gs in bus_gs)*2)
+    JuMP.set_normalized_coefficient(
+        con(pm, :power_balance_q, nw)[i], phi[i], +sum(bs for bs in bus_bs)*2)
 
-    JuMP.set_normalized_rhs(con(pm, :power_balance_p, nw)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*(1.0))
-    JuMP.set_normalized_rhs(con(pm, :power_balance_q, nw)[i], -sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0))
+    JuMP.set_normalized_rhs(
+        con(pm, :power_balance_p, nw)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*(1.0))
+    JuMP.set_normalized_rhs(
+        con(pm, :power_balance_q, nw)[i], -sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0))
 
 end
 
@@ -428,13 +439,13 @@ function _update_con_ohms_yt_from(
     pm::AbstractLPACModel, state::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
-    if state.branches_available[l] == false
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 0.0)
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[l], 0.0)
-    else
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], (g+g_fr)/tm^2)
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[l], -(b+b_fr)/tm^2)
-    end
+    JuMP.set_normalized_rhs(
+        con(pm, :ohms_yt_from_p, nw)[l], 
+        state.branches_available[l]*(g+g_fr)/tm^2)
+
+    JuMP.set_normalized_rhs(
+        con(pm, :ohms_yt_from_q, nw)[l], 
+        -state.branches_available[l]*(b+b_fr)/tm^2)
 end
 
 "AC Line Flow Constraints"
@@ -442,25 +453,17 @@ function _update_con_ohms_yt_to(
     pm::AbstractLPACModel, state::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 
-    if state.branches_available[l] == false
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[l], 0.0)
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[l], 0.0)
-    else
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[l], (g+g_to))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[l], -(b+b_to))
-    end
+    JuMP.set_normalized_rhs(
+        con(pm, :ohms_yt_to_p, nw)[l], 
+        state.branches_available[l]*(g+g_to))
+    JuMP.set_normalized_rhs(
+        con(pm, :ohms_yt_to_q, nw)[l], 
+        -state.branches_available[l]*(b+b_to))
 end
 
 ""
 function update_var_branch_indicator(
     pm::AbstractLPACModel, system::SystemModel, state::States, l::Int; nw::Int=1)
 
-    z_branch = var(pm, :z_branch, nw)[l]
-    if state.branches_available[l] == 0
-        JuMP.fix(z_branch, 0, force=true)
-        #JuMP.fix(z_branch, 0)
-    else
-        JuMP.fix(z_branch, 1, force=true)
-        #JuMP.fix(z_branch, 1)
-    end
+    JuMP.fix(var(pm, :z_branch, nw)[l], state.branches_available[l], force=true)
 end

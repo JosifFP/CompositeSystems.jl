@@ -355,7 +355,9 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::States, 
     changed = true
 
     while changed
+
         changed = false
+
         for i in key_buses
             if states.buses_available[i] ≠ 4
                 incident_active_edge = 0
@@ -727,8 +729,8 @@ function calc_theta_delta_bounds(pm::AbstractPowerModel, branches::Branches)
     branches_idxs = assetgrouplist(topology(pm, :branches_idxs))
     angle_min = Real[]
     angle_max = Real[]
-    angle_mins = [field(branches, :angmin)[l] for l in branches_idxs]
-    angle_maxs = [field(branches, :angmax)[l] for l in branches_idxs]
+    angle_mins = Float32[field(branches, :angmin)[l] for l in branches_idxs]
+    angle_maxs = Float32[field(branches, :angmax)[l] for l in branches_idxs]
     sort!(angle_mins)
     sort!(angle_maxs, rev=true)
     
@@ -754,8 +756,8 @@ function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{I
     bus_count = length(key_buses)
     angle_min = Real[]
     angle_max = Real[]
-    angle_mins = [field(branches, :angmin)[l] for l in branches_idxs]
-    angle_maxs = [field(branches, :angmax)[l] for l in branches_idxs]
+    angle_mins = Float32[field(branches, :angmin)[l] for l in branches_idxs]
+    angle_maxs = Float32[field(branches, :angmax)[l] for l in branches_idxs]
     sort!(angle_mins)
     sort!(angle_maxs, rev=true)
     
@@ -779,15 +781,12 @@ it retrieves the values of the variables z_demand and stored_energy from the sol
 the corresponding fields in the states struct."
 function build_result!(
     pm::AbstractPowerModel, system::SystemModel, 
-    states::States, settings::Settings, t::Int; nw::Int=1, changes::Bool=true)
+    states::States, settings::Settings, t::Int; nw::Int=1)
 
     is_solved = any([
         JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED, 
         JuMP.termination_status(pm.model) == JuMP.OPTIMAL]) 
         # Check if the problem was solved optimally or locally
-
-    all([changes, !is_solved]) && println(
-        "not solved, t=$(t), status=$(termination_status(pm.model)), changes = $(changes)")
 
     settings.record_branch_flow == true && fill_flow_branch!(
         pm, system, states, is_solved=is_solved, record_branch_flow=settings.record_branch_flow)
@@ -1025,101 +1024,4 @@ function _reset!(
         state.buses_available[k] = field(system, :buses, :bus_type)[k]
     end
     return
-end
-
-""
-function _update_opf!(
-    pm::AbstractPowerModel, system::SystemModel, states::States, settings::Settings, t::Int)
-    
-    update_topology!(pm, system, states, settings, t)
-
-    for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, states, i, force_pmin=true)
-        update_var_gen_power_imaginary(pm, system, states, i)
-    end
-
-    for l in field(system, :branches, :keys)
-        update_var_branch_indicator(pm, system, states, l)
-        update_con_ohms_yt(pm, system, states, l)
-        update_con_thermal_limits(pm, system, states, l)
-        update_con_voltage_angle_difference(pm, system, states, l)
-    end
-
-    for i in field(system, :storages, :keys)
-        update_con_storage_state(pm, system, states, i)
-        update_var_storage_charge(pm, system, states, i)
-        update_var_storage_discharge(pm, system, states, i)
-    end
-
-    for i in field(system, :shunts, :keys)
-        update_var_shunt_admittance_factor(pm, system, states, i)
-    end
-
-    for i in field(system, :buses, :keys)
-        update_var_bus_voltage_angle(pm, system, states, i)
-        update_con_power_balance_nolc(pm, system, states, i, t)
-    end
-
-    update_obj_min_stor_load_curtailment!(pm, system, t)
-
-    JuMP.optimize!(pm.model)
-    return pm
-end
-
-""
-function _update!(
-    pm::AbstractPowerModel, system::SystemModel{N}, states::States, settings::Settings, t::Int; force_pmin::Bool=true) where N
-    
-    update_topology!(pm, system, states, settings, t)
-
-    for i in eachindex(states.storages_available)
-        if !states.storages_available[i]
-            topology(pm, :stored_energy)[i] = 0.0
-        end
-    end
-
-    _update_problem!(pm, system, states, t)
-
-    changes = !all([states.branches_available; states.generators_available; states.storages_available])
-    JuMP.optimize!(pm.model)
-    build_result!(pm, system, states, settings, t; changes=changes)
-
-    return
-end
-
-""
-function _update_problem!(
-    pm::AbstractPowerModel, system::SystemModel, state::States, t::Int; force_pmin::Bool=false)
-
-    for i in field(system, :generators, :keys)
-        update_var_gen_power_real(pm, system, state, i, force_pmin=force_pmin)
-        update_var_gen_power_imaginary(pm, system, state, i)
-    end
-
-    for l in field(system, :branches, :keys)
-        update_var_branch_indicator(pm, system, state, l)
-        update_con_ohms_yt(pm, system, state, l)
-        update_con_thermal_limits(pm, system, state, l)
-        update_con_voltage_angle_difference(pm, system, state, l)
-    end
-    for i in field(system, :shunts, :keys)
-        update_var_shunt_admittance_factor(pm, system, state, i)
-    end
-    for i in field(system, :storages, :keys)
-        update_con_storage_state(pm, system, state, i)
-        update_var_storage_charge(pm, system, state, i)
-        update_var_storage_discharge(pm, system, state, i)
-    end
-
-    for i in field(system, :buses, :keys)
-        update_con_power_balance(pm, system, state, i, t)
-        update_var_bus_voltage_angle(pm, system, state, i)
-    end
-
-    for i in field(system, :loads, :keys)
-        update_var_load_power_factor(pm, system, state, i)
-    end
-    
-    obj_min_stor_load_curtailment(pm, system, t)
-    return pm
 end

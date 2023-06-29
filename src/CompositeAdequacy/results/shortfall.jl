@@ -192,8 +192,8 @@ struct ShortfallSamples <: ResultSpec end
 struct ShortfallSamplesResult{N,L,T<:Period,P<:PowerUnit,E<:EnergyUnit} <: AbstractShortfallResult{N,L,T}
     buses::Vector{Int}
     timestamps::StepRange{ZonedDateTime,T}
-    p_shortfall::Array{Float32,3} # r x t x s
-    shortfall::Array{Float32,3} # r x t x s
+    p_shortfall::Array{Float64,3} # r x t x s
+    shortfall::Array{Float64,3} # r x t x s
 end
 
 function EDLC(x::ShortfallSamplesResult{N,L,T}) where {N,L,T}

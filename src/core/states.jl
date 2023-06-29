@@ -131,3 +131,31 @@ struct States
         )
     end
 end
+
+""
+function update_other_states!(states::States, statetransition::StateTransition, system::SystemModel)
+
+    states.branches_available .= statetransition.branches_available
+    states.commonbranches_available .= statetransition.commonbranches_available
+    states.generators_available .= statetransition.generators_available
+    states.storages_available .= statetransition.storages_available
+    states.buses_available .= field(system, :buses, :bus_type)
+    fill!(states.commonbranches_available, 1)
+    fill!(states.loads_available, 1)
+    fill!(states.shunts_available, 1)
+
+    return
+end
+
+""
+function record_other_states!(states::States)
+    
+    states.branches_pasttransition .= states.branches_available
+    states.commonbranches_pasttransition .= states.commonbranches_available
+    states.generators_pasttransition .= states.generators_available
+    states.storages_pasttransition .= states.storages_available
+    states.buses_pasttransition .= states.buses_available
+    states.loads_pasttransition .= states.loads_available
+    states.shunts_pasttransition .= states.shunts_available
+    return
+end

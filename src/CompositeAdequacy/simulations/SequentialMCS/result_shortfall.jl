@@ -54,7 +54,7 @@ function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Shortfall) where {N
     unservedload_busperiod = [meanvariance() for _ in 1:nbuses, _ in 1:N]
 
     unservedload_total_currentsim = 0
-    unservedload_bus_currentsim = zeros(Float32, nbuses)
+    unservedload_bus_currentsim = zeros(Float64, nbuses)
 
     return SMCShortfallAccumulator(
         periodsdropped_total, periodsdropped_bus,

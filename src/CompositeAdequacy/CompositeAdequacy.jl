@@ -31,12 +31,12 @@
 
         # Result specifications
         Shortfall, ShortfallSamples,
-        GeneratorAvailability, StorageAvailability, BranchAvailability, 
-        ShuntAvailability,
+        GeneratorAvailability, StorageAvailability, 
+        BranchAvailability, ShuntAvailability,
         Utilization, UtilizationSamples,
 
         #utils
-        makeidxlist, print_results, allocate_loads, copy_load, update_load!
+        print_results, copy_load, update_load!,
 
         # Convenience re-exports
         ZonedDateTime

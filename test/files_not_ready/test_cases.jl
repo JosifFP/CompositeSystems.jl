@@ -31,7 +31,7 @@ Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
 
 resultspecs = (Shortfall(), GeneratorAvailability())
 settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    gurobi_optimizer_2,
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel,
     #powermodel_formulation = OPF.DCPPowerModel,

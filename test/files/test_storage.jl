@@ -1,10 +1,12 @@
 
 @testset "RBTS system, sequential outages, storage at bus 6" begin
+    
     timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
     rawfile = "test/data/others/Storage/RBTS_strg.m"
     reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
+
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -25,7 +27,7 @@
     
     @testset "t=1, No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -47,7 +49,7 @@
     
     @testset "t=2, No outages" begin
         t=2
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -73,7 +75,7 @@
         state.generators_available[7] = 0
         state.generators_available[8] = 0
         state.generators_available[9] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.1; atol = 1e-4)
@@ -96,7 +98,7 @@
         t=4
         state.branches_available[5] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.15; atol = 1e-4)
@@ -120,7 +122,7 @@
         state.branches_available[3] = 0
         state.branches_available[4] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -146,7 +148,7 @@
         state.generators_available[1] = 0
         state.generators_available[2] = 0
         state.generators_available[3] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.49; atol = 1e-4)
@@ -170,7 +172,7 @@
         state.branches_available[2] = 0
         state.generators_available[1] = 0
         state.generators_available[2] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -193,7 +195,7 @@
         t=8
         state.branches_available[1] = 0
         state.branches_available[6] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -217,7 +219,7 @@
     @testset "t=9, L4 on outage" begin
         t=9
         state.branches_available[4] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -243,7 +245,7 @@ end
     rawfile = "test/data/others/Storage/RBTS_strg.m"
     reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
     settings = CompositeSystems.Settings(
-        juniper_optimizer_1;
+        juniper_optimizer;
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -264,7 +266,7 @@ end
     
     @testset "t=1, No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -286,7 +288,7 @@ end
     
     @testset "t=2, No outages" begin
         t=2
-        OPF._update!(pm, system, state, settings, t)  
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -312,7 +314,7 @@ end
         state.generators_available[7] = 0
         state.generators_available[8] = 0
         state.generators_available[9] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.1; atol = 1e-4)
@@ -335,7 +337,7 @@ end
         t=4
         state.branches_available[5] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.40; atol = 1e-4)
@@ -359,7 +361,7 @@ end
         state.branches_available[3] = 0
         state.branches_available[4] = 0
         state.branches_available[8] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.15; atol = 1e-4)
@@ -385,7 +387,7 @@ end
         state.generators_available[1] = 0
         state.generators_available[2] = 0
         state.generators_available[3] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.74; atol = 1e-4)
@@ -410,7 +412,7 @@ end
         state.branches_available[2] = 0
         state.generators_available[1] = 0
         state.generators_available[2] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t) 
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -433,7 +435,7 @@ end
         t=8
         state.branches_available[1] = 0
         state.branches_available[6] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.23; atol = 1e-4)
@@ -457,7 +459,7 @@ end
     @testset "t=9, L1 and L6 on outage" begin
         t=9
         state.branches_available[4] = 0
-        OPF._update!(pm, system, state, settings, t) 
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test JuMP.termination_status(pm.model) ≠ JuMP.NUMERICAL_ERROR
         @test JuMP.termination_status(pm.model) ≠ JuMP.INFEASIBLE
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
@@ -480,7 +482,8 @@ end
 @testset "RTS system, sequential outages, storage at bus 8" begin
 
     settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    juniper_optimizer,
+    #gurobi_optimizer_2,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
@@ -524,7 +527,7 @@ end
 
     @testset "t=1, No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -566,7 +569,7 @@ end
         state.branches_available[11] = 0 #(7,8)
         state.branches_available[12] = 0 #(8,9)
         state.branches_available[13] = 0 #(8,10)
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.96; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -607,7 +610,7 @@ end
         state.branches_available[11] = 0 #(7,8)
         state.branches_available[12] = 0 #(8,9)
         state.branches_available[13] = 0 #(8,10)
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.96; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -648,7 +651,7 @@ end
         state.branches_available[11] = 0 #(7,8)
         state.branches_available[12] = 0 #(8,9)
         state.branches_available[13] = 0 #(8,10)
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.96; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -686,7 +689,7 @@ end
 
     @testset "t=5, No outages" begin
         t=5
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -725,7 +728,7 @@ end
 
     @testset "t=6, No outages" begin
         t=6
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -768,7 +771,7 @@ end
         state.branches_available[29] = 0
         state.branches_available[36] = 0
         state.branches_available[37] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 3.09; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -813,7 +816,7 @@ end
         state.branches_available[12] = 0
         state.branches_available[13] = 0
         state.branches_available[15] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.210+0.75; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -856,7 +859,7 @@ end
         state.branches_available[12] = 0
         state.branches_available[13] = 0
         state.branches_available[15] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 2.210+0.75; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -894,7 +897,7 @@ end
 
     @testset "t=10, No outages" begin
         t=10
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -935,7 +938,8 @@ end
 @testset "RTS system, sequential outages, storage at bus 9" begin
 
     settings = CompositeSystems.Settings(
-    gurobi_optimizer_3,
+    #gurobi_optimizer_2,
+    juniper_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
@@ -981,7 +985,7 @@ end
 
     @testset "No outages" begin
         t=1
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1024,7 +1028,7 @@ end
         state.branches_available[15] = 0.0
         state.branches_available[16] = 0.0
         state.branches_available[17] = 0.0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.38; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1062,7 +1066,7 @@ end
 
     @testset "No outages" begin
         t=3
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1104,7 +1108,7 @@ end
         state.branches_available[15] = 0.0
         state.branches_available[16] = 0.0
         state.branches_available[17] = 0.0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0.63; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1143,7 +1147,7 @@ end
     @testset "No outages" begin
         t=5
         state.storages_available[1] = 0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t, force=true)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)
@@ -1186,7 +1190,7 @@ end
         state.branches_available[15] = 0.0
         state.branches_available[16] = 0.0
         state.branches_available[17] = 0.0
-        OPF._update!(pm, system, state, settings, t)
+        OPF.solve!(pm, state, system, settings, t)
         @test isapprox(sum(OPF.topology(pm, :buses_curtailed_pd)[:]), 1.38; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[1], 0; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :buses_curtailed_pd)[2], 0; atol = 1e-4)

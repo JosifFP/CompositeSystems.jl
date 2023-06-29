@@ -84,6 +84,35 @@ function update_problem!(
     update_obj_min_stor_load_curtailment!(pm, system, t)
 end
 
+"""
+Optimizes the power model and update the system states based on the results of the optimization. 
+The function first checks if there are any changes in the branch, storage, or generator states at time step t 
+compared to the previous time step. If there are any changes, the function calls JuMP.optimize!(pm.model) 
+to optimize the power model and then calls optimize_model! to update the results. 
+If there are no changes, it fills the states.buses_curtailed_pd variable with zeros.
+"""
+function solve!(
+    pm::AbstractPowerModel, 
+    states::States, system::SystemModel{N}, settings::Settings, t::Int; force::Bool=false) where N
+
+    update_topology!(pm, system, states, settings, t)
+
+    update_problem!(pm, system, states, t)
+
+    changes = any([
+        states.branches_available; 
+        states.generators_available; 
+        states.storages_available].== 0)
+    
+    (changes || force) && JuMP.optimize!(pm.model)
+
+    build_result!(pm, system, states, settings, t)
+
+    record_other_states!(states)
+
+    return
+end
+
 ""
 function update_generators!(
     pm::AbstractPowerModel, system::SystemModel, states::States; force_pmin::Bool=false)
@@ -112,10 +141,11 @@ end
 ""
 function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::States)
 
-    if any([states.shunts_available; states.shunts_pasttransition; 
-        states.branches_available; states.branches_pasttransition].== 0)
+    if any([states.branches_available; states.branches_pasttransition].== 0)
         for i in field(system, :shunts, :keys)
+            #if any([states.shunts_available[i]; states.shunts_pasttransition[i]].== 0)            
             update_var_shunt_admittance_factor(pm, system, states, i)
+            #end
         end
     end
 end
@@ -154,7 +184,7 @@ function update_loads!(pm::AbstractPowerModel, system::SystemModel, states::Stat
 end
 
 "Classic OPF from _PM.jl."
-function solve_opf(system::SystemModel, settings::Settings)
+function solve_opf!(system::SystemModel, settings::Settings)
 
     pm = abstract_model(system, settings)
     build_opf!(pm, system)
@@ -245,7 +275,7 @@ function obj_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemMod
     key_loads =  field(system, :loads, :keys)
     key_stors =  field(system, :storages, :keys)
     
-    load_cost = [field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t] for i in key_loads]
+    load_cost = Float32[field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t] for i in key_loads]
 
     load_var_cost = @expression(
         pm.model, sum(load_cost[w]*(1 - z_demand[w]) for w in key_loads; init=0))
@@ -267,8 +297,7 @@ function update_obj_min_stor_load_curtailment!(pm::AbstractPowerModel, system::S
 
         load_cost[i] = field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t]
 
-        JuMP.set_objective_coefficient(
-            pm.model, z_demand[i], -load_cost[i])
+        JuMP.set_objective_coefficient(pm.model, z_demand[i], -load_cost[i])
     end
 
     MOI.modify(
