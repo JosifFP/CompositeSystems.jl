@@ -22,17 +22,23 @@ end
 
 ""
 function update_var_gen_power_imaginary(pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
-    JuMP.set_upper_bound(var(pm, :qg, nw)[i], field(system, :generators, :qmax)[i]*states.generators_available[i])
-    JuMP.set_lower_bound(var(pm, :qg, nw)[i], field(system, :generators, :qmin)[i]*states.generators_available[i])
+
+    if !states.generators_available[i]
+        JuMP.set_upper_bound(var(pm, :qg, nw)[i], 0.0)
+        JuMP.set_lower_bound(var(pm, :qg, nw)[i], 0.0)
+    else
+        JuMP.set_upper_bound(var(pm, :qg, nw)[i], field(system, :generators, :qmax)[i])
+        JuMP.set_lower_bound(var(pm, :qg, nw)[i], field(system, :generators, :qmin)[i])
+    end
+
 end
 
 "Defines load power factor variables to represent curtailed load in objective function"
 function update_var_load_power_factor(pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
-    z_demand = var(pm, :z_demand, nw)[i]
-    if states.buses_available[i] == 4 && isempty(topology(pm, :bus_loads)[i])
-        JuMP.set_upper_bound(z_demand, 0)
+    if !states.loads_available[i]
+        JuMP.set_upper_bound(var(pm, :z_demand, nw)[i], 0.0)
     else
-        JuMP.set_upper_bound(z_demand, 1)
+        JuMP.set_upper_bound(var(pm, :z_demand, nw)[i], 1.0)
     end
 end
 
@@ -42,19 +48,33 @@ end
 function update_con_storage_state(
     pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
     
-    JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], states.stored_energy[i]*states.storages_available[i])
+    if !states.storages_available[i]
+        JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], 0.0)
+    else
+        JuMP.set_normalized_rhs(con(pm, :storage_state, nw)[i], topology(pm, :stored_energy)[i])
+    end
 end
 
 ""
-function update_var_storage_charge(pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
-    sc = var(pm, :sc, nw)[i]
-    JuMP.set_upper_bound(sc, field(system, :storages, :charge_rating)[i]*states.storages_available[i])
+function update_var_storage_charge(
+    pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
+
+    if !states.storages_available[i]
+        JuMP.set_upper_bound(var(pm, :sc, nw)[i], 0.0)
+    else
+        JuMP.set_upper_bound(var(pm, :sc, nw)[i], field(system, :storages, :charge_rating)[i])
+    end
 end
 
 ""
-function update_var_storage_discharge(pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
-    sd = var(pm, :sd, nw)[i]
-    JuMP.set_upper_bound(sd, field(system, :storages, :discharge_rating)[i]*states.storages_available[i])
+function update_var_storage_discharge(
+    pm::AbstractPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
+
+    if !states.storages_available[i]
+        JuMP.set_upper_bound(var(pm, :sd, nw)[i], 0.0)
+    else
+        JuMP.set_upper_bound(var(pm, :sd, nw)[i], field(system, :storages, :discharge_rating)[i])
+    end
 end
 
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
@@ -79,23 +99,31 @@ function update_con_ohms_yt(pm::AbstractPowerModel, system::SystemModel, states:
 end
 
 ""
-function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, states::States, l::Int; nw::Int=1)
-    JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l]^2)*states.branches_available[l])
-    JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l]^2)*states.branches_available[l])
+function update_con_thermal_limits(
+    pm::AbstractPowerModel, system::SystemModel, states::States, l::Int; nw::Int=1)
+
+    if !states.branches_available[l]
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], 0.0)
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], 0.0)
+    else
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], (field(system, :branches, :rate_a)[l]^2))
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], (field(system, :branches, :rate_a)[l]^2))
+    end
 end
 
 "Branch - Phase Angle Difference Constraints "
-function update_con_voltage_angle_difference(pm::AbstractPolarModels, system::SystemModel, states::States, l::Int; nw::Int=1)
+function update_con_voltage_angle_difference(
+    pm::AbstractPolarModels, system::SystemModel, states::States, l::Int; nw::Int=1)
     
-    if states.branches_available[l] == false
-        vad_min = topology(pm, :delta_bounds)[1]
-        vad_max = topology(pm, :delta_bounds)[2]
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[l], vad_max)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[l], vad_min)
+    if !states.branches_available[l]
+        #vad_min = topology(pm, :delta_bounds)[1]
+        #vad_max = topology(pm, :delta_bounds)[2]
+        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[l], topology(pm, :delta_bounds)[2])
+        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[l], topology(pm, :delta_bounds)[1])
     else
-        angmin = field(system, :branches, :angmin)[l]
-        angmax = field(system, :branches, :angmax)[l]
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[l], angmax)
-        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[l], angmin)
+        #angmin = field(system, :branches, :angmin)[l]
+        #angmax = field(system, :branches, :angmax)[l]
+        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_upper, nw)[l], field(system, :branches, :angmax)[l])
+        JuMP.set_normalized_rhs(con(pm, :voltage_angle_diff_lower, nw)[l], field(system, :branches, :angmin)[l])
     end
 end

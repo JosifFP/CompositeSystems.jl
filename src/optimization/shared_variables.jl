@@ -77,15 +77,11 @@ end
 "Defines load power factor variables to represent the active power flow for each branch"
 function var_load_power_factor(pm::AbstractPowerModel, system::SystemModel; nw::Int=1)
 
-    z_demand = var(pm, :z_demand)[nw] = @variable(pm.model, z_demand[assetgrouplist(topology(pm, :buses_idxs))], start = 1.0)
+    z_demand = var(pm, :z_demand)[nw] = @variable(pm.model, z_demand[assetgrouplist(topology(pm, :loads_idxs))], start = 1.0)
 
-    for i in assetgrouplist(topology(pm, :buses_idxs))
+    for i in assetgrouplist(topology(pm, :loads_idxs))
         JuMP.set_lower_bound(z_demand[i], 0)
-        if isempty(topology(pm, :bus_loads)[i])
-            JuMP.set_upper_bound(z_demand[i], 0)
-        else
-            JuMP.set_upper_bound(z_demand[i], 1)
-        end
+        JuMP.set_upper_bound(z_demand[i], 1)
     end
 end
 

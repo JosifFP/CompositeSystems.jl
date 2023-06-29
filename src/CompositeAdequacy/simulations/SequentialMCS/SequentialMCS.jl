@@ -63,15 +63,7 @@ function assess(
         for t in 1:N
             update!(rng, state, statetransition, system, t)
             solve!(pm, state, system, settings, t)
-            foreach(recorder -> record!(recorder, state, system, s, t), recorders)
-            # if s==3 && (t==2659 || t==2658)
-            #     println("t=$(t), 
-            #     state.buses_cap_curtailed_p=$(state.buses_cap_curtailed_p), 
-            #     state.branches_available=$(state.branches_available), 
-            #     statetransition.branches_available=$(statetransition.branches_available),
-            #     state.buses_available=$(state.buses_available)")
-            #     println(pm.model)
-            # end
+            foreach(recorder -> record!(recorder, pm, state, system, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
@@ -101,7 +93,7 @@ function initialize!(
     initialize_availability!(rng, statetransition.storages_available, 
         statetransition.storages_nexttransition, system.storages, N)
 
-    update_other_states!(states, statetransition, system, sampleid=1)
+    update_other_states!(states, statetransition, system)
 
     return
 end
@@ -135,7 +127,7 @@ Optimizes the power model and update the system states based on the results of t
 The function first checks if there are any changes in the branch, storage, or generator states at time step t 
 compared to the previous time step. If there are any changes, the function calls JuMP.optimize!(pm.model) 
 to optimize the power model and then calls optimize_model! to update the results. 
-If there are no changes, it fills the states.buses_cap_curtailed_p variable with zeros.
+If there are no changes, it fills the states.buses_curtailed_pd variable with zeros.
 """
 function solve!(
     pm::AbstractPowerModel, 
@@ -143,11 +135,12 @@ function solve!(
 
     update_topology!(pm, system, states, settings, t)
 
-    update_container!(states.stored_energy, states.storages_available, system.storages)
-
     update_problem!(pm, system, states, t)
 
-    changes = !all([states.branches_available; states.generators_available; states.storages_available])
+    changes = any([
+        states.branches_available; 
+        states.generators_available; 
+        states.storages_available].== 0)
     
     changes && JuMP.optimize!(pm.model)
 

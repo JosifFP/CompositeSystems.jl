@@ -857,7 +857,8 @@ end
 end
 
 @testset "RBTS system, OPF formulation, non-sequential outages" begin
-    @testset "test OPF, RBTS system, DCPPowerModel, outages" begin
+
+    @testset "test OPF, RBTS system, DCPPowerModel, non-sequential outages" begin
         rawfile = "test/data/RBTS/Base/RBTS.m"
         system = BaseModule.SystemModel(rawfile)
         settings = CompositeSystems.Settings(
@@ -868,12 +869,12 @@ end
             deactivate_isolated_bus_gens_stors = true,
             set_string_names_on_creation = true
         )
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         pm = OPF.solve_opf(system, settings)
     
         #OUTAGE BRANCH 1
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch #1" begin
-            states.branches[1] = 0
+            states.branches_available[1] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -881,7 +882,7 @@ end
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["1"]["br_status"] = 0
             result = PowerModels.solve_opf(data, PowerModels.DCPPowerModel, juniper_optimizer_2)
-
+    
             for i in eachindex(result["solution"]["gen"])
                 @test isapprox(result_pg[parse(Int,i)], result["solution"]["gen"][string(i)]["pg"]; atol = 1e-4)
             end
@@ -915,8 +916,9 @@ end
     
         #OUTAGE BRANCH 6
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch #6" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[6] = 0
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
+            states.branches_available[6] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -958,7 +960,8 @@ end
     
         #NO OUTAGE
         @testset "DC-OPF with DCPPowerModel, RBTS, no outage" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -998,9 +1001,9 @@ end
         end
     
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 3" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 3
-            states.branches[3] = 0
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1041,10 +1044,10 @@ end
         end
         
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 2" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 2
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1085,10 +1088,10 @@ end
         end
     
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 7" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 7
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[7] = 0
+            states = BaseModule.States(system)
+            states.branches_available[7] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1129,10 +1132,10 @@ end
         end
         
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 4" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 4
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[4] = 0
+            states = BaseModule.States(system)
+            states.branches_available[4] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1173,10 +1176,10 @@ end
         end
         
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 5" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 5
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[5] = 0
+            states = BaseModule.States(system)
+            states.branches_available[5] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1217,10 +1220,10 @@ end
         end
         
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 8" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 8
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[8] = 0
+            states = BaseModule.States(system)
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1262,10 +1265,10 @@ end
         end
         
         @testset "DC-OPF with DCPPowerModel, RBTS, outage branch 9" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH 9
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[9] = 0
+            states = BaseModule.States(system)
+            states.branches_available[9] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1312,8 +1315,8 @@ end
         
         #NO OUTAGE
         @testset "DC-OPF with DCPPowerModel, RBTS, no outage" begin
-    
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1350,14 +1353,13 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-
         end
         
         @testset "DC-OPF with DCPPowerModel, RBTS, branch #1 and #5" begin
-    
+            OPF._reset!(pm, states, system)
             #OUTAGE BRANCH #1 AND #5
-            states.branches[1] = 0
-            states.branches[5] = 0
+            states.branches_available[1] = 0
+            states.branches_available[5] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1397,15 +1399,15 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-
+    
         end
         
         #OUTAGE BRANCH #2 AND #7
         @testset "DC-OPF with DCPPowerModel, RBTS, branch #2 and #7" begin
-    
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
-            states.branches[7] = 0
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
+            states.branches_available[7] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1445,15 +1447,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-
         end
     
         #OUTAGE BRANCH #5 AND #8
         @testset "DC-OPF with DCPPowerModel, RBTS, branch #5 and #8" begin
-    
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[5] = 0
-            states.branches[8] = 0
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
+            states.branches_available[5] = 0
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1495,7 +1496,6 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-
         end
     end
     
@@ -1511,13 +1511,13 @@ end
             deactivate_isolated_bus_gens_stors = true,
             set_string_names_on_creation = true
         )
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         pm = OPF.solve_opf(system, settings)
     
         #OUTAGE BRANCH 1
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch #1" begin
     
-            states.branches[1] = 0
+            states.branches_available[1] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1561,8 +1561,8 @@ end
         #OUTAGE BRANCH 6
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch #6" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[6] = 0
+            states = BaseModule.States(system)
+            states.branches_available[6] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1606,7 +1606,7 @@ end
         #NO OUTAGE
         @testset "DC-OPF with DCMPPowerModel, RBTS, no outage" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1649,7 +1649,7 @@ end
         #OUTAGE BRANCH 3
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 3" begin
     
-            states.branches[3] = 0
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1693,8 +1693,8 @@ end
         #OUTAGE BRANCH 2
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 2" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1738,8 +1738,8 @@ end
         #OUTAGE BRANCH 7
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 7" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[7] = 0
+            states = BaseModule.States(system)
+            states.branches_available[7] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1783,8 +1783,8 @@ end
         #OUTAGE BRANCH 4
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 4" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[4] = 0
+            states = BaseModule.States(system)
+            states.branches_available[4] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1828,8 +1828,8 @@ end
         #OUTAGE BRANCH 5
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 5" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[5] = 0
+            states = BaseModule.States(system)
+            states.branches_available[5] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1873,8 +1873,8 @@ end
         #OUTAGE BRANCH 8
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 8" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[8] = 0
+            states = BaseModule.States(system)
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1917,9 +1917,9 @@ end
     
         #OUTAGE BRANCH 9
         @testset "DC-OPF with DCMPPowerModel, RBTS, outage branch 9" begin
-    
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[9] = 0
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
+            states.branches_available[9] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -1968,7 +1968,7 @@ end
         #NO OUTAGE
         @testset "DC-OPF with DCMPPowerModel, RBTS, no outage" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -2011,8 +2011,8 @@ end
         #OUTAGE BRANCH #1 AND #5
         @testset "DC-OPF with DCMPPowerModel, RBTS, branch #1 and #5" begin
     
-            states.branches[1] = 0
-            states.branches[5] = 0
+            states.branches_available[1] = 0
+            states.branches_available[5] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -2057,9 +2057,9 @@ end
         #OUTAGE BRANCH #2 AND #7
         @testset "DC-OPF with DCMPPowerModel, RBTS, branch #2 and #7" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
-            states.branches[7] = 0
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
+            states.branches_available[7] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -2103,10 +2103,10 @@ end
     
         #OUTAGE BRANCH #5 AND #8
         @testset "DC-OPF with DCMPPowerModel, RBTS, branch #5 and #8" begin
-    
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[5] = 0
-            states.branches[8] = 0
+            OPF._reset!(pm, states, system)
+            states = BaseModule.States(system)
+            states.branches_available[5] = 0
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -2163,13 +2163,13 @@ end
             deactivate_isolated_bus_gens_stors = true,
             set_string_names_on_creation = true
         )
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         pm = OPF.solve_opf(system, settings)
     
         #NO OUTAGE
         @testset "AC-OPF with LPACCPowerModel, RBTS, NO OUTAGE" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2223,14 +2223,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 3
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 3" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[3] = 0
+            states = BaseModule.States(system)
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
@@ -2285,14 +2285,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 2
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 2" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
@@ -2347,14 +2347,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 7
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 7" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[7] = 0
+            states = BaseModule.States(system)
+            states.branches_available[7] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["7"]["br_status"] = 0
@@ -2409,14 +2409,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 4
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 4" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[4] = 0
+            states = BaseModule.States(system)
+            states.branches_available[4] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
@@ -2471,13 +2471,13 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 5
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 5" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[3] = 0
+            states = BaseModule.States(system)
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
@@ -2530,14 +2530,14 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)            
         end
     
         #OUTAGE BRANCH 8
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 8" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[8] = 0
+            states = BaseModule.States(system)
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["8"]["br_status"] = 0
@@ -2590,14 +2590,14 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)      
         end
     
         #OUTAGE BRANCH 9
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 9" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[9] = 0
+            states = BaseModule.States(system)
+            states.branches_available[9] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["9"]["br_status"] = 0
@@ -2651,14 +2651,14 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
         
         #NO OUTAGE
         @testset "AC-OPF with LPACCPowerModel, RBTS, NO OUTAGE" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2710,15 +2710,15 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
         end
     
         #OUTAGE BRANCH #5 AND #8
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH #5 AND #8" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[5] = 0
-            states.branches[8] = 0
+            states = BaseModule.States(system)
+            states.branches_available[5] = 0
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
@@ -2773,7 +2773,7 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
     end
@@ -2790,13 +2790,13 @@ end
             deactivate_isolated_bus_gens_stors = true,
             set_string_names_on_creation = true
         )
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         pm = OPF.solve_opf(system, settings)
     
         #NO OUTAGE
         @testset "AC-OPF with LPACCPowerModel, RBTS, NO OUTAGE" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -2850,14 +2850,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 3
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 3" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[3] = 0
+            states = BaseModule.States(system)
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
@@ -2912,14 +2912,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 2
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 2" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["2"]["br_status"] = 0
@@ -2974,14 +2974,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 7
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 7" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[7] = 0
+            states = BaseModule.States(system)
+            states.branches_available[7] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["7"]["br_status"] = 0
@@ -3036,14 +3036,14 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 4
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 4" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[4] = 0
+            states = BaseModule.States(system)
+            states.branches_available[4] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["4"]["br_status"] = 0
@@ -3098,13 +3098,13 @@ end
             end
         
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
         end
     
         #OUTAGE BRANCH 5
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 5" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[3] = 0
+            states = BaseModule.States(system)
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["3"]["br_status"] = 0
@@ -3157,14 +3157,14 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)            
         end
     
         #OUTAGE BRANCH 8
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 8" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[8] = 0
+            states = BaseModule.States(system)
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["8"]["br_status"] = 0
@@ -3217,14 +3217,14 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)      
         end
     
         #OUTAGE BRANCH 9
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH 9" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[9] = 0
+            states = BaseModule.States(system)
+            states.branches_available[9] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["9"]["br_status"] = 0
@@ -3278,14 +3278,14 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)        
         end
         
         #NO OUTAGE
         @testset "AC-OPF with LPACCPowerModel, RBTS, NO OUTAGE" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             result = PowerModels.solve_opf(data, PowerModels.LPACCPowerModel, juniper_optimizer_2)
@@ -3337,15 +3337,15 @@ end
             for i in eachindex(result["solution"]["bus"])
                 @test isapprox(pg_bus_compositesystems[parse(Int,i)], pg_bus_powermodels[parse(Int,i)]; atol = 1e-4)
             end
-            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches[:])
+            @test sum(values(OPF.build_sol_values(OPF.var(pm, :z_branch, :)))) == sum(states.branches_available[:])
             @test isapprox(sum(values(pg_bus_compositesystems)), sum(values(pg_bus_powermodels)); atol = 1e-4)
         end
     
         #OUTAGE BRANCH #5 AND #8
         @testset "AC-OPF with LPACCPowerModel, RBTS, OUTAGE BRANCH #5 AND #8" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[5] = 0
-            states.branches[8] = 0
+            states = BaseModule.States(system)
+            states.branches_available[5] = 0
+            states.branches_available[8] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             data = OPF.build_network(rawfile, symbol=false)
             data["branch"]["5"]["br_status"] = 0
@@ -3421,13 +3421,13 @@ end
             set_string_names_on_creation = true
         )
 
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         pm = OPF.solve_opf(system, settings)
     
         #OUTAGE BRANCH 1
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch #1" begin
 
-            states.branches[1] = 0
+            states.branches_available[1] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3455,9 +3455,9 @@ end
         #OUTAGE BRANCH 25 - 26
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch #25 and #26" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[25] = 0
-            states.branches[26] = 0
+            states = BaseModule.States(system)
+            states.branches_available[25] = 0
+            states.branches_available[26] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3486,9 +3486,9 @@ end
         #OUTAGE BRANCH 14 - 16
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch #14 and #16" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[14] = 0
-            states.branches[16] = 0
+            states = BaseModule.States(system)
+            states.branches_available[14] = 0
+            states.branches_available[16] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3517,8 +3517,8 @@ end
         #OUTAGE BRANCH 6
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch #6" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[6] = 0
+            states = BaseModule.States(system)
+            states.branches_available[6] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3546,7 +3546,7 @@ end
         #NO OUTAGE
         @testset "DC-OPF with DCPPowerModel, RTS, no outage" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
+            states = BaseModule.States(system)
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3573,8 +3573,8 @@ end
         #OUTAGE BRANCH 3
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch 3" begin
     
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[3] = 0
+            states = BaseModule.States(system)
+            states.branches_available[3] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3602,8 +3602,8 @@ end
         #OUTAGE BRANCH 2
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch 2" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[2] = 0
+            states = BaseModule.States(system)
+            states.branches_available[2] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3631,8 +3631,8 @@ end
         #OUTAGE BRANCH 33
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch 7" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[33] = 0
+            states = BaseModule.States(system)
+            states.branches_available[33] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3660,8 +3660,8 @@ end
         #OUTAGE BRANCH 4
         @testset "DC-OPF with DCPPowerModel, RTS, outage branch 4" begin
 
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[4] = 0
+            states = BaseModule.States(system)
+            states.branches_available[4] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3687,8 +3687,8 @@ end
         end
     
         #OUTAGE BRANCH 5
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[5] = 0
+        states = BaseModule.States(system)
+        states.branches_available[5] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3716,8 +3716,8 @@ end
         end
     
         #OUTAGE BRANCH 8
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[8] = 0
+        states = BaseModule.States(system)
+        states.branches_available[8] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3745,8 +3745,8 @@ end
         end
     
         #OUTAGE BRANCH 9
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[9] = 0
+        states = BaseModule.States(system)
+        states.branches_available[9] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3774,7 +3774,7 @@ end
         end
     
         #NO OUTAGE
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3801,9 +3801,9 @@ end
         end
     
         #OUTAGE BRANCH #1 AND #6
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[1] = 0
-        states.branches[6] = 0
+        states = BaseModule.States(system)
+        states.branches_available[1] = 0
+        states.branches_available[6] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3832,8 +3832,8 @@ end
         end
     
         #OUTAGE BRANCH #20
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[20] = 0
+        states = BaseModule.States(system)
+        states.branches_available[20] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3862,8 +3862,8 @@ end
     
         #OUTAGE BRANCH #12
         @testset "DC-OPF with DCPPowerModel, RTS, branch #12" begin
-            states = CompositeAdequacy.ComponentStates(system, available=true)
-            states.branches[12] = 0
+            states = BaseModule.States(system)
+            states.branches_available[12] = 0
             OPF._update_opf!(pm, system, states, settings, 1)
             result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
             result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3903,11 +3903,11 @@ end
             set_string_names_on_creation = true
         )
 
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         pm = OPF.solve_opf(system, settings)
     
         #OUTAGE BRANCH 1
-        states.branches[1] = 0
+        states.branches_available[1] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3935,9 +3935,9 @@ end
         end
 
         #OUTAGE BRANCH 25 - 26
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[25] = 0
-        states.branches[26] = 0
+        states = BaseModule.States(system)
+        states.branches_available[25] = 0
+        states.branches_available[26] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3966,9 +3966,9 @@ end
         end
 
         #OUTAGE BRANCH 14 - 16
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[14] = 0
-        states.branches[16] = 0
+        states = BaseModule.States(system)
+        states.branches_available[14] = 0
+        states.branches_available[16] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -3997,8 +3997,8 @@ end
         end
     
         #OUTAGE BRANCH 6
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[6] = 0
+        states = BaseModule.States(system)
+        states.branches_available[6] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4026,7 +4026,7 @@ end
         end
     
         #NO OUTAGE
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4053,8 +4053,8 @@ end
         end
     
         #OUTAGE BRANCH 3
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[3] = 0
+        states = BaseModule.States(system)
+        states.branches_available[3] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4082,8 +4082,8 @@ end
         end
     
         #OUTAGE BRANCH 2
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[2] = 0
+        states = BaseModule.States(system)
+        states.branches_available[2] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4111,8 +4111,8 @@ end
         end
     
         #OUTAGE BRANCH 33
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[33] = 0
+        states = BaseModule.States(system)
+        states.branches_available[33] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4140,8 +4140,8 @@ end
         end
     
         #OUTAGE BRANCH 4
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[4] = 0
+        states = BaseModule.States(system)
+        states.branches_available[4] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4169,8 +4169,8 @@ end
         end
     
         #OUTAGE BRANCH 5
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[5] = 0
+        states = BaseModule.States(system)
+        states.branches_available[5] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4198,8 +4198,8 @@ end
         end
     
         #OUTAGE BRANCH 8
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[8] = 0
+        states = BaseModule.States(system)
+        states.branches_available[8] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4227,8 +4227,8 @@ end
         end
     
         #OUTAGE BRANCH 9
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[9] = 0
+        states = BaseModule.States(system)
+        states.branches_available[9] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4257,7 +4257,7 @@ end
     
         
         #NO OUTAGE
-        states = CompositeAdequacy.ComponentStates(system, available=true)
+        states = BaseModule.States(system)
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4284,9 +4284,9 @@ end
         end
     
         #OUTAGE BRANCH #1 AND #6
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[1] = 0
-        states.branches[6] = 0
+        states = BaseModule.States(system)
+        states.branches_available[1] = 0
+        states.branches_available[6] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4315,8 +4315,8 @@ end
         end
     
         #OUTAGE BRANCH #20
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[20] = 0
+        states = BaseModule.States(system)
+        states.branches_available[20] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4344,8 +4344,8 @@ end
         end
     
         #OUTAGE BRANCH #12
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[12] = 0
+        states = BaseModule.States(system)
+        states.branches_available[12] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4373,8 +4373,8 @@ end
         end
 
         #OUTAGE BRANCH #7
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[7] = 0
+        states = BaseModule.States(system)
+        states.branches_available[7] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4403,9 +4403,9 @@ end
         end
 
         #OUTAGE BRANCH #7 AND #27
-        states = CompositeAdequacy.ComponentStates(system, available=true)
-        states.branches[7] = 0
-        states.branches[27] = 0
+        states = BaseModule.States(system)
+        states.branches_available[7] = 0
+        states.branches_available[27] = 0
         OPF._update_opf!(pm, system, states, settings, 1)
         result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
         result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4449,11 +4449,11 @@ end
         deactivate_isolated_bus_gens_stors = true,
         set_string_names_on_creation = true
     )
-    states = CompositeAdequacy.ComponentStates(system, available=true)
+    states = BaseModule.States(system)
     pm = OPF.solve_opf(system, settings)
 
     #OUTAGE BRANCH 1
-    states.branches[1] = 0
+    states.branches_available[1] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4498,9 +4498,9 @@ end
     end
 
     #OUTAGE BRANCH 25 - 26
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[25] = 0
-    states.branches[26] = 0
+    states = BaseModule.States(system)
+    states.branches_available[25] = 0
+    states.branches_available[26] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4547,9 +4547,9 @@ end
     end
 
     #OUTAGE BRANCH 14 - 16
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[14] = 0
-    states.branches[16] = 0
+    states = BaseModule.States(system)
+    states.branches_available[14] = 0
+    states.branches_available[16] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4596,8 +4596,8 @@ end
     end
 
     #OUTAGE BRANCH 6
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[6] = 0
+    states = BaseModule.States(system)
+    states.branches_available[6] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4643,7 +4643,7 @@ end
     end
 
     #NO OUTAGE
-    states = CompositeAdequacy.ComponentStates(system, available=true)
+    states = BaseModule.States(system)
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4688,8 +4688,8 @@ end
     end
 
     #OUTAGE BRANCH 3
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[3] = 0
+    states = BaseModule.States(system)
+    states.branches_available[3] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4735,8 +4735,8 @@ end
     end
 
     #OUTAGE BRANCH 2
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[2] = 0
+    states = BaseModule.States(system)
+    states.branches_available[2] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4782,8 +4782,8 @@ end
     end
 
     #OUTAGE BRANCH 33
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[33] = 0
+    states = BaseModule.States(system)
+    states.branches_available[33] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4829,8 +4829,8 @@ end
     end
 
     #OUTAGE BRANCH 4
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[4] = 0
+    states = BaseModule.States(system)
+    states.branches_available[4] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4876,8 +4876,8 @@ end
     end
 
     #OUTAGE BRANCH 5
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[5] = 0
+    states = BaseModule.States(system)
+    states.branches_available[5] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4923,8 +4923,8 @@ end
     end
 
     #OUTAGE BRANCH 8
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[8] = 0
+    states = BaseModule.States(system)
+    states.branches_available[8] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -4970,8 +4970,8 @@ end
     end
 
     #OUTAGE BRANCH 9
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[9] = 0
+    states = BaseModule.States(system)
+    states.branches_available[9] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -5017,7 +5017,7 @@ end
     end
 
     #NO OUTAGE
-    states = CompositeAdequacy.ComponentStates(system, available=true)
+    states = BaseModule.States(system)
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -5062,9 +5062,9 @@ end
     end
 
     #OUTAGE BRANCH #1 AND #6
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[1] = 0
-    states.branches[6] = 0
+    states = BaseModule.States(system)
+    states.branches_available[1] = 0
+    states.branches_available[6] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -5111,8 +5111,8 @@ end
     end
 
     #OUTAGE BRANCH #20
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[20] = 0
+    states = BaseModule.States(system)
+    states.branches_available[20] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -5158,8 +5158,8 @@ end
     end
 
     #OUTAGE BRANCH #12
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[12] = 0
+    states = BaseModule.States(system)
+    states.branches_available[12] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -5205,8 +5205,8 @@ end
     end
 
     #OUTAGE BRANCH #7
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[7] = 0
+    states = BaseModule.States(system)
+    states.branches_available[7] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))
@@ -5253,9 +5253,9 @@ end
     end
 
     #OUTAGE BRANCH #7 and #27
-    states = CompositeAdequacy.ComponentStates(system, available=true)
-    states.branches[7] = 0
-    states.branches[27] = 0
+    states = BaseModule.States(system)
+    states.branches_available[7] = 0
+    states.branches_available[27] = 0
     OPF._update_opf!(pm, system, states, settings, 1)
     result_pg = OPF.build_sol_values(OPF.var(pm, :pg, :))
     result_va = OPF.build_sol_values(OPF.var(pm, :va, :))

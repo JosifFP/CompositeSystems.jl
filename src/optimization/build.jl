@@ -42,7 +42,7 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel; t::Int=1)
     var_branch_power(pm, system)
     var_storage_power_mi(pm, system)
 
-    objective_min_stor_load_curtailment(pm, system, t)
+    obj_min_stor_load_curtailment(pm, system, t)
 
     # Add Constraints
     # ---------------
@@ -75,21 +75,21 @@ end
 function update_problem!(
     pm::AbstractPowerModel, system::SystemModel, states::States, t::Int; force_pmin::Bool=false)
 
-    update_generators!(pm, system, states, t, force_pmin=force_pmin)
-    update_branches!(pm, system, states, t)
-    update_shunts!(pm, system, states, t)
-    update_storages!(pm, system, states, t)
+    update_generators!(pm, system, states, force_pmin=force_pmin)
+    update_branches!(pm, system, states)
+    update_shunts!(pm, system, states)
+    update_storages!(pm, system, states)
     update_buses!(pm, system, states, t)
-    objective_min_stor_load_curtailment(pm, system, t)
-    return
+    update_loads!(pm, system, states)
+    update_obj_min_stor_load_curtailment!(pm, system, t)
 end
 
 ""
 function update_generators!(
-    pm::AbstractPowerModel, system::SystemModel, states::States, t::Int; force_pmin::Bool=false)
+    pm::AbstractPowerModel, system::SystemModel, states::States; force_pmin::Bool=false)
 
-    if any([states.generators_available; states.generators_pasttransition].== 0)
-        for i in field(system, :generators, :keys)
+    for i in field(system, :generators, :keys)
+        if any([states.generators_available[i]; states.generators_pasttransition[i]].== 0)
             update_var_gen_power_real(pm, system, states, i, force_pmin=force_pmin)
             update_var_gen_power_imaginary(pm, system, states, i)
         end
@@ -97,19 +97,21 @@ function update_generators!(
 end
 
 ""
-function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::States, t::Int)
-    if any([states.branches_available; states.branches_pasttransition].== 0)
-        for i in field(system, :branches, :keys)
-            update_var_branch_indicator(pm, system, states, i)
-            update_con_ohms_yt(pm, system, states, i)
-            update_con_thermal_limits(pm, system, states, i)
-            update_con_voltage_angle_difference(pm, system, states, i)
+function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::States)
+
+    for l in field(system, :branches, :keys)
+        if any([states.branches_available[l]; states.branches_pasttransition[l]].== 0)
+            update_var_branch_indicator(pm, system, states, l)
+            update_con_ohms_yt(pm, system, states, l)
+            update_con_thermal_limits(pm, system, states, l)
+            update_con_voltage_angle_difference(pm, system, states, l)
         end
     end
 end
 
 ""
-function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::States, t::Int)
+function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::States)
+
     if any([states.shunts_available; states.shunts_pasttransition; 
         states.branches_available; states.branches_pasttransition].== 0)
         for i in field(system, :shunts, :keys)
@@ -119,10 +121,11 @@ function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::Sta
 end
 
 ""
-function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::States, t::Int)
+function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::States)
+
     for i in field(system, :storages, :keys)
         update_con_storage_state(pm, system, states, i)
-        if any([states.storages_available; states.storages_pasttransition].== 0)
+        if any([states.storages_available[i]; states.storages_pasttransition[i]].== 0)
             update_var_storage_charge(pm, system, states, i)
             update_var_storage_discharge(pm, system, states, i)
         end
@@ -131,11 +134,21 @@ end
 
 ""
 function update_buses!(pm::AbstractPowerModel, system::SystemModel, states::States, t::Int)
+
     for i in field(system, :buses, :keys)
         update_con_power_balance(pm, system, states, i, t)
-        if any([states.buses_available; states.buses_pasttransition] .== 4)
-            update_var_load_power_factor(pm, system, states, i)
+        if any([states.buses_available[i]; states.buses_pasttransition[i]] .== 4)
             update_var_bus_voltage_angle(pm, system, states, i)
+        end
+    end
+end
+
+""
+function update_loads!(pm::AbstractPowerModel, system::SystemModel, states::States)
+
+    for i in field(system, :loads, :keys)
+        if any([states.loads_available[i]; states.loads_pasttransition[i]] .== 0)
+            update_var_load_power_factor(pm, system, states, i)
         end
     end
 end
@@ -153,6 +166,8 @@ end
 'con_power_balance_nolc' since it does not have power curtailment variables."
 function build_opf!(pm::AbstractPowerModel, system::SystemModel)
 
+    initialize_pm_containers!(pm, system)
+    
     # Add Optimization and State Variables
     JuMP.set_string_names_on_creation(pm.model, true)
     var_branch_indicator(pm, system)
@@ -223,42 +238,42 @@ load cost for each bus. Additionally, it creates an expression fe for the total 
 which is the sum of the difference between the energy rating and the state of charge for each energy 
 storage unit in the system. Finally, it returns an objective function to minimize the sum of fd and fe.
 """
-function objective_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
+function obj_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    exp_load_stor = Dict{Int, Any}()
     z_demand   = var(pm, :z_demand, nw)
     z_stor   = var(pm, :stored_energy, nw)
+    key_loads =  field(system, :loads, :keys)
+    key_stors =  field(system, :storages, :keys)
+    
+    load_cost = [field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t] for i in key_loads]
 
-    for i in assetgrouplist(topology(pm, :buses_idxs))
+    load_var_cost = @expression(
+        pm.model, sum(load_cost[w]*(1 - z_demand[w]) for w in key_loads; init=0))
 
-        bus_load = topology(pm, :bus_loads)[i]
-        bus_storage = topology(pm, :bus_storages)[i]
+    load_stor_cost = @expression(
+        pm.model, sum(field(system, :storages, :energy_rating)[s]-z_stor[s] for s in key_stors; init=0))
 
-        bus_load_cost = Dict{Int, Any}(
-            k => field(system, :loads, :cost)[k]*field(system, :loads, :pd)[k,t] for k in bus_load)
-
-        bus_stor_rating = Dict{Int, Any}(
-            k => field(system, :storages, :energy_rating)[k] for k in bus_storage)
-
-        exp_load_stor[i] = @expression(pm.model, 
-        sum(bus_load_cost[a] for a in bus_load)*(1 - z_demand[i]) +
-        sum(bus_stor_rating[a]-z_stor[a] for a in bus_storage)
-        )
-    end
-
-    return @objective(pm.model, MIN_SENSE, 
-        sum(exp_load_stor[i] for i in assetgrouplist(topology(pm, :buses_idxs))))
-
+    return @objective(pm.model, MIN_SENSE, load_var_cost + load_stor_cost)
 end
 
 ""
-function objective_min_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
+function update_obj_min_stor_load_curtailment!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
-    load_cost = Dict{Int, Any}()
-    bus_load = Dict{Int, Any}()
-    for i in field(system, :buses, :keys)
-        bus_load[i] = sum((field(system, :loads, :cost)[k] for k in topology(pm, :bus_loads)[i]); init=0)
-        load_cost[i] = @expression(pm.model, bus_load[i]*(1 - var(pm, :z_demand, nw)[i]))
+    z_demand   = var(pm, :z_demand, nw)
+    nloads = field(system, :loads, :keys)
+    load_cost = Vector{Float32}(undef, length(nloads))
+
+    for i in nloads
+
+        load_cost[i] = field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t]
+
+        JuMP.set_objective_coefficient(
+            pm.model, z_demand[i], -load_cost[i])
     end
-    return @objective(pm.model, MIN_SENSE, sum(load_cost[i] for i in field(system, :buses, :keys)))
+
+    MOI.modify(
+        JuMP.backend(pm.model),
+        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), 
+        MOI.ScalarConstantChange(sum(load_cost)))
+
 end

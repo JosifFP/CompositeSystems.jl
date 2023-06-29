@@ -20,7 +20,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::GeneratorAva
 end
 
 ""
-function record!(acc::SMCSGenAvailabilityAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+function record!(acc::SMCSGenAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= states.generators_available[:]
     return
 end
@@ -53,7 +53,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::StorageAvail
 end
 
 ""
-function record!(acc::SMCSStorAvailabilityAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+function record!(acc::SMCSStorAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= states.storages_available[:]
     return
 end
@@ -86,7 +86,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::BranchAvaila
 end
 
 ""
-function record!(acc::SMCSBranchAvailabilityAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+function record!(acc::SMCSBranchAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= states.branches_available[:]
     return
 end
@@ -120,7 +120,7 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::ShuntAvailab
 end
 
 ""
-function record!(acc::SMCSShuntAvailabilityAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+function record!(acc::SMCSShuntAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
     acc.available[:, t, sampleid] .= states.shunts_available[:]
     return
 end
@@ -153,7 +153,7 @@ end
 # end
 
 # ""
-# function record!(acc::SMCSBusAvailabilityAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+# function record!(acc::SMCSBusAvailabilityAccumulator, pm::AbstractPowerModel, system::SystemModel, states::States, sampleid::Int, t::Int)
 #     acc.available[:, t, sampleid] .= states.buses_available
 #     return
 # end

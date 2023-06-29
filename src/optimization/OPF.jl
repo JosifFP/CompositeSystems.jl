@@ -29,7 +29,7 @@
 
         #functions
         solve_opf, abstract_model, build_problem!, update_problem!, field, var, con, topology, 
-        build_result!, update_topology!, reset_model!, initialize_pm_containers!, check_availability,
+        build_result!, update_topology!, reset_model!, initialize_pm_containers!, peakload,
 
         #reexports
         reset_optimizer, MOI, MOIU, JuMP
@@ -44,5 +44,4 @@
     include("dc.jl")
     include("lpac.jl")
     include("build.jl")
-
 end

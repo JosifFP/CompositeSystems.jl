@@ -28,7 +28,6 @@ settings = CompositeSystems.Settings(
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
-    min_generators_off = 0,
     set_string_names_on_creation = true,
     count_samples = true
 )
@@ -116,7 +115,7 @@ for t in 1:230
     CompositeAdequacy.solve!(pm, system, componentstates, settings, t)
 end
 
-componentstates.stored_energy[:,15:25]
+componenttopology(pm, :stored_energy)[:,15:25]
 componentstates.branches[:,15:25]
 componentstates.generators[:,15:25]
 componentstates.buses[:,15:25]
@@ -124,7 +123,7 @@ componentstates.storages[:,15:25]
 componentstates.loads[:,15:25]
 
 
-componentstates.stored_energy[:,210:230]
+componenttopology(pm, :stored_energy)[:,210:230]
 componentstates.branches[:,210:230]
 componentstates.generators[:,210:230]
 componentstates.buses[:,210:230]
@@ -138,7 +137,7 @@ t=231
 CompositeAdequacy.update!(rng, componentstates, statetransition, pm, system, settings, t)
 CompositeAdequacy.solve!(pm, system, componentstates, settings, t)
 
-componentstates.stored_energy[:,229:231]
+componenttopology(pm, :stored_energy)[:,229:231]
 
 
 shortfall_after_100, _ = CompositeSystems.assess(sys_after_100, smc, settings, resultspecs...)

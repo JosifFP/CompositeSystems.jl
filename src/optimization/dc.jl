@@ -100,8 +100,8 @@ the JuMP package and is stored in the pm.model object with the key "power_balanc
 """
 function _con_power_balance(
     pm::AbstractDCPowerModel, system::SystemModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
-    bus_gens::Vector{Int}, bus_loads::Vector{Int}, bus_shunts::Vector{Int}, bus_storage::Vector{Int},
-    bus_pd, bus_qd, bus_gs, bus_bs)
+    bus_gens::Vector{Int}, buses_loads::Vector{Int}, buses_shunts::Vector{Int}, bus_storage::Vector{Int},
+    bus_pd::Dict{Int, Float64}, bus_qd::Dict{Int, Float64}, bus_gs::Dict{Int, Float32}, bus_bs::Dict{Int, Float32})
 
     p    = var(pm, :p, nw)
     pg   = var(pm, :pg, nw)
@@ -113,12 +113,12 @@ function _con_power_balance(
     sum(p[a] for a in bus_arcs)
     + sum(ps[s] for s in bus_storage)
     - sum(pg[g] for g in bus_gens)
-    + sum(pd for pd in bus_pd)*z_demand[i]
+    + sum(pd*z_demand[w] for (w,pd) in bus_pd)
     + sum(gs*z_shunt[v] for (v,gs) in bus_gs)*1.0^2    
-    )#JuMP.drop_zeros!(exp_p)
+    )
 
     con(pm, :power_balance_p, nw)[i] = @constraint(pm.model, exp_p == 0.0)
-    
+
 end
 
 ""
@@ -334,18 +334,19 @@ function update_con_power_balance(
     pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
-    bus_loads = topology(pm, :bus_loads)[i]
-    #bus_loads = [k for k in field(system, :loads, :keys) if field(system, :loads, :buses)[k] == i]
-    bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
-    JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[i], sum(pd for pd in bus_pd))
+    bus_loads = topology(pm, :buses_loads_base)[i]
+
+    for w in bus_loads
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[w], field(system, :loads, :pd)[w,t])
+    end
 end
 
 ""
 function update_con_power_balance_nolc(
     pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int)
 
-    bus_loads = topology(pm, :bus_loads)[i]
-    bus_shunts = topology(pm, :bus_shunts)[i]
+    bus_loads = topology(pm, :buses_loads_available)[i]
+    bus_shunts = topology(pm, :buses_shunts_available)[i]
     bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
     bus_gs = [field(system, :shunts, :gs)[k] for k in bus_shunts]
     JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
@@ -357,21 +358,22 @@ function update_con_thermal_limits(
 
     f_bus = field(system, :branches, :f_bus)[l] 
     t_bus = field(system, :branches, :t_bus)[l]
-    rate_a = field(system, :branches, :rate_a)[l]
     f_idx = (l, f_bus, t_bus)
     t_idx = (l, t_bus, f_bus)
     p_fr = var(pm, :p, nw)[f_idx]
     p_to = var(pm, :p, nw)[t_idx]
 
+    rate_a = field(system, :branches, :rate_a)[l]*states.branches_available[l]
+
     if isa(p_fr, JuMP.VariableRef)
-        JuMP.set_lower_bound(p_fr, -rate_a*states.branches_available[l])
-        JuMP.set_upper_bound(p_fr, rate_a*states.branches_available[l])  
+        JuMP.set_lower_bound(p_fr, -rate_a)
+        JuMP.set_upper_bound(p_fr, rate_a)  
     elseif isa(p_to, JuMP.VariableRef)
-        JuMP.set_lower_bound(p_to, -rate_a*states.branches_available[l])
-        JuMP.set_upper_bound(p_to, rate_a*states.branches_available[l])
+        JuMP.set_lower_bound(p_to, -rate_a)
+        JuMP.set_upper_bound(p_to, rate_a)
     else
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a*states.branches_available[l])
-        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a*states.branches_available[l])
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], rate_a)
+        JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], rate_a)
     end
 end
 
@@ -390,13 +392,19 @@ function _update_con_ohms_yt_from(
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
 
-    if b <= 0
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-states.branches_available[l]))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-states.branches_available[l]))
-    else # account for bound reversal when b is positive
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-states.branches_available[l]))
-        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-states.branches_available[l]))
+    if !states.branches_available[l]
+        if b <= 0
+            JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max)
+            JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min)
+        else # account for bound reversal when b is positive
+            JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min)
+            JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max)
+        end
+    else
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], 0.0)
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], 0.0)
     end
+
 end
 
 "DC Line Flow Constraints"
@@ -410,6 +418,15 @@ function _update_con_ohms_yt_from(
     vad_max = topology(pm, :delta_bounds)[2]
     JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max*(1-states.branches_available[l]))/(x*tm))
     JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min*(1-states.branches_available[l]))/(x*tm))
+
+    if !states.branches_available[l]
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max)/(x*tm))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min)/(x*tm))
+    else
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta)/(x*tm))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta)/(x*tm))
+    end
+
 end
 
 "Nothing to do, this model is symetric"

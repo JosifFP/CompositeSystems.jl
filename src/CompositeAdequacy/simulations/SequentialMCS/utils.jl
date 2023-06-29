@@ -70,66 +70,16 @@ function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now:
 end
 
 ""
-function peakload(loads::Loads{N}, buses::Buses) where {N}
-    
-    key_buses = field(buses, :keys)
-    bus_loads_init = Dict{Int, Vector{Float64}}((i, Float64[]) for i in key_buses)
-    
-    for k in field(loads, :keys)
-        push!(bus_loads_init[field(loads, :buses)[k]], maximum(loads.pd[k,:]))
-    end
-
-    bus_peakload = Array{Float64}(undef, length(buses))
-
-    for (k,v) in bus_loads_init
-        if !isempty(v)
-            bus_peakload[k] = sum(v)
-        else
-            bus_peakload[k] = 0.0
-        end
-    end
-
-    system_peakload = Float64(maximum(sum(loads.pd, dims=1)))
-    return system_peakload, bus_peakload
-end
-
-###################################### NEW FUNCTIONS #################################
-
-""
-function update_container!(availability::Vector{Int}, asset::Buses)
-
-    for i in eachindex(availability)
-        availability[i] = field(asset, :bus_type)[i]
-    end
-end
-
-""
-function update_container!(stored_energy::Vector{Float64}, storages_available::Vector{Bool}, asset::Storages)
-    for i in 1:length(asset)
-        if !storages_available[i]
-            stored_energy[i] = 0.0
-        end
-    end
-end
-
-""
-function update_other_states!(states::States, statetransition::StateTransition, system::SystemModel; sampleid::Int=0)
-
-    sampleid==1 && fill!(states.stored_energy, 0.0)
-
-    fill!(states.branches_flow_from, 0.0)
-    fill!(states.branches_flow_to, 0.0)
-    fill!(states.buses_cap_curtailed_p, 0.0)
-    fill!(states.buses_cap_curtailed_q, 0.0)
-    fill!(states.commonbranches_available, 1)
-    fill!(states.loads_available, 1)
-    fill!(states.shunts_available, 1)
+function update_other_states!(states::States, statetransition::StateTransition, system::SystemModel)
 
     states.branches_available .= statetransition.branches_available
     states.commonbranches_available .= statetransition.commonbranches_available
     states.generators_available .= statetransition.generators_available
     states.storages_available .= statetransition.storages_available
     states.buses_available .= field(system, :buses, :bus_type)
+    fill!(states.commonbranches_available, 1)
+    fill!(states.loads_available, 1)
+    fill!(states.shunts_available, 1)
 
     return
 end

@@ -6,9 +6,8 @@ settings = CompositeSystems.Settings(
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
-    min_generators_off = 0,
-    set_string_names_on_creation = true,
-    count_samples = true
+    #set_string_names_on_creation = false,
+    #count_samples = true
 )
 
 @testset "Sequential MCS, 1000 samples, RBTS, non-threaded" begin
@@ -22,6 +21,9 @@ settings = CompositeSystems.Settings(
 
     method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=false)
     shortfall_nonthreaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+    CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall_nonthreaded, system.buses.keys))
+
 
     system_EDLC_mean = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
     system_EENS_mean = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.18585]

@@ -68,12 +68,14 @@ function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Shortfall) where {N
 end
 
 ""
-function record!(acc::SMCShortfallAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+function record!(
+    acc::SMCShortfallAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
 
     totalshortfall = 0
     isshortfall = false
+
     for r in 1:length(acc.periodsdropped_bus)
-        busshortfall = states.buses_cap_curtailed_p[r]
+        busshortfall = topology(pm, :buses_curtailed_pd)[r]
         isbusshortfall = sum(busshortfall) > 1e-6
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
@@ -134,9 +136,7 @@ function finalize(acc::SMCShortfallAccumulator, system::SystemModel{N,L,T}) wher
     E = BaseModule.energyunits["MWh"]
     pu2e = conversionfactor(L,T,P,E,system.baseMVA)
 
-    #system_peakload, bus_peakload = peakload(system.loads, system.buses)
-    system_peakload = 1
-    bus_peakload = 1
+    system_peakload, bus_peakload = peakload(system.loads, system.buses)
 
     return ShortfallResult{N,L,T,P,E}(
         nsamples, 
@@ -180,10 +180,10 @@ end
 
 ""
 function record!(
-    acc::SMCShortfallSamplesAccumulator, states::States, system::SystemModel, sampleid::Int, t::Int)
+    acc::SMCShortfallSamplesAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
 
     for r in 1:length(system.buses)
-        acc.shortfall[r,t,sampleid] = states.buses_cap_curtailed_p[r]
+        acc.shortfall[r,t,sampleid] = topology(pm, :buses_curtailed_pd)[r]
     end
     return
 

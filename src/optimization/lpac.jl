@@ -125,8 +125,8 @@ end
 ""
 function _con_power_balance(
     pm::AbstractLPACModel, system::SystemModel, i::Int, nw::Int, bus_arcs::Vector{Tuple{Int, Int, Int}}, 
-    bus_gens::Vector{Int}, bus_loads::Vector{Int}, bus_shunts::Vector{Int}, bus_storage::Vector{Int},
-    bus_pd, bus_qd, bus_gs, bus_bs)
+    bus_gens::Vector{Int}, buses_loads_available::Vector{Int}, buses_shunts_available::Vector{Int}, bus_storage::Vector{Int},
+    bus_pd::Dict{Int, Float64}, bus_qd::Dict{Int, Float64}, bus_gs::Dict{Int, Float32}, bus_bs::Dict{Int, Float32})
 
     phi  = var(pm, :phi, nw)
     p    = var(pm, :p, nw)
@@ -142,7 +142,7 @@ function _con_power_balance(
     sum(p[a] for a in bus_arcs)
     - sum(pg[g] for g in bus_gens)
     + sum(ps[s] for s in bus_storage)
-    + sum(pd for pd in bus_pd)*z_demand[i]
+    + sum(pd*z_demand[w] for (w,pd) in bus_pd)
     + sum(gs*z_shunt[v] for (v,gs) in bus_gs)*(1.0 + 2*phi[i])
     )
 
@@ -150,7 +150,7 @@ function _con_power_balance(
     sum(q[a] for a in bus_arcs)
     - sum(qg[g] for g in bus_gens)
     + sum(qs[s] for s in bus_storage)
-    + sum(qd for qd in bus_qd)*z_demand[i]
+    + sum(qd*z_demand[w] for (w,qd) in bus_qd)
     - sum(bs*z_shunt[w] for (w,bs) in bus_bs)*(1.0 + 2*phi[i])
     )
 
@@ -392,22 +392,15 @@ end
 ""
 function update_con_power_balance(
     pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
-    #phi  = var(pm, :phi, nw)[i]
-    z_demand   = var(pm, :z_demand, nw)[i]
-    bus_loads = topology(pm, :bus_loads)[i]
-    #bus_shunts = topology(pm, :bus_shunts)[i]
 
-    bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
-    bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
-    #bus_gs = Float32.([field(system, :shunts, :gs)[k] for k in bus_shunts])
-    #bus_bs = Float32.([field(system, :shunts, :bs)[k] for k in bus_shunts])
-    if state.buses_available[i] == 4
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand, 0)
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand, 0)
-    else
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand, sum(pd for pd in bus_pd))
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], z_demand, sum(qd for qd in bus_qd))
+    bus_pd = Dict{Int, Float64}(k => field(system, :loads, :pd)[k,t] for k in topology(pm, :buses_loads_base)[i])
+    bus_qd = Dict{Int, Float64}(k => field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in topology(pm, :buses_shunts_base)[i])
+
+    for w in keys(bus_pd)
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], bus_pd[w])
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], bus_qd[w])
     end
+
 end
 
 ""
@@ -415,8 +408,8 @@ function update_con_power_balance_nolc(
     pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
 
     phi  = var(pm, :phi, nw)
-    bus_loads = topology(pm, :bus_loads)[i]
-    bus_shunts = topology(pm, :bus_shunts)[i]
+    bus_loads = topology(pm, :buses_loads_available)[i]
+    bus_shunts = topology(pm, :buses_shunts_available)[i]
 
     bus_pd = [field(system, :loads, :pd)[k,t] for k in bus_loads]
     bus_qd = [field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
