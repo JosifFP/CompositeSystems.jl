@@ -180,7 +180,7 @@ AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPowerModel}
 ""
 mutable struct Settings
 
-    optimizer::MOI.OptimizerWithAttributes
+    optimizer::Union{MOI.OptimizerWithAttributes, Nothing}
     jump_modelmode::JuMP.ModelMode
     powermodel_formulation::Type
     select_largest_splitnetwork::Bool
@@ -189,8 +189,8 @@ mutable struct Settings
     count_samples::Bool
     record_branch_flow::Bool
 
-    function Settings(
-        optimizer::MOI.OptimizerWithAttributes;
+    function Settings(;
+        optimizer::Union{MOI.OptimizerWithAttributes, Nothing} = nothing,
         jump_modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
         powermodel_formulation::Type=OPF.DCPPowerModel,
         select_largest_splitnetwork::Bool=false,

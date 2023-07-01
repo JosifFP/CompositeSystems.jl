@@ -47,16 +47,17 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    pm = abstract_model(system, settings)
+    env = Gurobi.Env()
+    pm = abstract_model(system, settings, env)
     state = States(system)
     statetransition = StateTransition(system)
+    build_problem!(pm, system)
     recorders = accumulator.(system, method, resultspecs)
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
 
         settings.count_samples && println("s=$(s)")
-        is_empty(pm.model.moi_backend) && build_problem!(pm, system) #This function MUST be placed below the sampleseeds loop.
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, state, statetransition, system) #creates the up/down sequence for each device.
 
@@ -67,7 +68,7 @@ function assess(
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        reset_model!(pm, settings, s, method.nsamples)
+        finalize_model!(pm, env)
     end
 
     put!(results, recorders)
@@ -78,8 +79,8 @@ The initialize! function creates an initial state of the system by using the Phi
 random number generator to randomly determine the availability of different assets 
 (buses, branches, common branches, generators, and storages) for each time step.
 """
-function initialize!(
-    rng::AbstractRNG, states::States, statetransition::StateTransition, system::SystemModel{N}) where N
+function initialize!(rng::AbstractRNG, 
+    states::States, statetransition::StateTransition, system::SystemModel{N}) where N
 
     initialize_availability!(rng, statetransition.branches_available, 
         statetransition.branches_nexttransition, system.branches, N)
@@ -101,8 +102,8 @@ end
 "The function update! updates the system states for a given time step t. 
 It updates the topology of the system with the function update_topology!, 
 then updates the method and power model with update_problem!"
-function update!(
-    rng::AbstractRNG, states::States, statetransition::StateTransition, system::SystemModel{N}, t::Int) where N
+function update!(rng::AbstractRNG, 
+    states::States, statetransition::StateTransition, system::SystemModel{N}, t::Int) where N
     
     update_availability!(rng, statetransition.branches_available, 
         statetransition.branches_nexttransition, system.branches, t, N)

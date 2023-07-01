@@ -2,8 +2,8 @@
 
 @testset "test 5 Split situations with isolated buses, RBTS system" begin
 
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = true,
@@ -11,7 +11,7 @@
     )
 
     settings_2 = CompositeSystems.Settings(
-        juniper_optimizer;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -158,8 +158,8 @@ end
 
 @testset "test 7 Split situations with isolated buses, IEEE-RTS system" begin
     
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = true,
@@ -167,7 +167,7 @@ end
     )
 
     settings_2 = CompositeSystems.Settings(
-        juniper_optimizer;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -540,8 +540,8 @@ end
 
 @testset "RBTS system, test sequentially split situations w/o isolated buses, RBTS system, LPACCPowerModel" begin
 
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.LPACCPowerModel,
         select_largest_splitnetwork = true,
@@ -715,8 +715,8 @@ end
 
 @testset "RTS system, test sequentially split situations w/o isolated buses, RTS system, LPACCPowerModel" begin
 
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.LPACCPowerModel,
         select_largest_splitnetwork = false,
@@ -1067,8 +1067,8 @@ end
 
 @testset "test sequentially split situations w/o isolated buses, RTS system, DCMPPowerModel" begin
 
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCMPPowerModel,
         select_largest_splitnetwork = false,

@@ -1,17 +1,43 @@
 "Constructor for an AbstractPowerModel modeling object"
+function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env)
+    
+    @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. 
+        Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
+
+    Gurobi.GRBsetintparam(env, "OutputFlag", 0)
+    Gurobi.GRBsetintparam(env, "Presolve", 0)
+    Gurobi.GRBsetintparam(env, "NonConvex", 2)
+    Gurobi.GRBsetintparam(env, "OutputFlag", 0)
+
+    jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
+
+    JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
+
+    JuMP.set_silent(jump_model)
+
+    topology = Topology(system)
+    
+    return pm(jump_model, topology, settings.powermodel_formulation)
+end
+
+""
 function abstract_model(system::SystemModel, settings::Settings)
     
     @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. 
         Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
 
     jump_model = Model(settings.optimizer; add_bridges = false)
+
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
+
     JuMP.set_silent(jump_model)
+
     topology = Topology(system)
-    powermodel_formulation = pm(jump_model, topology, settings.powermodel_formulation)
-    return powermodel_formulation
+    
+    return pm(jump_model, topology, settings.powermodel_formulation)
 end
 
+"Assign abstract type 'AbstractPowerModel'"
 function pm(model::JuMP.Model, topology::Topology, ::Type{M}) where {M<:AbstractPowerModel}
     var = Dict{Symbol, AbstractArray}()
     con = Dict{Symbol, AbstractArray}()
@@ -71,19 +97,6 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel; t::Int=1)
     return
 end
 
-""
-function update_problem!(
-    pm::AbstractPowerModel, system::SystemModel, states::States, t::Int; force_pmin::Bool=false)
-
-    update_generators!(pm, system, states, force_pmin=force_pmin)
-    update_branches!(pm, system, states)
-    update_shunts!(pm, system, states)
-    update_storages!(pm, system, states)
-    update_buses!(pm, system, states, t)
-    update_loads!(pm, system, states)
-    update_obj_min_stor_load_curtailment!(pm, system, t)
-end
-
 """
 Optimizes the power model and update the system states based on the results of the optimization. 
 The function first checks if there are any changes in the branch, storage, or generator states at time step t 
@@ -92,19 +105,20 @@ to optimize the power model and then calls optimize_model! to update the results
 If there are no changes, it fills the states.buses_curtailed_pd variable with zeros.
 """
 function solve!(
-    pm::AbstractPowerModel, 
-    states::States, system::SystemModel{N}, settings::Settings, t::Int; force::Bool=false) where N
+    pm::AbstractPowerModel, states::States, 
+    system::SystemModel, settings::Settings, t::Int; force::Bool=false)
 
     update_topology!(pm, system, states, settings, t)
 
-    update_problem!(pm, system, states, t)
-
     changes = any([
         states.branches_available; 
-        states.generators_available; 
-        states.storages_available].== 0)
+        states.generators_available;
+        length(system.storages) == 0;
+        !force].== 0)
+
+    update_problem!(pm, system, states, t, changes=changes)
     
-    (changes || force) && JuMP.optimize!(pm.model)
+    changes && JuMP.optimize!(pm.model)
 
     build_result!(pm, system, states, settings, t)
 
@@ -113,73 +127,110 @@ function solve!(
     return
 end
 
+
+""
+function update_problem!(
+    pm::AbstractPowerModel, system::SystemModel, 
+    states::States, t::Int; changes::Bool=false, force_pmin::Bool=false)
+
+    update_generators!(pm, system, states, force_pmin=force_pmin)
+    update_branches!(pm, system, states)
+    update_shunts!(pm, system, states)
+    update_storages!(pm, system, states)
+    update_buses!(pm, system, states, t, changes=changes)
+    update_loads!(pm, system, states)
+    changes && update_obj_min_stor_load_curtailment!(pm, system, t)
+end
+
 ""
 function update_generators!(
     pm::AbstractPowerModel, system::SystemModel, states::States; force_pmin::Bool=false)
 
     for i in field(system, :generators, :keys)
+
         if any([states.generators_available[i]; states.generators_pasttransition[i]].== 0)
+
             update_var_gen_power_real(pm, system, states, i, force_pmin=force_pmin)
             update_var_gen_power_imaginary(pm, system, states, i)
+
         end
     end
 end
 
 ""
-function update_branches!(pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_branches!(
+    pm::AbstractPowerModel, system::SystemModel, states::States)
 
     for l in field(system, :branches, :keys)
+
         if any([states.branches_available[l]; states.branches_pasttransition[l]].== 0)
+
             update_var_branch_indicator(pm, system, states, l)
             update_con_ohms_yt(pm, system, states, l)
             update_con_thermal_limits(pm, system, states, l)
             update_con_voltage_angle_difference(pm, system, states, l)
+
         end
     end
 end
 
 ""
-function update_shunts!(pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_shunts!(
+    pm::AbstractPowerModel, system::SystemModel, states::States)
 
     if any([states.branches_available; states.branches_pasttransition].== 0)
+
         for i in field(system, :shunts, :keys)
-            #if any([states.shunts_available[i]; states.shunts_pasttransition[i]].== 0)            
-            update_var_shunt_admittance_factor(pm, system, states, i)
-            #end
+
+            if any([states.shunts_available[i]; states.shunts_pasttransition[i]].== 0)            
+                update_var_shunt_admittance_factor(pm, system, states, i)
+            end
+
         end
     end
 end
 
 ""
-function update_storages!(pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_storages!(
+    pm::AbstractPowerModel, system::SystemModel, states::States)
 
     for i in field(system, :storages, :keys)
+
         update_con_storage_state(pm, system, states, i)
+
         if any([states.storages_available[i]; states.storages_pasttransition[i]].== 0)
             update_var_storage_charge(pm, system, states, i)
             update_var_storage_discharge(pm, system, states, i)
         end
+
     end
 end
 
 ""
-function update_buses!(pm::AbstractPowerModel, system::SystemModel, states::States, t::Int)
+function update_buses!(
+    pm::AbstractPowerModel, system::SystemModel, states::States, t::Int; changes::Bool=true)
 
     for i in field(system, :buses, :keys)
-        update_con_power_balance(pm, system, states, i, t)
+
+        changes && update_con_power_balance(pm, system, states, i, t)
+
         if any([states.buses_available[i]; states.buses_pasttransition[i]] .== 4)
             update_var_bus_voltage_angle(pm, system, states, i)
         end
+
     end
 end
 
 ""
-function update_loads!(pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_loads!(
+    pm::AbstractPowerModel, system::SystemModel, states::States)
 
     for i in field(system, :loads, :keys)
+
         if any([states.loads_available[i]; states.loads_pasttransition[i]] .== 0)
             update_var_load_power_factor(pm, system, states, i)
         end
+        
     end
 end
 
@@ -287,22 +338,22 @@ function obj_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemMod
 end
 
 ""
-function update_obj_min_stor_load_curtailment!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
+function update_obj_min_stor_load_curtailment!(
+    pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
-    nloads = field(system, :loads, :keys)
-    load_cost = Vector{Float32}(undef, length(nloads))
 
-    for i in nloads
+    for i in field(system, :loads, :keys)
 
-        load_cost[i] = field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t]
-
-        JuMP.set_objective_coefficient(pm.model, z_demand[i], -load_cost[i])
+        JuMP.set_objective_coefficient(
+            pm.model, 
+            z_demand[i], 
+            -field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t])
     end
 
     MOI.modify(
         JuMP.backend(pm.model),
         MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), 
-        MOI.ScalarConstantChange(sum(load_cost)))
+        MOI.ScalarConstantChange(sum(field(system, :loads, :cost).*field(system, :loads, :pd)[:,t])))
 
 end

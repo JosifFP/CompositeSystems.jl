@@ -28,7 +28,7 @@
         Settings, Topology,
 
         #functions
-        field, var, con, abstract_model, build_problem!, update_problem!, reset_model!,
+        field, var, con, abstract_model, build_problem!, update_problem!, finalize_model!,
         topology, update_topology!, solve!, solve_opf!, build_result!, peakload, is_empty
 
         #reexports
