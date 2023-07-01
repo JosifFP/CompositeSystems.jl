@@ -384,9 +384,9 @@ function update_con_power_balance(
     pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
-    bus_loads = topology(pm, :buses_loads_base)[i]
 
-    for w in bus_loads
+    for w in topology(pm, :buses_loads_base)[i]
+
         JuMP.set_normalized_coefficient(
             con(pm, :power_balance_p, nw)[i], z_demand[w], field(system, :loads, :pd)[w,t])
     end
@@ -396,10 +396,8 @@ end
 function update_con_power_balance_nolc(
     pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int)
 
-    bus_loads = topology(pm, :buses_loads_available)[i]
-    bus_shunts = topology(pm, :buses_shunts_available)[i]
-    bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in bus_loads]
-    bus_gs = Float32[field(system, :shunts, :gs)[k] for k in bus_shunts]
+    bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in topology(pm, :buses_loads_available)[i]]
+    bus_gs = Float32[field(system, :shunts, :gs)[k] for k in topology(pm, :buses_shunts_available)[i]]
 
     JuMP.set_normalized_rhs(
         con(pm, :power_balance_p, 1)[i], 
@@ -412,10 +410,8 @@ function update_con_thermal_limits(
 
     f_bus = field(system, :branches, :f_bus)[l] 
     t_bus = field(system, :branches, :t_bus)[l]
-    f_idx = (l, f_bus, t_bus)
-    t_idx = (l, t_bus, f_bus)
-    p_fr = var(pm, :p, nw)[f_idx]
-    p_to = var(pm, :p, nw)[t_idx]
+    p_fr = var(pm, :p, nw)[(l, f_bus, t_bus)]
+    p_to = var(pm, :p, nw)[(l, t_bus, f_bus)]
 
     rate_a = field(system, :branches, :rate_a)[l]*states.branches_available[l]
 

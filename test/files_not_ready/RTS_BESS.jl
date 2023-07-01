@@ -22,7 +22,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
 
 resultspecs = (Shortfall(), Utilization())
 
-settings = CompositeSystems.Settings(
+settings = CompositeSystems.Settings(;
     gurobi_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,

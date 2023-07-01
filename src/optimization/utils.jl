@@ -328,7 +328,9 @@ transmission outages."
 function update_topology!(
     pm::AbstractPowerModel, system::SystemModel, states::States, settings::Settings, t::Int)
 
-    any([states.branches_available; states.branches_pasttransition].== 0) && simplify!(pm, system, states, settings)
+    any([states.branches_available; states.branches_pasttransition].== 0
+    ) && simplify!(pm, system, states, settings)
+    
     update_all_buses_assets!(pm, system, states)
 
     update_stored_energy!(topology(pm, :stored_energy), states.storages_available, system.storages)
@@ -443,7 +445,8 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::States, 
         active_strg_count = sum(cc_active_strg)
 
         if (active_load_count == 0 && active_shunt_count == 0) || (active_gen_count == 0 && active_strg_count == 0)
-            #@info("deactivating connected component $(cc) due to isolation without generation, load or storage, active_strg_count=$(active_strg_count)")
+            #@info("deactivating connected component $(cc) due to isolation without 
+            #generation, load or storage, active_strg_count=$(active_strg_count)")
             for i in cc
                 states.buses_available[i] = 4
                 changed = true
@@ -499,7 +502,8 @@ function simplify!(pm::AbstractPowerModel, system::SystemModel, states::States, 
 end
 
 ""
-function update_all_buses_assets!(pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_all_buses_assets!(
+    pm::AbstractPowerModel, system::SystemModel, states::States)
 
     update_idxs!(
         filter(i->states.branches_available[i], field(system, :branches, :keys)), 
@@ -557,7 +561,8 @@ function buses_asset!(
 end
 
 ""
-function buses_asset!(busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}})
+function buses_asset!(
+    busarcs::Dict{Int, Vector{Tuple{Int, Int, Int}}}, arcs::Vector{Tuple{Int, Int, Int}})
     for (l,i,j) in arcs
         push!(busarcs[i], (l,i,j))
     end
@@ -691,7 +696,8 @@ function objective_value(opf_model::Model)
 end
 
 ""
-function update_buspair_parameters!(buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}, branches::Branches, branch_lookup::Vector{Int})
+function update_buspair_parameters!(
+    buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}, branches::Branches, branch_lookup::Vector{Int})
  
     buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
     bp_branch = Dict((bp, Int[]) for bp in buspair_indexes)
@@ -788,31 +794,26 @@ function build_result!(
         JuMP.termination_status(pm.model) == JuMP.OPTIMAL]) 
         # Check if the problem was solved optimally or locally
 
-    settings.record_branch_flow == true && fill_flow_branch!(
-        pm, system, states, is_solved=is_solved, record_branch_flow=settings.record_branch_flow)
+    settings.record_branch_flow && fill_flow_branch!(pm, system, states, t, is_solved=is_solved)
 
     record_curtailed_load!(pm, system, states, t, is_solved=is_solved)
 
-    record_stored_energy!(pm, system, states, is_solved=is_solved)
+    record_stored_energy!(pm, system, states, t, is_solved=is_solved)
 
     return
 end
 
 ""
-function record_curtailed_load!(
-    pm::AbstractDCPowerModel, system::SystemModel, 
-    states::States, t::Int; nw::Int=1, is_solved::Bool=true)
+function record_curtailed_load!(pm::AbstractDCPowerModel, 
+    system::SystemModel, states::States, t::Int; nw::Int=1, is_solved::Bool=true)
 
     if is_solved
         var = OPF.var(pm, :z_demand, nw)
         for i in field(system, :buses, :keys)
             
-            buses_loads_base = topology(pm, :buses_loads_base)[i]
-
             topology(pm, :buses_curtailed_pd)[i] = sum(
-                field(system, :loads, :pd)[k,t]*
-                (1.0 - _IM.build_solution_values(var[k])) 
-                for k in buses_loads_base; init=0.0)
+                field(system, :loads, :pd)[k,t]*(1.0 - _IM.build_solution_values(var[k])) 
+                for k in topology(pm, :buses_loads_base)[i]; init=0.0)
 
         end
     else
@@ -821,26 +822,22 @@ function record_curtailed_load!(
 end
 
 ""
-function record_curtailed_load!(
-    pm::AbstractPowerModel, system::SystemModel, 
-    states::States, t::Int; nw::Int=1, is_solved::Bool=true)
+function record_curtailed_load!(pm::AbstractPowerModel, 
+    system::SystemModel, states::States, t::Int; nw::Int=1, is_solved::Bool=true)
 
 
     if is_solved
         var = OPF.var(pm, :z_demand, nw)
         for i in field(system, :buses, :keys)
             
-            buses_loads_base = topology(pm, :buses_loads_base)[i]
-
             topology(pm, :buses_curtailed_pd)[i] = sum(
-                field(system, :loads, :pd)[k,t]*
-                (1.0 - _IM.build_solution_values(var[k])) 
-                for k in buses_loads_base; init=0.0)
+                field(system, :loads, :pd)[k,t]*(1.0 - _IM.build_solution_values(var[k])) 
+                for k in topology(pm, :buses_loads_base)[i]; init=0.0)
 
             topology(pm, :buses_curtailed_qd)[i] = sum(
                 field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k]*
                 (1.0 - _IM.build_solution_values(var[k])) 
-                for k in buses_loads_base; init=0.0)
+                for k in topology(pm, :buses_loads_base)[i]; init=0.0)
 
         end
     else
@@ -850,8 +847,8 @@ function record_curtailed_load!(
 end
 
 ""
-function record_stored_energy!(
-    pm::AbstractPowerModel, system::SystemModel, states::States; nw::Int=1, is_solved::Bool=true)
+function record_stored_energy!(pm::AbstractPowerModel, 
+    system::SystemModel, states::States, t::Int; nw::Int=1, is_solved::Bool=true)
     
     if is_solved
         for i in field(system, :storages, :keys)
@@ -871,14 +868,12 @@ function record_stored_energy!(
 end
 
 ""
-function fill_flow_branch!(
-    pm::AbstractPowerModel, system::SystemModel, states::States; 
-    nw::Int=1, is_solved::Bool=true, record_branch_flow::Bool=false)
+function fill_flow_branch!(pm::AbstractPowerModel, 
+    system::SystemModel, states::States, t::Int; nw::Int=1, is_solved::Bool=true)
 
-    if is_solved && record_branch_flow
+    if is_solved
         var = OPF.var(pm, :p, nw)
-        tuples = keys(var)
-        for (l,i,j) in tuples
+        for (l,i,j) in keys(var)
             if states.branches_available[l] ≠ 0
                 f_bus = system.branches.f_bus[l]
                 t_bus = system.branches.t_bus[l]
@@ -892,7 +887,7 @@ function fill_flow_branch!(
                 topology(pm, :branches_flow_to)[l] =  0.0
             end
         end
-    elseif !is_solved && record_branch_flow
+    else
         fill(topology(pm, :branches_flow_from), 0.0)
         fill(topology(pm, :branches_flow_to), 0.0)
     end
@@ -998,11 +993,10 @@ function peakload(loads::Loads{N}, buses::Buses) where {N}
 end
 
 ""
-function reset_model!(
-    pm::AbstractPowerModel, settings::Settings, sampleid::Int, nsamples::Int)
+function finalize_model!(pm::AbstractPowerModel, env::Gurobi.Env)
 
-    settings.optimizer ≠ Gurobi && MOIU.reset_optimizer(pm.model)
-    sampleid == nsamples && Base.finalize(JuMP.backend(pm.model).optimizer)
+    Base.finalize(JuMP.backend(pm.model).optimizer)
+    Base.finalize(env)
     return
 end
 

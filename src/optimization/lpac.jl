@@ -394,18 +394,16 @@ end
 function update_con_power_balance(
     pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
 
-
     keys_loads = topology(pm, :buses_loads_base)[i]
-
-    bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in keys_loads]
-    bus_qd = Float32[field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in keys_loads]
 
     for w in keys_loads
         JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], bus_pd[w])
+            con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], 
+            field(system, :loads, :pd)[w,t])
 
         JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], bus_qd[w])
+            con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], 
+            field(system, :loads, :pd)[w,t]*field(system, :loads, :pf)[w])
     end
 
 end

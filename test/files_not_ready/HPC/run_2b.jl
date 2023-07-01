@@ -47,7 +47,7 @@ Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
 smc_1 = CompositeAdequacy.SequentialMCS(samples=7500, seed=100, threaded=true)
 smc_2 = CompositeAdequacy.SequentialMCS(samples=15000, seed=100, threaded=true)
 
-sys = BaseModule.SystemModel(rawfile_before, Base_reliabilityfile_before, timeseriesfile_before)
+sys = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
 hour = Dates.format(Dates.now(),"HH_MM")
 current_dir = pwd()

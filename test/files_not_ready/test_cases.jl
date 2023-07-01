@@ -30,8 +30,8 @@ Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
 #Base_reliabilityfile = "test/data/toysystem/R_toysystem.m"
 
 resultspecs = (Shortfall(), GeneratorAvailability())
-settings = CompositeSystems.Settings(
-    gurobi_optimizer_2,
+settings = CompositeSystems.Settings(;
+    optimizer = gurobi_optimizer_2,
     jump_modelmode = JuMP.AUTOMATIC,
     #powermodel_formulation = OPF.NFAPowerModel,
     #powermodel_formulation = OPF.DCPPowerModel,

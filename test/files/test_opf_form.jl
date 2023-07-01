@@ -7,8 +7,8 @@
 
     @testset "DC-OPF with NFAPowerModel, RBTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.NFAPowerModel,
             select_largest_splitnetwork = true,
@@ -51,8 +51,8 @@
 
     @testset "DC-OPF with DCPPowerModel, RBTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCPPowerModel,
             select_largest_splitnetwork = true,
@@ -102,8 +102,8 @@
 
     @testset "DC-OPF with DCMPPowerModel, RBTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCMPPowerModel,
             select_largest_splitnetwork = true,
@@ -153,8 +153,8 @@
 
     @testset "AC-OPF with LPACCPowerModel, RBTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.LPACCPowerModel,
             select_largest_splitnetwork = true,
@@ -227,8 +227,8 @@ end
 
     @testset "DC-OPF with NFAPowerModel, RTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.NFAPowerModel,
             select_largest_splitnetwork = true,
@@ -267,8 +267,8 @@ end
 
     @testset "DC-OPF with DCMPPowerModel, RTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCMPPowerModel,
             select_largest_splitnetwork = true,
@@ -319,8 +319,8 @@ end
 
     @testset "DC-OPF with DCPPowerModel, RTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCPPowerModel,
             select_largest_splitnetwork = true,
@@ -371,8 +371,8 @@ end
 
     @testset "AC-OPF with LPACCPowerModel, RTS" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.LPACCPowerModel,
             select_largest_splitnetwork = true,
@@ -432,8 +432,8 @@ end
 
     @testset "DC-OPF with NFAPowerModel, case 5" begin
     
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.NFAPowerModel,
             select_largest_splitnetwork = true,
@@ -471,8 +471,8 @@ end
 
     @testset "DC-OPF with DCPPowerModel, case5" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCPPowerModel,
             select_largest_splitnetwork = true,
@@ -522,8 +522,8 @@ end
 
     @testset "DC-OPF with DCMPPowerModel, case5" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCMPPowerModel,
             select_largest_splitnetwork = true,
@@ -573,8 +573,8 @@ end
 
     @testset "AC-OPF with LPACCPowerModel, case5" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.LPACCPowerModel,
             select_largest_splitnetwork = true,
@@ -646,8 +646,8 @@ end
 
     @testset "DC-OPF with NFAPowerModel, case9" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.NFAPowerModel,
             select_largest_splitnetwork = true,
@@ -692,8 +692,8 @@ end
 
     @testset "DC-OPF with DCPPowerModel, case9" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCPPowerModel,
             select_largest_splitnetwork = true,
@@ -742,8 +742,8 @@ end
 
     @testset "DC-OPF with DCMPPowerModel, case9" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.DCMPPowerModel,
             select_largest_splitnetwork = true,
@@ -792,8 +792,8 @@ end
 
     @testset "AC-OPF with LPACCPowerModel, case9" begin
 
-        settings = CompositeSystems.Settings(
-            juniper_optimizer;
+        settings = CompositeSystems.Settings(;
+            optimizer = juniper_optimizer,
             jump_modelmode = JuMP.AUTOMATIC,
             powermodel_formulation = OPF.LPACCPowerModel,
             select_largest_splitnetwork = true,

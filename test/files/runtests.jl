@@ -1,10 +1,12 @@
+using Pkg
 import CompositeSystems
 import CompositeSystems.BaseModule
 import CompositeSystems.OPF
 import CompositeSystems.CompositeAdequacy
-import PowerModels, Ipopt, BenchmarkTools, JuMP
+import PowerModels, Ipopt, BenchmarkTools, JuMP, Dates
 import JuMP: termination_status
 import BenchmarkTools: @btime
+import Gurobi
 using Test
 
 include("solvers.jl")

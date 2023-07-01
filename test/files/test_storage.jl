@@ -5,8 +5,8 @@
     rawfile = "test/data/others/Storage/RBTS_strg.m"
     reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
 
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -244,8 +244,9 @@ end
     timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
     rawfile = "test/data/others/Storage/RBTS_strg.m"
     reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
-    settings = CompositeSystems.Settings(
-        juniper_optimizer;
+    
+    settings = CompositeSystems.Settings(;
+        optimizer = juniper_optimizer,
         jump_modelmode = JuMP.AUTOMATIC,
         powermodel_formulation = OPF.DCPPowerModel,
         select_largest_splitnetwork = false,
@@ -481,9 +482,8 @@ end
 
 @testset "RTS system, sequential outages, storage at bus 8" begin
 
-    settings = CompositeSystems.Settings(
-    juniper_optimizer,
-    #gurobi_optimizer_2,
+    settings = CompositeSystems.Settings(;
+    optimizer = juniper_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
@@ -937,9 +937,8 @@ end
 
 @testset "RTS system, sequential outages, storage at bus 9" begin
 
-    settings = CompositeSystems.Settings(
-    #gurobi_optimizer_2,
-    juniper_optimizer,
+    settings = CompositeSystems.Settings(;
+    optimizer = juniper_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,

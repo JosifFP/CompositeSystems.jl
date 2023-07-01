@@ -22,7 +22,7 @@ gurobi_optimizer = JuMP.optimizer_with_attributes(
     "Threads"=>5
 )
 
-settings = CompositeSystems.Settings(
+settings = CompositeSystems.Settings(;
     gurobi_optimizer,
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCPPowerModel,
