@@ -37,6 +37,9 @@ and the States variable to store the system's states. It also creates several re
 using the accumulator function, and an RNG (random number generator) of type Philox4x. The function 
 then iterates over the sampleseeds channel, using each seed to initialize the RNG and the system states, 
 and performs the Monte Carlo simulation for each sample.
+The results of each thread are stored in the results channel using the put! function. 
+After all the threads have finished executing, the finalize function is called on the 
+results to process the results and return the final result.
 """
 function assess(
     system::SystemModel{N},
@@ -68,9 +71,9 @@ function assess(
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        finalize_model!(pm, env)
     end
 
+    finalize_model!(pm, env)
     put!(results, recorders)
 end
 
