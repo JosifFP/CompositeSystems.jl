@@ -11,6 +11,14 @@ function makeseeds(sampleseeds::Channel{Int}, nsamples::Int)
     close(sampleseeds)
 end
 
+""
+function makeseeds(sampleseeds::Channel{Int}, start_index::Int, end_index::Int)
+    for s in start_index:end_index
+        put!(sampleseeds, s)
+    end
+    close(sampleseeds)
+end
+
 function mean_std(x::MeanVariance)
     m, v = value(x)
     return m, sqrt(v)

@@ -103,6 +103,7 @@ end
 
 accumulatortype(::SequentialMCS, ::UtilizationSamples) = SMCUtilizationSamplesAccumulator
 
+""
 function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::UtilizationSamples) where {N}
 
     nbranches = length(sys.branches)
