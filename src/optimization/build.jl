@@ -139,7 +139,7 @@ function update_problem!(
     update_storages!(pm, system, states)
     update_buses!(pm, system, states, t, changes=changes)
     update_loads!(pm, system, states)
-    changes && update_obj_min_stor_load_curtailment!(pm, system, t)
+    update_obj_min_stor_load_curtailment!(pm, system, t)
 end
 
 ""

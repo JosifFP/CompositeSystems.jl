@@ -26,4 +26,4 @@ system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 method_2 = CompositeAdequacy.SequentialMCS(samples=100, seed=100, distributed=true)
 shortfall_threaded,_ = CompositeSystems.assess(system, method_2, settings, resultspecs...)
 
-#Distributed.nprocs()
+Gurobi.Env()
