@@ -15,19 +15,61 @@ function assess(
 ) where {N}
 
     threads = Base.Threads.nthreads()
-    sampleseeds = Channel{Int}(2*threads)
-    results = resultchannel(method, resultspecs, threads)
-    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
-    if method.threaded
-        for _ in 1:threads
-            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+    if !method.distributed
+
+        results = resultchannel(method, resultspecs, threads)
+        sampleseeds = Channel{Int}(2*threads)
+        Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+        
+
+        if method.threaded
+            for _ in 1:threads
+                Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+            end
+        else
+            assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
-    else
-        assess(system, method, settings, sampleseeds, results, resultspecs...)
-    end
 
-    return finalize(results, system, method.threaded ? threads : 1)
+        return finalize(results, system, method.threaded ? threads : 1)
+
+    else
+
+        workers = method.nworkers
+        results = resultremotechannel(method, resultspecs, threads, workers)
+        nsamples_per_worker = div(method.nsamples, workers)
+    
+        Distributed.@distributed for i in 1:workers
+    
+            nsamples_per_worker = div(method.nsamples, workers)
+            start_index = (i - 1) * nsamples_per_worker + 1
+            end_index = i * nsamples_per_worker
+            sampleseeds = Channel{Int}(2*threads)
+            Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
+    
+            if threads != 1
+                for _ in 1:threads
+                    Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
+                end
+            else
+                assess(system, method, settings, sampleseeds, results[i], resultspecs...)
+            end
+        end
+    
+        total_result = take!(results[1])
+    
+        for k in 1:workers
+            for j in 1:threads
+                if !(k == 1 && j == 1)
+                    thread_result = take!(results[k])
+                    merge!(total_result, thread_result)
+                end
+            end
+        end
+    
+        close(results[workers])
+        return finalize.(total_result, system)
+    end
 end
 
 """
@@ -46,12 +88,12 @@ function assess(
     method::SequentialMCS,
     settings::Settings,
     sampleseeds::Channel{Int},
-    results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}},
+    results::Union{Distributed.RemoteChannel{R}, R},
     resultspecs::ResultSpec...
-) where {N}
+) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    env = Gurobi.Env()
-    pm = abstract_model(system, settings, env)
+    #env = Gurobi.Env()
+    pm = abstract_model(system, settings, GRB_ENV[])
     state = States(system)
     statetransition = StateTransition(system)
     build_problem!(pm, system)
@@ -73,8 +115,8 @@ function assess(
         foreach(recorder -> reset!(recorder, s), recorders)
     end
 
-    finalize_model!(pm, env)
     put!(results, recorders)
+    finalize_model!(pm, GRB_ENV[])
 end
 
 """
