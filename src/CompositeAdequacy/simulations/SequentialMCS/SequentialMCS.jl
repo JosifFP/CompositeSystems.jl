@@ -14,7 +14,11 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    threads = Base.Threads.nthreads()
+    if method.threaded
+        threads = Base.Threads.nthreads()
+    else
+        threads = 1
+    end
 
     if !method.distributed
 
@@ -25,6 +29,7 @@ function assess(
 
         if method.threaded
             for _ in 1:threads
+                Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
                 Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
             end
         else
@@ -41,6 +46,7 @@ function assess(
     
         Distributed.@distributed for i in 1:workers
     
+            Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
             nsamples_per_worker = div(method.nsamples, workers)
             start_index = (i - 1) * nsamples_per_worker + 1
             end_index = i * nsamples_per_worker
