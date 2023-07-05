@@ -9,6 +9,26 @@ import Gurobi
 import Distributed
 using Test
 
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+
+settings = CompositeSystems.Settings(;
+    jump_modelmode = JuMP.AUTOMATIC,
+    powermodel_formulation = OPF.DCMPPowerModel,
+    select_largest_splitnetwork = false,
+    deactivate_isolated_bus_gens_stors = true,
+    #set_string_names_on_creation = false,
+    count_samples = true
+)
+
+timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true, distributed=false)
+shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+
+
 include("solvers.jl")
 
 @testset "Testset of OPF formulations + Load Curtailment minimization" begin

@@ -34,7 +34,7 @@ end
 ""
 function Base.getproperty(e::Settings, s::Symbol) 
     if s === :optimizer 
-        getfield(e, :optimizer)::MOI.OptimizerWithAttributes
+        getfield(e, :optimizer)::Union{MOI.OptimizerWithAttributes, Nothing}
     elseif s === :jump_modelmode 
         getfield(e, :jump_modelmode)::JuMP.ModelMode
     elseif s === :powermodel_formulation
@@ -997,6 +997,14 @@ function finalize_model!(pm::AbstractPowerModel, env::Gurobi.Env)
 
     Base.finalize(JuMP.backend(pm.model).optimizer)
     Base.finalize(env)
+    return
+end
+
+""
+function finalize_model!(pm::AbstractPowerModel, settings::Settings)
+
+    Base.finalize(JuMP.backend(pm.model).optimizer)
+    Base.finalize(settings.env)
     return
 end
 
