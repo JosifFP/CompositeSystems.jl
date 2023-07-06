@@ -14,68 +14,83 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
+    threads = Base.Threads.nthreads()
+    results = resultchannel(method, resultspecs, threads)
+    sampleseeds = Channel{Int}(2*threads)
+    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+
     if method.threaded
-        threads = Base.Threads.nthreads()
+        for _ in 1:threads
+            Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
+            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+        end
     else
-        threads = 1
+        assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
 
-    if !method.distributed
+    return finalize(results, system, method.threaded ? threads : 1)
+end
 
-        results = resultchannel(method, resultspecs, threads)
+"""
+This code snippet is using multi-threading and distributed computing to parallelize 
+the assess function by running multiple instances of it simultaneously on different threads
+and machines. The Threads.@spawn macro is used to create new threads, each of which will execute 
+the assess function using a different seed from the sampleseeds channel. The results of each 
+thread are stored in the results channel, and the function finalize is called on the results
+after all threads have finished executing.
+"""
+function assess(
+    library::Vector{String},
+    method::SequentialMCS,
+    settings::Settings,
+    resultspecs::ResultSpec...)
+
+    !method.distributed && throw(
+        DomainError("'distributed' is set to false, 
+        please redefine the method and/or number of samples/nodes/threaded"))
+
+    length(library) != 3 && 
+        throw(DomainError("library must be composed of three elements"))
+
+    master_sys = BaseModule.SystemModel(library[1], library[2], library[3])
+    threads = Base.Threads.nthreads()
+    workers = method.nworkers
+    results = CompositeAdequacy.resultremotechannel(method, threads, workers, resultspecs...)
+
+    Distributed.@distributed for i in 1:workers
+        println("worker=$(i+1) of $(workers), with threads=$(threads)")
+        nsamples_per_worker = div(method.nsamples, workers)
+        system = BaseModule.SystemModel(library[1], library[2], library[3])
+        Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
+        nsamples_per_worker = div(method.nsamples, workers)
+        start_index = (i - 1) * nsamples_per_worker + 1
+        end_index = i * nsamples_per_worker
         sampleseeds = Channel{Int}(2*threads)
-        Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
-        
+        Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
 
-        if method.threaded
+        if threads != 1
             for _ in 1:threads
-                Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
-                Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+                Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
             end
         else
-            assess(system, method, settings, sampleseeds, results, resultspecs...)
+            assess(system, method, settings, sampleseeds, results[i], resultspecs...)
         end
-
-        return finalize(results, system, method.threaded ? threads : 1)
-
-    else
-
-        workers = method.nworkers
-        results = resultremotechannel(method, resultspecs, threads, workers)
-        nsamples_per_worker = div(method.nsamples, workers)
-    
-        Distributed.@distributed for i in 1:workers
-    
-            Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
-            nsamples_per_worker = div(method.nsamples, workers)
-            start_index = (i - 1) * nsamples_per_worker + 1
-            end_index = i * nsamples_per_worker
-            sampleseeds = Channel{Int}(2*threads)
-            Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
-    
-            if threads != 1
-                for _ in 1:threads
-                    Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
-                end
-            else
-                assess(system, method, settings, sampleseeds, results[i], resultspecs...)
-            end
-        end
-    
-        total_result = take!(results[1])
-    
-        for k in 1:workers
-            for j in 1:threads
-                if !(k == 1 && j == 1)
-                    thread_result = take!(results[k])
-                    merge!(total_result, thread_result)
-                end
-            end
-        end
-    
-        close(results[workers])
-        return finalize.(total_result, system)
     end
+
+    total_result = take!(results[1])
+
+    for k in 1:workers
+        for j in 1:threads
+            if !(k == 1 && j == 1)
+                thread_result = take!(results[k])
+                merge!(total_result, thread_result)
+            end
+        end
+    end
+
+    close(results[workers])
+    
+    return finalize.(total_result, master_sys)
 end
 
 """

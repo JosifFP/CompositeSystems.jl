@@ -32,7 +32,6 @@ struct SequentialMCS <: SimulationSpec
         if workers > 1 && distributed
             isinteger(samples/workers) ? distributed = true : distributed = false
             !distributed && throw(DomainError("Change number of samples or workers to equally distribute samples between workers"))
-            !threaded && throw(DomainError("Distributed computing applies parallel computing. Variable 'threaded'=true"))
             @info("Distributed computing in Julia distributes the workload across the Cluster's nodes and cores")
         else
             distributed && @info("Parameter 'distributed' has been changed to 'false' to use a single worker")

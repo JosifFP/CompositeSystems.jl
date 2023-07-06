@@ -19,11 +19,11 @@ end
 ""
 function resultremotechannel(
     method::SimulationSpec, 
-    results::T, 
     threads::Int,
-    workers::Int) where T <: Tuple{Vararg{ResultSpec}}
+    workers::Int,
+    resultspecs::ResultSpec...)
 
-    types = accumulatortype.(method, results)
+    types = accumulatortype.(method, resultspecs)
 
     return [Distributed.RemoteChannel(()->Channel{Tuple{types...}}(threads)) for _ in 1:workers]
 end

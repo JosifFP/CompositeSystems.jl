@@ -5,29 +5,38 @@
 #julia -p 4 --threads 2
 #Distributed.nprocs()
 #Base.Threads.nthreads()
-import Distributed
-Distributed.@everywhere using Gurobi, JuMP, Dates, Distributed, Pkg
-Distributed.@everywhere Pkg.activate(".")
-Distributed.@everywhere Pkg.instantiate()
-Distributed.@everywhere using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
-const GRB_ENV = Gurobi.Env()
 
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+using Distributed
 
-settings_dc = CompositeSystems.Settings(;
-    env = GRB_ENV,
-    jump_modelmode = JuMP.AUTOMATIC,
-    powermodel_formulation = OPF.DCMPPowerModel,
-    select_largest_splitnetwork = false,
-    deactivate_isolated_bus_gens_stors = true,
-    set_string_names_on_creation = false
-)
+# instantiate and precompile environment in all processes
+@everywhere begin
+  using Pkg; Pkg.activate(@__DIR__)
+  Pkg.instantiate(); Pkg.precompile()
+end
 
-timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+@everywhere begin
+    # load dependencies
+    using Gurobi, Dates, JuMP
+    using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
+end
 
+@everywhere begin
 
-method_2 = CompositeAdequacy.SequentialMCS(samples=8, seed=100, threaded=false, distributed=true)
-shortfall_threaded,_ = CompositeSystems.assess(system, method_2, settings_dc, resultspecs...)
+  settings = CompositeSystems.Settings(;
+      jump_modelmode = JuMP.AUTOMATIC,
+      powermodel_formulation = OPF.DCMPPowerModel,
+      select_largest_splitnetwork = false,
+      deactivate_isolated_bus_gens_stors = true,
+      set_string_names_on_creation = false,
+      count_samples = true
+  )
+
+  timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
+  rawfile = "test/data/RBTS/Base/RBTS.m"
+  Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+  library = String[rawfile; Base_reliabilityfile; timeseriesfile]
+  method = CompositeAdequacy.SequentialMCS(samples=8, seed=100, threaded=true, distributed=true)
+  resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+end
+
+shortfall_threaded,_ = CompositeSystems.assess(library, method, settings, resultspecs...)
