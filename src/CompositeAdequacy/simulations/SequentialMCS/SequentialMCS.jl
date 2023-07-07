@@ -27,7 +27,8 @@ function assess(
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
-
+    
+    Base.finalize(GRB_ENV[])
     return finalize(results, system, method.threaded ? threads : 1)
 end
 
@@ -52,29 +53,35 @@ function assess(
     length(library) != 3 && 
         throw(DomainError("library must be composed of three elements"))
 
-    master_sys = BaseModule.SystemModel(library[1], library[2], library[3])
-    threads = Base.Threads.nthreads()
+    method.threaded ? threads = Base.Threads.nthreads() : threads = 1
     workers = method.nworkers
     results = CompositeAdequacy.resultremotechannel(method, threads, workers, resultspecs...)
 
     Distributed.@distributed for i in 1:workers
-        println("worker=$(i+1) of $(workers), with threads=$(threads)")
+
+        println("worker=$(i) of $(workers), with threads=$(threads)")
         nsamples_per_worker = div(method.nsamples, workers)
         system = BaseModule.SystemModel(library[1], library[2], library[3])
         Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
-        nsamples_per_worker = div(method.nsamples, workers)
         start_index = (i - 1) * nsamples_per_worker + 1
         end_index = i * nsamples_per_worker
         sampleseeds = Channel{Int}(2*threads)
+
+        if i == workers && end_index != method.nsamples
+            end_index = method.nsamples
+        end
+
         Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
 
-        if threads != 1
+        if method.threaded
             for _ in 1:threads
                 Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
             end
         else
             assess(system, method, settings, sampleseeds, results[i], resultspecs...)
         end
+
+        Base.finalize(GRB_ENV[])
     end
 
     total_result = take!(results[1])
@@ -90,7 +97,7 @@ function assess(
 
     close(results[workers])
     
-    return finalize.(total_result, master_sys)
+    return total_result
 end
 
 """
@@ -137,7 +144,7 @@ function assess(
     end
 
     put!(results, recorders)
-    finalize_model!(pm, GRB_ENV[])
+    Base.finalize(JuMP.backend(pm.model).optimizer)
 end
 
 """

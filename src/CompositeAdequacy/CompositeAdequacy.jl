@@ -19,6 +19,7 @@
     import Base: minimum, maximum, extrema
     import Gurobi
     import Distributed
+    import JuMP
 
     const GRB_ENV = Ref{Gurobi.Env}()
 

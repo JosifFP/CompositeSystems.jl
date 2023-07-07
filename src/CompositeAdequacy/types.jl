@@ -29,14 +29,8 @@ struct SequentialMCS <: SimulationSpec
 
         Distributed.nprocs() > 1 ? workers = Distributed.nprocs() - 1 : workers = 1 # Number of workers excluding the master process
             
-        if workers > 1 && distributed
-            isinteger(samples/workers) ? distributed = true : distributed = false
-            !distributed && throw(DomainError("Change number of samples or workers to equally distribute samples between workers"))
-            @info("Distributed computing in Julia distributes the workload across the Cluster's nodes and cores")
-        else
-            distributed && @info("Parameter 'distributed' has been changed to 'false' to use a single worker")
-            if distributed distributed = false end
-        end
+        distributed && @info(
+            "Distributed computing in Julia distributes the workload across the Cluster's nodes and cores")
 
         new(samples, workers, UInt64(seed), verbose, threaded, distributed)
     end
