@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=0-12:00:00
 #SBATCH --nodes=10
-#SBATCH --cpus-per-task=60
+#SBATCH --cpus-per-task=64
 #SBATCH --mem=0
 #SBATCH --mail-type=end
 #SBATCH --mail-user=josif.figueroa@unb.ca
@@ -11,7 +11,7 @@ module load julia/1.8.5
 module load gurobi/10.0.2
 
 # Set the number of threads
-export JULIA_NUM_THREADS=60
+export JULIA_NUM_THREADS=64
 
 echo "file run_2b.jl"
 echo ""

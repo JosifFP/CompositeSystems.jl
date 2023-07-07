@@ -3,20 +3,18 @@
     using ..BaseModule
     import LinearAlgebra: pinv
     import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE, MAX_SENSE, is_empty
-    import MathOptInterface.Utilities: reset_optimizer
-    import JuMP.Containers: DenseAxisArray, SparseAxisArray
+    import JuMP.Containers: DenseAxisArray
     import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
         optimize!, Model, direct_model, optimizer_with_attributes, ModelMode,
-        termination_status, AbstractModel, OPTIMAL, LOCALLY_SOLVED
+        termination_status, AbstractModel, OPTIMAL, LOCALLY_SOLVED, backend
     
-    import Gurobi    
+    import Gurobi
     import InfrastructureModels
     import PowerModels
 
     const _IM = InfrastructureModels
     const _PM = PowerModels
     const MOI = MathOptInterface
-    const MOIU = MathOptInterface.Utilities
 
     export
 
@@ -29,10 +27,10 @@
 
         #functions
         field, var, con, abstract_model, build_problem!, update_problem!, finalize_model!,
-        topology, update_topology!, solve!, solve_opf!, build_result!, peakload, is_empty
+        topology, update_topology!, solve!, solve_opf!, build_result!, peakload
 
         #reexports
-        reset_optimizer, MOI, MOIU, JuMP
+        MOI, JuMP
 
     #
 
