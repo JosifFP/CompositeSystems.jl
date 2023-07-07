@@ -80,10 +80,9 @@ function assess(
         else
             assess(system, method, settings, sampleseeds, results[i], resultspecs...)
         end
-
-        Base.finalize(GRB_ENV[])
     end
 
+    Base.finalize(GRB_ENV[])
     total_result = take!(results[1])
 
     for k in 1:workers
