@@ -45,7 +45,8 @@
         Utilization, UtilizationSamples,
 
         #utils
-        print_results, copy_load, update_load!, resultremotechannel, finalize
+        print_results, copy_load, update_load!, 
+        resultremotechannel, finalize, GRB_ENV
 
         # Convenience re-exports
         ZonedDateTime
