@@ -4,12 +4,10 @@ function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env
     @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. 
         Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
 
-    Gurobi.GRBsetintparam(env, "OutputFlag", 0)
-    Gurobi.GRBsetintparam(env, "Presolve", 0)
-    Gurobi.GRBsetintparam(env, "NonConvex", 2)
-    Gurobi.GRBsetintparam(env, "OutputFlag", 0)
-
     jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
+    #Gurobi.GRBsetintparam(env, "OutputFlag", 0)
+    #Gurobi.GRBsetintparam(env, "Presolve", 0)
+    #Gurobi.GRBsetintparam(env, "NonConvex", 2)
 
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
 
