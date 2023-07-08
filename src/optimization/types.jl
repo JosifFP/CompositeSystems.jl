@@ -180,6 +180,7 @@ AbstractPolarModels = Union{AbstractLPACModel, AbstractDCPowerModel}
 ""
 mutable struct Settings
 
+    gurobi_env::Union{Gurobi.Env, Nothing}
     optimizer::Union{MOI.OptimizerWithAttributes, Nothing}
     jump_modelmode::JuMP.ModelMode
     powermodel_formulation::Type
@@ -190,6 +191,7 @@ mutable struct Settings
     record_branch_flow::Bool
 
     function Settings(;
+        gurobi_env::Union{Gurobi.Env, Nothing} = nothing,
         optimizer::Union{MOI.OptimizerWithAttributes, Nothing} = nothing,
         jump_modelmode::JuMP.ModelMode = JuMP.AUTOMATIC,
         powermodel_formulation::Type=OPF.DCPPowerModel,
@@ -199,7 +201,7 @@ mutable struct Settings
         count_samples::Bool=false,
         record_branch_flow::Bool=false
         )
-        new(optimizer, jump_modelmode, powermodel_formulation, 
+        new(gurobi_env, optimizer, jump_modelmode, powermodel_formulation, 
         select_largest_splitnetwork, deactivate_isolated_bus_gens_stors,
         set_string_names_on_creation, count_samples, record_branch_flow)
     end

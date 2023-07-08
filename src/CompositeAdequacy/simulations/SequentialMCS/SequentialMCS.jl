@@ -15,20 +15,20 @@ function assess(
 ) where {N}
 
     threads = Base.Threads.nthreads()
-    results = resultchannel(method, resultspecs, threads)
     sampleseeds = Channel{Int}(2*threads)
+    results = resultchannel(method, resultspecs, threads)
     Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+    #Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
 
     if method.threaded
         for _ in 1:threads
-            Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
-            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+            Distributed.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
     
-    Base.finalize(GRB_ENV[])
+    #Base.finalize(GRB_ENV[])
     return finalize(results, system, method.threaded ? threads : 1)
 end
 
@@ -59,10 +59,8 @@ function assess(
 
     Distributed.@distributed for i in 1:workers
 
-        println("worker=$(i) of $(workers), with threads=$(threads)")
         nsamples_per_worker = div(method.nsamples, workers)
         system = BaseModule.SystemModel(library[1], library[2], library[3])
-        Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
         start_index = (i - 1) * nsamples_per_worker + 1
         end_index = i * nsamples_per_worker
         sampleseeds = Channel{Int}(2*threads)
@@ -71,18 +69,21 @@ function assess(
             end_index = method.nsamples
         end
 
-        Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
+        @sync begin
+            Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
+        end
 
-        if method.threaded
-            for _ in 1:threads
-                Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
+        @sync begin
+            if method.threaded
+                for _ in 1:threads
+                    Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
+                end
+            else
+                assess(system, method, settings, sampleseeds, results[i], resultspecs...)
             end
-        else
-            assess(system, method, settings, sampleseeds, results[i], resultspecs...)
         end
     end
 
-    Base.finalize(GRB_ENV[])
     total_result = take!(results[1])
 
     for k in 1:workers
@@ -119,7 +120,6 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    #env = Gurobi.Env()
     pm = abstract_model(system, settings, GRB_ENV[])
     state = States(system)
     statetransition = StateTransition(system)
@@ -142,8 +142,9 @@ function assess(
         foreach(recorder -> reset!(recorder, s), recorders)
     end
 
-    put!(results, recorders)
     Base.finalize(JuMP.backend(pm.model).optimizer)
+    put!(results, recorders)
+    return results
 end
 
 """

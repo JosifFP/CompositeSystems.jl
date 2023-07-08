@@ -33,7 +33,9 @@ end
 
 ""
 function Base.getproperty(e::Settings, s::Symbol) 
-    if s === :optimizer 
+    if s === :gurobi_env 
+        getfield(e, :gurobi_env)::Union{Gurobi.Env, Nothing}
+    elseif s === :optimizer 
         getfield(e, :optimizer)::Union{MOI.OptimizerWithAttributes, Nothing}
     elseif s === :jump_modelmode 
         getfield(e, :jump_modelmode)::JuMP.ModelMode
