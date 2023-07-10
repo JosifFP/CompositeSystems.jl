@@ -2,7 +2,7 @@
 #module load julia/1.8.5
 #gurobi_cl 1> /dev/null && echo Success || echo
 #gurobi_cl --tokens
-#julia -p 2 --threads 4
+#julia -p 2 --threads 2
 #Distributed.nprocs()
 #Base.Threads.nthreads()
 
@@ -10,7 +10,13 @@ using Distributed
 
 # instantiate and precompile environment in all processes
 @everywhere begin
-  using Pkg; Pkg.activate(@__DIR__)
+    using Pkg; Pkg.activate(@__DIR__)
+end
+
+Pkg.instantiate()
+Pkg.precompile()
+
+@everywhere begin
   Pkg.instantiate(); Pkg.precompile()
 end
 
@@ -35,10 +41,8 @@ end
   rawfile = "test/data/RBTS/Base/RBTS.m"
   Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
   library = String[rawfile; Base_reliabilityfile; timeseriesfile]
-  method = CompositeAdequacy.SequentialMCS(samples=10, seed=100, threaded=true, distributed=true)
+  method = CompositeAdequacy.SequentialMCS(samples=10, seed=100, threaded=false, distributed=true)
   resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 end
 
-total_result = CompositeSystems.assess(library, method, settings, resultspecs...)
-sys = BaseModule.SystemModel(library[1], library[2], library[3])
-shortfall_threaded, util = CompositeAdequacy.finalize.(total_result, sys)
+Shortfall,_ = CompositeSystems.assess(library, method, settings, resultspecs...)

@@ -18,17 +18,15 @@ function assess(
     sampleseeds = Channel{Int}(2*threads)
     results = resultchannel(method, resultspecs, threads)
     Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
-    #Gurobi.GRBsetintparam(GRB_ENV[], "Threads", threads)
 
     if method.threaded
         for _ in 1:threads
-            Distributed.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
     
-    #Base.finalize(GRB_ENV[])
     return finalize(results, system, method.threaded ? threads : 1)
 end
 
@@ -54,50 +52,53 @@ function assess(
         throw(DomainError("library must be composed of three elements"))
 
     method.threaded ? threads = Base.Threads.nthreads() : threads = 1
-    workers = method.nworkers
-    results = CompositeAdequacy.resultremotechannel(method, threads, workers, resultspecs...)
 
-    Distributed.@distributed for i in 1:workers
+    # Number of workers excluding the master process
+    Distributed.nprocs() > 1 ? workers = Distributed.nprocs() - 1 : workers = 1
 
-        nsamples_per_worker = div(method.nsamples, workers)
-        system = BaseModule.SystemModel(library[1], library[2], library[3])
-        start_index = (i - 1) * nsamples_per_worker + 1
-        end_index = i * nsamples_per_worker
-        sampleseeds = Channel{Int}(2*threads)
+    master_results = resultremotechannel(method, resultspecs, workers)
 
-        if i == workers && end_index != method.nsamples
-            end_index = method.nsamples
-        end
+    BaseModule.silence()
+    system = SystemModel(library[1], library[2], library[3])
 
-        @sync begin
+    if workers > 1
+
+        @sync @distributed for i in 1:workers
+
+            BaseModule.silence()
+            system = SystemModel(library[1], library[2], library[3])
+            sampleseeds = Channel{Int}(2*threads)
+            results = resultchannel(method, resultspecs, threads)
+      
+            nsamples_per_worker = div(method.nsamples, 2)
+            start_index = (i - 1) * nsamples_per_worker + 1
+            end_index = i * nsamples_per_worker
+      
+            if i == workers && end_index != method.nsamples
+                end_index = method.nsamples
+            end
+      
             Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
-        end
-
-        @sync begin
+      
             if method.threaded
                 for _ in 1:threads
-                    Threads.@spawn assess(system, method, settings, sampleseeds, results[i], resultspecs...)
+                    Threads.@spawn begin
+                    assess(system, method, settings, sampleseeds, results, resultspecs...)
+                    end
                 end
             else
-                assess(system, method, settings, sampleseeds, results[i], resultspecs...)
+                assess(system, method, settings, sampleseeds, results, resultspecs...)
             end
+
+            merge!(master_results, results)
+            close(results)
         end
-    end
+      
+      else
+        return assess(system, method, settings, resultspecs...)
+      end
 
-    total_result = take!(results[1])
-
-    for k in 1:workers
-        for j in 1:threads
-            if !(k == 1 && j == 1)
-                thread_result = take!(results[k])
-                merge!(total_result, thread_result)
-            end
-        end
-    end
-
-    close(results[workers])
-    
-    return total_result
+    return finalize(master_results, system, method.distributed ? workers : 1)
 end
 
 """

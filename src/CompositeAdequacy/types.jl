@@ -11,7 +11,6 @@ abstract type Result{
 "Definition of SequentialMCS method"
 struct SequentialMCS <: SimulationSpec
     nsamples::Int
-    nworkers::Int
     seed::UInt64
     verbose::Bool
     threaded::Bool
@@ -27,12 +26,24 @@ struct SequentialMCS <: SimulationSpec
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
 
-        Distributed.nprocs() > 1 ? workers = Distributed.nprocs() - 1 : workers = 1 # Number of workers excluding the master process
-            
-        distributed && @info(
-            "Distributed computing in Julia distributes the workload across the Cluster's nodes and cores")
+        if distributed
+            Distributed.nprocs() > 1 ? workers = Distributed.nprocs() - 1 : workers = 1 # Number of workers excluding the master process
 
-        new(samples, workers, UInt64(seed), verbose, threaded, distributed)
+            workers <= 1 && @info(
+                "There is only one worker available this time. Distributed feature has been deactivated")
+
+            distributed && @info(
+                "Distributed computing in Julia distributes the workload across the Cluster's nodes and cores")
+        end
+
+        if threaded
+            threads = Base.Threads.nthreads()
+
+            threads <= 1 && @info(
+                "There is only one worker available this time. Distributed feature has been deactivated")
+        end
+
+        new(samples, UInt64(seed), verbose, threaded, distributed)
     end
 
 end

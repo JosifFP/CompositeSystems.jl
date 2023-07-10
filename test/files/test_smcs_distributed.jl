@@ -6,10 +6,14 @@
 #the same seed.
 
 using Distributed
+using Pkg
+Pkg.activate(@__DIR__)
+Pkg.instantiate()
+Pkg.precompile()
 
 # instantiate and precompile environment in all processes
 @everywhere begin
-  using Pkg; Pkg.activate(@__DIR__)
+using Pkg; Pkg.activate(@__DIR__)
   Pkg.instantiate(); Pkg.precompile()
 end
 
@@ -18,7 +22,6 @@ end
     using Gurobi, Dates, JuMP
     using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 end
-
 
 @testset "Sequential MCS, 1000 samples, RBTS, distributed" begin
 
@@ -41,9 +44,7 @@ end
         resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
     end
 
-    total_result = CompositeSystems.assess(library, method, settings, resultspecs...)
-    system = BaseModule.SystemModel(library[1], library[2], library[3])
-    shortfall_threaded, util = CompositeAdequacy.finalize.(total_result, sys)
+    shortfall_threaded, util = CompositeSystems.assess(library, method, settings, resultspecs...)
 
     system_EDLC_mean = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
     system_EENS_mean = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.18585]
@@ -95,6 +96,8 @@ end
         method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true, distributed=true)
         resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
     end
+
+    shortfall_threaded, util = CompositeSystems.assess(library, method, settings, resultspecs...)
     
     system_EDLC_mean = [0.00, 0.00, 0.00, 0.10, 0.00, 0.00, 4.2200, 0.00, 10.1200, 0.1700, 0.00, 
     0.00, 0.00, 2.85, 0.00, 0.00, 0.00, 0.00, 0.64, 0.00, 0.00, 0.00, 0.00, 0.00]
@@ -110,10 +113,6 @@ end
     system_SI_stderror = [0.0000, 0.0000, 0.0000, 0.0995, 0.0000, 0.0000, 1.5451, 0.0000, 3.8116, 0.2387, 
     0.0000, 0.0000, 0.0000, 1.5869, 0.0000, 0.0000, 0.0000, 0.0000, 0.6933, 0.0000, 0.0000, 
     0.0000, 0.0000, 0.0000]
-    
-    total_result = CompositeSystems.assess(library, method, settings, resultspecs...)
-    system = BaseModule.SystemModel(library[1], library[2], library[3])
-    shortfall_threaded, util = CompositeAdequacy.finalize.(total_result, sys)
 
     @test isapprox(
         CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall_threaded, system.buses.keys)), 
