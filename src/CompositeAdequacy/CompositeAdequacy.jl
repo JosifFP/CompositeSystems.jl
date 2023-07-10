@@ -17,9 +17,9 @@
     import XLSX: rename!, addsheet!, openxlsx
     import Distributions: ccdf, Normal
     import Base: minimum, maximum, extrema
-    import Gurobi
-    import Distributed
+    import Distributed: Distributed, @distributed, @everywhere, RemoteChannel
     import JuMP
+    import Gurobi
 
     const GRB_ENV = Ref{Gurobi.Env}()
 

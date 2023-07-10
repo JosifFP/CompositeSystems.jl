@@ -19,22 +19,36 @@ end
 ""
 function resultremotechannel(
     method::SimulationSpec, 
-    threads::Int,
-    workers::Int,
-    resultspecs::ResultSpec...)
+    results::T,
+    workers::Int
+    )  where T <: Tuple{Vararg{ResultSpec}}
 
-    types = accumulatortype.(method, resultspecs)
+    types = accumulatortype.(method, results)
 
-    return [Distributed.RemoteChannel(()->Channel{Tuple{types...}}(threads)) for _ in 1:workers]
+    return Distributed.RemoteChannel(()->Channel{Tuple{types...}}(workers))
+    #return [Distributed.RemoteChannel(()->Channel{Tuple{types...}}(threads)) for _ in 1:workers]
 end
 
 merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}} = foreach(merge!, xs, ys)
 
 ""
+function merge!(
+    xs::RemoteChannel{Channel{T}}, 
+    ys::Channel{T}
+) where {T <: Tuple{Vararg{ResultAccumulator}}}
+    
+    while !isempty(ys)
+        y = take!(ys)
+        put!(xs, y)
+    end
+    close(ys)
+end
+
+""
 function finalize(
-    results::Channel{<:Tuple{Vararg{ResultAccumulator}}}, 
+    results::Channel{R}, 
     system::SystemModel{N,L,T}, 
-    threads::Int) where {N,L,T}
+    threads::Int) where {N,L,T, R <: Tuple{Vararg{ResultAccumulator}}}
 
     total_result = take!(results)
 
@@ -43,6 +57,21 @@ function finalize(
         merge!(total_result, thread_result)
     end
 
+    close(results)
+    return finalize.(total_result, system)
+end
+
+""
+function finalize(
+    results::RemoteChannel{Channel{R}}, 
+    system::SystemModel{N,L,T},
+    workers::Int) where {N,L,T, R <: Tuple{Vararg{ResultAccumulator}}}
+
+    total_result = take!(results)
+    for _ in 2:workers
+        worker_result = take!(results)
+        merge!(total_result, worker_result)
+    end
     close(results)
     return finalize.(total_result, system)
 end
