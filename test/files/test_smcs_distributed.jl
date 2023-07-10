@@ -42,9 +42,10 @@ end
         library = String[rawfile; Base_reliabilityfile; timeseriesfile]
         method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=true, distributed=true)
         resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+        sys = BaseModule.SystemModel(library[1], library[2], library[3])
     end
 
-    shortfall_threaded, util = CompositeSystems.assess(library, method, settings, resultspecs...)
+    shortfall_threaded, util = CompositeSystems.assess(library, sys, method, settings, resultspecs...)
 
     system_EDLC_mean = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
     system_EENS_mean = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.18585]
@@ -95,9 +96,10 @@ end
         library = String[rawfile; Base_reliabilityfile; timeseriesfile]
         method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true, distributed=true)
         resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+        sys = BaseModule.SystemModel(library[1], library[2], library[3])
     end
 
-    shortfall_threaded, util = CompositeSystems.assess(library, method, settings, resultspecs...)
+    shortfall_threaded, util = CompositeSystems.assess(library, sys, method, settings, resultspecs...)
     
     system_EDLC_mean = [0.00, 0.00, 0.00, 0.10, 0.00, 0.00, 4.2200, 0.00, 10.1200, 0.1700, 0.00, 
     0.00, 0.00, 2.85, 0.00, 0.00, 0.00, 0.00, 0.64, 0.00, 0.00, 0.00, 0.00, 0.00]
