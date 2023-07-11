@@ -1,8 +1,8 @@
-module load gurobi/10.0.2
-module load julia/1.8.5
-gurobi_cl 1> /dev/null && echo Success || echo
+#module load gurobi/10.0.2
+#module load julia/1.8.5
+#gurobi_cl 1> /dev/null && echo Success || echo
 #gurobi_cl --tokens
-julia -p 4 --threads 4
+#julia -p 4 --threads 4
 #Distributed.nprocs()
 #Base.Threads.nthreads()
 
