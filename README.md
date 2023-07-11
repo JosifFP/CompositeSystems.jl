@@ -151,7 +151,7 @@ The primary developer is Josif Figueroa (@JosifFP) with support of the following
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/JosifFP/repo_name.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
 [contributors-url]: https://github.com/JosifFP/CompositeSystems.jl/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
 [forks-url]: https://github.com/JosifFP/CompositeSystems.jl/network/members
