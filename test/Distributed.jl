@@ -2,7 +2,7 @@
 #module load julia/1.8.5
 #gurobi_cl 1> /dev/null && echo Success || echo
 #gurobi_cl --tokens
-#julia -p 2 --threads 2
+#julia -p 4 --threads 4
 #Distributed.nprocs()
 #Base.Threads.nthreads()
 
@@ -41,8 +41,9 @@ end
   rawfile = "test/data/RBTS/Base/RBTS.m"
   Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
   library = String[rawfile; Base_reliabilityfile; timeseriesfile]
-  method = CompositeAdequacy.SequentialMCS(samples=10, seed=100, threaded=false, distributed=true)
+  method = CompositeAdequacy.SequentialMCS(samples=20, seed=100, threaded=false, distributed=true)
   resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 end
 
-Shortfall,_ = CompositeSystems.assess(library, method, settings, resultspecs...)
+sys = BaseModule.SystemModel(library[1], library[2], library[3])
+Shortfall,_ = CompositeSystems.assess(library, sys, method, settings, resultspecs...)
