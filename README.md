@@ -1,6 +1,6 @@
 <!--  -->
 
-`<a name="readme-top"></a>`
+<a name="readme-top"></a>`
 
 [Contributors][contributors-url]
 [Forks][forks-url]
@@ -98,16 +98,11 @@ Soon
 3. Install dependent packages and Gurobi license
 4. Run runtests.jl
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 <!-- USAGE EXAMPLES -->
 
 ## Usage
 
 Soon
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 <!-- CONTRIBUTING -->
 
@@ -128,8 +123,6 @@ Contributions are what make the open source community such an amazing place to l
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTACT -->
 
