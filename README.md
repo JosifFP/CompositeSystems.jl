@@ -127,7 +127,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 ## Contact
 
-Josif Figueroa Parra - [**In**](https://www.linkedin.com/in/josif-figueroa-parra/) - josif.figueroa@gmail.com
+Josif Figueroa Parra - [**In**](https://www.linkedin.com/in/josif-figueroa-parra/) - josif.figueroa@unb.ca
 
 Project Link: [https://github.com/JosifFP/CompositeSystems.jl](https://github.com/JosifFP/CompositeSystems.jl)
 
@@ -139,7 +139,7 @@ Project Link: [https://github.com/JosifFP/CompositeSystems.jl](https://github.co
 
 This work was supported by MITACS through the Mitacs Accelerate program, Atlantic Canada Opportunities Agency, and Énergie NB Power, NB, Canada, under Grant IT27416.
 
-The primary developer is Josif Figueroa (@JosifFP) with support of the following contributors:
+The primary developer is Josif Figueroa with support of the following contributors:
 
 * [Dr. Kush Bubbar](https://www.unb.ca/faculty-staff/directory/j-herbert-smith-centre-tme/bubbar-kush.html)
 * [M.S. Greg Young-Morris](https://www.linkedin.com/in/greg-young-morris-4114a426/)
