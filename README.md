@@ -143,7 +143,7 @@ The primary developer is Josif Figueroa with support of the following contributo
 
 * [Dr. Kush Bubbar](https://www.unb.ca/faculty-staff/directory/j-herbert-smith-centre-tme/bubbar-kush.html)
 * [M.S. Greg Young-Morris](https://www.linkedin.com/in/greg-young-morris-4114a426/)
-* [Sys-MoDEL Lab](https://github.com/sysmodel)
+* [Sys-MoDEL Lab](https://www.sysmodel.ca/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

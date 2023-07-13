@@ -38,67 +38,45 @@ the assess function using a different seed from the sampleseeds channel. The res
 thread are stored in the results channel, and the function finalize is called on the results
 after all threads have finished executing.
 """
-function assess(
-    library::Vector{String},
+function assess_hpc(
+    system::SystemModel{N},
     method::SequentialMCS,
     settings::Settings,
-    resultspecs::ResultSpec...)
+    resultspecs::ResultSpec...
+) where {N}
 
-    !method.distributed && throw(
-        DomainError("'distributed' is set to false, 
-        please redefine the method and/or number of samples/nodes/threaded"))
+    #Number of workers excluding the master process
+    workers = Distributed.nprocs() > 1 ? Distributed.nprocs() - 1 : 1
+    threads = method.threaded ? Base.Threads.nthreads() : 1
+    results = resultremotechannel(method, resultspecs, threads*workers)
 
-    length(library) != 3 && 
-        throw(DomainError("library must be composed of three elements"))
+    workers == 1 && @info(
+        "There is only one worker available this time")
 
-    method.threaded ? threads = Base.Threads.nthreads() : threads = 1
+    workers > 1 &&  @info(
+        "CompositeSystems will distribute the workload across $(workers) nodes and $(threads) threads")
 
-    # Number of workers excluding the master process
-    Distributed.nprocs() > 1 ? workers = Distributed.nprocs() - 1 : workers = 1
+    @sync @distributed for i=1:workers
 
-    master_results = resultremotechannel(method, resultspecs, workers)
-
-    BaseModule.silence()
-    system = SystemModel(library[1], library[2], library[3])
-
-    if workers > 1
-
-        @sync @distributed for i in 1:workers
-
-            BaseModule.silence()
-            system = SystemModel(library[1], library[2], library[3])
-            sampleseeds = Channel{Int}(2*threads)
-            results = resultchannel(method, resultspecs, threads)
-      
-            nsamples_per_worker = div(method.nsamples, 2)
-            start_index = (i - 1) * nsamples_per_worker + 1
-            end_index = i * nsamples_per_worker
-      
-            if i == workers && end_index != method.nsamples
-                end_index = method.nsamples
+        workers = Distributed.nprocs() > 1 ? Distributed.nprocs() - 1 : 1
+        threads = method.threaded ? Base.Threads.nthreads() : 1
+        sampleseeds = Channel{Int}(2*threads)
+        nsamples_per_worker = div(method.nsamples, 2)
+        start_index = (i - 1) * nsamples_per_worker + 1
+        end_index = min(i * nsamples_per_worker, method.nsamples)
+    
+        Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
+    
+        if method.threaded
+            for _ in 1:threads
+                Threads.@spawn CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
             end
-      
-            Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
-      
-            if method.threaded
-                for _ in 1:threads
-                    Threads.@spawn begin
-                    assess(system, method, settings, sampleseeds, results, resultspecs...)
-                    end
-                end
-            else
-                assess(system, method, settings, sampleseeds, results, resultspecs...)
-            end
-
-            merge!(master_results, results)
-            close(results)
+        else
+            CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
-      
-      else
-        return assess(system, method, settings, resultspecs...)
-      end
+    end
 
-    return finalize(master_results, system, method.distributed ? workers : 1)
+    return finalize(results, system, method.threaded ? threads*workers : workers)
 end
 
 """
@@ -117,7 +95,7 @@ function assess(
     method::SequentialMCS,
     settings::Settings,
     sampleseeds::Channel{Int},
-    results::Union{Distributed.RemoteChannel{R}, R},
+    results::Union{R, Distributed.RemoteChannel{R}},
     resultspecs::ResultSpec...
 ) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 

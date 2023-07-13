@@ -30,7 +30,7 @@
 
     export
         # CompositeAdequacy submoduleexport
-        assess, SimulationSpec,
+        assess, assess_hpc, SimulationSpec,
         
         # Metrics
         ReliabilityMetric, EDLC, EENS, SI, ELCC, MeanEstimate, val, stderror,
