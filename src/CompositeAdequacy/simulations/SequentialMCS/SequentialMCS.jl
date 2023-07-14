@@ -61,7 +61,7 @@ function assess_hpc(
         workers = Distributed.nprocs() > 1 ? Distributed.nprocs() - 1 : 1
         threads = method.threaded ? Base.Threads.nthreads() : 1
         sampleseeds = Channel{Int}(2*threads)
-        nsamples_per_worker = div(method.nsamples, 2)
+        nsamples_per_worker = div(method.nsamples, workers)
         start_index = (i - 1) * nsamples_per_worker + 1
         end_index = min(i * nsamples_per_worker, method.nsamples)
     

@@ -17,7 +17,7 @@
     import XLSX: rename!, addsheet!, openxlsx
     import Distributions: ccdf, Normal
     import Base: minimum, maximum, extrema
-    import Distributed: Distributed, @distributed, @everywhere, RemoteChannel
+    import Distributed: Distributed, @distributed, RemoteChannel
     import JuMP
     import Gurobi
 
