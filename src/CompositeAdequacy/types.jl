@@ -24,6 +24,10 @@ struct SequentialMCS <: SimulationSpec
         samples <= 0 && throw(DomainError("Sample count must be positive"))
         seed < 0 && throw(DomainError("Random seed must be non-negative"))
 
+        workers = Distributed.nprocs() > 1 ? Distributed.nprocs() - 1 : 1
+        _, remainder = divrem(samples, workers)
+        remainder != 0 && throw(DomainError("The ratio of #samples to #workers must be an integer number"))
+
         new(samples, UInt64(seed), verbose, threaded)
     end
 
