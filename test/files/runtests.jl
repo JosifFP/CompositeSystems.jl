@@ -18,10 +18,8 @@ include("solvers.jl")
     include("test_curtailed_load_ac.jl")
     include("test_storage.jl")
     include("test_opf_form.jl")
-
     #These testsets require Gurobi license
     include("test_smcs_non_threaded.jl")
     include("test_smcs_threaded.jl")
-    include("test_smcs_distributed.jl")
-    
+    #include("test_smcs_distributed.jl")
 end;

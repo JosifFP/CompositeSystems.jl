@@ -1,19 +1,34 @@
 #This test should be the last one. After finished, close restart terminal.
 using Distributed
-addprocs(2)
 
-# instantiate and precompile environment in all processes
-@everywhere main_dir = pwd()
+addprocs(2)
+#julia -p 2 --threads 2
 @everywhere begin
-    using Pkg; Pkg.activate(main_dir)
+    using Pkg; Pkg.activate(joinpath("..\\PRATS.jl"))
+end
+
+Pkg.instantiate()
+Pkg.precompile()
+
+@everywhere begin
     Pkg.instantiate(); Pkg.precompile()
 end
 
-@everywhere begin
-    # load dependencies
-    using Gurobi, Dates, JuMP
-    using CompositeSystems
-end
+# instantiate and precompile environment in all processes
+@everywhere using Gurobi
+@everywhere using Dates
+@everywhere using JuMP
+@everywhere using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
+
+
+settings = CompositeSystems.Settings(;
+    jump_modelmode = JuMP.AUTOMATIC,
+    powermodel_formulation = OPF.DCMPPowerModel,
+    select_largest_splitnetwork = false,
+    deactivate_isolated_bus_gens_stors = true,
+    set_string_names_on_creation = false,
+    count_samples = true
+)
 
 @testset "Sequential MCS, 1000 samples, RBTS, distributed" begin
 
@@ -35,13 +50,13 @@ end
 
     Shortfall, util = CompositeSystems.assess_hpc(system, method, settings, resultspecs...)
 
-    system_EDLC_mean = [0.0, 0.0, 1.18200, 0.0, 0.00200, 10.35400]
-    system_EENS_mean = [0.0, 0.0, 10.68267, 0.0, 0.01941, 127.18585]
-    system_SI_mean = [0.0, 0.0, 3.46465, 0.0, 0.00629, 41.24946]
-
-    system_EDLC_stderror = [0.0, 0.0, 0.13081, 0.0, 0.00200, 0.45317]
-    system_EENS_stderror= [0.0, 0.0, 1.66407, 0.0, 0.01941, 5.61568]
-    system_SI_stderror = [0.0, 0.0, 0.53969, 0.0, 0.00629, 1.82130]
+    system_EDLC_mean = [0.0, 0.0, 1.19100, 0.0, 0.00199, 10.42499]
+    system_EENS_mean = [0.0, 0.0, 9.55717, 0.0, 0.01930, 128.37732]
+    system_SI_mean = [0.0, 0.0, 3.09962, 0.0, 0.00626, 41.63588]
+    
+    system_EDLC_stderror = [0.0, 0.0, 0.13097, 0.0, 0.00200, 0.45253]
+    system_EENS_stderror= [0.0, 0.0, 1.35715, 0.0, 0.01930, 5.66021]
+    system_SI_stderror = [0.0, 0.0, 0.44015, 0.0, 0.00626, 1.83574]
 
     @test isapprox(
         CompositeAdequacy.val.(CompositeSystems.EDLC.(Shortfall, system.buses.keys)), 
@@ -86,20 +101,17 @@ end
 
     Shortfall, util = CompositeSystems.assess_hpc(system, method, settings, resultspecs...)
     
-    system_EDLC_mean = [0.00, 0.00, 0.00, 0.10, 0.00, 0.00, 4.2200, 0.00, 10.1200, 0.1700, 0.00, 
-    0.00, 0.00, 2.85, 0.00, 0.00, 0.00, 0.00, 0.64, 0.00, 0.00, 0.00, 0.00, 0.00]
+    system_EDLC_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.66, 0.0, 8.78000, 0.16, 0.0, 0.0, 0.0, 2.37, 
+        0.0, 0.0, 0.0, 0.0, 0.69, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    system_EENS_mean = [0.0000, 0.0000, 0.0000, 4.7239, 0.0000, 0.0000, 324.0319, 0.0000, 900.3531, 
-    12.8916, 0.0000, 0.0000, 0.0000, 238.3064, 0.0000, 0.0000, 0.0000, 0.0000, 59.4747, 0.0000, 
-    0.0000, 0.0000, 0.0000, 0.0000]
+    system_EENS_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 280.40032, 0.0, 770.41584, 7.11353, 0.0, 0.0, 0.0, 
+        219.74267, 0.0, 0.0, 0.0, 0.0, 71.21919, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    system_SI_mean = [0.0000, 0.0000, 0.0000, 0.0995, 0.0000, 0.0000, 6.8217, 0.0000, 18.9548, 0.2714, 
-    0.0000, 0.0000, 0.0000, 5.0170, 0.0000, 0.0000, 0.0000, 0.0000, 1.2521, 0.0000, 0.0000, 
-    0.0000, 0.0000, 0.0000]
+    system_SI_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.90316, 0.0, 16.21927, 0.14975, 0.0, 0.0, 0.0, 4.62616, 
+        0.0, 0.0, 0.0, 0.0, 1.49935, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    system_SI_stderror = [0.0000, 0.0000, 0.0000, 0.0995, 0.0000, 0.0000, 1.5451, 0.0000, 3.8116, 0.2387, 
-    0.0000, 0.0000, 0.0000, 1.5869, 0.0000, 0.0000, 0.0000, 0.0000, 0.6933, 0.0000, 0.0000, 
-    0.0000, 0.0000, 0.0000]
+    system_SI_stderror = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.33244, 0.0, 3.21769, 0.11970, 0.0, 0.0, 0.0, 1.85691, 
+        0.0, 0.0, 0.0, 0.0, 1.02961, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     @test isapprox(
         CompositeAdequacy.val.(CompositeSystems.EDLC.(Shortfall, system.buses.keys)), 

@@ -75,3 +75,19 @@ function finalize(
     close(results)
     return finalize.(total_result, system)
 end
+
+""
+function take_Results!(
+    results::Channel{R}, 
+    threads::Int) where { R <: Tuple{Vararg{ResultAccumulator}}}
+
+    total_result = take!(results)
+
+    for _ in 2:threads
+        thread_result = take!(results)
+        merge!(total_result, thread_result)
+    end
+
+    close(results)
+    return total_result
+end

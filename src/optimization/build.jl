@@ -72,7 +72,7 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel; t::Int=1)
     # ---------------
     con_model_voltage_on_off(pm, system)
 
-    for i in field(system, :ref_buses)
+    for i in topology(pm, :ref_buses)
         con_theta_ref(pm, system, i)
     end
 
@@ -96,139 +96,137 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel; t::Int=1)
 end
 
 """
-Optimizes the power model and update the system states based on the results of the optimization. 
-The function first checks if there are any changes in the branch, storage, or generator states at time step t 
-compared to the previous time step. If there are any changes, the function calls JuMP.optimize!(pm.model) 
-to optimize the power model and then calls optimize_model! to update the results. 
-If there are no changes, it fills the states.buses_curtailed_pd variable with zeros.
+This solve! function performs the optimization and state updating processes for a given power model and system model.
+It first updates the system topology to reflect changes, such as outages. Depending on whether there are storage 
+components in the system, it updates the power model accordingly and performs optimization. If the system has a 
+failed state, it updates and solves the problem. Upon completion of optimization, the function checks if the 
+solution is locally or globally optimal. It then records the system's branch flows, curtailed load, and stored energy 
+for the current timestep based on the optimization solution's status.
 """
 function solve!(
-    pm::AbstractPowerModel, states::States, 
-    system::SystemModel, settings::Settings, t::Int; force::Bool=false)
+    pm::AbstractPowerModel, system::SystemModel, settings::Settings, t::Int; force::Bool=false)
 
-    update_topology!(pm, system, states, settings, t)
+    update_topology!(pm.topology, system, settings, t)
+    update_problem_fast!(pm, system, t)
 
-    changes = any([
-        states.branches_available; 
-        states.generators_available;
-        length(system.storages) == 0;
-        !force].== 0)
-
-    update_problem!(pm, system, states, t, changes=changes)
+    should_optimize = isempty(field(system, :storages, :keys)) ? (topology(pm, :failed_systemstate)[t] || force) : true
     
-    changes && JuMP.optimize!(pm.model)
+    should_optimize && JuMP.optimize!(pm.model)
 
-    build_result!(pm, system, states, settings, t)
+    is_solved = (JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED) || 
+                (JuMP.termination_status(pm.model) == JuMP.OPTIMAL)
 
-    record_other_states!(states)
-
+    
+    record_states!(pm.topology)
+    record_flow_branch!(pm, system, t, is_solved=is_solved)
+    record_curtailed_load!(pm, system, t, is_solved=is_solved)
+    record_stored_energy!(pm, system, t, is_solved=is_solved)
     return
 end
 
+""
+function update_problem_fast!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+
+    failed_now = topology(pm, :failed_systemstate)[t]
+    failed_prev = t > 1 ? topology(pm, :failed_systemstate)[t-1] : false
+    failed_prev2 = t > 2 ? topology(pm, :failed_systemstate)[t-2] : false
+
+    if failed_now || failed_prev
+        update_problem!(pm, system, t)
+    elseif !failed_prev && failed_prev2
+        update_problem_nochanges!(pm, system, t)
+    end
+end
 
 ""
-function update_problem!(
-    pm::AbstractPowerModel, system::SystemModel, 
-    states::States, t::Int; changes::Bool=false, force_pmin::Bool=false)
-
-    update_generators!(pm, system, states, force_pmin=force_pmin)
-    update_branches!(pm, system, states)
-    update_shunts!(pm, system, states)
-    update_storages!(pm, system, states)
-    update_buses!(pm, system, states, t, changes=changes)
-    update_loads!(pm, system, states)
+function update_problem!(pm::AbstractPowerModel, system::SystemModel, t::Int; force_pmin::Bool=false)
+    update_generators!(pm, system, force_pmin=force_pmin)
+    update_branches!(pm, system)
+    update_shunts!(pm, system)
+    update_storages!(pm, system)
+    update_buses!(pm, system, t)
+    update_loads!(pm, system)
     update_obj_min_stor_load_curtailment!(pm, system, t)
 end
 
 ""
-function update_generators!(
-    pm::AbstractPowerModel, system::SystemModel, states::States; force_pmin::Bool=false)
+function update_problem_nochanges!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+    for i in field(system, :storages, :keys)
+        update_con_storage_state(pm, system, i)
+    end
+    for i in field(system, :buses, :keys)
+        update_con_power_balance(pm, system, i, t)
+    end
+    update_obj_min_stor_load_curtailment!(pm, system, t)
+end
+
+""
+function update_generators!(pm::AbstractPowerModel, system::SystemModel; force_pmin::Bool=false)
 
     for i in field(system, :generators, :keys)
-
-        if any([states.generators_available[i]; states.generators_pasttransition[i]].== 0)
-
-            update_var_gen_power_real(pm, system, states, i, force_pmin=force_pmin)
-            update_var_gen_power_imaginary(pm, system, states, i)
-
+        if !topology(pm, :generators_available)[i] || !topology(pm, :generators_pasttransition)[i]
+            update_var_gen_power_real(pm, system, i, force_pmin=force_pmin)
+            update_var_gen_power_imaginary(pm, system, i)
         end
     end
 end
 
 ""
-function update_branches!(
-    pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_branches!(pm::AbstractPowerModel, system::SystemModel)
 
     for l in field(system, :branches, :keys)
-
-        if any([states.branches_available[l]; states.branches_pasttransition[l]].== 0)
-
-            update_var_branch_indicator(pm, system, states, l)
-            update_con_ohms_yt(pm, system, states, l)
-            update_con_thermal_limits(pm, system, states, l)
-            update_con_voltage_angle_difference(pm, system, states, l)
-
+        if !topology(pm, :branches_available)[l] || !topology(pm, :branches_pasttransition)[l]
+            update_var_branch_indicator(pm, system, l)
+            update_con_ohms_yt(pm, system, l)
+            update_con_thermal_limits(pm, system, l)
+            update_con_voltage_angle_difference(pm, system, l)
         end
     end
 end
 
 ""
-function update_shunts!(
-    pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_shunts!(pm::AbstractPowerModel, system::SystemModel)
 
-    if any([states.branches_available; states.branches_pasttransition].== 0)
-
+    if any([topology(pm, :branches_available); topology(pm, :branches_pasttransition)].== 0)
         for i in field(system, :shunts, :keys)
-
-            if any([states.shunts_available[i]; states.shunts_pasttransition[i]].== 0)            
-                update_var_shunt_admittance_factor(pm, system, states, i)
+            if !topology(pm, :shunts_available)[i] || !topology(pm, :shunts_pasttransition)[i]         
+                update_var_shunt_admittance_factor(pm, system, i)
             end
-
         end
     end
 end
 
 ""
-function update_storages!(
-    pm::AbstractPowerModel, system::SystemModel, states::States)
+function update_storages!(pm::AbstractPowerModel, system::SystemModel)
 
     for i in field(system, :storages, :keys)
+        update_con_storage_state(pm, system, i)
 
-        update_con_storage_state(pm, system, states, i)
-
-        if any([states.storages_available[i]; states.storages_pasttransition[i]].== 0)
-            update_var_storage_charge(pm, system, states, i)
-            update_var_storage_discharge(pm, system, states, i)
+        if !topology(pm, :storages_available)[i] || !topology(pm, :storages_pasttransition)[i]
+            update_var_storage_charge(pm, system, i)
+            update_var_storage_discharge(pm, system, i)
         end
-
     end
 end
 
 ""
-function update_buses!(
-    pm::AbstractPowerModel, system::SystemModel, states::States, t::Int; changes::Bool=true)
+function update_buses!(pm::AbstractPowerModel, system::SystemModel, t::Int)
 
     for i in field(system, :buses, :keys)
-
-        changes && update_con_power_balance(pm, system, states, i, t)
-
-        if any([states.buses_available[i]; states.buses_pasttransition[i]] .== 4)
-            update_var_bus_voltage_angle(pm, system, states, i)
+        update_con_power_balance(pm, system, i, t)
+        
+        if !topology(pm, :buses_available)[i] || !topology(pm, :buses_pasttransition)[i]
+            update_var_bus_voltage_angle(pm, system, i)
         end
-
     end
 end
 
 ""
-function update_loads!(
-    pm::AbstractPowerModel, system::SystemModel, states::States)
-
+function update_loads!(pm::AbstractPowerModel, system::SystemModel)
     for i in field(system, :loads, :keys)
-
-        if any([states.loads_available[i]; states.loads_pasttransition[i]] .== 0)
-            update_var_load_power_factor(pm, system, states, i)
+        if !topology(pm, :loads_available)[i] || !topology(pm, :loads_pasttransition)[i]
+            update_var_load_power_factor(pm, system, i)
         end
-        
     end
 end
 
@@ -261,7 +259,7 @@ function build_opf!(pm::AbstractPowerModel, system::SystemModel)
     # ---------------
     con_model_voltage_on_off(pm, system)
 
-    for i in field(system, :ref_buses)
+    for i in topology(pm, :ref_buses)
         con_theta_ref(pm, system, i)
     end
 
