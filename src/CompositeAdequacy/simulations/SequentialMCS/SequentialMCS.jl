@@ -1,11 +1,12 @@
 include("utils.jl")
 
 """
-This code snippet is using multi-threading to parallelize the assess function by running 
-multiple instances of it simultaneously on different threads. The Threads.@spawn macro is 
-used to create new threads, each of which will execute the assess function using a different 
-seed from the sampleseeds channel. The results of each thread are stored in the results channel, 
-and the function finalize is called on the results after all threads have finished executing.
+This code snippet is using multi-threading and distributed computing to parallelize 
+the assess function by running multiple instances of it simultaneously on different threads
+and machines. The Threads.@spawn macro is used to create new threads, each of which will execute 
+the assess function using a different seed from the sampleseeds channel. The results of each 
+thread are stored in the results channel, and the function finalize is called on the results
+after all threads have finished executing.
 """
 function assess(
     system::SystemModel{N},
@@ -14,75 +15,97 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    threads = Base.Threads.nthreads()
-    sampleseeds = Channel{Int}(2*threads)
-    results = resultchannel(method, resultspecs, threads)
-    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
-
-    if method.threaded
-        for _ in 1:threads
-            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
-        end
-    else
-        assess(system, method, settings, sampleseeds, results, resultspecs...)
-    end
+    #Number of workers excluding the master process
+    nworkers = Distributed.nprocs()
+    nthreads = method.threaded ? Base.Threads.nthreads() : 1
     
-    return finalize(results, system, method.threaded ? threads : 1)
+    # Use RemoteChannel for distributed computing
+    results = resultremotechannel(method, resultspecs, nworkers)
+
+    # Compute on worker processes
+    if nworkers > 1
+        @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+
+        accumulators = Distributed.pmap(
+            i -> assess_slave(system, method, settings, nworkers, nthreads, i, resultspecs...), 2:nworkers)
+
+        for k in 2:nworkers
+            put!(results, fetch(accumulators[k-1]))
+        end
+    end
+
+    # Compute on the master process/worker
+    master_result = assess_slave(system, method, settings, nworkers, nthreads, 1, resultspecs...)
+    put!(results, master_result)
+
+    return finalize(results, system, nworkers)
 end
 
 """
-This code snippet is using multi-threading and distributed computing to parallelize 
-the assess function by running multiple instances of it simultaneously on different threads
-and machines. The Threads.@spawn macro is used to create new threads, each of which will execute 
-the assess function using a different seed from the sampleseeds channel. The results of each 
-thread are stored in the results channel, and the function finalize is called on the results
-after all threads have finished executing.
+This code snippet is using multi-threading to parallelize the assess function by running 
+multiple instances of it simultaneously on different threads. The Threads.@spawn macro is 
+used to create new threads, each of which will execute the assess function using a different 
+seed from the sampleseeds channel. The results of each thread are stored in the results channel, 
+and the function finalize is called on the results after all threads have finished executing.
 """
-function assess_hpc(
+function assess_single(
     system::SystemModel{N},
     method::SequentialMCS,
     settings::Settings,
     resultspecs::ResultSpec...
 ) where {N}
 
-    #Number of workers excluding the master process
-    workers = Distributed.nprocs() > 1 ? Distributed.nprocs() - 1 : 1
-    threads = method.threaded ? Base.Threads.nthreads() : 1
-    results = resultremotechannel(method, resultspecs, threads*workers)
+    nthreads = method.threaded ? Base.Threads.nthreads() : 1
+    sampleseeds = Channel{Int}(2*nthreads)
+    results = resultchannel(method, resultspecs, nthreads)
+    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
-    workers == 1 && @info(
-        "There is only one worker available this time")
-
-    workers > 1 &&  @info(
-        "CompositeSystems will distribute the workload across $(workers) nodes and $(threads) threads")
-
-    @sync @distributed for i=1:workers
-
-        workers = Distributed.nprocs() > 1 ? Distributed.nprocs() - 1 : 1
-        threads = method.threaded ? Base.Threads.nthreads() : 1
-        sampleseeds = Channel{Int}(2*threads)
-        nsamples_per_worker = div(method.nsamples, workers)
-        start_index = (i - 1) * nsamples_per_worker + 1
-        end_index = min(i * nsamples_per_worker, method.nsamples)
-    
-        Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
-    
-        if method.threaded
-            for _ in 1:threads
-                Threads.@spawn CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
-            end
-        else
-            CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
+    if method.threaded
+        for _ in 1:nthreads
+            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
+    else
+        assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
+    
+    #return finalize(results, system, threads)
+    return take_Results!(results, nthreads)
+end
 
-    return finalize(results, system, method.threaded ? threads*workers : workers)
+"Distributed computing version of 'assess' function.
+Return results as an accumulator that needs to be merged into other worker' accumulators"
+function assess_slave(
+    system::SystemModel{N},
+    method::SequentialMCS,
+    settings::Settings,
+    nworkers::Int,
+    nthreads::Int,
+    worker::Int,
+    resultspecs::ResultSpec...
+) where {N}
+
+    sampleseeds = Channel{Int}(2*nthreads)
+    results = resultchannel(method, resultspecs, nthreads)
+    nsamples_per_worker = div(method.nsamples, nworkers)
+    start_index = (worker - 1) * nsamples_per_worker + 1
+    end_index = min(worker * nsamples_per_worker, method.nsamples)
+    Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
+
+    if method.threaded
+        for _ in 1:nthreads
+            Threads.@spawn CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
+        end
+    else
+        CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
+    end
+    
+    return take_Results!(results, nthreads)
 end
 
 """
 This assess function is designed to perform a Monte Carlo simulation using the Sequential Monte 
 Carlo (SMC) method. The function uses the pm variable to store an abstract model of the system, 
-and the States variable to store the system's states. It also creates several recorders 
+and the StateTransition variables to store the system's states. It also creates several recorders 
 using the accumulator function, and an RNG (random number generator) of type Philox4x. The function 
 then iterates over the sampleseeds channel, using each seed to initialize the RNG and the system states, 
 and performs the Monte Carlo simulation for each sample.
@@ -100,7 +123,6 @@ function assess(
 ) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
     pm = abstract_model(system, settings, GRB_ENV[])
-    state = States(system)
     statetransition = StateTransition(system)
     build_problem!(pm, system)
     recorders = accumulator.(system, method, resultspecs)
@@ -108,17 +130,17 @@ function assess(
 
     for s in sampleseeds
 
-        settings.count_samples && println("s=$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
-        initialize!(rng, state, statetransition, system) #creates the up/down sequence for each device.
+        initialize!(rng, statetransition, pm.topology, system) #creates the up/down sequence for each device.
 
         for t in 1:N
-            update!(rng, state, statetransition, system, t)
-            solve!(pm, state, system, settings, t)
-            foreach(recorder -> record!(recorder, pm, state, system, s, t), recorders)
+            update!(rng, statetransition, pm.topology, system, t)
+            solve!(pm, system, settings, t)
+            foreach(recorder -> record!(recorder, pm.topology, system, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
+        settings.count_samples && @info("sample = $(s)")
     end
 
     Base.finalize(JuMP.backend(pm.model).optimizer)
@@ -132,30 +154,27 @@ random number generator to randomly determine the availability of different asse
 (buses, branches, common branches, generators, and storages) for each time step.
 """
 function initialize!(rng::AbstractRNG, 
-    states::States, statetransition::StateTransition, system::SystemModel{N}) where N
+    statetransition::StateTransition, topology::Topology, system::SystemModel{N}) where N
 
     initialize_availability!(rng, statetransition.branches_available, 
         statetransition.branches_nexttransition, system.branches, N)
 
     initialize_availability!(rng, statetransition.commonbranches_available, 
-        statetransition.commonbranches_nexttransition, system.commonbranches, N)
+        statetransition.commonbranches_nexttransition, system.commonbranches, N) 
     
     initialize_availability!(rng, statetransition.generators_available, 
         statetransition.generators_nexttransition, system.generators, N)
 
     initialize_availability!(rng, statetransition.storages_available, 
-        statetransition.storages_nexttransition, system.storages, N)
+        statetransition.storages_nexttransition, system.storages, N)    
 
-    update_other_states!(states, statetransition, system)
-
+    OPF.update_states!(topology, statetransition)
     return
 end
 
-"The function update! updates the system states for a given time step t. 
-It updates the topology of the system with the function update_topology!, 
-then updates the method and power model with update_problem!"
+"The function update! updates the system states for a given time step t."
 function update!(rng::AbstractRNG, 
-    states::States, statetransition::StateTransition, system::SystemModel{N}, t::Int) where N
+    statetransition::StateTransition, topology::Topology, system::SystemModel{N}, t::Int) where N
     
     update_availability!(rng, statetransition.branches_available, 
         statetransition.branches_nexttransition, system.branches, t, N)
@@ -169,9 +188,8 @@ function update!(rng::AbstractRNG,
     update_availability!(rng, statetransition.storages_available, 
         statetransition.storages_nexttransition, system.storages, t, N)
 
-    update_other_states!(states, statetransition, system)
-    #apply_common_outages!(states, system.branches, t)
-
+    OPF.update_states!(topology, statetransition, t)
+    #apply_common_outages!(topology, system.branches, t)
     return
 end
 

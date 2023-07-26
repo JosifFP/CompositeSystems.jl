@@ -310,10 +310,10 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
         if haskey(reliability_data["gen"], i) 
             if v["gen_bus"] == reliability_data["gen"][i]["bus"] && v["pmax"]*v["mbase"] == reliability_data["gen"][i]["pmax"]
                 get!(v, "state_model", reliability_data["gen"][i]["state_model"])
-                get!(v, "λ_updn", reliability_data["gen"][i]["λ_updn"])
-                get!(v, "μ_updn", reliability_data["gen"][i]["μ_updn"])
-                get!(v, "λ_upde", reliability_data["gen"][i]["λ_upde"])
-                get!(v, "μ_upde", reliability_data["gen"][i]["μ_upde"])
+                get!(v, "λ_updn", reliability_data["gen"][i]["λ_updn"]./8760)
+                get!(v, "μ_updn", reliability_data["gen"][i]["μ_updn"]./8760)
+                get!(v, "λ_upde", reliability_data["gen"][i]["λ_upde"]./8760)
+                get!(v, "μ_upde", reliability_data["gen"][i]["μ_upde"]./8760)
                 get!(v, "pde", reliability_data["gen"][i]["pde"])
             else
                 @error("Generation reliability data does differ from network data")
@@ -328,8 +328,8 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
         if haskey(reliability_data["storage"], i)
             if v["storage_bus"] == reliability_data["storage"][i]["bus"] && 
             v["energy_rating"]*network[:baseMVA] == reliability_data["storage"][i]["energy_rating"]
-                get!(v, "λ_updn", reliability_data["storage"][i]["λ_updn"])
-                get!(v, "μ_updn", reliability_data["storage"][i]["μ_updn"])
+                get!(v, "λ_updn", reliability_data["storage"][i]["λ_updn"]./8760)
+                get!(v, "μ_updn", reliability_data["storage"][i]["μ_updn"]./8760)
             else
                 @error("Storage reliability data does differ from network data")
             end
@@ -342,8 +342,8 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
         i = string(k)
         if haskey(reliability_data["branch"], i)
             get!(v, "common_mode", reliability_data["branch"][i]["common_mode"])
-            get!(v, "λ_updn", reliability_data["branch"][i]["λ_updn"])
-            get!(v, "μ_updn", reliability_data["branch"][i]["μ_updn"])
+            get!(v, "λ_updn", reliability_data["branch"][i]["λ_updn"]./8760)
+            get!(v, "μ_updn", reliability_data["branch"][i]["μ_updn"]./8760)
         else
             @error("Insufficient transmission reliability data provided")
         end
@@ -361,9 +361,13 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
             if !haskey(network[:commonbranch], v["common_mode"])
 
                 get!(network[:commonbranch], v["common_mode"], 
-                    Dict("index"=>v["common_mode"], "f_bus"=> v["f_bus"], 
-                    "t_bus"=> v["t_bus"], "λ_updn"=> v["λ_common"], 
-                    "μ_updn"=> v["μ_common"], "br_1"=>parse(Int, k))
+                    Dict(
+                        "index"=>v["common_mode"], 
+                        "f_bus"=> v["f_bus"],
+                        "t_bus"=> v["t_bus"], 
+                        "λ_updn"=> v["λ_common"]./8760,
+                        "μ_updn"=> v["μ_common"]./8760, 
+                        "br_1"=>parse(Int, k))
                 )
             
             elseif haskey(network[:commonbranch], v["common_mode"]) && !haskey(v, "br_2")
@@ -575,36 +579,4 @@ function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads
         # end
     end
 
-end
-
-""
-function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
- 
-    buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
-    bp_branch = Dict((bp, Int[]) for bp in buspair_indexes)
-    bp_angmin = Dict((bp, -Inf32) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf32) for bp in buspair_indexes)
-    #bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
-    
-    for l in branch_lookup
-        i = branches.f_bus[l]
-        j = branches.t_bus[l]
-        bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
-        bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
-        push!(bp_branch[(i,j)], l)
-        #bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
-    end
-    
-    buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
-        #"tap"=>Float32(branches.tap[bp_branch[(i,j)]]),
-        #"vm_fr_min"=>Float32(field(buses, :vmin)[i]),
-        #"vm_fr_max"=>Float32(field(buses, :vmax)[i]),
-        #"vm_to_min"=>Float32(field(buses, :vmin)[j]),
-        #"vm_to_max"=>Float32(field(buses, :vmax)[j]),
-    
-    # add optional parameters
-    #for bp in buspair_indexes
-    #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
-    #end
-    return buspairs
 end

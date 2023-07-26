@@ -31,7 +31,7 @@ end
 function var_branch_power_real(
     pm::AbstractAPLossLessModels, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs_from)))
+    arcs_from = filter(!ismissing, skipmissing(topology(pm, :arcs_from_available)))
     p = var(pm, :p)[nw] = @variable(pm.model, p[arcs_from], container = Dict)
 
     if bounded
@@ -196,8 +196,7 @@ function _con_ohms_yt_to_on_off(
 end
 
 "`p[f_idx]^2 + q[f_idx]^2 <= rate_a^2`"
-function _con_thermal_limit_from_on_off(
-    pm::AbstractAPLossLessModels, n::Int, l::Int, f_idx, rate_a)
+function _con_thermal_limit_from_on_off(pm::AbstractAPLossLessModels, n::Int, l::Int, f_idx, rate_a)
 
     p_fr = var(pm, :p, n)[f_idx]
     z = var(pm, :z_branch, n)[l]
@@ -206,19 +205,16 @@ function _con_thermal_limit_from_on_off(
 end
 
 "`p[t_idx]^2 + q[t_idx]^2 <= rate_a^2`"
-function _con_thermal_limit_to_on_off(
-    pm::AbstractAPLossLessModels, n::Int, l::Int, t_idx, rate_a)
+function _con_thermal_limit_to_on_off(pm::AbstractAPLossLessModels, n::Int, l::Int, t_idx, rate_a)
     
     p_to = var(pm, :p, n)[t_idx]
     z = var(pm, :z_branch, n)[l]
     con(pm, :thermal_limit_to_upper, n)[l] = @constraint(pm.model, p_to <= rate_a*z)
     con(pm, :thermal_limit_to_lower, n)[l] = @constraint(pm.model, p_to >= -rate_a*z)
-
 end
 
 ""
-function _con_thermal_limit_from(
-    pm::AbstractAPLossLessModels, n::Int, l::Int, f_idx, rate_a)
+function _con_thermal_limit_from(pm::AbstractAPLossLessModels, n::Int, l::Int, f_idx, rate_a)
 
     p_fr = var(pm, :p, n)[f_idx]
 
@@ -233,28 +229,21 @@ function _con_thermal_limit_from(
         con(pm, :thermal_limit_from, n)[l] = JuMP.LowerBoundRef(p_fr)
 
     else
-
         con(pm, :thermal_limit_from, n)[l] = @constraint(pm.model, p_fr <= rate_a)
-
     end
 end
 
 "nothing to do, this model is symetric"
-function _con_thermal_limit_to(
-    pm::AbstractAPLossLessModels, n::Int, l::Int, t_idx, rate_a)
+function _con_thermal_limit_to(pm::AbstractAPLossLessModels, n::Int, l::Int, t_idx, rate_a)
     
     l,i,j = t_idx
     p_fr = var(pm, :p, n)[l,j,i]
 
     if isa(p_fr, JuMP.VariableRef) && JuMP.has_upper_bound(p_fr)
-
         con(pm, :thermal_limit_to, n)[l] = JuMP.UpperBoundRef(p_fr)
-
     else
-
         p_to = var(pm, :p, n)[t_idx]
         con(pm, :thermal_limit_to, n)[l] = JuMP.@constraint(pm.model, p_to <= rate_a)
-
     end
 end
 
@@ -320,8 +309,7 @@ function _con_storage_losses(
 end
 
 ""
-function _con_storage_thermal_limit(
-    pm::AbstractDCPowerModel, n::Int, i::Int, rating::Float32)
+function _con_storage_thermal_limit(pm::AbstractDCPowerModel, n::Int, i::Int, rating::Float32)
     ps = var(pm, :ps, n)[i]
     JuMP.lower_bound(ps) < -rating && JuMP.set_lower_bound(ps, -rating)
     JuMP.upper_bound(ps) >  rating && JuMP.set_upper_bound(ps,  rating)
@@ -333,32 +321,32 @@ end
 
 "do nothing"
 function update_var_shunt_admittance_factor(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, l::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, l::Int; nw::Int=1)
 end
 
 ""
 function update_var_branch_indicator(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
 end
 
 ""
 function update_var_bus_voltage_angle(
-    pm::AbstractNFAModel, system::SystemModel, states::States, i::Int)
+    pm::AbstractNFAModel, system::SystemModel, i::Int)
 end
 
 "Do nothing"
 function update_var_bus_voltage_magnitude(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, i::Int)
 end
 
 "Model ignores reactive power flows"
 function update_var_gen_power_imaginary(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, i::Int)
 end
 
 "DC models ignore reactive power flows"
 function update_var_branch_power_imaginary(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, arc::Tuple{Int, Int, Int})
+    pm::AbstractDCPowerModel, system::SystemModel, arc::Tuple{Int, Int, Int})
 end
 
 #************************************************** STORAGE VAR UPDATES ****************************************************************
@@ -366,54 +354,50 @@ end
 
 #***************************************************UPDATES CONSTRAINTS ****************************************************************
 "Nothing to do, no Ohm's Law Constraints"
-function update_con_ohms_yt(pm::AbstractNFAModel, system::SystemModel, states::States, i::Int; nw::Int=1)
+function update_con_ohms_yt(pm::AbstractNFAModel, system::SystemModel, i::Int; nw::Int=1)
 end
 
 "Nothing to do, no Phase Angle Difference Constraints "
 function update_con_voltage_angle_difference(
-    pm::AbstractNFAModel, system::SystemModel, states::States, l::Int; nw::Int=1)
+    pm::AbstractNFAModel, system::SystemModel, l::Int; nw::Int=1)
 end
 
 ""
 function update_con_power_balance_shunts(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, i::Int; nw::Int=1)
 end
 
 ""
 function update_con_power_balance(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int; nw::Int=1)
+    pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     z_demand   = var(pm, :z_demand, nw)
 
     for w in topology(pm, :buses_loads_base)[i]
-
-        JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_p, nw)[i], z_demand[w], field(system, :loads, :pd)[w,t])
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[w], field(system, :loads, :pd)[w,t])
     end
 end
 
 ""
 function update_con_power_balance_nolc(
-    pm::AbstractDCPowerModel, system::SystemModel, states::States, i::Int, t::Int)
+    pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int)
 
     bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in topology(pm, :buses_loads_available)[i]]
     bus_gs = Float32[field(system, :shunts, :gs)[k] for k in topology(pm, :buses_shunts_available)[i]]
 
-    JuMP.set_normalized_rhs(
-        con(pm, :power_balance_p, 1)[i], 
-        -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
+    JuMP.set_normalized_rhs(con(pm, :power_balance_p, 1)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*1.0^2)
 end
 
 ""
 function update_con_thermal_limits(
-    pm::AbstractAPLossLessModels, system::SystemModel, states::States, l::Int; nw::Int=1)
+    pm::AbstractAPLossLessModels, system::SystemModel, l::Int; nw::Int=1)
 
     f_bus = field(system, :branches, :f_bus)[l] 
     t_bus = field(system, :branches, :t_bus)[l]
     p_fr = var(pm, :p, nw)[(l, f_bus, t_bus)]
     p_to = var(pm, :p, nw)[(l, t_bus, f_bus)]
 
-    rate_a = field(system, :branches, :rate_a)[l]*states.branches_available[l]
+    rate_a = field(system, :branches, :rate_a)[l]*topology(pm, :branches_available)[l]
 
     if isa(p_fr, JuMP.VariableRef)
         JuMP.set_lower_bound(p_fr, -rate_a)
@@ -430,30 +414,25 @@ end
 
 "Nothing to do, no voltage angle variables"
 function _update_con_ohms_yt_from(
-    pm::AbstractNFAModel, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int,
+    pm::AbstractNFAModel, l::Int, nw::Int, f_bus::Int, t_bus::Int,
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 end
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(
-    pm::AbstractDCPModel, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int,
+    pm::AbstractDCPModel, l::Int, nw::Int, f_bus::Int, t_bus::Int,
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
+    branches_available = topology(pm, :branches_available)[l]
 
     if b <= 0
-        JuMP.set_normalized_rhs(
-            con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-states.branches_available[l]))
-            
-        JuMP.set_normalized_rhs(
-            con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-states.branches_available[l]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_max*(1-branches_available))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_min*(1-branches_available))
     else # account for bound reversal when b is positive
-        JuMP.set_normalized_rhs(
-            con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-states.branches_available[l]))
-
-        JuMP.set_normalized_rhs(
-            con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-states.branches_available[l]))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], vad_min*(1-branches_available))
+        JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], vad_max*(1-branches_available))
     end
 
 end
@@ -461,25 +440,35 @@ end
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(
-    pm::AbstractDCMPPModel, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractDCMPPModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     x = -b / (g^2 + b^2)
     ta = atan(ti, tr)
     vad_min = topology(pm, :delta_bounds)[1]
     vad_max = topology(pm, :delta_bounds)[2]
+    branches_available = topology(pm, :branches_available)[l]
 
-    JuMP.set_normalized_rhs(
-        con(pm, :ohms_yt_from_upper_p, nw)[l], 
-        (-ta + vad_max*(1-states.branches_available[l]))/(x*tm))
-
-    JuMP.set_normalized_rhs(
-        con(pm, :ohms_yt_from_lower_p, nw)[l], 
-        (-ta + vad_min*(1-states.branches_available[l]))/(x*tm))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], (-ta + vad_max*(1-branches_available))/(x*tm))
+    JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], (-ta + vad_min*(1-branches_available))/(x*tm))
 end
 
 "Nothing to do, this model is symetric"
 function _update_con_ohms_yt_to(
-    pm::AbstractAPLossLessModels, states::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractAPLossLessModels, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 end
+
+# ""
+# function relax_con_ohms_yt(pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
+#     for l in field(system, :branches, :keys)
+#         _, b = calc_branch_y(system.branches, l)
+#         if b <= 0
+#             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], 99999)
+#             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], -99999)    
+#         else # account for bound reversal when b is positive
+#             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_upper_p, nw)[l], -99999)
+#             JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_lower_p, nw)[l], 99999)
+#         end
+#     end
+# end

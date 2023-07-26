@@ -24,11 +24,10 @@
         unitsymbol, conversionfactor, powertoenergy, energytopower,
 
         # Main data structure
-        SystemModel, States, StateTransition,
+        SystemModel, StateTransition,
 
         #utils
-        assetgrouplist, makeidxlist, field, build_network, 
-        update_other_states!, record_other_states!
+        assetgrouplist, makeidxlist, field, build_network
     #
 
     # Create our module level logger (this will get precompiled)

@@ -27,7 +27,7 @@
 
         #functions
         field, var, con, abstract_model, build_problem!, update_problem!, finalize_model!,
-        topology, update_topology!, solve!, solve_opf!, build_result!, peakload
+        topology, solve!, solve_opf!, peakload, update_states!, record_states!
 
         #reexports
         MOI, JuMP
@@ -35,6 +35,7 @@
     #
 
     include("types.jl")
+    include("topology.jl")
     include("utils.jl")
     include("shared_variables.jl")
     include("shared_constraints.jl")

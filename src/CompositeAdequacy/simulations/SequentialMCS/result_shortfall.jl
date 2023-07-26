@@ -68,14 +68,13 @@ function accumulator(sys::SystemModel{N}, ::SequentialMCS, ::Shortfall) where {N
 end
 
 ""
-function record!(
-    acc::SMCShortfallAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
+function record!(acc::SMCShortfallAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
 
     totalshortfall = 0
     isshortfall = false
 
     for r in 1:length(acc.periodsdropped_bus)
-        busshortfall = topology(pm, :buses_curtailed_pd)[r]
+        busshortfall = topology.buses_curtailed_pd[r]
         isbusshortfall = sum(busshortfall) > 1e-6
         fit!(acc.periodsdropped_busperiod[r,t], isbusshortfall)
         fit!(acc.unservedload_busperiod[r,t], busshortfall)
@@ -180,10 +179,10 @@ end
 
 ""
 function record!(
-    acc::SMCShortfallSamplesAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
+    acc::SMCShortfallSamplesAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
 
     for r in 1:length(system.buses)
-        acc.shortfall[r,t,sampleid] = topology(pm, :buses_curtailed_pd)[r]
+        acc.shortfall[r,t,sampleid] = topology.buses_curtailed_pd[r]
     end
     return
 

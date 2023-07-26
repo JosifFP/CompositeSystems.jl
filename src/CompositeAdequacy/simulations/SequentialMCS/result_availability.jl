@@ -20,8 +20,8 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::GeneratorAva
 end
 
 ""
-function record!(acc::SMCSGenAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= states.generators_available[:]
+function record!(acc::SMCSGenAvailabilityAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
+    acc.available[:, t, sampleid] .= topology.generators_available[:]
     return
 end
 
@@ -53,8 +53,8 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::StorageAvail
 end
 
 ""
-function record!(acc::SMCSStorAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= states.storages_available[:]
+function record!(acc::SMCSStorAvailabilityAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
+    acc.available[:, t, sampleid] .= topology.storages_available[:]
     return
 end
 
@@ -86,8 +86,8 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::BranchAvaila
 end
 
 ""
-function record!(acc::SMCSBranchAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= states.branches_available[:]
+function record!(acc::SMCSBranchAvailabilityAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
+    acc.available[:, t, sampleid] .= topology.branches_available[:]
     return
 end
 
@@ -120,8 +120,8 @@ function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::ShuntAvailab
 end
 
 ""
-function record!(acc::SMCSShuntAvailabilityAccumulator, pm::AbstractPowerModel, states::States, system::SystemModel, sampleid::Int, t::Int)
-    acc.available[:, t, sampleid] .= states.shunts_available[:]
+function record!(acc::SMCSShuntAvailabilityAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
+    acc.available[:, t, sampleid] .= topology.shunts_available[:]
     return
 end
 
@@ -131,36 +131,3 @@ reset!(acc::SMCSShuntAvailabilityAccumulator, sampleid::Int) = nothing
 function finalize(acc::SMCSShuntAvailabilityAccumulator,system::SystemModel{N,L,T}) where {N,L,T}
     return ShuntAvailabilityResult{N,L,T}(field(system, :shunts, :keys), field(system, :timestamps), acc.available)
 end
-
-# "BusAvailability"
-# struct SMCSBusAvailabilityAccumulator <: ResultAccumulator{SequentialMCS,BusAvailability}
-#     available::Array{Bool,3}
-# end
-
-# ""
-# function merge!(x::SMCSBusAvailabilityAccumulator, y::SMCSBusAvailabilityAccumulator)
-#     x.available .|= y.available
-#     return
-# end
-
-# accumulatortype(::SequentialMCS, ::BusAvailability) = SMCSBusAvailabilityAccumulator
-
-# ""
-# function accumulator(sys::SystemModel{N}, simspec::SequentialMCS, ::BusAvailability) where {N}
-#     nbuses = length(sys.buses)
-#     available = zeros(Bool, nbuses, N, simspec.nsamples)
-#     return SMCSBusAvailabilityAccumulator(available)
-# end
-
-# ""
-# function record!(acc::SMCSBusAvailabilityAccumulator, pm::AbstractPowerModel, system::SystemModel, states::States, sampleid::Int, t::Int)
-#     acc.available[:, t, sampleid] .= states.buses_available
-#     return
-# end
-
-# reset!(acc::SMCSBusAvailabilityAccumulator, sampleid::Int) = nothing
-
-# ""
-# function finalize(acc::SMCSBusAvailabilityAccumulator,system::SystemModel{N,L,T}) where {N,L,T}
-#     return BusAvailabilityResult{N,L,T}(field(system, :buses, :keys), field(system, :timestamps), acc.available)
-# end

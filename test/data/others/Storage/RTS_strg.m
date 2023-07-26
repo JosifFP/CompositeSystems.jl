@@ -169,7 +169,7 @@ mpc.areas = {
 mpc.time_elapsed = 1.0
 
 %% storage data
-%   storage_bus ps 	qs		energy  energy_rating 	charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin	qmax  	r  	x  	p_loss  q_loss  status
+%   storage_bus ps 		qs		energy  energy_rating 	charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin	qmax  	r  	x  	p_loss  q_loss  status
 mpc.storage = [
-	1	 		0.0	 0.0	0.0		300.0	 		193.0	 		193.0			1	 				1						193.0	 	0.0	0.0	0.0	0.0	 0.0	0.0	 	1;
+	1	 			0.0	 	0.0	0.0		300.0	 			193.0	 			193.0					1	 						1							193.0	 			0.0	0.0		0.0	0.0	 0.0		0.0	 	1;
 ];

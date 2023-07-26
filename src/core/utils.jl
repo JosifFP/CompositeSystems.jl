@@ -297,7 +297,9 @@ function assetgrouplist(idxss::Vector{UnitRange{Int}})
 
 end
 
-""
+"The makeidxlist function takes in a collection of indices and the number of collections. 
+It outputs a list of index ranges. The function essentially groups consecutive indices in the 
+collectionidxs vector into ranges and assigns them to collections in the idxlist."
 function makeidxlist(collectionidxs::Vector{Int}, n_collections::Int)::Vector{UnitRange{Int}}
 
     if isempty(collectionidxs)

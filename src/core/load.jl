@@ -30,7 +30,11 @@ function SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::S
 end
 
 ""
-function SystemModel(rawfile::String, reliabilityfile::String, timeseries_data::Dict{Int, Vector{Float32}}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
+function SystemModel(
+    rawfile::String, reliabilityfile::String, timeseries_data::Dict{Int, Vector{Float32}}, 
+    SParametrics::static_parameters{N,L,T}
+    ) where {N,L,T<:Period}
+
     #load network data
     network = build_network(rawfile)
     reliability_data = extract_reliability_data(reliabilityfile)
@@ -39,7 +43,8 @@ function SystemModel(rawfile::String, reliabilityfile::String, timeseries_data::
 end
 
 ""
-function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
+function _SystemModel(
+    network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
 
     baseMVA::Float64 = Float32(network[:baseMVA])
     network_bus::Dict{Int, Any} = network[:bus]
@@ -213,40 +218,7 @@ function _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameter
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
     _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
-    ref_buses = slack_buses(buses)
-
-    key_branches = filter(i->field(branches, :status)[i], field(branches, :keys))
-    f_bus = field(branches, :f_bus)
-    t_bus = field(branches, :t_bus)
-    arcs_from = Tuple{Int, Int, Int}[(j, f_bus[j], t_bus[j]) for j in key_branches]
-    arcs_to = Tuple{Int, Int, Int}[(j, t_bus[j], f_bus[j]) for j in key_branches]
-    arcs = Tuple{Int, Int, Int}[arcs_from; arcs_to]
-
-    buspairs = calc_buspair_parameters(branches, key_branches)
-
-    return SystemModel(
-        loads, generators, storages, buses, branches, commonbranches, shunts, 
-        ref_buses, arcs_from, arcs_to, arcs, buspairs, baseMVA, SParametrics.timestamps
-    )
-    
-end
-
-""
-function slack_buses(buses::Buses)
-
-    ref_buses = Int[]
-    for i in buses.keys
-        if buses.bus_type[i] == 3
-            push!(ref_buses, i)
-        end
-    end
-
-    if length(ref_buses) > 1
-        @error("multiple reference buses found, $(keys(ref_buses)), this can cause infeasibility if they are in the same connected component")
-    end
-
-    return ref_buses
-
+    return SystemModel(loads, generators, storages, buses, branches, commonbranches, shunts, baseMVA, SParametrics.timestamps)
 end
 
 ""

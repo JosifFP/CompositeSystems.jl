@@ -48,7 +48,7 @@ end
 ""
 function var_branch_power_real(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs_available)))
     p = var(pm, :p)[nw] = @variable(pm.model, p[arcs], container = Dict)
 
     if bounded
@@ -62,7 +62,7 @@ end
 ""
 function var_branch_power_imaginary(pm::AbstractPowerModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
 
-    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs)))
+    arcs = filter(!ismissing, skipmissing(topology(pm, :arcs_available)))
     q = var(pm, :q)[nw] = @variable(pm.model, q[arcs], container = Dict)
 
     if bounded

@@ -9,13 +9,6 @@ struct SystemModel{N,L,T<:Period}
     branches::Branches
     commonbranches::CommonBranches
     shunts::Shunts
-    
-    ref_buses::Vector{Int}
-    arcs_from::Vector{Tuple{Int, Int, Int}}
-    arcs_to::Vector{Tuple{Int, Int, Int}}
-    arcs::Vector{Tuple{Int, Int, Int}}
-    buspairs::Dict{Tuple{Int, Int}, Vector{Any}}
-
     baseMVA::Float64
     timestamps::StepRange{ZonedDateTime,T}
 
@@ -27,11 +20,6 @@ struct SystemModel{N,L,T<:Period}
         branches::Branches,
         commonbranches::CommonBranches,
         shunts::Shunts,
-        ref_buses::Vector{Int},
-        arcs_from::Vector{Tuple{Int, Int, Int}},
-        arcs_to::Vector{Tuple{Int, Int, Int}},
-        arcs::Vector{Tuple{Int, Int, Int}},
-        buspairs::Dict{Tuple{Int, Int}, Vector{Any}},
         baseMVA::Float64,
         timestamps::StepRange{ZonedDateTime,T}
     ) where {N,L,T<:Period}
@@ -42,8 +30,7 @@ struct SystemModel{N,L,T<:Period}
     end
 
     new{N,L,T}(
-        loads, generators, storages, buses, branches, commonbranches, shunts, 
-        ref_buses, arcs_from, arcs_to, arcs, buspairs, baseMVA, timestamps)
+        loads, generators, storages, buses, branches, commonbranches, shunts, baseMVA, timestamps)
     end
 
 end
@@ -56,11 +43,6 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.branches == y.branches &&
     x.commonbranches == y.commonbranches &&
     x.shunts == y.shunts &&
-    x.ref_buses == y.ref_buses &&
-    x.arcs_from == y.arcs_from &&
-    x.arcs_to == y.arcs_to &&
-    x.arcs == y.arcs &&
-    x.buspairs == y.buspairs &&
     x.baseMVA == y.baseMVA &&
     x.timestamps == y.timestamps
 

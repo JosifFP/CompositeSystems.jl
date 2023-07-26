@@ -332,12 +332,11 @@ end
 #***************************************************** UPDATES *************************************************************************
 
 ""
-function update_branch_voltage_magnitude_fr_on_off(
-    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int, t::Int; nw::Int=1)
+function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system::SystemModel, l::Int, t::Int; nw::Int=1)
 
     phi_fr = var(pm, :phi_fr, nw)[l]
 
-    if state.branches_available[l] == 0
+    if topology(pm, :branches_available)[l] == 0
         JuMP.set_upper_bound(phi_fr, 0)
         JuMP.set_lower_bound(phi_fr, 0)
     else
@@ -348,12 +347,11 @@ function update_branch_voltage_magnitude_fr_on_off(
 end
 
 ""
-function update_branch_voltage_magnitude_to_on_off(
-    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int, t::Int; nw::Int=1)
+function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system::SystemModel, l::Int, t::Int; nw::Int=1)
 
     phi_to = var(pm, :phi_to, nw)[l]
 
-    if state.branches_available[l] == 0
+    if topology(pm, :branches_available)[l] == 0
         JuMP.set_upper_bound(phi_to, 0)
         JuMP.set_lower_bound(phi_to, 0)
     else
@@ -364,12 +362,11 @@ function update_branch_voltage_magnitude_to_on_off(
 end
 
 ""
-function update_var_branch_voltage_product_angle_on_off(
-    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int, t::Int; nw::Int=1)
+function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, system::SystemModel, l::Int, t::Int; nw::Int=1)
 
     td = var(pm, :td, nw)[l]
 
-    if state.branches_available[l] == 0
+    if topology(pm, :branches_available)[l] == 0
         JuMP.set_upper_bound(td, 0)
         JuMP.set_lower_bound(td, 0)
     else
@@ -379,11 +376,11 @@ function update_var_branch_voltage_product_angle_on_off(
 end
 
 ""
-function update_var_shunt_admittance_factor(
-    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int; nw::Int=1)
+function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::SystemModel, l::Int; nw::Int=1)
     
     z_shunt = var(pm, :z_shunt, nw)[l]
-    if !all([state.shunts_available;state.branches_available])
+
+    if !all([topology(pm, :shunts_available); topology(pm, :branches_available)])
         if JuMP.is_fixed(z_shunt) JuMP.unfix(z_shunt) end
     else
         if !JuMP.is_fixed(z_shunt) JuMP.fix(z_shunt, 1.0) end
@@ -391,26 +388,22 @@ function update_var_shunt_admittance_factor(
 end
 
 ""
-function update_con_power_balance(
-    pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     keys_loads = topology(pm, :buses_loads_base)[i]
 
     for w in keys_loads
         JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], 
-            field(system, :loads, :pd)[w,t])
+            con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], field(system, :loads, :pd)[w,t])
 
         JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], 
-            field(system, :loads, :pd)[w,t]*field(system, :loads, :pf)[w])
+            con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], field(system, :loads, :pd)[w,t]*field(system, :loads, :pf)[w])
     end
 
 end
 
 ""
-function update_con_power_balance_nolc(
-    pm::AbstractLPACModel, system::SystemModel, state::States, i::Int, t::Int; nw::Int=1)
+function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
     phi  = var(pm, :phi, nw)
     bus_loads = topology(pm, :buses_loads_available)[i]
@@ -434,34 +427,37 @@ function update_con_power_balance_nolc(
 end
 
 function _update_con_ohms_yt_from(
-    pm::AbstractLPACModel, state::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
-    g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
+    pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 
     JuMP.set_normalized_rhs(
-        con(pm, :ohms_yt_from_p, nw)[l], 
-        state.branches_available[l]*(g+g_fr)/tm^2)
+        con(pm, :ohms_yt_from_p, nw)[l], topology(pm, :branches_available)[l]*(g+g_fr)/tm^2)
 
     JuMP.set_normalized_rhs(
-        con(pm, :ohms_yt_from_q, nw)[l], 
-        -state.branches_available[l]*(b+b_fr)/tm^2)
+        con(pm, :ohms_yt_from_q, nw)[l], -topology(pm, :branches_available)[l]*(b+b_fr)/tm^2)
 end
 
 "AC Line Flow Constraints"
 function _update_con_ohms_yt_to(
-    pm::AbstractLPACModel, state::States, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
+    pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, 
     g, b, g_to, b_to, tr, ti, tm, va_fr, va_to)
 
     JuMP.set_normalized_rhs(
-        con(pm, :ohms_yt_to_p, nw)[l], 
-        state.branches_available[l]*(g+g_to))
+        con(pm, :ohms_yt_to_p, nw)[l], topology(pm, :branches_available)[l]*(g+g_to))
     JuMP.set_normalized_rhs(
-        con(pm, :ohms_yt_to_q, nw)[l], 
-        -state.branches_available[l]*(b+b_to))
+        con(pm, :ohms_yt_to_q, nw)[l], -topology(pm, :branches_available)[l]*(b+b_to))
 end
 
 ""
-function update_var_branch_indicator(
-    pm::AbstractLPACModel, system::SystemModel, state::States, l::Int; nw::Int=1)
-
-    JuMP.fix(var(pm, :z_branch, nw)[l], state.branches_available[l], force=true)
+function update_var_branch_indicator(pm::AbstractLPACModel, system::SystemModel, l::Int; nw::Int=1)
+    JuMP.fix(var(pm, :z_branch, nw)[l], topology(pm, :branches_available)[l], force=true)
 end
+
+# ""
+# function relax_con_ohms_yt(pm::AbstractLPACModel, system::SystemModel, i::Int; nw::Int=1)
+#     for l in field(system, :branches, :keys)
+#         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_p, nw)[l], 99999)
+#         JuMP.set_normalized_rhs(con(pm, :ohms_yt_from_q, nw)[l], -99999)
+#         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_p, nw)[l], 99999)
+#         JuMP.set_normalized_rhs(con(pm, :ohms_yt_to_q, nw)[l], -99999)
+#     end
+# end
