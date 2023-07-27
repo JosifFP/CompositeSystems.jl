@@ -15,6 +15,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
+    __init__()
     #Number of workers excluding the master process
     nworkers = Distributed.nprocs()
     nthreads = method.threaded ? Base.Threads.nthreads() : 1
@@ -24,6 +25,7 @@ function assess(
 
     # Compute on worker processes
     if nworkers > 1
+
         @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
 
         accumulators = Distributed.pmap(
@@ -84,6 +86,7 @@ function assess_slave(
     resultspecs::ResultSpec...
 ) where {N}
 
+    __init__()
     sampleseeds = Channel{Int}(2*nthreads)
     results = resultchannel(method, resultspecs, nthreads)
     nsamples_per_worker = div(method.nsamples, nworkers)
