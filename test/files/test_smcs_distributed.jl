@@ -30,6 +30,25 @@ settings = CompositeSystems.Settings(;
     count_samples = true
 )
 
+
+settings = CompositeSystems.Settings(;
+jump_modelmode = JuMP.AUTOMATIC,
+powermodel_formulation = OPF.DCMPPowerModel,
+select_largest_splitnetwork = false,
+deactivate_isolated_bus_gens_stors = true,
+set_string_names_on_creation = false,
+count_samples = true
+)
+
+timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
+rawfile = "test/data/RBTS/Base/RBTS.m"
+Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
+method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)
+resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
+system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
+Shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
+
+
 @testset "Sequential MCS, 1000 samples, RBTS, distributed" begin
 
     settings = CompositeSystems.Settings(;
@@ -48,7 +67,7 @@ settings = CompositeSystems.Settings(;
     resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
-    Shortfall, util = CompositeSystems.assess_hpc(system, method, settings, resultspecs...)
+    Shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
 
     system_EDLC_mean = [0.0, 0.0, 1.21599, 0.0, 0.00199, 10.37499]
     system_EENS_mean = [0.0, 0.0, 9.80189, 0.0, 0.01930, 127.66720]
@@ -99,7 +118,7 @@ end
     resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
-    Shortfall, util = CompositeSystems.assess_hpc(system, method, settings, resultspecs...)
+    Shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
     
     system_EDLC_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.02, 0.0, 9.71, 0.16, 0.0, 0.0, 
         0.0, 2.51, 0.0, 0.0, 0.0, 0.0, 0.70000, 0.0, 0.0, 0.0, 0.0, 0.0]  

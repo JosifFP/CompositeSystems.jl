@@ -15,7 +15,6 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    __init__()
     #Number of workers excluding the master process
     nworkers = Distributed.nprocs()
     nthreads = method.threaded ? Base.Threads.nthreads() : 1
@@ -25,20 +24,28 @@ function assess(
 
     # Compute on worker processes
     if nworkers > 1
-
         @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
 
-        accumulators = Distributed.pmap(
-            i -> assess_slave(system, method, settings, nworkers, nthreads, i, resultspecs...), 2:nworkers)
+        @sync begin
+            @async begin
+                # Compute on the master process/worker
+                master_result = assess_slave(system, method, settings, nworkers, nthreads, 1, resultspecs...)
+                put!(results, master_result)
+            end
 
-        for k in 2:nworkers
-            put!(results, fetch(accumulators[k-1]))
+            for k in 2:nworkers
+                @async begin
+                    result = fetch(Distributed.pmap(
+                        i -> assess_slave(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
+                    put!(results, result)
+                end
+            end
         end
+    else
+        # In case there is only one worker, just run the master process
+        master_result = assess_slave(system, method, settings, nworkers, nthreads, 1, resultspecs...)
+        put!(results, master_result)
     end
-
-    # Compute on the master process/worker
-    master_result = assess_slave(system, method, settings, nworkers, nthreads, 1, resultspecs...)
-    put!(results, master_result)
 
     return finalize(results, system, nworkers)
 end
