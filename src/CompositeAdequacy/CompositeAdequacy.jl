@@ -46,7 +46,7 @@
 
         #utils
         print_results, copy_load, update_load!, 
-        resultremotechannel, finalize
+        resultremotechannel, finalize,
 
         # Convenience re-exports
         ZonedDateTime

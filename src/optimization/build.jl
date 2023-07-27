@@ -107,7 +107,7 @@ function solve!(
     pm::AbstractPowerModel, system::SystemModel, settings::Settings, t::Int; force::Bool=false)
 
     update_topology!(pm.topology, system, settings, t)
-    update_problem_fast!(pm, system, t)
+    update_problem!(pm, system, t)
 
     should_optimize = isempty(field(system, :storages, :keys)) ? (topology(pm, :failed_systemstate)[t] || force) : true
     

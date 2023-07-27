@@ -34,7 +34,7 @@ function update_availability!(
 end
 
 ""
-function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now::Int, t_last::Int; tol = 1e-6)
+function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now::Int, t_last::Int; tol = 1e-9)
 
     cdf = 0.0
     p_noprevtransition = 1.0
