@@ -21,34 +21,6 @@ end
 @everywhere using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
 
-settings = CompositeSystems.Settings(;
-    jump_modelmode = JuMP.AUTOMATIC,
-    powermodel_formulation = OPF.DCMPPowerModel,
-    select_largest_splitnetwork = false,
-    deactivate_isolated_bus_gens_stors = true,
-    set_string_names_on_creation = false,
-    count_samples = true
-)
-
-
-settings = CompositeSystems.Settings(;
-jump_modelmode = JuMP.AUTOMATIC,
-powermodel_formulation = OPF.DCMPPowerModel,
-select_largest_splitnetwork = false,
-deactivate_isolated_bus_gens_stors = true,
-set_string_names_on_creation = false,
-count_samples = true
-)
-
-timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
-rawfile = "test/data/RBTS/Base/RBTS.m"
-Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
-method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
-system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-Shortfall, util = CompositeSystems.assess(system, method, settings, resultspecs...)
-
-
 @testset "Sequential MCS, 1000 samples, RBTS, distributed" begin
 
     settings = CompositeSystems.Settings(;

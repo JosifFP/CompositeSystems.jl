@@ -132,7 +132,8 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    pm = abstract_model(system, settings, GRB_ENV[])
+    pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
+
     statetransition = StateTransition(system)
     build_problem!(pm, system)
     recorders = accumulator.(system, method, resultspecs)
