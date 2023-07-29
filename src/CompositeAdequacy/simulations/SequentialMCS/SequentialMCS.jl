@@ -93,7 +93,7 @@ function assess_slave(
     resultspecs::ResultSpec...
 ) where {N}
 
-    __init__()
+    settings.optimizer === nothing && __init__()
     sampleseeds = Channel{Int}(2*nthreads)
     results = resultchannel(method, resultspecs, nthreads)
     nsamples_per_worker = div(method.nsamples, nworkers)
