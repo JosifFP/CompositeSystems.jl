@@ -61,7 +61,7 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
 
     while true
 
-        params.verbose && println(
+        params.verbose && @info(
             "\n$(lower_bound) $P\t< ELCC <\t$(upper_bound) $P\n",
             "$(lower_bound_metric)\t< $(target_metric) <\t$(upper_bound_metric)")
 

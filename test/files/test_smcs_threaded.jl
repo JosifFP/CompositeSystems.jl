@@ -1,45 +1,25 @@
 resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
+# gurobi_optimizer = JuMP.optimizer_with_attributes(
+#     Gurobi.Optimizer, 
+#     "Presolve"=>1, 
+#     "PreCrush"=>1, 
+#     "OutputFlag"=>0, 
+#     "LogToConsole"=>0, 
+#     "NonConvex"=>2, 
+#     "NumericFocus"=>3, 
+#     "Threads"=>64
+# )
+
 settings = CompositeSystems.Settings(;
     jump_modelmode = JuMP.AUTOMATIC,
+    #optimizer = gurobi_optimizer,
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
     #set_string_names_on_creation = false,
     count_samples = true
 )
-
-
-timeseriesfile = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"
-rawfile = "test/data/RTS_79_A/RTS_AC_HIGHRATE.m"
-Base_reliabilityfile = "test/data/RTS_79_A/R_RTS.m"
-system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)
-shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
-
-
-
-println(CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall_threaded, system.buses.keys)))
-println(CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall_threaded, system.buses.keys)))
-println(CompositeAdequacy.stderror.(CompositeSystems.SI.(shortfall_threaded, system.buses.keys)))
-
-
-
-
-system_EDLC_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.02, 0.0, 9.71, 0.16, 0.0, 0.0, 0.0, 2.51, 0.0, 0.0, 0.0, 0.0, 0.70000, 0.0, 0.0, 0.0, 0.0, 0.0]  
-system_EENS_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 313.14204, 0.0, 836.48611, 7.11353, 0.0, 0.0, 0.0, 223.98704, 0.0, 0.0, 0.0, 0.0, 71.97868, 0.0, 0.0, 0.0, 0.0, 0.0]
-system_SI_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.59246, 0.0, 17.61023, 0.14975, 0.0, 0.0, 0.0, 4.7155, 0.0, 0.0, 0.0, 0.0, 1.51534, 0.0, 0.0, 0.0, 0.0, 0.0]
-system_SI_stderror = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.57322, 0.0, 3.33650, 0.11970, 0.0, 0.0, 0.0, 1.85522, 0.0, 0.0, 0.0, 0.0, 1.02965, 0.0, 0.0, 0.0, 0.0, 0.0]
-
-
-
-
-
-
-
-
-
-
 
 @testset "Sequential MCS, 100 samples, RBTS, threaded" begin
 

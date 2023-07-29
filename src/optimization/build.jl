@@ -1,30 +1,17 @@
 "Constructor for an AbstractPowerModel modeling object"
-function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env)
+function abstract_model(system::SystemModel, settings::Settings, env::Union{Gurobi.Env, Nothing}=nothing)
     
     @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. 
         Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
 
-    jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
-    #Gurobi.GRBsetintparam(env, "OutputFlag", 0)
-    #Gurobi.GRBsetintparam(env, "Presolve", 0)
-    #Gurobi.GRBsetintparam(env, "NonConvex", 2)
-
-    JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
-
-    JuMP.set_silent(jump_model)
-
-    topology = Topology(system)
-    
-    return pm(jump_model, topology, settings.powermodel_formulation)
-end
-
-""
-function abstract_model(system::SystemModel, settings::Settings)
-    
-    @assert settings.jump_modelmode == JuMP.AUTOMATIC "A fatal error occurred. 
-        Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
-
-    jump_model = Model(settings.optimizer; add_bridges = false)
+    if env !== nothing
+        jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
+        #Gurobi.GRBsetintparam(env, "OutputFlag", 0)
+        #Gurobi.GRBsetintparam(env, "Presolve", 0)
+        #Gurobi.GRBsetintparam(env, "NonConvex", 2)
+    else
+        jump_model = Model(settings.optimizer; add_bridges = false)
+    end
 
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
 
