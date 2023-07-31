@@ -1,5 +1,3 @@
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
-
 # gurobi_optimizer = JuMP.optimizer_with_attributes(
 #     Gurobi.Optimizer, 
 #     "Presolve"=>1, 
@@ -28,7 +26,7 @@ settings = CompositeSystems.Settings(;
     Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)
-    shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    shortfall_threaded = CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall())
 
     system_EENS_mean_no_storage = [0.0, 0.0, 13.68820, 0.0, 0.19304, 123.34869]
 
@@ -41,7 +39,7 @@ settings = CompositeSystems.Settings(;
     reliabilityfile = "test/data/others/Storage/R_RBTS_strg.m"
     system = BaseModule.SystemModel(rawfile, reliabilityfile, timeseriesfile)
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)
-    @time shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    shortfall_threaded = CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall())
     system_EENS_mean_storage = [0.0, 0.0, 9.02484, 0.0, 0.88675, 115.56389]
 
     @test isapprox(
@@ -66,7 +64,7 @@ end
     system_SI_stderror = [0.0, 0.0, 0.44574, 0.0, 0.00626, 1.82908]
 
     method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=true)
-    shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    shortfall_threaded = CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall())
 
     @test isapprox(
         CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall_threaded, system.buses.keys)), 
@@ -107,7 +105,7 @@ end
         0.0, 0.0, 1.85522, 0.0, 0.0, 0.0, 0.0, 1.02965, 0.0, 0.0, 0.0, 0.0, 0.0]
     
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)
-    shortfall_threaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    shortfall_threaded = CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall())
 
     @test isapprox(
         CompositeAdequacy.val.(CompositeSystems.EDLC.(shortfall_threaded, system.buses.keys)), 

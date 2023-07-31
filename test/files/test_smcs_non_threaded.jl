@@ -1,5 +1,3 @@
-resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
-
 settings = CompositeSystems.Settings(;
     jump_modelmode = JuMP.AUTOMATIC,
     powermodel_formulation = OPF.DCMPPowerModel,
@@ -19,7 +17,7 @@ settings = CompositeSystems.Settings(;
     #CompositeAdequacy.PTV(util, :)
 
     method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=false)
-    shortfall_nonthreaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    shortfall_threaded = CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall())
 
     CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall_nonthreaded, system.buses.keys))
 
@@ -60,7 +58,7 @@ end
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=false)
-    shortfall_nonthreaded,_ = CompositeSystems.assess(system, method, settings, resultspecs...)
+    shortfall_threaded = CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall())
 
     system_EDLC_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.02, 0.0, 9.71, 0.16, 0.0, 0.0, 
         0.0, 2.51, 0.0, 0.0, 0.0, 0.0, 0.70000, 0.0, 0.0, 0.0, 0.0, 0.0]  

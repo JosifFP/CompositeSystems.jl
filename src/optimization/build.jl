@@ -5,10 +5,11 @@ function abstract_model(system::SystemModel, settings::Settings, env::Union{Guro
         Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
 
     if env !== nothing
+        Gurobi.GRBsetintparam(env, "OutputFlag", 0)
+        Gurobi.GRBsetintparam(env, "Presolve", 0)
+        Gurobi.GRBsetintparam(env, "NonConvex", 2)
         jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
-        #Gurobi.GRBsetintparam(env, "OutputFlag", 0)
-        #Gurobi.GRBsetintparam(env, "Presolve", 0)
-        #Gurobi.GRBsetintparam(env, "NonConvex", 2)
+        #Gurobi.GRBsetintparam(env, "Threads", nthreads)
     else
         jump_model = Model(settings.optimizer; add_bridges = false)
     end
