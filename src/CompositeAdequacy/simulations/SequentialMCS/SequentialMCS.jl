@@ -69,7 +69,7 @@ function assess_single(
     results = resultchannel(method, resultspecs, nthreads)
     Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
 
-    if method.threaded
+    if method.threaded && nthreads > 1
         for _ in 1:nthreads
             Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
@@ -93,7 +93,7 @@ function assess_slave(
     resultspecs::ResultSpec...
 ) where {N}
 
-    settings.optimizer === nothing && __init__()
+    #settings.optimizer === nothing && __init__()
     sampleseeds = Channel{Int}(2*nthreads)
     results = resultchannel(method, resultspecs, nthreads)
     nsamples_per_worker = div(method.nsamples, nworkers)
@@ -101,7 +101,7 @@ function assess_slave(
     end_index = min(worker * nsamples_per_worker, method.nsamples)
     Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
 
-    if method.threaded
+    if method.threaded && nthreads > 1
         for _ in 1:nthreads
             Threads.@spawn CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
@@ -132,6 +132,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
+    settings.optimizer === nothing && __init__()
     pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
 
     statetransition = StateTransition(system)
@@ -201,6 +202,12 @@ function update!(rng::AbstractRNG,
 
     OPF.update_states!(topology, statetransition, t)
     #apply_common_outages!(topology, system.branches, t)
+    return
+end
+
+""
+function __init__()
+    GRB_ENV[] = Gurobi.Env()
     return
 end
 

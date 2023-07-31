@@ -26,7 +26,7 @@ struct SequentialMCS <: SimulationSpec
 
         workers = Distributed.nprocs() > 1 ? Distributed.nprocs() : 1
         _, remainder = divrem(samples, workers)
-        remainder != 0 && throw(DomainError("The ratio of #samples to #workers must be an integer number"))
+        remainder != 0 && throw(DomainError("The ratio of #samples to #nodes+1 must be an integer number"))
 
         new(samples, UInt64(seed), verbose, threaded)
     end

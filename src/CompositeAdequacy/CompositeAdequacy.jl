@@ -23,11 +23,6 @@
 
     const GRB_ENV = Ref{Gurobi.Env}()
 
-    function __init__()
-        GRB_ENV[] = Gurobi.Env()
-        return
-    end
-
     export
         # CompositeAdequacy submoduleexport
         assess, assess_single, SimulationSpec,
