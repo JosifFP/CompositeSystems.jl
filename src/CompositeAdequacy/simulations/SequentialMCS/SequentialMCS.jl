@@ -15,7 +15,7 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
     #Number of workers excluding the master process
-    nworkers = method.include_master ? Distributed.nprocs() : Distributed.nprocs() - 1
+    nworkers = max(method.include_master ? Distributed.nprocs() : Distributed.nprocs() - 1, 1)
     nthreads = method.threaded ? Base.Threads.nthreads() : 1
 
     # Use RemoteChannel for distributed computing
@@ -23,18 +23,29 @@ function assess(
 
     # Compute on worker processes
     if nworkers > 1
+
         method.include_master ? 
-            compute_with_master_included(system, method, settings, nworkers, nthreads, results, resultspecs) :
-            compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs)
+            compute_with_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...) :
+            compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...)
     else
         # In case there is only one worker, just run the master process
-        compute_only_master(system, method, settings, nworkers, nthreads, results, resultspecs)
+        master_result = assess_single(system, method, settings, 1, nthreads, 1, resultspecs...)
+        put!(results, master_result)
     end
 
     return finalize(results, system, nworkers)
 end
 
-function compute_with_master_included(system, method, settings, nworkers, nthreads, results, resultspecs)
+""
+function compute_with_master_included(
+    system::SystemModel{N},
+    method::SequentialMCS,
+    settings::Settings, 
+    nworkers::Int, 
+    nthreads::Int, 
+    results::Distributed.RemoteChannel{R}, 
+    resultspecs::ResultSpec...) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
+
     @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
     @sync begin
         @async begin
@@ -53,7 +64,8 @@ function compute_with_master_included(system, method, settings, nworkers, nthrea
     end
 end
 
-function compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs)
+""
+function compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...)
     @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
     for k in 1:nworkers
         @async begin
@@ -63,12 +75,6 @@ function compute_without_master_included(system, method, settings, nworkers, nth
         end
     end
 end
-
-function compute_only_master(system, method, settings, nworkers, nthreads, results, resultspecs)
-    master_result = assess_single(system, method, settings, nworkers, nthreads, 1, resultspecs...)
-    put!(results, master_result)
-end
-
 
 """
 This code snippet is using multi-threading to parallelize the assess function by running 
@@ -81,45 +87,20 @@ function assess_single(
     system::SystemModel{N},
     method::SequentialMCS,
     settings::Settings,
-    resultspecs::ResultSpec...
-) where {N}
-
-    nthreads = method.threaded ? Base.Threads.nthreads() : 1
-    sampleseeds = Channel{Int}(2*nthreads)
-    results = resultchannel(method, resultspecs, nthreads)
-    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
-
-    if method.threaded && nthreads > 1
-        for _ in 1:nthreads
-            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
-        end
-    else
-        assess(system, method, settings, sampleseeds, results, resultspecs...)
-    end
-    
-    #return finalize(results, system, threads)
-    return take_Results!(results, nthreads)
-end
-
-"Distributed computing version of 'assess' function.
-Return results as an accumulator that needs to be merged into other worker' accumulators"
-function assess_single(
-    system::SystemModel{N},
-    method::SequentialMCS,
-    settings::Settings,
     nworkers::Int,
     nthreads::Int,
     worker::Int,
     resultspecs::ResultSpec...
 ) where {N}
 
-    #settings.optimizer === nothing && __init__()
     sampleseeds = Channel{Int}(2*nthreads)
     results = resultchannel(method, resultspecs, nthreads)
     nsamples_per_worker = div(method.nsamples, nworkers)
+    println("nsamples_per_worker=$(div(method.nsamples, nworkers))")
     start_index = (worker - 1) * nsamples_per_worker + 1
     end_index = min(worker * nsamples_per_worker, method.nsamples)
     Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
+    settings.optimizer === nothing && init_gurobi_env()
 
     if method.threaded && nthreads > 1
         for _ in 1:nthreads
@@ -129,6 +110,7 @@ function assess_single(
         CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
     
+    #settings.optimizer === nothing && end_gurobi_env()
     return take_Results!(results, nthreads)
 end
 
@@ -152,7 +134,6 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    settings.optimizer === nothing && __init__()
     pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
 
     statetransition = StateTransition(system)
@@ -226,8 +207,13 @@ function update!(rng::AbstractRNG,
 end
 
 ""
-function __init__()
+function init_gurobi_env()
     GRB_ENV[] = Gurobi.Env()
+    return
+end
+
+function end_gurobi_env()
+    Base.finalize(GRB_ENV[])
     return
 end
 
