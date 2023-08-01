@@ -14,41 +14,61 @@ function assess(
     settings::Settings,
     resultspecs::ResultSpec...
 ) where {N}
-
     #Number of workers excluding the master process
-    nworkers = Distributed.nprocs()
+    nworkers = method.include_master ? Distributed.nprocs() : Distributed.nprocs() - 1
     nthreads = method.threaded ? Base.Threads.nthreads() : 1
-    
+
     # Use RemoteChannel for distributed computing
     results = resultremotechannel(method, resultspecs, nworkers)
 
     # Compute on worker processes
     if nworkers > 1
-        @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
-
-        @sync begin
-            @async begin
-                # Compute on the master process/worker
-                master_result = assess_slave(system, method, settings, nworkers, nthreads, 1, resultspecs...)
-                put!(results, master_result)
-            end
-
-            for k in 2:nworkers
-                @async begin
-                    result = fetch(Distributed.pmap(
-                        i -> assess_slave(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
-                    put!(results, result)
-                end
-            end
-        end
+        method.include_master ? 
+            compute_with_master_included(system, method, settings, nworkers, nthreads, results, resultspecs) :
+            compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs)
     else
         # In case there is only one worker, just run the master process
-        master_result = assess_slave(system, method, settings, nworkers, nthreads, 1, resultspecs...)
-        put!(results, master_result)
+        compute_only_master(system, method, settings, nworkers, nthreads, results, resultspecs)
     end
 
     return finalize(results, system, nworkers)
 end
+
+function compute_with_master_included(system, method, settings, nworkers, nthreads, results, resultspecs)
+    @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+    @sync begin
+        @async begin
+            # Compute on the master process/worker
+            master_result = assess_single(system, method, settings, nworkers, nthreads, 1, resultspecs...)
+            put!(results, master_result)
+        end
+
+        for k in 2:nworkers
+            @async begin
+                result = fetch(Distributed.pmap(
+                    i -> assess_single(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
+                put!(results, result)
+            end
+        end
+    end
+end
+
+function compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs)
+    @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+    for k in 1:nworkers
+        @async begin
+            result = fetch(Distributed.pmap(
+                i -> assess_single(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
+            put!(results, result)
+        end
+    end
+end
+
+function compute_only_master(system, method, settings, nworkers, nthreads, results, resultspecs)
+    master_result = assess_single(system, method, settings, nworkers, nthreads, 1, resultspecs...)
+    put!(results, master_result)
+end
+
 
 """
 This code snippet is using multi-threading to parallelize the assess function by running 
@@ -83,7 +103,7 @@ end
 
 "Distributed computing version of 'assess' function.
 Return results as an accumulator that needs to be merged into other worker' accumulators"
-function assess_slave(
+function assess_single(
     system::SystemModel{N},
     method::SequentialMCS,
     settings::Settings,
@@ -152,7 +172,7 @@ function assess(
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        settings.count_samples && @info("sample = $(s)")
+        method.count_samples && @info("sample = $(s)")
     end
 
     Base.finalize(JuMP.backend(pm.model).optimizer)

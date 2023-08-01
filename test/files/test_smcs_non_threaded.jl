@@ -3,8 +3,7 @@ settings = CompositeSystems.Settings(;
     powermodel_formulation = OPF.DCMPPowerModel,
     select_largest_splitnetwork = false,
     deactivate_isolated_bus_gens_stors = true,
-    #set_string_names_on_creation = false,
-    count_samples = true
+    #set_string_names_on_creation = false
 )
 
 @testset "Sequential MCS, 1000 samples, RBTS, non-threaded" begin

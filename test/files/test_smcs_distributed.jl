@@ -20,7 +20,6 @@ end
 @everywhere using JuMP
 @everywhere using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
-
 @testset "Sequential MCS, 1000 samples, RBTS, distributed" begin
 
     settings = CompositeSystems.Settings(;
@@ -28,8 +27,7 @@ end
         powermodel_formulation = OPF.DCMPPowerModel,
         select_largest_splitnetwork = false,
         deactivate_isolated_bus_gens_stors = true,
-        set_string_names_on_creation = false,
-        #count_samples = true
+        set_string_names_on_creation = false
     )
 
     timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
@@ -78,8 +76,7 @@ end
         powermodel_formulation = OPF.DCMPPowerModel,
         select_largest_splitnetwork = false,
         deactivate_isolated_bus_gens_stors = true,
-        set_string_names_on_creation = false,
-        #count_samples = true
+        set_string_names_on_creation = false
     )
 
     timeseriesfile = "test/data/RTS_79_A/SYSTEM_LOADS.xlsx"

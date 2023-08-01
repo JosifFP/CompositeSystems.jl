@@ -87,7 +87,6 @@ mutable struct Settings
     select_largest_splitnetwork::Bool
     deactivate_isolated_bus_gens_stors::Bool
     set_string_names_on_creation::Bool
-    count_samples::Bool
 
     function Settings(;
         gurobi_env::Union{Gurobi.Env, Nothing} = nothing,
@@ -97,11 +96,10 @@ mutable struct Settings
         select_largest_splitnetwork::Bool=false,
         deactivate_isolated_bus_gens_stors::Bool=true,
         set_string_names_on_creation::Bool=false,
-        count_samples::Bool=false
         )
         new(gurobi_env, optimizer, jump_modelmode, powermodel_formulation, 
         select_largest_splitnetwork, deactivate_isolated_bus_gens_stors,
-        set_string_names_on_creation, count_samples)
+        set_string_names_on_creation)
     end
 end
 
@@ -155,8 +153,6 @@ function Base.getproperty(e::Settings, s::Symbol)
         getfield(e, :deactivate_isolated_bus_gens_stors)::Bool  
     elseif s === :set_string_names_on_creation
         getfield(e, :set_string_names_on_creation)::Bool
-    elseif s === :count_samples
-        getfield(e, :count_samples)::Bool    
     else
         @error("Configuration $(s) not supported")
     end
