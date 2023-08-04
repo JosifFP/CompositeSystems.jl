@@ -142,8 +142,7 @@ function assess_safe(
         assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
 
-    #outcome = finalize(results, system, method.threaded ? threads : 1)
-    outcome = take_Results!(results, threads)
+    outcome = finalize(results, system, method.threaded ? threads : 1) #outcome = take_Results!(results, threads)
     settings.optimizer === nothing && end_gurobi_env()
     return outcome
 end
