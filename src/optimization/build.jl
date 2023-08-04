@@ -113,39 +113,19 @@ function solve!(
 end
 
 ""
-function update_problem_fast!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+function update_problem!(pm::AbstractPowerModel, system::SystemModel, t::Int; force_pmin::Bool=false)
 
     failed_now = topology(pm, :failed_systemstate)[t]
     failed_prev = t > 1 ? topology(pm, :failed_systemstate)[t-1] : false
-    failed_prev2 = t > 2 ? topology(pm, :failed_systemstate)[t-2] : false
-
-    if failed_now || failed_prev
-        update_problem!(pm, system, t)
-    elseif !failed_prev && failed_prev2
-        update_problem_nochanges!(pm, system, t)
-    end
-end
-
-""
-function update_problem!(pm::AbstractPowerModel, system::SystemModel, t::Int; force_pmin::Bool=false)
+    systemstate = any([failed_now; failed_prev])
+    
     update_generators!(pm, system, force_pmin=force_pmin)
     update_branches!(pm, system)
     update_shunts!(pm, system)
     update_storages!(pm, system)
-    update_buses!(pm, system, t)
+    update_buses!(pm, system, t, loads=systemstate)
     update_loads!(pm, system)
-    update_obj_min_stor_load_curtailment!(pm, system, t)
-end
-
-""
-function update_problem_nochanges!(pm::AbstractPowerModel, system::SystemModel, t::Int)
-    for i in field(system, :storages, :keys)
-        update_con_storage_state(pm, system, i)
-    end
-    for i in field(system, :buses, :keys)
-        update_con_power_balance(pm, system, i, t)
-    end
-    update_obj_min_stor_load_curtailment!(pm, system, t)
+    update_obj_min_stor_load_curtailment!(pm, system, t, loads=systemstate)
 end
 
 ""
@@ -198,10 +178,10 @@ function update_storages!(pm::AbstractPowerModel, system::SystemModel)
 end
 
 ""
-function update_buses!(pm::AbstractPowerModel, system::SystemModel, t::Int)
+function update_buses!(pm::AbstractPowerModel, system::SystemModel, t::Int; loads::Bool=true)
 
     for i in field(system, :buses, :keys)
-        update_con_power_balance(pm, system, i, t)
+        loads && update_con_power_balance(pm, system, i, t)
         
         if !topology(pm, :buses_available)[i] || !topology(pm, :buses_pasttransition)[i]
             update_var_bus_voltage_angle(pm, system, i)
@@ -323,21 +303,24 @@ end
 
 ""
 function update_obj_min_stor_load_curtailment!(
-    pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
+    pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, loads::Bool=true)
 
-    z_demand   = var(pm, :z_demand, nw)
+    if loads
 
-    for i in field(system, :loads, :keys)
+        z_demand   = var(pm, :z_demand, nw)
 
-        JuMP.set_objective_coefficient(
-            pm.model, 
-            z_demand[i], 
-            -field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t])
+        for i in field(system, :loads, :keys)
+
+            JuMP.set_objective_coefficient(
+                pm.model, 
+                z_demand[i], 
+                -field(system, :loads, :cost)[i]*field(system, :loads, :pd)[i,t])
+        end
+
+        MOI.modify(
+            JuMP.backend(pm.model),
+            MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), 
+            MOI.ScalarConstantChange(sum(field(system, :loads, :cost).*field(system, :loads, :pd)[:,t])))
     end
-
-    MOI.modify(
-        JuMP.backend(pm.model),
-        MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(), 
-        MOI.ScalarConstantChange(sum(field(system, :loads, :cost).*field(system, :loads, :pd)[:,t])))
 
 end
