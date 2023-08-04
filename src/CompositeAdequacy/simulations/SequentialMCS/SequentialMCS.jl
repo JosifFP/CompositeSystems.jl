@@ -29,7 +29,7 @@ function assess(
             compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...)
     else
         # In case there is only one worker, just run the master process
-        master_result = assess_single(system, method, settings, 1, nthreads, 1, resultspecs...)
+        master_result = assess(system, method, settings, 1, nthreads, 1, resultspecs...)
         put!(results, master_result)
     end
 
@@ -50,14 +50,14 @@ function compute_with_master_included(
     @sync begin
         @async begin
             # Compute on the master process/worker
-            master_result = assess_single(system, method, settings, nworkers, nthreads, 1, resultspecs...)
+            master_result = assess(system, method, settings, nworkers, nthreads, 1, resultspecs...)
             put!(results, master_result)
         end
 
         for k in 2:nworkers
             @async begin
                 result = fetch(Distributed.pmap(
-                    i -> assess_single(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
+                    i -> assess(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
                 put!(results, result)
             end
         end
@@ -70,7 +70,7 @@ function compute_without_master_included(system, method, settings, nworkers, nth
     for k in 1:nworkers
         @async begin
             result = fetch(Distributed.pmap(
-                i -> assess_single(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
+                i -> assess(system, method, settings, nworkers, nthreads, i, resultspecs...), k))
             put!(results, result)
         end
     end
@@ -83,7 +83,7 @@ used to create new threads, each of which will execute the assess function using
 seed from the sampleseeds channel. The results of each thread are stored in the results channel, 
 and the function finalize is called on the results after all threads have finished executing.
 """
-function assess_single(
+function assess(
     system::SystemModel{N},
     method::SequentialMCS,
     settings::Settings,
@@ -96,7 +96,6 @@ function assess_single(
     sampleseeds = Channel{Int}(2*nthreads)
     results = resultchannel(method, resultspecs, nthreads)
     nsamples_per_worker = div(method.nsamples, nworkers)
-    println("nsamples_per_worker=$(div(method.nsamples, nworkers))")
     start_index = (worker - 1) * nsamples_per_worker + 1
     end_index = min(worker * nsamples_per_worker, method.nsamples)
     Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
@@ -110,8 +109,43 @@ function assess_single(
         CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
     
-    #settings.optimizer === nothing && end_gurobi_env()
-    return take_Results!(results, nthreads)
+    outcome = take_Results!(results, nthreads)
+    settings.optimizer === nothing && end_gurobi_env()
+    return outcome
+end
+
+
+"""
+This code snippet is using multi-threading to parallelize the assess function by running 
+multiple instances of it simultaneously on different threads. The Threads.@spawn macro is 
+used to create new threads, each of which will execute the assess function using a different 
+seed from the sampleseeds channel. The results of each thread are stored in the results channel, 
+and the function finalize is called on the results after all threads have finished executing.
+"""
+function assess_safe(
+    system::SystemModel{N},
+    method::SequentialMCS,
+    settings::Settings,
+    resultspecs::ResultSpec...
+) where {N}
+    threads = Base.Threads.nthreads()
+    sampleseeds = Channel{Int}(2*threads)
+    results = resultchannel(method, resultspecs, threads)
+    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
+    settings.optimizer === nothing && init_gurobi_env()
+
+    if method.threaded
+        for _ in 1:threads
+            Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
+        end
+    else
+        assess(system, method, settings, sampleseeds, results, resultspecs...)
+    end
+
+    #outcome = finalize(results, system, method.threaded ? threads : 1)
+    outcome = take_Results!(results, threads)
+    settings.optimizer === nothing && end_gurobi_env()
+    return outcome
 end
 
 """
@@ -130,9 +164,45 @@ function assess(
     method::SequentialMCS,
     settings::Settings,
     sampleseeds::Channel{Int},
-    results::Union{R, Distributed.RemoteChannel{R}},
+    results::RemoteChannel{R},
     resultspecs::ResultSpec...
-) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
+) where {N, R<:Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
+
+    pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
+
+    statetransition = StateTransition(system)
+    build_problem!(pm, system)
+    recorders = accumulator.(system, method, resultspecs)
+    rng = Philox4x((0, 0), 10)
+
+    for s in sampleseeds
+
+        seed!(rng, (method.seed, s))  #using the same seed for entire period.
+        initialize!(rng, statetransition, pm.topology, system) #creates the up/down sequence for each device.
+
+        for t in 1:N
+            update!(rng, statetransition, pm.topology, system, t)
+            solve!(pm, system, settings, t)
+            foreach(recorder -> record!(recorder, pm.topology, system, s, t), recorders)
+        end
+
+        foreach(recorder -> reset!(recorder, s), recorders)
+        method.count_samples && @info("sample = $(s)")
+    end
+
+    Base.finalize(JuMP.backend(pm.model).optimizer)
+    put!(results, recorders)
+end
+
+""
+function assess(
+    system::SystemModel{N},
+    method::SequentialMCS,
+    settings::Settings,
+    sampleseeds::Channel{Int},
+    results::Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}},
+    resultspecs::ResultSpec...
+) where {N}
 
     pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
 

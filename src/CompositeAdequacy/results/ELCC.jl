@@ -46,13 +46,109 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
     shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
     lower_bound_metric = M(shortfall)
     eens_lower_bound_metric = EENS(shortfall)
+
+    @inbounds begin
+        push!(capacities, lower_bound)
+        push!(target_metrics, lower_bound_metric)
+        push!(eens_metrics, eens_lower_bound_metric)
+    end
+
+    upper_bound = params.capacity_max
+    update_load!(sys_variable, elcc_loads, base_load, upper_bound)
+    shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+    upper_bound_metric = M(shortfall)
+    eens_upper_bound_metric = EENS(shortfall)
+
+    @inbounds begin
+        push!(capacities, upper_bound)
+        push!(target_metrics, upper_bound_metric)
+        push!(eens_metrics, eens_upper_bound_metric)
+    end
+
+    while true
+
+        params.verbose && @info(
+            "\n$(lower_bound) $P\t< ELCC <\t$(upper_bound) $P\n",
+            "$(lower_bound_metric)\t< $(target_metric) <\t$(upper_bound_metric)")
+
+        midpoint = div(lower_bound + upper_bound, 2)
+        capacity_gap = upper_bound - lower_bound
+
+        # Stopping conditions
+        ## Return the bounds if they are within solution tolerance of each other
+        if capacity_gap <= params.capacity_gap
+            params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
+            break
+        end
+    
+        # If the null hypothesis upper_bound_metric !>= lower_bound_metric
+        # cannot be rejected, terminate and return the loose bounds
+        pval = pvalue(lower_bound_metric, upper_bound_metric)
+        if pval >= params.p_value
+            @warn "Gap between upper and lower bound risk metrics is not " *
+                "statistically significant (p_value=$pval), stopping bisection. " *
+                "The gap between capacity bounds is $(capacity_gap) $P, " *
+                "while the target stopping gap was $(params.capacity_gap) $P."
+            break
+        end
+
+        # Evaluate metric at midpoint
+        update_load!(sys_variable, elcc_loads, base_load, midpoint)
+        shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+        midpoint_metric = M(shortfall)
+        eens_midpoint_metric = EENS(shortfall)
+
+        @inbounds begin
+            push!(capacities, midpoint)
+            push!(target_metrics, midpoint_metric)
+            push!(eens_metrics, eens_midpoint_metric)
+        end
+
+        # Tighten capacity bounds
+        if val(midpoint_metric) < val(target_metric)
+            lower_bound = midpoint
+            lower_bound_metric = midpoint_metric
+        else # midpoint_metric <= target_metric
+            upper_bound = midpoint
+            upper_bound_metric = midpoint_metric
+        end
+    end
+
+    return CapacityCreditResult{typeof(params), typeof(target_metric), P}(
+        target_metric, eens_metric, Float64(lower_bound), 
+        Float64(upper_bound), Float64.(capacities), target_metrics, eens_metrics)
+end
+
+""
+function assess_safe(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Settings, simulationspec::SimulationSpec
+    ) where {N, L, T, S <: SystemModel{N,L,T}, M <: ReliabilityMetric}
+
+    P = BaseModule.powerunits["MW"]
+
+    loadskeys = sys_baseline.loads.keys
+    loadskeys ≠ sys_augmented.loads.keys && error("Systems provided do not have matching loads")
+
+    shortfall = first(assess_safe(sys_baseline, simulationspec, settings, Shortfall()))
+    target_metric = M(shortfall)
+    eens_metric = EENS(shortfall)
+
+    capacities = Int[]
+    target_metrics = typeof(target_metric)[]
+    eens_metrics = EENS[]
+
+    elcc_loads, base_load, sys_variable = copy_load(sys_augmented, params.loads)
+
+    lower_bound = 0
+    shortfall = first(assess_safe(sys_variable, simulationspec, settings, Shortfall()))
+    lower_bound_metric = M(shortfall)
+    eens_lower_bound_metric = EENS(shortfall)
     push!(capacities, lower_bound)
     push!(target_metrics, lower_bound_metric)
     push!(eens_metrics, eens_lower_bound_metric)
 
     upper_bound = params.capacity_max
-    update_load!(sys_variable, elcc_loads, base_load, upper_bound, sys_baseline.baseMVA)
-    shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+    update_load!(sys_variable, elcc_loads, base_load, upper_bound)
+    shortfall = first(assess_safe(sys_variable, simulationspec, settings, Shortfall()))
     upper_bound_metric = M(shortfall)
     eens_upper_bound_metric = EENS(shortfall)
     push!(capacities, upper_bound)
@@ -69,12 +165,26 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
         capacity_gap = upper_bound - lower_bound
 
         # Stopping conditions
-        stop = stopping_conditions(params, capacity_gap, lower_bound_metric, upper_bound_metric)
-        stop && break
+        ## Return the bounds if they are within solution tolerance of each other
+        if capacity_gap <= params.capacity_gap
+            params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
+            break
+        end
+    
+        # If the null hypothesis upper_bound_metric !>= lower_bound_metric
+        # cannot be rejected, terminate and return the loose bounds
+        pval = pvalue(lower_bound_metric, upper_bound_metric)
+        if pval >= params.p_value
+            @warn "Gap between upper and lower bound risk metrics is not " *
+                "statistically significant (p_value=$pval), stopping bisection. " *
+                "The gap between capacity bounds is $(capacity_gap) $P, " *
+                "while the target stopping gap was $(params.capacity_gap) $P."
+            break
+        end
 
         # Evaluate metric at midpoint
-        update_load!(sys_variable, elcc_loads, base_load, midpoint, sys_baseline.baseMVA)
-        shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+        update_load!(sys_variable, elcc_loads, base_load, midpoint)
+        shortfall = first(assess_safe(sys_variable, simulationspec, settings, Shortfall()))
         midpoint_metric = M(shortfall)
         eens_midpoint_metric = EENS(shortfall)
         push!(capacities, midpoint)
@@ -96,35 +206,8 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
         Float64(upper_bound), Float64.(capacities), target_metrics, eens_metrics)
 end
 
-"Apply stopping conditions"
-function stopping_conditions(
-    params::ELCC{M}, capacity_gap::Float64, lower_bound_metric::M, upper_bound_metric::M
-    ) where {M <: ReliabilityMetric}
-
-    P = BaseModule.powerunits["MW"]
-    stopping_conditions = false
-
-    ## Return the bounds if they are within solution tolerance of each other
-    if capacity_gap <= params.capacity_gap
-        params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
-        stopping_conditions = true
-    end
-
-    # If the null hypothesis upper_bound_metric !>= lower_bound_metric
-    # cannot be rejected, terminate and return the loose bounds
-    pval = pvalue(lower_bound_metric, upper_bound_metric)
-    if pval >= params.p_value
-        @warn "Gap between upper and lower bound risk metrics is not " *
-            "statistically significant (p_value=$pval), stopping bisection. " *
-            "The gap between capacity bounds is $(capacity_gap) $P, " *
-            "while the target stopping gap was $(params.capacity_gap) $P."
-        stopping_conditions = true
-    end
-
-    return stopping_conditions
-end
-
-""
+"The function copy_load is used to create a new instance of the SystemModel 
+with the same structure as sys but with an updated Loads component"
 function copy_load(sys::SystemModel{N,L,T}, load_shares::Vector{Tuple{Int,Float64}}) where {N,L,T}
 
     load_allocations = allocate_loads(sys.loads.keys, load_shares)
@@ -141,10 +224,13 @@ end
 ""
 function update_load!(
     sys::SystemModel, load_shares::Vector{Tuple{Int,Float64}}, 
-    load_base::Matrix{Float32}, load_increase::Float64, baseMVA::Float64)
+    load_base::Matrix{Float32}, load_increase::Float64)
+
+    load_increase_normalized = Float32(load_increase/sys.baseMVA)
 
     for (r, share) in load_shares
-        sys.loads.pd[r, :] .= load_base[r, :] .+ share*load_increase/baseMVA
+        share_float32 = Float32(share)
+        sys.loads.pd[r, :] .= mul!(sys.loads.pd[r, :], load_base[r, :], share_float32) .+ load_increase_normalized
     end
 end
 

@@ -13,7 +13,7 @@
     import Random123: Philox4x
     import StatsBase: mean, std, stderror
     import TimeZones: ZonedDateTime
-    import LinearAlgebra: qr
+    import LinearAlgebra: qr, mul!
     import XLSX: rename!, addsheet!, openxlsx
     import Distributions: ccdf, Normal
     import Base: minimum, maximum, extrema
@@ -25,7 +25,7 @@
 
     export
         # CompositeAdequacy submoduleexport
-        assess, assess_single, SimulationSpec,
+        assess, assess_safe, SimulationSpec,
         
         # Metrics
         ReliabilityMetric, EDLC, EENS, SI, ELCC, MeanEstimate, val, stderror,

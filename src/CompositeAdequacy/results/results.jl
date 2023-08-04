@@ -17,6 +17,17 @@ function resultchannel(
 end
 
 ""
+function resultchannel(
+    method::SimulationSpec, 
+    results::ResultSpec, 
+    threads::Int)
+
+    types = accumulatortype.(method, results)
+
+    return Channel{Tuple{types...}}(threads)
+end
+
+""
 function resultremotechannel(
     method::SimulationSpec, 
     results::T,
@@ -26,6 +37,18 @@ function resultremotechannel(
     types = accumulatortype.(method, results)
 
     return Distributed.RemoteChannel(()->Channel{Tuple{types...}}(workers))
+end
+
+""
+function resultremotechannel(
+    method::SimulationSpec, 
+    results::ResultSpec,
+    workers::Int
+    )
+
+    types = accumulatortype.(method, results)
+
+    return Distributed.RemoteChannel(()->Channel{types}(workers))
 end
 
 merge!(xs::T, ys::T) where T <: Tuple{Vararg{ResultAccumulator}} = foreach(merge!, xs, ys)
