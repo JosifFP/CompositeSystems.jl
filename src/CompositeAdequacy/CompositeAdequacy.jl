@@ -3,7 +3,7 @@
     using ..BaseModule
     using ..OPF
 
-    import Base: -, getindex, merge!
+    import Base: -, getindex, merge!, finalize
     import Dates: Dates, DateTime, Period
     import Decimals: Decimal, decimal
     import OnlineStatsBase: EqualWeight, fit!, Mean, value, Variance
@@ -18,14 +18,18 @@
     import Distributions: ccdf, Normal
     import Base: minimum, maximum, extrema
     import Distributed: Distributed, @distributed, RemoteChannel
+    import Gurobi: Env, GRBsetintparam
+    import Requires: @require
     import JuMP
-    import Gurobi
 
-    const GRB_ENV = Ref{Gurobi.Env}()
+    function __init__()
+        @info "If you have Gurobi installed and want to use it, make sure to `using Gurobi` in order to enable it."
+        @require Gurobi = "2e9cd046-0924-5485-92f1-d5272153d98b" include("gurobi_setup.jl")
+    end
 
     export
         # CompositeAdequacy submoduleexport
-        assess, assess_safe, SimulationSpec,
+        assess, SimulationSpec,
         
         # Metrics
         ReliabilityMetric, EDLC, EENS, SI, ELCC, MeanEstimate, val, stderror,

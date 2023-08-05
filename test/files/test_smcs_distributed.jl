@@ -20,7 +20,6 @@ end
 @everywhere using JuMP
 @everywhere using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
-
 @testset "Sequential MCS, 1000 samples, RBTS, distributed" begin
 
     settings = CompositeSystems.Settings(;

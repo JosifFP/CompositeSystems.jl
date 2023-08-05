@@ -18,8 +18,10 @@ function assess(
     nworkers = max(method.include_master ? Distributed.nprocs() : Distributed.nprocs() - 1, 1)
     nthreads = method.threaded ? Base.Threads.nthreads() : 1
 
-    # Use RemoteChannel for distributed computing
-    results = resultremotechannel(method, resultspecs, nworkers)
+    # Use RemoteChannel for distributed computing or Channel otherwise.
+    results = nworkers > 1 ? 
+        resultremotechannel(method, resultspecs, nworkers) : 
+        resultchannel(method, resultspecs, nworkers)
 
     # Compute on worker processes
     if nworkers > 1
@@ -98,52 +100,19 @@ function assess(
     nsamples_per_worker = div(method.nsamples, nworkers)
     start_index = (worker - 1) * nsamples_per_worker + 1
     end_index = min(worker * nsamples_per_worker, method.nsamples)
-    Threads.@spawn CompositeAdequacy.makeseeds(sampleseeds, start_index, end_index)
-    settings.optimizer === nothing && init_gurobi_env()
+    Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
+    settings.optimizer === nothing && CompositeAdequacy.init_gurobi_env(nthreads)
 
     if method.threaded && nthreads > 1
         for _ in 1:nthreads
-            Threads.@spawn CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
-        end
-    else
-        CompositeAdequacy.assess(system, method, settings, sampleseeds, results, resultspecs...)
-    end
-    
-    outcome = take_Results!(results, nthreads)
-    settings.optimizer === nothing && end_gurobi_env()
-    return outcome
-end
-
-
-"""
-This code snippet is using multi-threading to parallelize the assess function by running 
-multiple instances of it simultaneously on different threads. The Threads.@spawn macro is 
-used to create new threads, each of which will execute the assess function using a different 
-seed from the sampleseeds channel. The results of each thread are stored in the results channel, 
-and the function finalize is called on the results after all threads have finished executing.
-"""
-function assess_safe(
-    system::SystemModel{N},
-    method::SequentialMCS,
-    settings::Settings,
-    resultspecs::ResultSpec...
-) where {N}
-    threads = Base.Threads.nthreads()
-    sampleseeds = Channel{Int}(2*threads)
-    results = resultchannel(method, resultspecs, threads)
-    Threads.@spawn makeseeds(sampleseeds, method.nsamples)  # feed the sampleseeds channel with #N samples.
-    settings.optimizer === nothing && init_gurobi_env()
-
-    if method.threaded
-        for _ in 1:threads
             Threads.@spawn assess(system, method, settings, sampleseeds, results, resultspecs...)
         end
     else
         assess(system, method, settings, sampleseeds, results, resultspecs...)
     end
-
-    outcome = finalize(results, system, method.threaded ? threads : 1) #outcome = take_Results!(results, threads)
-    settings.optimizer === nothing && end_gurobi_env()
+    
+    outcome = take_Results!(results, nthreads)
+    settings.optimizer === nothing && CompositeAdequacy.end_gurobi_env()
     return outcome
 end
 
@@ -167,7 +136,9 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N, R<:Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
+    pm = settings.optimizer === nothing ? 
+        abstract_model(system, settings, CompositeAdequacy.GRB_ENV[]) : 
+        abstract_model(system, settings, nothing)
 
     statetransition = StateTransition(system)
     build_problem!(pm, system)
@@ -203,7 +174,9 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    pm = settings.optimizer === nothing ? abstract_model(system, settings, GRB_ENV[]) : abstract_model(system, settings, nothing)
+    pm = settings.optimizer === nothing ? 
+        abstract_model(system, settings, CompositeAdequacy.GRB_ENV[]) : 
+        abstract_model(system, settings, nothing)
 
     statetransition = StateTransition(system)
     build_problem!(pm, system)
@@ -272,17 +245,6 @@ function update!(rng::AbstractRNG,
 
     OPF.update_states!(topology, statetransition, t)
     #apply_common_outages!(topology, system.branches, t)
-    return
-end
-
-""
-function init_gurobi_env()
-    GRB_ENV[] = Gurobi.Env()
-    return
-end
-
-function end_gurobi_env()
-    Base.finalize(GRB_ENV[])
     return
 end
 
