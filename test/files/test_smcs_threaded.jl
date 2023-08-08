@@ -1,15 +1,3 @@
-# gurobi_optimizer = JuMP.optimizer_with_attributes(
-#     Gurobi.Optimizer, 
-#     "Presolve"=>1, 
-#     "PreCrush"=>1, 
-#     "OutputFlag"=>0, 
-#     "LogToConsole"=>0, 
-#     "NonConvex"=>2, 
-#     "NumericFocus"=>3, 
-#     "Threads"=>64
-# )
-
-#resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
 
 settings = CompositeSystems.Settings(;
     jump_modelmode = JuMP.AUTOMATIC,
@@ -121,3 +109,26 @@ end
         CompositeAdequacy.stderror.(CompositeSystems.SI.(shortfall_threaded, system.buses.keys)), 
         system_SI_stderror; atol = 1e-4)
 end
+
+
+
+# loads = [
+#     1 => 0.2/1.85,
+#     2 => 0.85/1.85,
+#     3 => 0.4/1.85,
+#     4 => 0.2/1.85,
+#     5 => 0.2/1.85
+# ]
+
+# gurobi_optimizer = JuMP.optimizer_with_attributes(
+#     Gurobi.Optimizer, 
+#     "Presolve"=>1, 
+#     "PreCrush"=>1, 
+#     "OutputFlag"=>0, 
+#     "LogToConsole"=>0, 
+#     "NonConvex"=>2, 
+#     "NumericFocus"=>3, 
+#     "Threads"=>64
+# )
+
+#resultspecs = (CompositeAdequacy.Shortfall(), CompositeAdequacy.Utilization())
