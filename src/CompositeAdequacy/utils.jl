@@ -206,37 +206,52 @@ function print_results(system::SystemModel, capcredit::CapacityCreditResult)
             xf[1]["B5"] = system.storages.thermal_rating[1]
         end
 
-        xf[1]["C1"] = "target_metric"
-        xf[1]["D1"] = string(capcredit.target_metric)
-        xf[1]["C2"] = "val (target_metric)"
-        xf[1]["D2"] = val(capcredit.target_metric)
-        xf[1]["C3"] = "stderror (target_metric)"
-        xf[1]["D3"] = stderror(capcredit.target_metric)
-        xf[1]["C4"] = "val (EENS_metric)"
-        xf[1]["D4"] = val(capcredit.eens_metric)
-        xf[1]["C5"] = "stderror (EENS_metric)"
-        xf[1]["D5"] = stderror(capcredit.eens_metric)
-        xf[1]["C6"] = "lowerbound"
-        xf[1]["D6"] = capcredit.lowerbound
-        xf[1]["C7"] = "upperbound"
-        xf[1]["D7"] = capcredit.upperbound
-        xf[1]["C8"] = "minimum"
-        xf[1]["D8"] = minimum(capcredit)
-        xf[1]["C9"] = "maximum"
-        xf[1]["D9"] = maximum(capcredit)
-        xf[1]["C10"] = "extrema"
-        xf[1]["D10"] = string(extrema(capcredit))
+        xf[1]["C1"] = "val (target_metric)"
+        xf[1]["D1"] = val(capcredit.target_metric)
+        xf[1]["C2"] = "stderror (target_metric)"
+        xf[1]["D2"] = stderror(capcredit.target_metric)
+
+        xf[1]["C3"] = "val (SI_metric)"
+        xf[1]["D3"] = val(capcredit.si_metric)
+        xf[1]["C4"] = "stderror (SI_metric)"
+        xf[1]["D4"] = stderror(capcredit.si_metric)
+
+        xf[1]["C5"] = "val (EENS_metric)"
+        xf[1]["D5"] = val(capcredit.eens_metric)
+        xf[1]["C6"] = "stderror (EENS_metric)"
+        xf[1]["D6"] = stderror(capcredit.eens_metric)
+
+        xf[1]["C7"] = "val (EDLC_metric)"
+        xf[1]["D7"] = val(capcredit.edlc_metric)
+        xf[1]["C8"] = "stderror (EDLC_metric)"
+        xf[1]["D8"] = stderror(capcredit.edlc_metric)
+
+        xf[1]["C9"] = "lowerbound"
+        xf[1]["D9"] = capcredit.lowerbound
+        xf[1]["C10"] = "upperbound"
+        xf[1]["D10"] = capcredit.upperbound
+        xf[1]["C11"] = "minimum"
+        xf[1]["D11"] = minimum(capcredit)
+        xf[1]["C12"] = "maximum"
+        xf[1]["D12"] = maximum(capcredit)
+        xf[1]["C13"] = "extrema"
+        xf[1]["D13"] = string(extrema(capcredit))
 
         xf[1]["F1"] = "bound_capacities"
         xf[1]["F2", dim=1] = collect(capcredit.bound_capacities)
-        xf[1]["G1"] = "bound_metrics - val"
-        xf[1]["G2", dim=1] = collect(val.(capcredit.bound_metrics))
-        xf[1]["H1"] = "bound_metrics - stderror"
-        xf[1]["H2", dim=1] = collect(stderror.(capcredit.bound_metrics))
+        xf[1]["G1"] = "SI_metrics - val"
+        xf[1]["G2", dim=1] = collect(val.(capcredit.si_metrics))
+        xf[1]["H1"] = "SI_metrics - stderror"
+        xf[1]["H2", dim=1] = collect(stderror.(capcredit.si_metrics))
         xf[1]["I1"] = "EENS_metrics - val"
         xf[1]["I2", dim=1] = collect(val.(capcredit.eens_metrics))
         xf[1]["J1"] = "EENS_metrics - stderror"
         xf[1]["J2", dim=1] = collect(stderror.(capcredit.eens_metrics))
+
+        xf[1]["K1"] = "EDLC_metrics - val"
+        xf[1]["K2", dim=1] = collect(val.(capcredit.edlc_metrics))
+        xf[1]["L1"] = "EDLC_metrics - stderror"
+        xf[1]["L2", dim=1] = collect(stderror.(capcredit.edlc_metrics))
     end
     return
 end

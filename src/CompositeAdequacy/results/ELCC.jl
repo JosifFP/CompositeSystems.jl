@@ -1,5 +1,5 @@
 struct ELCC{M} <: CapacityValuationMethod{M}
-
+    
     capacity_max::Float64
     capacity_gap::Float64
     p_value::Float64
@@ -29,41 +29,37 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
 
     P = BaseModule.powerunits["MW"]
 
-    loadskeys = sys_baseline.loads.keys
-    loadskeys ≠ sys_augmented.loads.keys && error("Systems provided do not have matching loads")
+    sys_baseline.loads.keys ≠ sys_augmented.loads.keys && error("Systems provided do not have matching loads")
 
     shortfall = first(assess(sys_baseline, simulationspec, settings, Shortfall()))
     target_metric = M(shortfall)
+    si_metric = SI(shortfall)
     eens_metric = EENS(shortfall)
+    edlc_metric = EDLC(shortfall)
 
     capacities = Int[]
-    target_metrics = typeof(target_metric)[]
+    si_metrics = SI[]
     eens_metrics = EENS[]
+    edlc_metrics = EDLC[]
 
     elcc_loads, base_load, sys_variable = copy_load(sys_augmented, params.loads)
 
     lower_bound = 0
     shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
     lower_bound_metric = M(shortfall)
-    eens_lower_bound_metric = EENS(shortfall)
-
-    @inbounds begin
-        push!(capacities, lower_bound)
-        push!(target_metrics, lower_bound_metric)
-        push!(eens_metrics, eens_lower_bound_metric)
-    end
+    push!(capacities, lower_bound)
+    push!(si_metrics, SI(shortfall))
+    push!(eens_metrics, EENS(shortfall))
+    push!(edlc_metrics, EDLC(shortfall))
 
     upper_bound = params.capacity_max
     update_load!(sys_variable, elcc_loads, base_load, upper_bound)
     shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
     upper_bound_metric = M(shortfall)
-    eens_upper_bound_metric = EENS(shortfall)
-
-    @inbounds begin
-        push!(capacities, upper_bound)
-        push!(target_metrics, upper_bound_metric)
-        push!(eens_metrics, eens_upper_bound_metric)
-    end
+    push!(capacities, upper_bound)
+    push!(si_metrics, SI(shortfall))
+    push!(eens_metrics, EENS(shortfall))
+    push!(edlc_metrics, EDLC(shortfall))
 
     while true
 
@@ -96,13 +92,11 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
         update_load!(sys_variable, elcc_loads, base_load, midpoint)
         shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
         midpoint_metric = M(shortfall)
-        eens_midpoint_metric = EENS(shortfall)
 
-        @inbounds begin
-            push!(capacities, midpoint)
-            push!(target_metrics, midpoint_metric)
-            push!(eens_metrics, eens_midpoint_metric)
-        end
+        push!(capacities, midpoint)
+        push!(si_metrics, SI(shortfall))
+        push!(eens_metrics, EENS(shortfall))
+        push!(edlc_metrics, EDLC(shortfall))
 
         # Tighten capacity bounds
         if val(midpoint_metric) < val(target_metric)
@@ -115,8 +109,16 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
     end
 
     return CapacityCreditResult{typeof(params), typeof(target_metric), P}(
-        target_metric, eens_metric, Float64(lower_bound), 
-        Float64(upper_bound), Float64.(capacities), target_metrics, eens_metrics)
+        target_metric,
+        si_metric,
+        eens_metric,
+        edlc_metric, 
+        Float64(lower_bound), 
+        Float64(upper_bound), 
+        Float64.(capacities), 
+        si_metrics, 
+        eens_metrics, 
+        edlc_metrics)
 end
 
 
@@ -143,8 +145,7 @@ function update_load!(
     load_increase_normalized = Float32(load_increase/sys.baseMVA)
 
     for (r, share) in load_shares
-        share_float32 = Float32(share)
-        sys.loads.pd[r, :] .= mul!(sys.loads.pd[r, :], load_base[r, :], share_float32) .+ load_increase_normalized
+        sys.loads.pd[r, :] .= load_base[r, :] .+ share*load_increase_normalized
     end
 end
 
