@@ -1,21 +1,21 @@
 struct ELCC{M} <: CapacityValuationMethod{M}
     
     capacity_max::Float64
-    capacity_gap::Float64
+    tolerance::Float64
     p_value::Float64
     loads::Vector{Tuple{Int,Float64}}
     verbose::Bool
 
     function ELCC{M}(
         capacity_max::Float64, loads::Vector{Pair{Int,Float64}};
-        capacity_gap::Float64=5.0, p_value::Float64=0.05, verbose::Bool=false) where M
+        tolerance::Float64=0.0, p_value::Float64=0.05, verbose::Bool=false) where M
 
         @assert capacity_max > 0
-        @assert capacity_gap > 0
+        @assert tolerance >= 0
         @assert 0 < p_value < 1
         @assert sum(x.second for x in loads) ≈ 1.0
 
-        return new{M}(capacity_max, capacity_gap, p_value, Tuple.(loads), verbose)
+        return new{M}(capacity_max, tolerance, p_value, Tuple.(loads), verbose)
     end
 end
 
@@ -23,7 +23,7 @@ function ELCC{M}(capacity_max::Float64, loads::Float64; kwargs...) where M
     return ELCC{M}(capacity_max, [loads=>1.0]; kwargs...)
 end
 
-""
+"This function finds a capacity value range based on the newton-raphson algorithm"
 function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Settings, simulationspec::SimulationSpec
     ) where {N, L, T, S <: SystemModel{N,L,T}, M <: ReliabilityMetric}
 
@@ -38,6 +38,7 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
     edlc_metric = EDLC(shortfall)
 
     capacities = Int[]
+    target_metrics = typeof(target_metric)[]
     si_metrics = SI[]
     eens_metrics = EENS[]
     edlc_metrics = EDLC[]
@@ -48,18 +49,25 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
     shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
     lower_bound_metric = M(shortfall)
     push!(capacities, lower_bound)
+    push!(target_metrics , lower_bound_metric)
     push!(si_metrics, SI(shortfall))
     push!(eens_metrics, EENS(shortfall))
     push!(edlc_metrics, EDLC(shortfall))
 
+    # initial estimate of the root
     upper_bound = params.capacity_max
     update_load!(sys_variable, elcc_loads, base_load, upper_bound)
     shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
     upper_bound_metric = M(shortfall)
     push!(capacities, upper_bound)
+    push!(target_metrics , upper_bound_metric)
     push!(si_metrics, SI(shortfall))
     push!(eens_metrics, EENS(shortfall))
     push!(edlc_metrics, EDLC(shortfall))
+    println("target_metric=$(target_metric), lower_bound_metric=$(lower_bound_metric), upper_bound_metric=$(upper_bound_metric)")
+    x_n_1 = 0
+    x_1 = 0
+    tolerance = 0
 
     while true
 
@@ -67,44 +75,52 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
             "\n$(lower_bound) $P\t< ELCC <\t$(upper_bound) $P\n",
             "$(lower_bound_metric)\t< $(target_metric) <\t$(upper_bound_metric)")
 
-        midpoint = div(lower_bound + upper_bound, 2)
-        capacity_gap = upper_bound - lower_bound
+        #the tangent of f(x) at x0 to improve on the estimate of the root (x1)
+        #gradient
+        gradient = (val(upper_bound_metric) - val(lower_bound_metric)) / (upper_bound - lower_bound)
+        x_1 = div((val(target_metric) - val(lower_bound_metric)) + gradient*lower_bound, gradient)
+        x_n = x_1
+        tolerance = abs(x_n - x_n_1)
 
-        # Stopping conditions
-        ## Return the bounds if they are within solution tolerance of each other
-        if capacity_gap <= params.capacity_gap
-            params.verbose && @info "Capacity bound gap within tolerance, stopping bisection."
-            break
-        end
-    
+        # Stopping condition N1
         # If the null hypothesis upper_bound_metric !>= lower_bound_metric
         # cannot be rejected, terminate and return the loose bounds
         pval = pvalue(lower_bound_metric, upper_bound_metric)
         if pval >= params.p_value
             @warn "Gap between upper and lower bound risk metrics is not " *
-                "statistically significant (p_value=$pval), stopping bisection. " *
-                "The gap between capacity bounds is $(capacity_gap) $P, " *
-                "while the target stopping gap was $(params.capacity_gap) $P."
+                "statistically significant (p_value=$pval), stopping newton-raphson method. " *
+                "The tolerance error is $(tolerance) $P, " * 
+                "while the target stopping criteria was $(params.tolerance) $P."
             break
         end
 
         # Evaluate metric at midpoint
-        update_load!(sys_variable, elcc_loads, base_load, midpoint)
+        update_load!(sys_variable, elcc_loads, base_load, x_1)
         shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
-        midpoint_metric = M(shortfall)
-
-        push!(capacities, midpoint)
+        f_1 = M(shortfall)
+        push!(capacities, x_1)
+        push!(target_metrics , f_1)
         push!(si_metrics, SI(shortfall))
         push!(eens_metrics, EENS(shortfall))
         push!(edlc_metrics, EDLC(shortfall))
 
+        # Stopping condition N2
+        ## Return the bounds if they are within solution tolerance of each other
+        if tolerance <= params.tolerance
+            params.verbose && @info "Successive approximations will become only marginally different. " *
+            "The iterative process (newton-raphson method) is terminated."
+            break
+        end
+
+        x_n_1 = x_1
+
         # Tighten capacity bounds
-        if val(midpoint_metric) < val(target_metric)
-            lower_bound = midpoint
-            lower_bound_metric = midpoint_metric
+        if val(f_1) < val(target_metric)
+            lower_bound = x_1
+            lower_bound_metric = f_1
         else # midpoint_metric <= target_metric
-            upper_bound = midpoint
-            upper_bound_metric = midpoint_metric
+            upper_bound = x_1
+            upper_bound_metric = f_1
         end
     end
 
@@ -113,8 +129,8 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
         si_metric,
         eens_metric,
         edlc_metric, 
-        Float64(lower_bound), 
-        Float64(upper_bound), 
+        Int(x_1), 
+        Float64(tolerance), 
         Float64.(capacities), 
         si_metrics, 
         eens_metrics, 

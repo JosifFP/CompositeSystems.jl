@@ -226,16 +226,10 @@ function print_results(system::SystemModel, capcredit::CapacityCreditResult)
         xf[1]["C8"] = "stderror (EDLC_metric)"
         xf[1]["D8"] = stderror(capcredit.edlc_metric)
 
-        xf[1]["C9"] = "lowerbound"
-        xf[1]["D9"] = capcredit.lowerbound
-        xf[1]["C10"] = "upperbound"
-        xf[1]["D10"] = capcredit.upperbound
-        xf[1]["C11"] = "minimum"
-        xf[1]["D11"] = minimum(capcredit)
-        xf[1]["C12"] = "maximum"
-        xf[1]["D12"] = maximum(capcredit)
-        xf[1]["C13"] = "extrema"
-        xf[1]["D13"] = string(extrema(capcredit))
+        xf[1]["C9"] = "capacity_value"
+        xf[1]["D9"] = capcredit.capacity_value
+        xf[1]["C10"] = "tolerance_error"
+        xf[1]["D10"] = capcredit.tolerance_error
 
         xf[1]["F1"] = "bound_capacities"
         xf[1]["F2", dim=1] = collect(capcredit.bound_capacities)
