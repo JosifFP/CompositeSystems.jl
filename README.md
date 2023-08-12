@@ -14,7 +14,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/JosifFP/CompositeSystems.jl">
-    <img src="docs/images/logo_white.png" alt="Logo" height="300">
+    <img src="docs/images/logo_white.png" alt="Logo" width="500">
   </a>
 
 <h3 align="center">Generation & Transmission Reliability Tool</h3>
