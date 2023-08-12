@@ -1,26 +1,28 @@
 <!--  -->
-<a name="readme-top"></a>
+
+`<a name="readme-top"></a>`
+
 <!---->
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+[Contributors][contributors-url]
+[Forks][forks-url]
+[Stargazers][stars-url]
+[Issues][issues-url]
+[MIT License][license-url]
+[LinkedIn][linkedin-url]
 
 <!-- PROJECT LOGO -->
 
 <br />
 <div align="center">
   <a href="https://github.com/JosifFP/CompositeSystems.jl">
-    <img src="docs/images/logo_white.png" alt="Logo" width="320" height="160">
+    <img src="docs/images/logo_white.png" alt="Logo" height="300">
   </a>
 
-<h3 align="center">Composite System Reliability Evaluation Tool</h3>
+<h3 align="center">Generation & Transmission Reliability Tool</h3>
 
 <p align="center">
-    project_description
+    <!-- project_description -->
     <br />
     <a href="https://github.com/JosifFP/CompositeSystems.jl"><strong>Explore the docs »</strong></a>
     <br />
@@ -62,11 +64,14 @@
 
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://github.com/JosifFP/CompositeSystems.jl)
+<!-- [![Product Name Screen Shot][product-screenshot]](https://github.com/JosifFP/CompositeSystems.jl) -->
+**[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl)** is the first open-source Composite System Reliability (CSR) tool written in Julia. 
+The methodology is based on sequential Monte Carlo sampling of generation and transmission component availability such as: generators, transmission lines,
+transformers, shunts, loads and storage systems. Remedial actions, energy storage dispatch and load curtailment are carried out by an efficient linear 
+programming routine (DC Optimal Power Flow) based on JuMP modeling language and linear solver provided by the user. The program is demonstrated in case 
+studies with 6-Bus Roy Billiton Test System (RBTS) and the 24-Bus IEEE RTS.
 
-CompositeSystems.jl is the first open-source Composite System Reliability (CSR) tool written in Julia. The methodology is based on sequential Monte Carlo sampling of generation and transmission component availability such as: generators, transmission lines, transformers, shunts, loads and storage systems. Remedial actions, energy storage dispatch and load curtailment are carried out by an efficient linear programming routine (DC Optimal Power Flow) and quadratic (fast decoupled AC Optimal Power Flow) based on JuMP modeling language and linear solver provided by the user. The program is demonstrated in case studies with 6-Bus Roy Billiton Test System (RBTS) and the 24-Bus IEEE RTS.
-
-**Powered and inspired by [PowerModels](https://github.com/lanl-ansi/PowerModels.jl) and *NREL's* Probabilistic Resource Adequacy Suite [PRAS](https://github.com/NREL/PRAS)**
+*Powered and inspired by [PowerModels](https://github.com/lanl-ansi/PowerModels.jl) and *NREL's* Probabilistic Resource Adequacy Suite [PRAS](https://github.com/NREL/PRAS)*
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -88,7 +93,7 @@ Soon
 
 ### Installation
 
-1. Get a free gurobi licence at [https://www.gurobi.com/academia/academic-program-and-licenses/](https://www.gurobi.com/academia/academic-program-and-licenses/)
+1. Get a free academic gurobi licence at [https://www.gurobi.com/academia/academic-program-and-licenses/](https://www.gurobi.com/academia/academic-program-and-licenses/)
 2. Clone the repo
 
    ```sh
@@ -99,9 +104,9 @@ Soon
 
 <!-- USAGE EXAMPLES -->
 
-## Usage
+<!-- ## Usage
 
-Soon
+Soon -->
 
 <!-- CONTRIBUTING -->
 
@@ -121,7 +126,11 @@ Contributions are what make the open source community such an amazing place to l
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl) ©2023 by [Josif Elias Figueroa Parra](https://www.linkedin.com/in/josif-figueroa-parra) is licensed under CC BY-NC-ND 4.0. To view a copy of this license, visit [http://creativecommons.org/licenses/by-nc-nd/4.0/](http://creativecommons.org/licenses/by-nc-nd/4.0/)
+
+<div align="center">
+<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Cc-white.svg" alt="Logo" width="30"><img src="https://upload.wikimedia.org/wikipedia/en/1/11/Cc-by_new_white.svg" alt="Logo" width="30"></a>
+</div>
 
 <!-- CONTACT -->
 
@@ -138,12 +147,6 @@ Project Link: [https://github.com/JosifFP/CompositeSystems.jl](https://github.co
 ## Acknowledgments
 
 This work was supported by MITACS through the Mitacs Accelerate program, Atlantic Canada Opportunities Agency, and Énergie NB Power, NB, Canada, under Grant IT27416.
-
-The primary developer is Josif Figueroa with support of the following contributors:
-
-* [Dr. Kush Bubbar](https://www.unb.ca/faculty-staff/directory/j-herbert-smith-centre-tme/bubbar-kush.html)
-* [M.S. Greg Young-Morris](https://www.linkedin.com/in/greg-young-morris-4114a426/)
-* [Sys-MoDEL Lab](https://www.sysmodel.ca/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

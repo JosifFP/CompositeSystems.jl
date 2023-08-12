@@ -94,19 +94,21 @@ function assess(sys_baseline::S, sys_augmented::S, params::ELCC{M}, settings::Se
             break
         end
 
-        # Evaluate metric at midpoint
-        update_load!(sys_variable, elcc_loads, base_load, x_1)
-        shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
-        f_1 = M(shortfall)
-        push!(capacities, x_1)
-        push!(target_metrics , f_1)
-        push!(si_metrics, SI(shortfall))
-        push!(eens_metrics, EENS(shortfall))
-        push!(edlc_metrics, EDLC(shortfall))
+        if tolerance > 0
+            # Evaluate metric at midpoint
+            update_load!(sys_variable, elcc_loads, base_load, x_1)
+            shortfall = first(assess(sys_variable, simulationspec, settings, Shortfall()))
+            f_1 = M(shortfall)
+            push!(capacities, x_1)
+            push!(target_metrics , f_1)
+            push!(si_metrics, SI(shortfall))
+            push!(eens_metrics, EENS(shortfall))
+            push!(edlc_metrics, EDLC(shortfall))
+        end
 
-        # Stopping condition N2
-        ## Return the bounds if they are within solution tolerance of each other
-        if tolerance <= params.tolerance
+        if  tolerance <= params.tolerance
+            # Stopping condition N2
+            ## Return the bounds if they are within solution tolerance of each other
             params.verbose && @info "Successive approximations will become only marginally different. " *
             "The iterative process (newton-raphson method) is terminated."
             break
