@@ -1,7 +1,5 @@
 <!--  -->
-
-<a name="readme-top"></a>`
-
+<a name="readme-top"></a>
 <!---->
 
 [Contributors][contributors-url]
