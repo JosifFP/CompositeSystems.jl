@@ -19,6 +19,7 @@ function initialize_availability!(
     return availability
 end
 
+
 "Update the availability of different types of assets (branches, generators, etc.) 
 using availability and nexttransition vectors"
 function update_availability!(
@@ -33,7 +34,32 @@ function update_availability!(
     end
 end
 
-""
+
+
+"""
+    randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now::Int, t_last::Int; tol = 1e-9)
+
+Generate a random transition time based on the probability distribution `p`.
+
+# Arguments
+- `rng::AbstractRNG`: The random number generator.
+- `p::Vector{Float64}`: A vector of transition probabilities.
+- `i::Int`: The index for the current state in the probability vector `p`.
+- `t_now::Int`: The current time.
+- `t_last::Int`: The last time step.
+- `tol::Float64`: A small tolerance value used for numerical comparisons. Default is `1e-9`.
+
+# Returns
+The function returns a random time of transition, based on the provided transition probabilities. 
+If no transition occurs until `t_last`, it returns `t_last + 1`.
+
+# Description
+The function models the random time at which a state transitions to another state.
+It starts from the current time `t_now` and iteratively checks if a transition 
+occurs based on the probabilities provided. If a transition occurs, it returns that time.
+Otherwise, it increments the time and checks again until `t_last` is reached.
+
+"""
 function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now::Int, t_last::Int; tol = 1e-9)
 
     cdf = 0.0
@@ -53,6 +79,7 @@ function randtransitiontime(rng::AbstractRNG, p::Vector{Float64}, i::Int, t_now:
 end
 
 ""
+# THIS FUNCTION MUST BE FIXED
 function apply_common_outages!(topology::Topology, branches::Branches, t::Int)
     if !all(topology.commonbranches_available)
         for k in eachindex(branches.keys)

@@ -193,6 +193,8 @@ function _con_power_balance_nolc(
 
 end
 
+
+
 """
 This constraint captures problem agnostic constraints that are used to link
 the model's voltage variables together, in addition to the standard problem
@@ -257,6 +259,8 @@ function _con_ohms_yt_from_on_off(
         pm.model, q_fr == -(b+b_fr)/tm^2*(z + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(td))
 
 end
+
+
 
 """
 Creates Ohms constraints (yt post fix indicates that Y and T values are in rectangular form)
@@ -331,7 +335,7 @@ end
 
 #***************************************************** UPDATES *************************************************************************
 
-""
+"Updates the bounds of branch voltage magnitude variables based on availability"
 function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system::SystemModel, l::Int, t::Int; nw::Int=1)
 
     phi_fr = var(pm, :phi_fr, nw)[l]
@@ -340,13 +344,13 @@ function update_branch_voltage_magnitude_fr_on_off(pm::AbstractLPACModel, system
         JuMP.set_upper_bound(phi_fr, 0)
         JuMP.set_lower_bound(phi_fr, 0)
     else
-        JuMP.set_lower_bound(phi_fr, min(0, field(system, :buses, :vmin)[field(system, :branches, :f_bus)[l]] - 1.0))
-        JuMP.set_upper_bound(phi_fr, max(0, field(system, :buses, :vmax)[field(system, :branches, :f_bus)[l]] - 1.0))
+        f_bus = field(system, :branches, :f_bus)[l]
+        JuMP.set_lower_bound(phi_fr, min(0, field(system, :buses, :vmin)[f_bus] - 1.0))
+        JuMP.set_upper_bound(phi_fr, max(0, field(system, :buses, :vmax)[f_bus] - 1.0))
     end
-
 end
 
-""
+"Updates the bounds of branch voltage magnitude variables based on availability"
 function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system::SystemModel, l::Int, t::Int; nw::Int=1)
 
     phi_to = var(pm, :phi_to, nw)[l]
@@ -355,13 +359,13 @@ function update_branch_voltage_magnitude_to_on_off(pm::AbstractLPACModel, system
         JuMP.set_upper_bound(phi_to, 0)
         JuMP.set_lower_bound(phi_to, 0)
     else
-        JuMP.set_lower_bound(phi_to, min(0, field(system, :buses, :vmin)[field(system, :branches, :t_bus)[l]] - 1.0))
-        JuMP.set_upper_bound(phi_to, max(0, field(system, :buses, :vmax)[field(system, :branches, :t_bus)[l]] - 1.0))
+        t_bus = field(system, :branches, :t_bus)[l]
+        JuMP.set_lower_bound(phi_to, min(0, field(system, :buses, :vmin)[t_bus] - 1.0))
+        JuMP.set_upper_bound(phi_to, max(0, field(system, :buses, :vmax)[t_bus] - 1.0))
     end
-
 end
 
-""
+"Updates the bounds of voltage product angle variables based on branch availability"
 function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, system::SystemModel, l::Int, t::Int; nw::Int=1)
 
     td = var(pm, :td, nw)[l]
@@ -370,12 +374,13 @@ function update_var_branch_voltage_product_angle_on_off(pm::AbstractLPACModel, s
         JuMP.set_upper_bound(td, 0)
         JuMP.set_lower_bound(td, 0)
     else
-        JuMP.set_lower_bound(td, min(0, field(system, :branches, :angmin)[l]))
-        JuMP.set_upper_bound(td, max(0, field(system, :branches, :angmax)[l]))
+        ang_min, ang_max = field(system, :branches, :angmin)[l], field(system, :branches, :angmax)[l]
+        JuMP.set_lower_bound(td, ang_min)
+        JuMP.set_upper_bound(td, ang_max)
     end
 end
 
-""
+"Updates the shunt admittance factor variable based on topology"
 function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::SystemModel, l::Int; nw::Int=1)
     
     z_shunt = var(pm, :z_shunt, nw)[l]
@@ -387,45 +392,30 @@ function update_var_shunt_admittance_factor(pm::AbstractLPACModel, system::Syste
     end
 end
 
-""
+"Updates the coefficients of power balance constraints based on demand"
 function update_con_power_balance(pm::AbstractLPACModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
-    keys_loads = topology(pm, :buses_loads_base)[i]
-
-    for w in keys_loads
-        JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], field(system, :loads, :pd)[w,t])
-
-        JuMP.set_normalized_coefficient(
-            con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], field(system, :loads, :pd)[w,t]*field(system, :loads, :pf)[w])
+    for w in topology(pm, :buses_loads_base)[i]
+        demand = field(system, :loads, :pd)[w,t]
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], var(pm, :z_demand, nw)[w], demand)
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], var(pm, :z_demand, nw)[w], demand*field(system, :loads, :pf)[w])
     end
-
 end
 
-""
+"Updates power balance constraints without load curtailment"
 function update_con_power_balance_nolc(pm::AbstractLPACModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
-
     phi  = var(pm, :phi, nw)
-    bus_loads = topology(pm, :buses_loads_available)[i]
-    bus_shunts = topology(pm, :buses_shunts_available)[i]
-
-    bus_pd = Float32[field(system, :loads, :pd)[k,t] for k in bus_loads]
-    bus_qd = Float32[field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k] for k in bus_loads]
-    bus_gs = Float32[field(system, :shunts, :gs)[k] for k in bus_shunts]
-    bus_bs = Float32[field(system, :shunts, :bs)[k] for k in bus_shunts]
-
-    JuMP.set_normalized_coefficient(
-        con(pm, :power_balance_p, nw)[i], phi[i], -sum(gs for gs in bus_gs)*2)
-    JuMP.set_normalized_coefficient(
-        con(pm, :power_balance_q, nw)[i], phi[i], +sum(bs for bs in bus_bs)*2)
-
-    JuMP.set_normalized_rhs(
-        con(pm, :power_balance_p, nw)[i], -sum(pd for pd in bus_pd) - sum(gs for gs in bus_gs)*(1.0))
-    JuMP.set_normalized_rhs(
-        con(pm, :power_balance_q, nw)[i], -sum(qd for qd in bus_qd) + sum(bs for bs in bus_bs)*(1.0))
-
+    bus_pd = [field(system, :loads, :pd)[k,t] for k in topology(pm, :buses_loads_available)[i]]
+    bus_qd = [demand*field(system, :loads, :pf)[k] for (k, demand) in zip(topology(pm, :buses_loads_available)[i], bus_pd)]
+    bus_gs = [field(system, :shunts, :gs)[k] for k in topology(pm, :buses_shunts_available)[i]]
+    bus_bs = [field(system, :shunts, :bs)[k] for k in topology(pm, :buses_shunts_available)[i]]
+    JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], phi[i], -2sum(bus_gs))
+    JuMP.set_normalized_coefficient(con(pm, :power_balance_q, nw)[i], phi[i], 2sum(bus_bs))
+    JuMP.set_normalized_rhs(con(pm, :power_balance_p, nw)[i], -sum(bus_pd) - sum(bus_gs))
+    JuMP.set_normalized_rhs(con(pm, :power_balance_q, nw)[i], -sum(bus_qd) + sum(bus_bs))
 end
 
+"Updates AC Line Flow Constraints for the 'from' end"
 function _update_con_ohms_yt_from(
     pm::AbstractLPACModel, l::Int, nw::Int, f_bus::Int, t_bus::Int, g, b, g_fr, b_fr, tr, ti, tm, va_fr, va_to)
 

@@ -78,6 +78,8 @@ function compute_without_master_included(system, method, settings, nworkers, nth
     end
 end
 
+
+
 """
 This code snippet is using multi-threading to parallelize the assess function by running 
 multiple instances of it simultaneously on different threads. The Threads.@spawn macro is 
@@ -115,6 +117,8 @@ function assess(
     settings.optimizer === nothing && CompositeAdequacy.end_gurobi_env()
     return outcome
 end
+
+
 
 """
 This assess function is designed to perform a Monte Carlo simulation using the Sequential Monte 
@@ -202,6 +206,8 @@ function assess(
     put!(results, recorders)
     return results
 end
+
+
 
 """
 The initialize! function creates an initial state of the system by using the Philox4x 

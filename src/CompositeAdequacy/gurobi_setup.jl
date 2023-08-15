@@ -3,7 +3,13 @@
 const GRB_ENV = Ref{Gurobi.Env}()
 export GRB_ENV
 
-""
+"""
+    init_gurobi_env(nthreads::Int)
+
+Initialize the Gurobi environment with the specified number of threads (`nthreads`).
+Configures various Gurobi parameters like turning off output, enabling presolve, 
+setting non-convexity handling, and specifying thread count.
+"""
 function init_gurobi_env(nthreads::Int)
     GRB_ENV[] = Gurobi.Env()
     Gurobi.GRBsetintparam(GRB_ENV[], "OutputFlag", 0)
@@ -13,6 +19,11 @@ function init_gurobi_env(nthreads::Int)
     return
 end
 
+"""
+    end_gurobi_env()
+
+Finalize the Gurobi environment to release resources and cleanup.
+"""
 function end_gurobi_env()
     Base.finalize(GRB_ENV[])
     return

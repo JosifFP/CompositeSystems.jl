@@ -1,24 +1,3 @@
-#This test should be the last one. After finished, close restart terminal.
-using Distributed
-
-addprocs(2)
-#julia -p 2 --threads 2
-@everywhere begin
-    using Pkg; Pkg.activate(joinpath("..\\PRATS.jl"))
-end
-
-Pkg.instantiate()
-Pkg.precompile()
-
-@everywhere begin
-    Pkg.instantiate(); Pkg.precompile()
-end
-
-# instantiate and precompile environment in all processes
-@everywhere using Gurobi
-@everywhere using Dates
-@everywhere using JuMP
-@everywhere using CompositeSystems: CompositeSystems, BaseModule, OPF, CompositeAdequacy
 
 settings = CompositeSystems.Settings(;
    jump_modelmode = JuMP.AUTOMATIC,

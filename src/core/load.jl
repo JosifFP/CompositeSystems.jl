@@ -1,5 +1,11 @@
 """
-Load a `SystemModel` from appropriately-formatted XLSX and PSSE RAW files on disk.
+    SystemModel(rawfile::String)
+
+Load a `SystemModel` using a specified `rawfile`. 
+This constructor parses the raw network data and associates static parameters with it.
+
+Arguments:
+- `rawfile`: Path to the raw network data file.
 """
 function SystemModel(rawfile::String)
     #load network data
@@ -9,7 +15,17 @@ function SystemModel(rawfile::String)
     return _SystemModel(network, SParametrics)
 end
 
-""
+
+
+"""
+    SystemModel(rawfile::String, reliabilityfile::String)
+
+Load a `SystemModel` using a `rawfile` and incorporate reliability data from `reliabilityfile`.
+
+Arguments:
+- `rawfile`: Path to the raw network data file.
+- `reliabilityfile`: Path to the reliability data file.
+"""
 function SystemModel(rawfile::String, reliabilityfile::String)
     #load network data
     network = build_network(rawfile)
@@ -19,7 +35,18 @@ function SystemModel(rawfile::String, reliabilityfile::String)
     return _SystemModel(network, SParametrics)
 end
 
-""
+
+
+"""
+    SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::String)
+
+Load a `SystemModel` using a `rawfile`, `reliabilityfile`, and load time-series data from `timeseriesfile`.
+
+Arguments:
+- `rawfile`: Path to the raw network data file.
+- `reliabilityfile`: Path to the reliability data file.
+- `timeseriesfile`: Path to the time-series data file.
+"""
 function SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::String)
     #load network data
     network = build_network(rawfile)
@@ -29,7 +56,19 @@ function SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::S
     return _SystemModel(network, SParametrics)
 end
 
-""
+
+
+"""
+    SystemModel(rawfile::String, reliabilityfile::String, timeseries_data::Dict{Int, Vector{Float32}}, SParametrics::static_parameters{N,L,T})
+
+Load a `SystemModel` using a `rawfile`, `reliabilityfile`, and directly provide `timeseries_data` and `SParametrics`.
+
+Arguments:
+- `rawfile`: Path to the raw network data file.
+- `reliabilityfile`: Path to the reliability data file.
+- `timeseries_data`: Time-series data provided as a dictionary.
+- `SParametrics`: Static parameters for the model.
+"""
 function SystemModel(
     rawfile::String, reliabilityfile::String, timeseries_data::Dict{Int, Vector{Float32}}, 
     SParametrics::static_parameters{N,L,T}
@@ -43,21 +82,35 @@ function SystemModel(
 end
 
 ""
+function fetch_component(network::Dict{Symbol, Any}, key::Symbol, default::Any)
+    return get(network, key, default)
+end
+
+
+
+"""
+    _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T})
+
+Helper function to build a `SystemModel` using preprocessed `network` data and `SParametrics`.
+
+Arguments:
+- `network`: Processed network data in dictionary format.
+- `SParametrics`: Static parameters for the model.
+"""
 function _SystemModel(
     network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T}) where {N,L,T<:Period}
 
-    baseMVA::Float64 = Float32(network[:baseMVA])
-    network_bus::Dict{Int, Any} = network[:bus]
-    network_branch::Dict{Int, Any} = network[:branch]
-    network_commonbranch::Dict{Int, Any} = network[:commonbranch]
-    network_shunt::Dict{Int, Any} = network[:shunt]
-    network_gen::Dict{Int, Any} = network[:gen]
-    network_load::Dict{Int, Any} = network[:load]
-    network_storage::Dict{Int, Any} = network[:storage]
-
-    has = has_asset(network)
+    # Fetch all components
+    baseMVA =  Float64(fetch_component(network, :baseMVA, Float64))
+    network_bus = fetch_component(network, :bus, Dict{Int, Any}())
+    network_branch = fetch_component(network, :branch, Dict{Int, Any}())
+    network_commonbranch = fetch_component(network, :commonbranch, Dict{Int, Any}())
+    network_shunt = fetch_component(network, :shunt, Dict{Int, Any}())
+    network_gen = fetch_component(network, :gen, Dict{Int, Any}())
+    network_load = fetch_component(network, :load, Dict{Int, Any}())
+    network_storage = fetch_component(network, :storage, Dict{Int, Any}())
     
-    if has[:buses]
+    if !isempty(network_bus)
         data = container(network_bus, bus_fields)
         buses = Buses(
             data["index"], 
@@ -72,7 +125,7 @@ function _SystemModel(
         )
     end
 
-    if has[:branches]
+    if !isempty(network_branch)
         data = container(network_branch, branch_fields)
         branches = Branches(
             data["index"], 
@@ -98,7 +151,7 @@ function _SystemModel(
         )
     end
 
-    if has[:shunts]
+    if !isempty(network_shunt)
         data = container(network_shunt, shunt_fields)
         shunts = Shunts(
             data["index"], 
@@ -111,7 +164,7 @@ function _SystemModel(
         shunts = Shunts(Int[], Int[], Float32[], Float32[], Vector{Bool}())
     end
 
-    if has[:commonbranches]
+    if !isempty(network_commonbranch)
         data = container(network_commonbranch, commonbranch_fields)
         commonbranches = CommonBranches(
             data["index"], 
@@ -124,7 +177,7 @@ function _SystemModel(
         commonbranches = CommonBranches(Int[], Int[], Int[], Float64[], Float64[])
     end
 
-    if has[:generators]
+    if !isempty(network_gen)
         data = container(network_gen, gen_fields)
         generators = Generators{N,L,T}(
             data["index"], 
@@ -148,7 +201,7 @@ function _SystemModel(
         )
     end
     
-    if has[:loads]
+    if !isempty(network_load)
         data = container(network_load, load_fields)
         if isempty(network[:timeseries_load])
             loads = Loads{N,L,T}(
@@ -176,7 +229,7 @@ function _SystemModel(
 
     end
 
-    if has[:storages] && network[:time_elapsed] == 1.0
+    if !isempty(network_storage) && network[:time_elapsed] == 1.0
         data = container(network_storage, storage_fields)
         storages = Storages{N,L,T}(
             data["index"], 
@@ -206,39 +259,9 @@ function _SystemModel(
             Int[], Int[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], 
             Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float64[], Float64[], Vector{Bool}())
     end
-    
-    if has[:dclines]
-        #
-    end
-
-    if has[:switches]
-        #
-    end
 
     _check_consistency(network, buses, loads, branches, shunts, generators, storages)
     _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
     return SystemModel(loads, generators, storages, buses, branches, commonbranches, shunts, baseMVA, SParametrics.timestamps)
-end
-
-""
-function has_asset(network::Dict{Symbol,Any})
-
-    has = Dict{Symbol, Bool}(
-        :buses => haskey(network, :bus) && isempty(network[:bus]) == false,
-        :loads => haskey(network, :load) && isempty(network[:load]) == false,
-        :generators => haskey(network, :gen) && isempty(network[:gen]) == false,
-        :storages => haskey(network, :storage) && isempty(network[:storage]) == false,
-        :branches => haskey(network, :branch) && isempty(network[:branch]) == false,
-        :commonbranches => haskey(network, :commonbranch) && isempty(network[:commonbranch]) == false,
-        :dclines => haskey(network, :dcline) && isempty(network[:dcline]) == false,
-        :switches => haskey(network, :switch) && isempty(network[:switch]) == false,
-        :shunts => haskey(network, :shunt) && isempty(network[:shunt]) == false,
-    )
-
-    has[:buses] ||  @error("Bus data must be provided")
-    has[:generators] && has[:loads] && has[:branches] ||  @error("Generator, Load and Branch data must be provided")
-
-    return has
-
 end

@@ -103,6 +103,17 @@ mutable struct Settings
     end
 end
 
+Base.:(==)(x::T, y::T) where {T <: Settings} =
+    x.gurobi_env == y.gurobi_env &&
+    x.optimizer == y.optimizer &&
+    x.jump_modelmode == y.jump_modelmode &&
+    x.powermodel_formulation == y.powermodel_formulation &&
+    x.select_largest_splitnetwork == y.select_largest_splitnetwork &&
+    x.deactivate_isolated_bus_gens_stors == y.deactivate_isolated_bus_gens_stors &&
+    x.set_string_names_on_creation == y.set_string_names_on_creation
+
+
+
 topology(pm::AbstractPowerModel, subfield::Symbol) = getfield(getfield(pm, :topology), subfield)
 topology(pm::AbstractPowerModel, subfield::Symbol, indx::Int) = getfield(getfield(pm, :topology), subfield)[indx]
 topology(pm::AbstractPowerModel, field::Symbol, subfield::Symbol) = getfield(getfield(getfield(pm, :topology), field), subfield)

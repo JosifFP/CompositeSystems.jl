@@ -1,4 +1,28 @@
-""
+"""
+    Topology(system::SystemModel{N}) where {N}
+
+Construct a `Topology` type from a given `SystemModel`.
+
+## Structure Description
+
+- `branches_available`: Indicates if each branch is available.
+- `branches_pasttransition`: Tracks past transitions for each branch.
+- ... (similar descriptions for other fields) ...
+
+## Function Description
+
+This function initializes vectors to track various system components, like branches, generators, and buses. 
+These vectors store information about the availability and past transition of the components. 
+The function also computes the necessary indices for accessing the `SystemModel` fields, bounds, 
+and other derived values like curtailed power and stored energy. The final output is a `Topology` object, 
+which provides a structured way to access and modify the electrical system's state.
+
+## Notes
+
+- `branches_available` and similar vectors use a `Bool` type to indicate the availability. 
+True means the component is available, and False means it's not.
+- This function is optimized for `SystemModel` of any `N`.
+"""
 function Topology(system::SystemModel{N}) where {N}
 
     nbranches = length(system.branches)
@@ -9,20 +33,20 @@ function Topology(system::SystemModel{N}) where {N}
     nloads = length(system.loads)
     nshunts = length(system.shunts)
 
-    branches_available = Vector{Bool}(undef, nbranches)
-    branches_pasttransition = Vector{Bool}(undef, nbranches)
-    commonbranches_available = Vector{Bool}(undef, ncommonbranches)
-    commonbranches_pasttransition = Vector{Bool}(undef, ncommonbranches)
-    generators_available = Vector{Bool}(undef, ngens)
-    generators_pasttransition = Vector{Bool}(undef, ngens)
-    storages_available = Vector{Bool}(undef, nstors)
-    storages_pasttransition = Vector{Bool}(undef, nstors)
-    buses_available = Vector{Bool}(undef, nbuses)
-    buses_pasttransition = Vector{Bool}(undef, nbuses)
-    loads_available = Vector{Bool}(undef, nloads)
-    loads_pasttransition = Vector{Bool}(undef, nloads)
-    shunts_available = Vector{Bool}(undef, nshunts)
-    shunts_pasttransition = Vector{Bool}(undef, nshunts)
+    branches_available = fill(true, nbranches)
+    branches_pasttransition = fill(true, nbranches)
+    commonbranches_available = fill(true, ncommonbranches)
+    commonbranches_pasttransition = fill(true, ncommonbranches)
+    generators_available = fill(true, ngens)
+    generators_pasttransition = fill(true, ngens)
+    storages_available = fill(true, nstors)
+    storages_pasttransition = fill(true, nstors)
+    buses_available = fill(true, nbuses)
+    buses_pasttransition = fill(true, nbuses)
+    loads_available = fill(true, nloads)
+    loads_pasttransition = fill(true, nloads)
+    shunts_available = fill(true, nshunts)
+    shunts_pasttransition = fill(true, nshunts)
     
     key_branches = field(system, :branches, :keys)
     key_buses = field(system, :buses, :keys)
@@ -69,151 +93,116 @@ function Topology(system::SystemModel{N}) where {N}
 
     ref_buses = slack_buses(system.buses)
 
-    branches_flow_from = Vector{Float64}(undef, nbranches) # Active power withdrawn at the from bus
-    branches_flow_to = Vector{Float64}(undef, nbranches) # Active power withdrawn at the from bus
-    buses_curtailed_pd = Vector{Float64}(undef, nbuses) #curtailed load in p.u. (active power)
-    buses_curtailed_qd = Vector{Float64}(undef, nbuses) #curtailed load in p.u. (reactive power)
-    stored_energy = Vector{Float64}(undef, nstors) #stored energy
+    branches_flow_from = zeros(Float64, nbranches)
+    branches_flow_to = zeros(Float64, nbranches)
+    buses_curtailed_pd = zeros(Float64, nbuses)
+    buses_curtailed_qd = zeros(Float64, nbuses)
+    stored_energy = zeros(Float64, nstors)
 
-    failed_systemstate = Vector{Bool}(undef, N) #this vector represents the system state's history
-
-    fill!(branches_available, 1)
-    fill!(branches_pasttransition, 1)
-    fill!(commonbranches_available, 1)
-    fill!(commonbranches_pasttransition, 1)
-    fill!(generators_available, 1)
-    fill!(generators_pasttransition, 1)
-    fill!(storages_available, 1)
-    fill!(storages_pasttransition, 1)
-    fill!(buses_available, 1)
-    fill!(buses_pasttransition, 1)
-    fill!(loads_available, 1)
-    fill!(loads_pasttransition, 1)
-    fill!(shunts_available, 1)
-    fill!(shunts_pasttransition, 1)
-    fill!(failed_systemstate, 1)
-
-    fill!(branches_flow_from, 0.0)
-    fill!(branches_flow_to, 0.0)
-    fill!(buses_curtailed_pd, 0.0)
-    fill!(buses_curtailed_qd, 0.0)
-    fill!(stored_energy, 0.0)
+    failed_systemstate = fill(true, N)
 
     return Topology(
-        branches_available::Vector{Bool},
-        branches_pasttransition::Vector{Bool},
-        commonbranches_available::Vector{Bool},
-        commonbranches_pasttransition::Vector{Bool},
-        generators_available::Vector{Bool},
-        generators_pasttransition::Vector{Bool},
-        storages_available::Vector{Bool},
-        storages_pasttransition::Vector{Bool},
-        buses_available::Vector{Bool},
-        buses_pasttransition::Vector{Bool},
-        loads_available::Vector{Bool},
-        loads_pasttransition::Vector{Bool},
-        shunts_available::Vector{Bool},
-        shunts_pasttransition::Vector{Bool},
-        buses_generators_available::Dict{Int, Vector{Int}}, 
-        buses_storages_available::Dict{Int, Vector{Int}}, 
-        buses_loads_base::Dict{Int, Vector{Int}}, 
-        buses_loads_available::Dict{Int, Vector{Int}}, 
-        buses_shunts_available::Dict{Int, Vector{Int}},
-        arcs_from_base::Vector{Tuple{Int, Int, Int}},
-        arcs_to_base::Vector{Tuple{Int, Int, Int}},
-        arcs_from_available::Vector{Union{Missing, Tuple{Int, Int, Int}}},
-        arcs_to_available::Vector{Union{Missing, Tuple{Int, Int, Int}}},
-        arcs_available::Vector{Union{Missing, Tuple{Int, Int, Int}}},
-        busarcs_available::Dict{Int, Vector{Tuple{Int, Int, Int}}},
-        buspairs_available::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}},
-        delta_bounds::Vector{Float64},
-        ref_buses::Vector{Int},
-        branches_idxs::Vector{UnitRange{Int}},  
-        generators_idxs::Vector{UnitRange{Int}}, 
-        storages_idxs::Vector{UnitRange{Int}},
-        buses_idxs::Vector{UnitRange{Int}}, 
-        loads_idxs::Vector{UnitRange{Int}}, 
-        shunts_idxs::Vector{UnitRange{Int}},
-        buses_curtailed_pd::Vector{Float64},
-        buses_curtailed_qd::Vector{Float64},
-        branches_flow_from::Vector{Float64},
-        branches_flow_to::Vector{Float64},
-        stored_energy::Vector{Float64},
-        failed_systemstate::Vector{Bool}
-        )
+        branches_available, branches_pasttransition, commonbranches_available, 
+        commonbranches_pasttransition, generators_available, generators_pasttransition,
+        storages_available, storages_pasttransition, buses_available, buses_pasttransition,
+        loads_available, loads_pasttransition, shunts_available, shunts_pasttransition,
+        buses_generators_available, buses_storages_available, buses_loads_base, 
+        buses_loads_available, buses_shunts_available,
+        arcs_from_base, arcs_to_base, arcs_from_available, arcs_to_available,
+        arcs_available, busarcs_available, buspairs_available, delta_bounds, ref_buses, 
+        branches_idxs, generators_idxs, storages_idxs, buses_idxs, loads_idxs, 
+        shunts_idxs, buses_curtailed_pd, buses_curtailed_qd, branches_flow_from, 
+        branches_flow_to, stored_energy, failed_systemstate
+    )
 end
 
-
 Base.:(==)(x::T, y::T) where {T <: Topology} =
+        x.branches_available == y.branches_available &&
+        x.branches_pasttransition == y.branches_pasttransition &&
+        x.commonbranches_available == y.commonbranches_available &&
+        x.commonbranches_pasttransition == y.commonbranches_pasttransition &&
+        x.generators_available == y.generators_available &&
+        x.generators_pasttransition == y.generators_pasttransition &&
+        x.storages_available == y.storages_available &&
+        x.storages_pasttransition == y.storages_pasttransition &&
+        x.buses_available == y.buses_available &&
+        x.buses_pasttransition == y.buses_pasttransition &&
+        x.loads_available == y.loads_available &&
+        x.loads_pasttransition == y.loads_pasttransition &&
+        x.shunts_available == y.shunts_available &&
+        x.shunts_pasttransition == y.shunts_pasttransition &&
+        x.buses_generators_available == y.buses_generators_available &&
+        x.buses_storages_available == y.buses_storages_available &&
+        x.buses_loads_base == y.buses_loads_base &&
+        x.buses_loads_available == y.buses_loads_available &&
+        x.buses_shunts_available == y.buses_shunts_available &&
+        x.arcs_from_base == y.arcs_from_base &&
+        x.arcs_to_base == y.arcs_to_base &&
+        x.arcs_from_available == y.arcs_from_available &&
+        x.arcs_to_available == y.arcs_to_available &&
+        x.arcs_available == y.arcs_available &&
+        x.buspairs_available == y.buspairs_available &&
+        x.delta_bounds == y.delta_bounds &&
+        x.ref_buses == y.ref_buses &&
+        x.branches_idxs == y.branches_idxs &&
+        x.generators_idxs == y.generators_idxs &&
+        x.storages_idxs == y.storages_idxs &&
+        x.buses_idxs == y.buses_idxs &&
+        x.loads_idxs == y.loads_idxs &&
+        x.shunts_idxs == y.shunts_idxs &&
+        x.buses_curtailed_pd == y.buses_curtailed_pd &&
+        x.buses_curtailed_qd == y.buses_curtailed_qd &&
+        x.branches_flow_from == y.branches_flow_from &&
+        x.branches_flow_to == y.branches_flow_to &&
+        x.stored_energy == y.stored_energy &&
+        x.failed_systemstate == y.failed_systemstate
 
-    x.branches_available == y.branches_available &&
-    x.branches_pasttransition == y.branches_pasttransition &&
-    x.commonbranches_available == y.commonbranches_available &&
-    x.commonbranches_pasttransition == y.commonbranches_pasttransition &&
-    x.generators_available == y.generators_available &&
-    x.generators_pasttransition == y.generators_pasttransition &&
-    x.storages_available == y.storages_available &&
-    x.storages_pasttransition == y.storages_pasttransition &&
-    x.buses_available == y.buses_available &&
-    x.buses_pasttransition == y.buses_pasttransition &&
-    x.loads_available == y.loads_available &&
-    x.loads_pasttransition == y.loads_pasttransition &&
-    x.shunts_available == y.shunts_available &&
-    x.shunts_pasttransition == y.shunts_pasttransition &&
-    x.buses_generators_available == y.buses_generators_available &&
-    x.buses_storages_available == y.buses_storages_available &&
-    x.buses_loads_base == y.buses_loads_base &&
-    x.buses_loads_available == y.buses_loads_available &&
-    x.buses_shunts_available == y.buses_shunts_available &&
-    x.arcs_from_base == y.arcs_from_base &&
-    x.arcs_to_base == y.arcs_to_base &&
-    x.arcs_from_available == y.arcs_from_available &&
-    x.arcs_to_available == y.arcs_to_available &&
-    x.arcs_available == y.arcs_available &&
-    x.buspairs_available == y.buspairs_available &&
-    x.delta_bounds == y.delta_bounds &&
-    x.ref_buses == y.ref_buses &&
-    x.branches_idxs == y.branches_idxs &&
-    x.generators_idxs == y.generators_idxs &&
-    x.storages_idxs == y.storages_idxs &&
-    x.buses_idxs == y.buses_idxs &&
-    x.loads_idxs == y.loads_idxs &&
-    x.shunts_idxs == y.shunts_idxs &&
-    x.buses_curtailed_pd == x.buses_curtailed_pd &&
-    x.buses_curtailed_qd == x.buses_curtailed_qd &&
-    x.branches_flow_from == x.branches_flow_from &&
-    x.branches_flow_to == x.branches_flow_to &&
-    x.stored_energy == x.stored_energy &&
-    x.failed_systemstate == x.failed_systemstate
-#
+
 
 """
-The update_topology! function modifies the system topology based on the current system states and settings.
-Firstly, it checks for any unavailable or transitioning branches in the system. If such outaged branches are found, 
-it updates the bus assets and simplifies the system topology accordingly. Next, for each storage component in the 
-system, if it's not available, it sets its stored energy to 0. Finally, it flags the system state at timestep t 
-as failed if any of the generators, branches, or storages are unavailable.
+`update_topology!` adapts the system's topology based on its current states and settings. 
+This function:
+1. Checks and updates the system topology if any branches are unavailable or transitioning.
+2. Sets the stored energy of unavailable storage components to zero.
+3. Flags the system state at the given timestep `t` as failed if there are unavailable generators, branches, or storages.
+
+# Arguments
+- `topology`: The system topology to be updated.
+- `system`: The current system model.
+- `settings`: The settings/configuration for the system.
+- `t`: The current timestep.
 """
 function update_topology!(topology::Topology, system::SystemModel, settings::Settings, t::Int)
-
-    if any(iszero, topology.branches_available) || any(iszero, topology.branches_pasttransition)
+    if any(topology.branches_available .== 0) || any(topology.branches_pasttransition .== 0)
         update_buses_assets!(topology, system)
         simplify!(topology, system, settings)
     end
 
-    foreach(
-        i -> topology.storages_available[i] || (topology.stored_energy[i] = 0.0), 
-        field(system, :storages, :keys)) 
+    for key in field(system, :storages, :keys)
+        if !topology.storages_available[key]
+            topology.stored_energy[key] = 0.0
+        end
+    end
 
-    topology.failed_systemstate[t] = any(iszero, topology.generators_available) || 
-                                     any(iszero, topology.branches_available) || 
-                                     any(iszero, topology.storages_available)
-    return
+    topology.failed_systemstate[t] = any(topology.generators_available .== 0) || 
+                                     any(topology.branches_available .== 0) || 
+                                     any(topology.storages_available .== 0)
 end
 
-"The functions update_states! are updating the state of the power system's topology 
-according to the provided state transition. It also initializes the failed_systemstate
-vector to record system state changes"
+
+
+"""
+`update_states!` synchronizes the power system's topology state with the given state transition.
+The function:
+1. Updates various assets of the system's topology (like branches, generators, storages) based on the provided state transition.
+2. Ensures buses, loads, and shunts are available by default.
+3. Initializes the `failed_systemstate` vector at the first timestep to track system state alterations.
+
+# Arguments
+- `topology`: The system topology to be updated.
+- `statetransition`: The state transition details to synchronize with.
+- `t`: The current timestep.
+"""
 function update_states!(topology::Topology, statetransition::StateTransition, t::Int)
 
     topology.branches_available .= statetransition.branches_available
@@ -227,6 +216,8 @@ function update_states!(topology::Topology, statetransition::StateTransition, t:
     return
 end
 
+
+
 "The functions update_states! are updating the state of the power system's topology 
 according to the provided state transition."
 function update_states!(topology::Topology, statetransition::StateTransition)
@@ -238,24 +229,35 @@ function update_states!(topology::Topology, statetransition::StateTransition)
     fill!(topology.buses_available, 1)
     fill!(topology.loads_available, 1)
     fill!(topology.shunts_available, 1)
+    fill!(topology.failed_systemstate, 1)
     return
 end
 
-"The record_states! function is saving the current availability states of various system components 
-(like branches, common branches, generators, storages, buses, loads, and shunts) into their respective 
-'pasttransition' fields in the topology. This is used to keep limited track of the state transitions of 
-these components over time."
+
+
+"""
+    record_states!(topology::Topology)
+
+Save the current availability states of system components, such as branches, 
+common branches, generators, storages, buses, loads, and shunts, into their 
+respective 'pasttransition' fields within the topology. This function provides 
+a way to keep track of recent state transitions of these components.
+
+# Arguments
+- `topology`: The system topology containing current and past states.
+"""
 function record_states!(topology::Topology)
-
-   topology.branches_pasttransition .= topology.branches_available
-   topology.commonbranches_pasttransition .= topology.commonbranches_available
-   topology.generators_pasttransition .= topology.generators_available
-   topology.storages_pasttransition .= topology.storages_available
-   topology.buses_pasttransition .= topology.buses_available
-   topology.loads_pasttransition .= topology.loads_available
-   topology.shunts_pasttransition .= topology.shunts_available
+    topology.branches_pasttransition .= topology.branches_available
+    topology.commonbranches_pasttransition .= topology.commonbranches_available
+    topology.generators_pasttransition .= topology.generators_available
+    topology.storages_pasttransition .= topology.storages_available
+    topology.buses_pasttransition .= topology.buses_available
+    topology.loads_pasttransition .= topology.loads_available
+    topology.shunts_pasttransition .= topology.shunts_available
     return
 end
+
+
 
 """
 The simplify! function is used to simplify the power system model by removing inactive elements from the model. 
@@ -477,6 +479,8 @@ function update_buses_assets!(topology::Topology, system::SystemModel)
     return
 end
 
+
+
 """
 computes the connected components of the network graph
 returns a set of sets of bus ids, each set is a connected component
@@ -595,62 +599,94 @@ function buses_asset!(
     return busarcs
 end
 
+
+
 """
-In the function update_buspair_parameters!, we're updating the information related to bus pairs in the power grid. 
-For each active branch (connection between buses), we record the branch indices, and the minimum and maximum angles.
-We use sizehint! to preallocate memory for these recordings. This reduces the time spent on memory allocation when 
-arrays grow, leading to more efficient code execution, especially when the number of active branches is large.
-Finally, we update our main dictionary, buspairs, with this information for each bus pair, and set the value as missing 
-for non-active bus pairs. This way, we efficiently organize the grid's connectivity information for further use.
+    update_buspair_parameters!(buspairs, branches, branch_lookup)
+
+Update information related to bus pairs in the power grid.
+
+This function modifies the `buspairs` dictionary to store connectivity and angle constraints 
+for every pair of buses linked by an active branch. Memory efficiency is optimized using 
+`sizehint!`, and the resulting dictionary will have missing values for non-active bus pairs.
+
+# Arguments
+- `buspairs`: Dictionary to update with bus pair data.
+- `branches`: Data structure containing branch details.
+- `branch_lookup`: Indices of active branches.
 """
 function update_buspair_parameters!(
-    buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}, branches::Branches, branch_lookup::Vector{Int})
- 
+    buspairs::Dict{Tuple{Int, Int}, Union{Missing, Vector{Any}}}, 
+    branches::Branches, 
+    branch_lookup::Vector{Int})
+    
+    # Extract bus pairs from active branches.
     buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+    
+    # Initialize dictionaries for storing branch and angle information.
     bp_branch = Dict((bp, Int[]) for bp in buspair_indexes)
     bp_angmin = Dict((bp, -Inf32) for bp in buspair_indexes)
-    bp_angmax = Dict((bp,  Inf32) for bp in buspair_indexes)
-    #bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
+    bp_angmax = Dict((bp, Inf32) for bp in buspair_indexes)
 
-    # Applying sizehint!
+    # Optimize memory usage by pre-allocating space.
     for (bp, arr) in bp_branch
         sizehint!(arr, length(branch_lookup))
     end
     
+    # Update dictionaries with relevant branch and angle details.
     for l in branch_lookup
-        i = branches.f_bus[l]
-        j = branches.t_bus[l]
-        bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
-        bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
-        push!(bp_branch[(i,j)], l)
+        i, j = branches.f_bus[l], branches.t_bus[l]
+        bp_key = (i,j)
+
+        bp_angmin[bp_key] = Float32(max(bp_angmin[bp_key], branches.angmin[l]))
+        bp_angmax[bp_key] = Float32(min(bp_angmax[bp_key], branches.angmax[l]))
+        push!(bp_branch[bp_key], l)
     end
 
+    # Store the consolidated data in the main dictionary: buspairs.
     for bp in buspair_indexes
-        i,j = bp
-        if !((i,j) in buspair_indexes)
-            buspairs[bp] = missing
+        i, j = bp
+        bp_key = (i,j)
+
+        if !(bp_key in buspair_indexes)
+            buspairs[bp_key] = missing
         else
-            buspairs[bp] = [bp_branch[bp], bp_angmin[bp], bp_angmax[bp]]
+            buspairs[bp_key] = [bp_branch[bp_key], bp_angmin[bp_key], bp_angmax[bp_key]]
         end
     end
- 
+
     return buspairs
 end
 
-""
+
+
+"""
+    calc_theta_delta_bounds(topology, branches)
+
+Calculate the minimum and maximum bounds for the angle delta in the provided power system topology.
+
+The function determines the angle bounds by aggregating the minimum and maximum angles of the branches. 
+If there's more than one angle value, a summation over the relevant angles is performed, considering 
+the presence of dclines or similar scenarios.
+
+# Arguments
+- `topology`: The power system's topology.
+- `branches`: Data structure containing branch details.
+
+# Returns
+- `angle_min_val`: Minimum angle delta bound.
+- `angle_max_val`: Maximum angle delta bound.
+"""
 function calc_theta_delta_bounds(topology::Topology, branches::Branches)
 
     bus_count = length(assetgrouplist(topology.buses_idxs))
     branches_idxs = assetgrouplist(topology.branches_idxs)
-    angle_min = Real[]
-    angle_max = Real[]
-    angle_mins = Float32[field(branches, :angmin)[l] for l in branches_idxs]
-    angle_maxs = Float32[field(branches, :angmax)[l] for l in branches_idxs]
-    sort!(angle_mins)
-    sort!(angle_maxs, rev=true)
     
+    angle_mins = sort!(Float32[field(branches, :angmin)[l] for l in branches_idxs])
+    angle_maxs = sort!(Float32[field(branches, :angmax)[l] for l in branches_idxs], rev=true)
+    
+    # Handle case with multiple angles, typically when dclines are present.
     if length(angle_mins) > 1
-        # note that, this can occur when dclines are present
         angle_count = min(bus_count-1, length(branches_idxs))
         angle_min_val = sum(angle_mins[1:angle_count])
         angle_max_val = sum(angle_maxs[1:angle_count])
@@ -658,25 +694,39 @@ function calc_theta_delta_bounds(topology::Topology, branches::Branches)
         angle_min_val = angle_mins[1]
         angle_max_val = angle_maxs[1]
     end
-    push!(angle_min, angle_min_val)
-    push!(angle_max, angle_max_val)
 
-    return angle_min[1], angle_max[1]
+    return angle_min_val, angle_max_val
 end
 
-""
+
+
+"""
+    calc_theta_delta_bounds(key_buses, branches_idxs, branches)
+
+Calculate the minimum and maximum bounds for the angle delta based on the provided bus keys and branch indices.
+
+The function determines the angle bounds by aggregating the minimum and maximum angles of the branches. 
+If there's more than one angle value, a summation over the relevant angles is performed, considering 
+scenarios like the presence of dclines.
+
+# Arguments
+- `key_buses`: List of bus keys in the system.
+- `branches_idxs`: Indices of the branches in the system.
+- `branches`: Data structure containing branch details.
+
+# Returns
+- `angle_min_val`: Minimum angle delta bound.
+- `angle_max_val`: Maximum angle delta bound.
+"""
 function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{Int}, branches::Branches)
 
     bus_count = length(key_buses)
-    angle_min = Real[]
-    angle_max = Real[]
-    angle_mins = Float32[field(branches, :angmin)[l] for l in branches_idxs]
-    angle_maxs = Float32[field(branches, :angmax)[l] for l in branches_idxs]
-    sort!(angle_mins)
-    sort!(angle_maxs, rev=true)
     
+    angle_mins = sort!(Float32[field(branches, :angmin)[l] for l in branches_idxs])
+    angle_maxs = sort!(Float32[field(branches, :angmax)[l] for l in branches_idxs], rev=true)
+    
+    # Handle multiple angle values, typically when dclines are present.
     if length(angle_mins) > 1
-        # note that, this can occur when dclines are present
         angle_count = min(bus_count-1, length(branches_idxs))
         angle_min_val = sum(angle_mins[1:angle_count])
         angle_max_val = sum(angle_maxs[1:angle_count])
@@ -684,44 +734,68 @@ function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{I
         angle_min_val = angle_mins[1]
         angle_max_val = angle_maxs[1]
     end
-    push!(angle_min, angle_min_val)
-    push!(angle_max, angle_max_val)
-    return angle_min[1], angle_max[1]
+
+    return angle_min_val, angle_max_val
 end
 
-""
+
+"""
+    calc_buspair_parameters(branches, branch_lookup)
+
+Calculate bus pair parameters based on the provided branches and branch lookup. 
+
+The function constructs dictionaries to represent the parameters of each bus pair: 
+- `bp_branch`: Indices of branches corresponding to each bus pair.
+- `bp_angmin`: Minimum angle constraints for each bus pair.
+- `bp_angmax`: Maximum angle constraints for each bus pair.
+
+# Arguments
+- `branches`: Data structure containing branch details.
+- `branch_lookup`: List of branch indices to consider.
+
+# Returns
+- `buspairs`: Dictionary with bus pairs as keys and their corresponding parameters as values.
+"""
 function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
  
     buspair_indexes = Set((branches.f_bus[i], branches.t_bus[i]) for i in branch_lookup)
+
     bp_branch = Dict((bp, Int[]) for bp in buspair_indexes)
     bp_angmin = Dict((bp, -Inf32) for bp in buspair_indexes)
     bp_angmax = Dict((bp,  Inf32) for bp in buspair_indexes)
-    #bp_branch = Dict((bp, typemax(Int)) for bp in buspair_indexes)
     
     for l in branch_lookup
-        i = branches.f_bus[l]
-        j = branches.t_bus[l]
+        i, j = branches.f_bus[l], branches.t_bus[l]
         bp_angmin[(i,j)] = Float32(max(bp_angmin[(i,j)], branches.angmin[l]))
         bp_angmax[(i,j)] = Float32(min(bp_angmax[(i,j)], branches.angmax[l]))
         push!(bp_branch[(i,j)], l)
-        #bp_branch[(i,j)] = min(bp_branch[(i,j)], l)
     end
     
-    buspairs = Dict((i,j) => [bp_branch[(i,j)],bp_angmin[(i,j)],bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
-        #"tap"=>Float32(branches.tap[bp_branch[(i,j)]]),
-        #"vm_fr_min"=>Float32(field(buses, :vmin)[i]),
-        #"vm_fr_max"=>Float32(field(buses, :vmax)[i]),
-        #"vm_to_min"=>Float32(field(buses, :vmin)[j]),
-        #"vm_to_max"=>Float32(field(buses, :vmax)[j]),
-    
-    # add optional parameters
-    #for bp in buspair_indexes
-    #    buspairs[bp]["rate_a"] = branches.rate_a[bp_branch[bp]]
-    #end
+    # Construct the buspairs dictionary directly using a comprehension
+    buspairs = Dict((i,j) => [bp_branch[(i,j)], bp_angmin[(i,j)], bp_angmax[(i,j)]] for (i,j) in buspair_indexes)
+
+    # Additional optional parameters can be appended if needed in the future
+
     return buspairs
 end
 
-""
+
+"""
+    slack_buses(buses::Buses)
+
+Identify slack (or reference) buses within the given buses dataset. Slack buses 
+are identified based on their type (bus_type == 3). In power systems, only one 
+slack bus is allowed per connected component.
+
+# Arguments
+- `buses`: Data structure containing bus details.
+
+# Returns
+- `ref_buses`: A list of reference (or slack) bus IDs.
+
+# Raises
+- An error if multiple reference buses are found in the same connected component.
+"""
 function slack_buses(buses::Buses)
 
     ref_buses = Int[]
@@ -732,15 +806,24 @@ function slack_buses(buses::Buses)
     end
 
     if length(ref_buses) > 1
-        @error("multiple reference buses found, $(keys(ref_buses)), this can 
-        cause infeasibility if they are in the same connected component")
+        @error("Multiple reference buses found, $(ref_buses). This can cause infeasibility if they are in the same connected component.")
     end
 
     return ref_buses
-
 end
 
-""
+
+
+"""
+    _reset!(topology::Topology)
+
+Reset the availability and flows of various assets within the topology to 
+their default states. This prepares the topology for a new round of 
+calculations or simulations.
+
+# Arguments
+- `topology`: The topology data structure to reset.
+"""
 function _reset!(topology::Topology)
 
     fill!(topology.branches_available, 1)
@@ -754,5 +837,6 @@ function _reset!(topology::Topology)
     fill!(topology.shunts_available, 1)
     fill!(topology.commonbranches_available, 1)
     fill!(topology.buses_available, 1)
+
     return
 end
