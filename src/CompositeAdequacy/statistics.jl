@@ -162,3 +162,6 @@ stderror(x::SI) = stderror(x.SI)
 function Base.show(io::IO, x::SI{N,L,T}) where {N,L,T}
     print(io, "SI = ", x.SI, " ", "sys.mins", "/", N*L == 1 ? "" : N*L, unitsymbol(T))
 end
+
+val(x::Int) = x
+val(x::Float64) = x

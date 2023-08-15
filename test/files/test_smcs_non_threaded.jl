@@ -16,7 +16,7 @@ settings = CompositeSystems.Settings(;
     #CompositeAdequacy.PTV(util, :)
 
     method = CompositeAdequacy.SequentialMCS(samples=1000, seed=100, threaded=false)
-    shortfall_threaded = first(CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall()))
+    shortfall_nonthreaded = first(CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall()))
 
     CompositeAdequacy.val.(CompositeSystems.EENS.(shortfall_nonthreaded, system.buses.keys))
 
@@ -57,7 +57,7 @@ end
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
 
     method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=false)
-    shortfall_threaded = first(CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall()))
+    shortfall_nonthreaded = first(CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall()))
 
     system_EDLC_mean = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.02, 0.0, 9.71, 0.16, 0.0, 0.0, 
         0.0, 2.51, 0.0, 0.0, 0.0, 0.0, 0.70000, 0.0, 0.0, 0.0, 0.0, 0.0]  

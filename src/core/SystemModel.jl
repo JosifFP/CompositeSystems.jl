@@ -1,4 +1,24 @@
-"SystemModel structure"
+
+"""
+Define a "SystemModel" structure to represent a power system model.
+The structure is parametrized by:
+ - N - The number of time steps or periods
+ - L - Duration or related parameter
+ - T - Period (i.e., a time-based unit such as second, minute, etc.)
+Fields:
+- `loads`: Load profile of the system across various nodes and time periods.
+- `generators`: Generators in the system, defined across nodes and periods.
+- `storages`: Energy storage units in the system, across nodes and periods.
+- `buses`: Bus structure defining connection points in the network.
+- `branches`: Branches defining interconnections or transmission lines.
+- `commonbranches`: Specialized set of branches with shared/common attributes or behavior.
+- `shunts`: Shunts, usually devices used to adjust voltage or to phase-shift load currents.
+- `baseMVA`: Base apparent power (used for per unit system calculations in power systems).
+- `timestamps`: Timestamps defining the different time periods the system is modeled over.
+
+Constructor:
+Ensures that provided timestamps, if any, match the expected step and count before creating an instance.
+"""
 struct SystemModel{N,L,T<:Period}
 
     loads::Loads{N,L,T}

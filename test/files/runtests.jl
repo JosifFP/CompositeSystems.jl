@@ -18,9 +18,10 @@ include("solvers.jl")
     include("test_curtailed_load_ac.jl")
     include("test_storage.jl")
     include("test_opf_form.jl")
-    #These testsets require Gurobi license
-    include("test_smcs_non_threaded.jl")
-    include("test_smcs_threaded.jl")
-    include("test_smcs_distributed.jl")
+    #These testsets require Gurobi license.
+    include("test_smcs_non_threaded.jl") #It may take more than 1 hr.
+    include("test_smcs_threaded.jl") #It may take more than 1 hr.
     include("elcc.jl")
+    include("eesc.jl")
+    include("test_smcs_distributed.jl") #It might fail since it is not the best way to test distributed computing in 1 machine.
 end;

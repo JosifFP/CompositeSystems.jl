@@ -8,7 +8,7 @@ struct CapacityCreditResult{S <: CapacityValuationMethod, M <: ReliabilityMetric
     edlc_metric::EDLC
     capacity_value::Int
     tolerance_error::Float64
-    bound_capacities::Vector{Float64}
+    bound_capacities::Vector{Int}
     si_metrics::Vector{SI}
     eens_metrics::Vector{EENS}
     edlc_metrics::Vector{EDLC}
@@ -20,7 +20,7 @@ struct CapacityCreditResult{S <: CapacityValuationMethod, M <: ReliabilityMetric
         edlc_metric::EDLC,
         capacity_value::Int, 
         tolerance_error::Float64,
-        bound_capacities::Vector{Float64}, 
+        bound_capacities::Vector{Int}, 
         si_metrics::Vector{SI}, 
         eens_metrics::Vector{EENS}, 
         edlc_metrics::Vector{EDLC}) where {S,M,P}

@@ -1,5 +1,21 @@
-"Structure strictly used to record random events."
+"""
+`StateTransition` structure represents the transition states of various components in the power system.
 
+Fields:
+- `branches_available`: A boolean vector indicating the availability status of branches (true if available).
+- `branches_nexttransition`: An integer vector indicating the next transition time of branches.
+- `commonbranches_available`: A boolean vector indicating the availability status of common branches.
+- `commonbranches_nexttransition`: An integer vector indicating the next transition time of common branches.
+- `generators_available`: A boolean vector indicating the availability status of generators.
+- `generators_nexttransition`: An integer vector indicating the next transition time of generators.
+- `storages_available`: A boolean vector indicating the availability status of storage units.
+- `storages_nexttransition`: An integer vector indicating the next transition time of storage units.
+
+Constructor:
+Initializes the structure using a given `SystemModel`. The lengths of vectors are determined by the lengths of 
+respective components in the `SystemModel`. The vectors are uninitialized (filled with undefined values), 
+and will need to be updated to reflect the actual system state.
+"""
 struct StateTransition
 
     branches_available::Vector{Bool}

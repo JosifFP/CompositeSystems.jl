@@ -80,6 +80,8 @@ function con_theta_ref(
     pm::AbstractNFAModel, system::SystemModel, i::Int; nw::Int=1)
 end
 
+
+
 """
 This constraint captures problem agnostic constraints that are used to link
 the model's voltage variables together, in addition to the standard problem
@@ -88,6 +90,8 @@ formulation constraints.
 function con_model_voltage_on_off(
     pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
 end
+
+
 
 """
 This function is defining a constraint for the power balance at a specific bus, indexed 
@@ -371,10 +375,10 @@ end
 function update_con_power_balance(
     pm::AbstractDCPowerModel, system::SystemModel, i::Int, t::Int; nw::Int=1)
 
-    z_demand   = var(pm, :z_demand, nw)
-
+    z_demand = var(pm, :z_demand, nw)
+    coeffs = field(system, :loads, :pd)
     for w in topology(pm, :buses_loads_base)[i]
-        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[w], field(system, :loads, :pd)[w,t])
+        JuMP.set_normalized_coefficient(con(pm, :power_balance_p, nw)[i], z_demand[w], coeffs[w,t])
     end
 end
 

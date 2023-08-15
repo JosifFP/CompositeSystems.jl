@@ -32,7 +32,7 @@
         assess, SimulationSpec,
         
         # Metrics
-        ReliabilityMetric, EDLC, EENS, SI, ELCC, ESC, MeanEstimate, val, stderror,
+        ReliabilityMetric, EDLC, EENS, SI, ELCC, EESC, MeanEstimate, val, stderror,
 
         # Simulation specification
         SequentialMCS, accumulator,
@@ -55,7 +55,7 @@
     include("results/results.jl")
     include("results/CapacityCreditResult.jl")
     include("results/ELCC.jl")
-    include("results/ESC.jl")
+    include("results/EESC.jl")
     include("simulations/simulations.jl")
     include("utils.jl")
 end

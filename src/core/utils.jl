@@ -22,37 +22,49 @@ const pm_component_status_inactive = Dict{String, Int}(
     "dcline" => 0,
 )
 
-""
+
+"""
+    build_network(rawfile::String; replace::Bool=false, export_file::Bool=false, 
+                  export_filetype::String="", symbol::Bool=true)
+
+Builds and processes a power network based on the provided raw file.
+
+- `rawfile`: A file path to the raw network data.
+- `replace`: If `true`, the original file will be replaced with the processed data.
+- `export_file`: If `true`, exports the processed data to a new file.
+- `export_filetype`: Specifies the file type for exporting; defaults to the type of the raw file.
+- `symbol`: If `true`, returns the network data with Symbol keys; otherwise, uses String keys.
+
+Returns the processed network data as a dictionary.
+
+## Notes
+The function internally uses `DataSanityCheck` to validate and possibly modify the network data. 
+Users are warned about the potential changes made during the sanity check process. 
+"""
+
 function build_network(rawfile::String; replace::Bool=false, export_file::Bool=false, export_filetype::String="", symbol::Bool=true)
+
+    Memento.warn(_LOGGER, """
+        DataSanityCheck process changes/updates the network topology and input data
+        (for more details, please read InfrastructureModels and PowerModels printed messages). 
+        To create/export a new file, set export_file=true and specify export_filetype if needed. 
+        To replace the file, set replace=true.""")
+
     network = open(rawfile) do io
-
-        pm_data = parse_model(io, split(lowercase(rawfile), '.')[end])
-
-        Memento.warn(_LOGGER, "DataSanityCheck process changes/updates the network topology and input data
-            (for more details, please read InfrastructureModels and PowerModels printed messages). 
-            To create/export a new file, type export_filetype = true. 
-            Extension/filetype can be also specified using export_filetype=(string).
-            To replace the file, type replace=true")
-
+        _, ext = splitext(rawfile)
+        pm_data = parse_model(io, lowercase(ext[2:end]))
         data = DataSanityCheck(pm_data)
-    
-        if export_file
-            if isempty(export_filetype)
-                export_filetype = split(lowercase(rawfile), '.')[end]
-            end
-            file = rawfile[1:findlast(==('.'), rawfile)-1]
-            new_file = file*"_CompositeSystems_"*format(now(),"HHMMSS")*"."*export_filetype
-            @info("A new file: $(new_file) has been created.")
-            _PM.export_file(new_file, data)
-        elseif !export_file && replace
-            _PM.export_file(rawfile, data)
+
+        if export_file || replace
+            
+            target_file = replace ? rawfile : rawfile[1:findlast(==('.'), rawfile)-1]*"_CompositeSystems_"*format(
+                now(),"HHMMSS")*"."*(isempty(export_filetype) ? ext[2:end] : export_filetype)
+            
+            @info("File: $(target_file) has been created/updated.")
+            _PM.export_file(target_file, data)
         end
 
-        if symbol == true
-            return  Dict{Symbol, Any}(ref_initialize!(data))
-        else
-            return  Dict{String, Any}(data)
-        end
+        symbol ? Dict{Symbol, Any}(ref_initialize!(data)) : Dict{String, Any}(data)
     end
 
     return network
@@ -63,7 +75,7 @@ end
 "Parses a Matpower .m `file` or PTI (PSS(R)E-v33) .raw `file` into a
 PowerModels data structure. All fields from PTI files will be imported if
 `import_all` is true (Default: false)."
-function parse_model(io::IO, filetype::SubString{String})
+function parse_model(io::IO, filetype::String)
     
     if filetype == "m"
         pm_data = _PM.parse_matpower(io, validate=true)
@@ -74,6 +86,8 @@ function parse_model(io::IO, filetype::SubString{String})
     end
     return pm_data
 end
+
+
 
 """
 given a powermodels data dict produces a new data dict that conforms to the
@@ -233,6 +247,8 @@ function _biggest_generator(gens::Dict)::Dict
     return biggest_gen
 end
 
+
+
 """
 given a component dict returns a new dict where inactive components have been
 removed.
@@ -248,6 +264,8 @@ function _filter_inactive_components(comp_dict::Dict{String,<:Any}; status_key="
 
     return filtered_dict
 end
+
+
 
 """
 given a component dict returns a new dict where components have been renumbered

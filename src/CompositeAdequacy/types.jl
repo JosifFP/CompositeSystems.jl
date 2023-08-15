@@ -8,7 +8,24 @@ abstract type Result{
     T <: Period, # Units of each simulation timestep
 } end
 
-"Definition of SequentialMCS method"
+"""
+    SequentialMCS <: SimulationSpec
+
+A structure defining the Sequential Monte Carlo Simulation (SequentialMCS) method.
+
+# Fields
+- `nsamples::Int`: Number of samples for the Monte Carlo Simulation.
+- `seed::UInt64`: Random seed for reproducibility.
+- `verbose::Bool`: Flag to control verbose output.
+- `threaded::Bool`: Flag to control if the simulation uses multi-threading.
+- `count_samples::Bool`: Flag to decide whether to count samples or not.
+- `include_master::Bool`: Flag to determine if the master process should be included in the simulation.
+
+# Constructor
+The constructor ensures that the provided samples are positive, the seed is non-negative,
+and the ratio of samples to available processors is integer.
+
+"""
 struct SequentialMCS <: SimulationSpec
     nsamples::Int
     seed::UInt64

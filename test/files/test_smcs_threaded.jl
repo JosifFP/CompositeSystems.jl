@@ -8,13 +8,14 @@ settings = CompositeSystems.Settings(;
     #set_string_names_on_creation = false
 )
 
+
 @testset "Sequential MCS, 100 samples, RBTS, threaded" begin
 
     timeseriesfile = "test/data/RBTS/SYSTEM_LOADS.xlsx"
     rawfile = "test/data/RBTS/Base/RBTS.m"
     Base_reliabilityfile = "test/data/RBTS/Base/R_RBTS.m"
     system = BaseModule.SystemModel(rawfile, Base_reliabilityfile, timeseriesfile)
-    method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true, count_samples=true)
+    method = CompositeAdequacy.SequentialMCS(samples=100, seed=100, threaded=true)#, count_samples=true)
     shortfall_threaded = first(CompositeSystems.assess(system, method, settings, CompositeAdequacy.Shortfall()))
 
     system_EENS_mean_no_storage = [0.0, 0.0, 13.68820, 0.0, 0.19304, 123.34869]
@@ -109,8 +110,6 @@ end
         CompositeAdequacy.stderror.(CompositeSystems.SI.(shortfall_threaded, system.buses.keys)), 
         system_SI_stderror; atol = 1e-4)
 end
-
-
 
 # loads = [
 #     1 => 0.2/1.85,
