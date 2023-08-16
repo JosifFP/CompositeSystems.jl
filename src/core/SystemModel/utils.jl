@@ -487,15 +487,21 @@ function extract_timeseriesload(file::String)
     dict_core = Dict{Symbol, Any}()
     
     XLSX.openxlsx(file, enable_cache=false) do io
-        for sheet_name in XLSX.sheetnames(io)
-            dtable = XLSX.readtable(file, sheet_name)
-            data = Dict(Symbol(col) => vec for (col, vec) in zip(dtable.column_labels, dtable.data))
-            
-            if sheet_name == "core"
-                merge!(dict_core, data)
-            elseif sheet_name == "load" 
-                for (k, v) in data
-                    isdigit(string(k)[1]) && (dict_timeseries[parse(Int, String(k))] = Float32.(v))
+        for i in 1:XLSX.sheetcount(io)
+            if XLSX.sheetnames(io)[i] == "core"
+    
+                dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
+                for i in eachindex(dtable.column_labels)
+                    get!(dict_core, dtable.column_labels[i], dtable.data[i])
+                end
+    
+            elseif XLSX.sheetnames(io)[i] == "load" 
+    
+                dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
+                for i in eachindex(dtable.column_labels)
+                    if i > 1
+                        get!(dict_timeseries, parse(Int, String(dtable.column_labels[i])), Float32.(dtable.data[i]))
+                    end
                 end
             end
         end
