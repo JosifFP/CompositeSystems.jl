@@ -18,7 +18,7 @@
   </a>
 
 <h3 align="center">Generation & Transmission Reliability Tool</h3>
-<h3 align="center">(THE CURRENT SOFTWARE "CompositeSystems.jl" IS IN PRIVATE MODE)</h3>
+<h3 align="center">--THE CURRENT SOFTWARE "CompositeSystems.jl" IS IN PRIVATE MODE--</h3>
 
 <p align="center">
     <!-- project_description -->
@@ -64,7 +64,7 @@
 ## About The Project
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://github.com/JosifFP/CompositeSystems.jl) -->
-**[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl)** is the first open-source Composite System Reliability (CSR) tool written in Julia. 
+**[CompositeSystems](https://github.com/JosifFP/CompositeSystems)** is the first open-source Composite System Reliability (CSR) tool written in Julia. 
 The methodology is based on sequential Monte Carlo sampling of generation and transmission component availability such as: generators, transmission lines,
 transformers, shunts, loads and storage systems. Remedial actions, energy storage dispatch and load curtailment are carried out by an efficient linear 
 programming routine (DC Optimal Power Flow) based on JuMP modeling language and linear solver provided by the user. The program is demonstrated in case 
@@ -96,7 +96,7 @@ Soon
 2. Clone the repo
 
    ```sh
-   git clone https://github.com/JosifFP/CompositeSystems.jl.git
+   git clone https://github.com/JosifFP/CompositeSystems.git
    ```
 3. Install dependent packages and Gurobi license
 4. Run runtests.jl
@@ -125,7 +125,7 @@ Contributions are what make the open source community such an amazing place to l
 
 ## License
 
-[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl) ©2023 by [Josif Elias Figueroa Parra](https://www.linkedin.com/in/josif-figueroa-parra) is licensed under CC BY-NC-ND 4.0. To view a copy of this license, visit [http://creativecommons.org/licenses/by-nc-nd/4.0/](http://creativecommons.org/licenses/by-nc-nd/4.0/)
+[CompositeSystems](https://github.com/JosifFP/CompositeSystems) ©2023 by [Josif Elias Figueroa Parra](https://www.linkedin.com/in/josif-figueroa-parra) is licensed under CC BY-NC-ND 4.0. To view a copy of this license, visit [http://creativecommons.org/licenses/by-nc-nd/4.0/](http://creativecommons.org/licenses/by-nc-nd/4.0/)
 
 <div align="center">
 <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Cc-white.svg" alt="Logo" width="30"><img src="https://upload.wikimedia.org/wikipedia/en/1/11/Cc-by_new_white.svg" alt="Logo" width="30"></a>
@@ -137,7 +137,7 @@ Contributions are what make the open source community such an amazing place to l
 
 Josif Figueroa Parra - [**In**](https://www.linkedin.com/in/josif-figueroa-parra/) - josif.figueroa@unb.ca
 
-Project Link: [https://github.com/JosifFP/CompositeSystems.jl](https://github.com/JosifFP/CompositeSystems.jl)
+Project Link: [https://github.com/JosifFP/CompositeSystems](https://github.com/JosifFP/CompositeSystems)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -153,16 +153,16 @@ This work was supported by MITACS through the Mitacs Accelerate program, Atlanti
 
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
-[contributors-url]: https://github.com/JosifFP/CompositeSystems.jl/graphs/contributors
+[contributors-shield]: https://img.shields.io/github/contributors/JosifFP/CompositeSystems.svg?style=for-the-badge
+[contributors-url]: https://github.com/JosifFP/CompositeSystems/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
-[forks-url]: https://github.com/JosifFP/CompositeSystems.jl/network/members
-[stars-shield]: https://img.shields.io/github/stars/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
-[stars-url]: https://github.com/JosifFP/CompositeSystems.jl/stargazers
-[issues-shield]: https://img.shields.io/github/issues/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
-[issues-url]: https://github.com/JosifFP/CompositeSystems.jl/issues
-[license-shield]: https://img.shields.io/github/license/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
-[license-url]: https://github.com/JosifFP/CompositeSystems.jl/blob/master/LICENSE.txt
+[forks-url]: https://github.com/JosifFP/CompositeSystems/network/members
+[stars-shield]: https://img.shields.io/github/stars/JosifFP/CompositeSystems.svg?style=for-the-badge
+[stars-url]: https://github.com/JosifFP/CompositeSystems/stargazers
+[issues-shield]: https://img.shields.io/github/issues/JosifFP/CompositeSystems.svg?style=for-the-badge
+[issues-url]: https://github.com/JosifFP/CompositeSystems/issues
+[license-shield]: https://img.shields.io/github/license/JosifFP/CompositeSystems.svg?style=for-the-badge
+[license-url]: https://github.com/JosifFP/CompositeSystems/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/josif-figueroa-parra/
 [product-screenshot]: docs/images/logo_white.png
