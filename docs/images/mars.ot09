@@ -1,0 +1,745 @@
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                        888b     d888        d8888 8888888b.   .d8888b.                                                                                                                                                                             
+                                        8888b   d8888       d88888 888   Y88b d88P  Y88b                                                                                                                                                                            
+                                        88888b.d88888      d88P888 888    888 Y88b.                                                                                                                                                                                 
+                                        888Y88888P888     d88P 888 888   d88P  "Y888b.                                                                                                                                                                              
+                                        888 Y888P 888    d88P  888 8888888P"      "Y88b.                                                                                                                                                                            
+                                        888  Y8P  888   d88P   888 888 T88b         "888                                                                                                                                                                            
+                                        888   "   888  d8888888888 888  T88b  Y88b  d88P                                                                                                                                                                            
+                                        888       888 d88P     888 888   T88b  "Y8888P"                                                                                                                                                                             
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                           MULTI-AREA RELIABILITY SIMULATION PROGRAM                                                                                                                                                                                
+                                                                                                                                                                                                                                                                    
+                                                        VERSION 5.0.2186                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                       OUTPUT SECTION   9                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                         COPYRIGHT 1988-2023 - GENERAL ELECTRIC COMPANY                                                                                                                                                                             
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                    GE ENERGY CONSULTING                                                                                                                                                                                            
+                                       MULTI-AREA RELIABILITY SIMULATION  Version 5.0.2186                Run Date:   10162023                                                                                                                                      
+                                         COPYRIGHT 1988-2023 - GENERAL ELECTRIC COMPANY                   Job Number:   255831                                                                                                                                      
+                                                                                                                                                                                                                                                                    
+2023 Planning Base Case                                                                                   Output Section     9                                                                                                                                      
+Created on 2023-07-25                                                                                     Page               1                                                                                                                                      
+Updated Model Used for the 2023 STAR Q3 Case                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                PROGRAM OPTION SUMMARY FOR 2033                                                                                                                                                                                     
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                   CONVERGENCE INDEX -- INTERCONNECTED DAILY LOLE FOR AREA GROUP NYBA                                                                                                                                                                               
+                                                                                                                                                                                                                                                                    
+                   CONVERGENCE TOLERANCE -- 0.0250 PER UNIT                                                                                                                                                                                                         
+                                                                                                                                                                                                                                                                    
+                   MARGIN STATE FOR CALCULATING CONVERGENCE --   9                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                    
+                   DAILY LOLE CALCULATED FOR ALL HOURS IN THE DAY                                                                                                                                                                                                   
+                                                                                                                                                                                                                                                                    
+                   NUMBER OF REPLICATIONS -- MINIMUM     100      MAXIMUM     100      FIRST       1                                                                                                                                                                
+                                                                                                                                                                                                                                                                    
+                   RANDOM NUMBER GENERATOR SEED --      73951247                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                   NON-FIRM ASSISTANCE BASED ON RESERVE SHARING (ADDITIONAL ITERATIONS -- 15)                                                                                                                                                                       
+                                                                                                                                                                                                                                                                    
+                   ASSISTANCE PRIORITY TO AREAS WITHIN A POOL -- YES                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                    
+                   ALLOW FLOW THROUGH OUTSIDE POOLS IN POOL-PRIORITY PASS -- NO                                                                                                                                                                                     
+                                                                                                                                                                                                                                                                    
+                   PRIORITY ORDER FOR ALLOCATING ASSISTANCE AMONG AREAS                                                                                                                                                                                             
+                        NY_A       NY_B       NY_C       NY_D       NY_E       NY_F       NY_G       NY_H                                                                                                                                                           
+                        NY_I       NY_J       NY_K       PJM        NWENGLND   ONTARIO    HYDQUE     NY_SALES                                                                                                                                                       
+                        NY_J3      NY_J4      NY_J5      NY_J6      NY_K1      NY_K2      PJM_RECO   HMRCTY                                                                                                                                                         
+                        PJM_J2     CHTEAGAY   PHASE_2                                                                                                                                                                                                               
+                                                                                                                                                                                                                                                                    
+                   NUMBER OF RESERVE SHARING ARRANGEMENTS BETWEEN POOLS --  11                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                    
+                   MODELING FORCED OUTAGES ON INTERFACE TIES -- YES                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                    
+                   ZERO SPECIFIED TIE LIMITS BEFORE SCHEDULING NON-FIRM ASSISTANCE -- NO                                                                                                                                                                            
+                                                                                                                                                                                                                                                                    
+                   TYPE 3 ENERGY-LIMITED UNITS DISPATCHED                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                    
+                   NUMBER OF HOURLY RESOURCE GROUPS FOR RANDOM SCHEDULING --   1                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                   UNIT MAINTENANCE SCHEDULED BY POOL AGAINST ORIGINAL LOAD MODEL                                                                                                                                                                                   
+                                                                                                                                                                                                                                                                    
+                   NUMBER OF CONDITION SETS FOR DYNAMIC TRANSFER LIMITS --  23                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                    
+                   NUMBER OF CLOSED INTERFACE GROUPS  --   0                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                    
+                   NUMBER OF UNITS WITH DERATION OPTION  --  174                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                   LAST EOP FOR WHICH TIE LIMITS ARE ZEROED FOR THE INITIAL NON-FIRM AND EOP CALCULATIONS --  1                                                                                                                                                     
+                                                                                                                                                                                                                                                                    
+                   MONTHS SIMULATED  --  JAN THROUGH DEC                                                                                                                                                                                                            
+                                       MULTI-AREA RELIABILITY SIMULATION  Version 5.0.2186                Run Date:   10162023                                                                                                                                      
+                                         COPYRIGHT 1988-2023 - GENERAL ELECTRIC COMPANY                   Job Number:   255831                                                                                                                                      
+                                                                                                                                                                                                                                                                    
+2023 Planning Base Case                                                                                   Output Section     9                                                                                                                                      
+Created on 2023-07-25                                                                                     Page               2                                                                                                                                      
+Updated Model Used for the 2023 STAR Q3 Case                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                               INTERFACE RATING DATA FOR 2033                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                  *** TIES ZEROED FOR ***                                                                                                                                           
+                                                                POSITIVE           NEGATIVE         NON-FIRM     INITIAL                                                                                                                                            
+  INTERFACE OR INTERFACE GROUP     FROM AREA     TO AREA     DIRECTION (MW)     DIRECTION (MW)     ASSISTANCE      EOPS                                                                                                                                             
+  ----------------------------     ---------     -------     --------------     --------------     ----------    -------                                                                                                                                            
+  DYSINGER EAST                    NY_A          NY_B           2100.00            1999.00              N            N                                                                                                                                              
+  WEST CENTRAL                     NY_B          NY_C           1500.00            2275.00              N            N                                                                                                                                              
+  VOLNEY EAST                      NY_C          NY_E           5650.00            1999.00              N            N                                                                                                                                              
+  MOSES SOUTH                      NY_D          NY_E           3500.00            1600.00              N            N                                                                                                                                              
+  CENTRAL EAST                     NY_E          NY_F           3925.00            1999.00              N            N                                                                                                                                              
+  MARCY SOUTH                      NY_E          NY_G           2300.00            1600.00              N            N                                                                                                                                              
+  CAPITAL HUDSON VALLEY            NY_F          NY_G           5400.00            1999.00              N            N                                                                                                                                              
+  UPNY - CONED                     NY_G          NY_H           7050.00            1999.00              N            N                                                                                                                                              
+  MILLWOOD SOUTH                   NY_H          NY_I           8450.00            1999.00              N            N                                                                                                                                              
+  SPRNBRK/DUNWOODIE SOUTH          NY_I          NY_J           4400.00            1999.00              N            N                                                                                                                                              
+  Y49/Y50                          NY_I          NY_K           1293.00             475.00              N            N                                                                                                                                              
+  JAMAICA TIES                     NY_J          NY_K            305.00             505.00              N            N                                                                                                                                              
+  AREA J TO AREA J3                NY_J          NY_J3           315.00             815.00              N            N                                                                                                                                              
+  AREA J TO AREA J4 (HTP)          NY_J          NY_J4             0.00             660.00              N            N                                                                                                                                              
+  AREA J3 TO AREA J5 (VFT)         NY_J3         NY_J5           315.00             315.00              N            N                                                                                                                                              
+  AREA K TO AREA K1 (CSC)          NY_K          NY_K1           330.00             330.00              N            N                                                                                                                                              
+  AREA K TO AREA K2 (NEPT)         NY_K          NY_K2             0.00             660.00              N            N                                                                                                                                              
+  AREA J TO AREA J6 (CHPE)         NY_J          NY_J6             0.00               0.00              N            N                                                                                                                                              
+  AREA A TO HOMER CITY             NY_A          HMRCTY          550.00             550.00              N            7                                                                                                                                              
+  AREA J3 TO AREA J2               NY_J3         PJM_J2            0.00             500.00              N            7                                                                                                                                              
+  AREA A TO ONTARIO                NY_A          ONTARIO        1650.00            1800.00              N            7                                                                                                                                              
+  AREA J TO AREA J2                NY_J          PJM_J2            0.00               0.00              N            7                                                                                                                                              
+  AREA C TO HOMER CITY             NY_C          HMRCTY          200.00             600.00              N            7                                                                                                                                              
+  AREA C TO PJM                    NY_C          PJM             300.00             300.00              N            7                                                                                                                                              
+  AREA D TO CHTEAGAY               NY_D          CHTEAGAY       1000.00            1770.00              N            N                                                                                                                                              
+  AREA D TO NEW ENGLAND            NY_D          NWENGLND          0.00               0.00              N            7                                                                                                                                              
+  AREA D TO ONTARIO                NY_D          ONTARIO         300.00             300.00              N            7                                                                                                                                              
+  AREA F TO NEW ENGLAND            NY_F          NWENGLND        800.00             800.00              N            7                                                                                                                                              
+  AREA G TO PJM RECO               NY_G          PJM_RECO      99999.00               0.00              N            7                                                                                                                                              
+  AREA G TO NEW ENGLAND            NY_G          NWENGLND        800.00             600.00              N            7                                                                                                                                              
+  AREA J4 (HTP) TO PJM             NY_J4         PJM_J2          660.00             660.00              N            7                                                                                                                                              
+  AREA J3A (VFT) TO PJM            NY_J5         PJM_J2          315.00             315.00              N            7                                                                                                                                              
+  AREA J6 (CHPE) TO HQ             NY_J6         HYDQUE        99999.00           99999.00              N            7                                                                                                                                              
+  AREA G TO AREA J2                NY_G          PJM_J2            0.00             150.00              N            7                                                                                                                                              
+  AREA K TO NEW ENGLAND            NY_K          NWENGLND        414.00             404.00              N            7                                                                                                                                              
+  AREA K1 TO NEW ENGLAND           NY_K1         NWENGLND        330.00             330.00              N            7                                                                                                                                              
+  AREA K2 TO PJM                   NY_K2         PJM           99999.00           99999.00              N            7                                                                                                                                              
+  AREA G TO PJM                    NY_G          PJM            1000.00            1000.00              N            7                                                                                                                                              
+  CHTEAGAY TO HQ                   CHTEAGAY      HYDQUE        99999.00           99999.00              N            N                                                                                                                                              
+  PJM TO AREA J2                   PJM           PJM_J2        99999.00           99999.00              N            N                                                                                                                                              
+  HOMER CITY TO PJM                HMRCTY        PJM           99999.00           99999.00              N            N                                                                                                                                              
+  HQ TO NEW ENGLAND                HYDQUE        NWENGLND        200.00             100.00              N            7                                                                                                                                              
+  HQ TO PHASE II                   HYDQUE        PHASE_2        1400.00               0.00              N            N                                                                                                                                              
+  HYDRO QUEBEC TO ONTARIO          HYDQUE        ONTARIO        2665.00            2060.00              N            7                                                                                                                                              
+  PHASE II TO NEW ENGLAND          PHASE_2       NWENGLND      99999.00           99999.00              N            7                                                                                                                                              
+  SALES FROM NY_A                  NY_A          NY_SALES      99999.00               0.00              N            N                                                                                                                                              
+  SALES FROM NY_C                  NY_C          NY_SALES      99999.00               0.00              N            N                                                                                                                                              
+  SALES FROM NY_D                  NY_D          NY_SALES      99999.00               0.00              N            N                                                                                                                                              
+  SALES FROM NY_F                  NY_F          NY_SALES      99999.00               0.00              N            N                                                                                                                                              
+  SALES FROM NY_G                  NY_G          NY_SALES          0.00               0.00              N            N                                                                                                                                              
+                                                                                                                                                                                                                                                                    
+  CE AND MARCY GROUP                                            5650.00            3400.00                                                                                                                                                                          
+  DS plus Y49/Y50                                               5693.00           99999.00                                                                                                                                                                          
+  ConEd To LIPA (I,J TO K)                                      1598.00             190.00                                                                                                                                                                          
+  LI GRP + NEPTUNE                                             99999.00             104.00                                                                                                                                                                          
+  PJM_5018 AND G_RECO                                          99999.00           99999.00                                                                                                                                                                          
+  TOTAL EAST GROUP                                             99999.00           99999.00                                                                                                                                                                          
+  UPSTATE TO DOWNSTATE                                          7150.00           99999.00                                                                                                                                                                          
+  UPNYSENY + ISONE-K Ties                                      99999.00           99999.00                                                                                                                                                                          
+  ISONE TO AREA K                                              99999.00           99999.00                                                                                                                                                                          
+  OUT OF ZONE A EAST                                            2450.00           99999.00                                                                                                                                                                          
+  PJM TO A & C                                                 99999.00           99999.00                                                                                                                                                                          
+  PJM to G                                                       705.00           99999.00                                                                                                                                                                          
+  PJM to J                                                     99999.00           99999.00                                                                                                                                                                          
+  PJM to G - K                                                 99999.00           99999.00                                                                                                                                                                          
+  NEW ENGLAND IMPORTS                                           1400.00            1400.00                                                                                                                                                                          
+  NORTHERN EXPORT - AREA D                                     99999.00           99999.00                                                                                                                                                                          
+  IMPORTS - AREA J                                             99999.00           99999.00                                                                                                                                                                          
+  IMPORTS - G-J LOCALITY                                       99999.00           99999.00                                                                                                                                                                          
+  IMPORTS - AREA K                                             99999.00           99999.00                                                                                                                                                                          
+  IMPORTS INTO SENY                                            99999.00           99999.00                                                                                                                                                                          
+  PJM IMPORTS                                                  99999.00           99999.00                                                                                                                                                                          
+  A_LINE AND BC_LINE                                             105.00               0.00                                                                                                                                                                          
+  NEW YORK TO ONTARIO                                           1800.00            2100.00                                                                                                                                                                          
+  NEW YORK IMPORT EA                                            3500.00           99999.00                                                                                                                                                                          
+  SENY VOLTAGE MONITOR                                         99999.00           99999.00                                                                                                                                                                          
+  SALES GROUP                                                  99999.00               0.00                                                                                                                                                                          
+                                       MULTI-AREA RELIABILITY SIMULATION  Version 5.0.2186                Run Date:   10162023                                                                                                                                      
+                                         COPYRIGHT 1988-2023 - GENERAL ELECTRIC COMPANY                   Job Number:   255831                                                                                                                                      
+                                                                                                                                                                                                                                                                    
+2023 Planning Base Case                                                                                   Output Section     9                                                                                                                                      
+Created on 2023-07-25                                                                                     Page               3                                                                                                                                      
+Updated Model Used for the 2023 STAR Q3 Case                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+               AREA CAPACITIES AND LOADS FOR 2033                                                                                                                                                                                                                   
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+                   INSTALLED        --  PEAK LOAD (MW)  --                                                                                                                                                                                                          
+      AREA       CAPACITY (MW)      ORIGINAL      MODIFIED                                                                                                                                                                                                          
+      ----       -------------      --------      --------                                                                                                                                                                                                          
+    NY_A             552.10          3019.00       3019.00                                                                                                                                                                                                          
+    NY_B             780.00          2491.00       2532.10                                                                                                                                                                                                          
+    NY_C            6038.50          3641.00       3641.00                                                                                                                                                                                                          
+    NY_D            1139.70          1070.00       1070.00                                                                                                                                                                                                          
+    NY_E             218.30          1713.00       1714.90                                                                                                                                                                                                          
+    NY_F            3513.20          2859.00       2859.00                                                                                                                                                                                                          
+    NY_G            4846.60          2566.00       2566.00                                                                                                                                                                                                          
+    NY_H              53.50           701.00        701.00                                                                                                                                                                                                          
+    NY_I               0.00          1496.00       1496.00                                                                                                                                                                                                          
+    NY_J            9383.30         11702.00      11725.00                                                                                                                                                                                                          
+    NY_K            5342.50          5463.00       5516.10                                                                                                                                                                                                          
+    PJM           181045.00        153499.00     159999.00                                                                                                                                                                                                          
+    NWENGLND       31079.74         28230.20      28130.20                                                                                                                                                                                                          
+    ONTARIO        24251.47         24422.50      22722.50                                                                                                                                                                                                          
+    HYDQUE         40044.19         39851.20      38951.20                                                                                                                                                                                                          
+    NY_SALES           0.00             0.00          0.00                                                                                                                                                                                                          
+    NY_J3              0.00             0.00          0.00                                                                                                                                                                                                          
+    NY_J4              0.00             0.00          0.00                                                                                                                                                                                                          
+    NY_J5            315.00             0.00          0.00                                                                                                                                                                                                          
+    NY_J6              0.00             0.00          0.00                                                                                                                                                                                                          
+    NY_K1              0.00             0.00          0.00                                                                                                                                                                                                          
+    NY_K2            660.00             0.00          0.00                                                                                                                                                                                                          
+    PJM_RECO           0.00             0.00        425.00                                                                                                                                                                                                          
+    HMRCTY             0.00             0.00          0.00                                                                                                                                                                                                          
+    PJM_J2             0.00             0.00          0.00                                                                                                                                                                                                          
+    CHTEAGAY           0.00             0.00          0.00                                                                                                                                                                                                          
+    PHASE_2            0.00             0.00          0.00                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                    
+    NOTE:  The installed capacity on this summary includes only the                                                                                                                                                                                                 
+           thermal units (which include EL1 and cogeneration) that                                                                                                                                                                                                  
+           are in service at some time during the year.  It is based                                                                                                                                                                                                
+           on the unit ratings as of the first month of the year,                                                                                                                                                                                                   
+           and does not reflect subsequent monthly overrides to the                                                                                                                                                                                                 
+           unit ratings.                                                                                                                                                                                                                                            
+
+
+
+
+
+
+
+                                        888b     d888        d8888 8888888b.   .d8888b. 
+                                        8888b   d8888       d88888 888   Y88b d88P  Y88b
+                                        88888b.d88888      d88P888 888    888 Y88b.     
+                                        888Y88888P888     d88P 888 888   d88P  "Y888b.  
+                                        888 Y888P 888    d88P  888 8888888P"      "Y88b.
+                                        888  Y8P  888   d88P   888 888 T88b         "888
+                                        888   "   888  d8888888888 888  T88b  Y88b  d88P
+                                        888       888 d88P     888 888   T88b  "Y8888P" 
+
+
+
+
+
+                                           MULTI-AREA RELIABILITY SIMULATION PROGRAM
+
+                                                        VERSION 5.0.2186  
+
+
+
+
+
+                                                       OUTPUT SECTION   9
+
+
+
+
+
+
+                                         COPYRIGHT 1988-2023 - GENERAL ELECTRIC COMPANY
+
+
+
+                                                    GE ENERGY CONSULTING                                           MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             1
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                     CALCULATED INDICES FOR 2033
+
+
+                **********  INTERCONNECTED  ***********
+                    LOLE          LOLE         LOEE
+ AREA OR POOL     (days/yr)     (hrs/yr)     (MWh/yr)
+ ------------     ---------     --------     --------
+   NY_A             0.00006      0.00006        0.000
+   NY_B             0.02480      0.05330        9.823
+   NY_C             0.00000      0.00000        0.000
+   NY_D             0.00000      0.00000        0.000
+   NY_E             0.02480      0.05330        6.033
+   NY_F             0.00006      0.00006        0.001
+   NY_G             0.00000      0.00000        0.000
+   NY_H             0.02480      0.05330        3.730
+   NY_I             0.02480      0.05330        8.292
+   NY_J             0.01579      0.02784        5.217
+   NY_K             0.01851      0.03199        2.713
+   PJM              0.13228      0.51933     1641.871
+   NWENGLND         0.15709      0.59415      539.703
+   ONTARIO          0.13136      0.45976      394.669
+   HYDQUE           0.12486      0.39557      240.916
+   NY_SALES         0.02473      0.05318        1.581
+   NY_J3            0.00000      0.00000        0.000
+   NY_J4            0.00000      0.00000        0.000
+   NY_J5            0.00025      0.00043        0.003
+   NY_J6            0.00000      0.00000        0.000
+   NY_K1            0.00000      0.00000        0.000
+   NY_K2            0.00050      0.00130        0.014
+   PJM_RECO         0.00000      0.00000        0.000
+   HMRCTY           0.00000      0.00000        0.000
+   PJM_J2           0.00000      0.00000        0.000
+   CHTEAGAY         0.00000      0.00000        0.000
+   PHASE_2          0.00000      0.00000        0.000
+
+   _NYCA_           0.03055      0.06029       37.406
+   _PJM_            0.13228      0.51933     1641.871
+   _ISONE_          0.15709      0.59415      539.703
+   _IESO_           0.13136      0.45976      394.669
+   _HQ_             0.12486      0.39557      240.916
+
+   NYBA             0.03055      0.06029       35.808
+   ZONE_G2J         0.02480      0.05355       17.242
+   NY_SENY          0.03055      0.06029       19.969
+   NY-PJM           0.13949      0.52847     1677.679
+   NY-NE            0.16326      0.60057      575.511
+   NY-IESO          0.13705      0.46582      430.477
+   NY-HQ            0.15541      0.45587      276.724
+   EXTERNAL         0.38515      1.49646     2817.158
+   DUMMYALL         0.02473      0.05324        1.598
+   SYSTEM           0.39072      1.50221     2854.565
+
+
+       NOTE:  All indices were calculated for margin state  9.
+              Only interconnected indices were calculated in this run.                                         MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             2
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                              EXPECTED NUMBER OF DAYS PER YEAR AT SPECIFIED MARGIN STATES FOR 2033
+                                                   ON AN INTERCONNECTED BASIS
+
+
+                                                                     MARGIN STATE
+     AREA OR POOL            1           2           3           4           5           6           7           8           9
+     ------------        --------    --------    --------    --------    --------    --------    --------    --------    --------
+       NY_A               0.59789     0.08513     0.07182     0.07163     0.05221     0.05221     0.05221     0.00006     0.00006
+       NY_B               6.50890     3.79506     3.49535     2.30419     1.56728     1.25885     1.18872     0.08105     0.02480
+       NY_C               0.02642     0.01145     0.00750     0.00508     0.00254     0.00248     0.00248     0.00000     0.00000
+       NY_D               0.07583     0.00093     0.00025     0.00025     0.00019     0.00019     0.00019     0.00000     0.00000
+       NY_E               6.23974     3.69841     3.39060     2.20781     1.49602     1.17940     1.11156     0.08099     0.02480
+       NY_F               0.77645     0.21770     0.21212     0.16411     0.06659     0.05384     0.05384     0.00359     0.00006
+       NY_G               0.85039     0.40595     0.27769     0.23527     0.13283     0.06284     0.06284     0.00129     0.00000
+       NY_H               6.25746     3.71574     3.42681     2.21016     1.49904     1.17940     1.11156     0.08099     0.02480
+       NY_I               6.25813     3.71963     3.42439     2.21023     1.49910     1.17940     1.11156     0.08105     0.02480
+       NY_J               6.25207     3.61637     3.24199     1.61269     0.78574     0.49606     0.49606     0.06861     0.01579
+       NY_K               6.60348     4.43167     4.16463     0.58979     0.50885     0.34465     0.23240     0.04473     0.01851
+       PJM                0.24515     0.24515     0.24515     0.24515     0.24515     0.24515     0.24515     0.14374     0.13228
+       NWENGLND           1.00815     1.00815     1.00815     1.00815     1.00815     1.00815     1.00815     0.17738     0.15709
+       ONTARIO            6.67677     6.67677     6.67677     6.67677     6.67677     6.67677     6.67677     0.16130     0.13136
+       HYDQUE             1.27278     1.21451     1.20359     1.17803     1.15787     1.14925     1.14906     0.12486     0.12486
+       NY_SALES           6.23040     3.69835     3.40954     2.20775     1.49663     1.17940     1.11156     0.08093     0.02473
+       NY_J3              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J4              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J5              1.19693     0.69257     0.62944     0.37334     0.22831     0.17775     0.16427     0.00110     0.00025
+       NY_J6              0.56705     0.38158     0.35386     0.26560     0.20306     0.16899     0.16101     0.00006     0.00000
+       NY_K1              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_K2              0.34241     0.24770     0.24503     0.06172     0.03847     0.02804     0.02550     0.00062     0.00050
+       PJM_RECO           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       HMRCTY             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PJM_J2             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       CHTEAGAY           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PHASE_2            0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+
+       _NYCA_             7.51864     4.87403     4.58504     2.53935     1.77549     1.41155     1.30901     0.08759     0.03055
+       _PJM_              0.24515     0.24515     0.24515     0.24515     0.24515     0.24515     0.24515     0.14374     0.13228
+       _ISONE_            1.00815     1.00815     1.00815     1.00815     1.00815     1.00815     1.00815     0.17738     0.15709
+       _IESO_             6.67677     6.67677     6.67677     6.67677     6.67677     6.67677     6.67677     0.16130     0.13136
+       _HQ_               1.27278     1.21451     1.20359     1.17803     1.15787     1.14925     1.14906     0.12486     0.12486
+
+       NYBA               7.48662     4.83946     4.55107     2.53304     1.77159     1.40907     1.30659     0.08759     0.03055
+       ZONE_G2J           6.27123     3.73938     3.44561     2.21895     1.50394     1.18181     1.11398     0.08105     0.02480
+       NY_SENY            7.24960     4.78128     4.49929     2.43672     1.70107     1.32968     1.22943     0.08759     0.03055
+       NY-PJM             7.49619     4.85626     4.57108     2.56440     1.82160     1.47170     1.37618     0.15726     0.13949
+       NY-NE              7.80367     5.26379     4.99364     3.09206     2.43085     2.12300     2.02793     0.19694     0.16326
+       NY-IESO           11.41483     9.52360     9.31413     7.83534     7.41284     7.24067     7.18066     0.16845     0.13705
+       NY-HQ              8.29556     5.81495     5.53633     3.54687     2.82253     2.46858     2.36736     0.21245     0.15541
+       EXTERNAL           7.99057     7.93484     7.92398     7.89879     7.87998     7.87196     7.87183     0.40285     0.38515
+       DUMMYALL           6.37936     3.85020     3.57045     2.20787     1.49675     1.17946     1.11156     0.08093     0.02473
+       SYSTEM            12.26766    10.54066    10.33866     8.87517     8.49786     8.33716     8.28387     0.40969     0.39072                                         MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             3
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                              EXPECTED NUMBER OF HOURS PER YEAR AT SPECIFIED MARGIN STATES FOR 2033
+                                                   ON AN INTERCONNECTED BASIS
+
+
+                                                                     MARGIN STATE
+     AREA OR POOL            1           2           3           4           5           6           7           8           9
+     ------------        --------    --------    --------    --------    --------    --------    --------    --------    --------
+       NY_A               1.25996     0.14451     0.11963     0.11938     0.07991     0.07966     0.07966     0.00006     0.00006
+       NY_B              23.21215    12.08246    11.08270     6.76668     4.34859     3.40554     3.19919     0.18600     0.05330
+       NY_C               0.07627     0.02379     0.01742     0.01246     0.00502     0.00254     0.00254     0.00000     0.00000
+       NY_D               0.16850     0.00193     0.00043     0.00043     0.00031     0.00031     0.00031     0.00000     0.00000
+       NY_E              22.04348    11.73529    10.72523     6.46371     4.11915     3.18605     2.98514     0.18509     0.05330
+       NY_F               0.98952     0.23161     0.22579     0.17583     0.06746     0.05471     0.05471     0.00371     0.00006
+       NY_G               2.50050     1.02369     0.71542     0.56969     0.29581     0.14751     0.14751     0.00203     0.00000
+       NY_H              22.17418    11.84242    10.88057     6.48001     4.15675     3.20468     3.00002     0.18533     0.05330
+       NY_I              22.18290    11.84643    10.87797     6.48195     4.15687     3.20529     3.00063     0.18607     0.05330
+       NY_J              22.16485    11.33059    10.05142     4.39262     1.93356     1.13999     1.13993     0.14267     0.02784
+       NY_K              22.69431    13.99461    13.08287     1.51310     1.30129     0.89309     0.61700     0.08839     0.03199
+       PJM                1.05933     1.05933     1.05933     1.05933     1.05933     1.05933     1.05933     0.55993     0.51933
+       NWENGLND           4.75740     4.75740     4.75740     4.75740     4.75740     4.75740     4.75740     0.65069     0.59415
+       ONTARIO           35.53677    35.53677    35.53677    35.53677    35.53677    35.53677    35.53677     0.53351     0.45976
+       HYDQUE             3.68444     3.29395     3.25085     3.09999     2.99145     2.94604     2.94566     0.39564     0.39557
+       NY_SALES          22.01875    11.73571    10.78160     6.46419     4.14384     3.20013     2.99741     0.18502     0.05318
+       NY_J3              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J4              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J5              4.06462     1.99967     1.84484     0.94549     0.56625     0.41090     0.37340     0.00185     0.00043
+       NY_J6              2.17548     1.36019     1.26443     0.85881     0.58385     0.46516     0.43349     0.00006     0.00000
+       NY_K1              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_K2              0.94800     0.61902     0.60727     0.16479     0.09443     0.06819     0.05942     0.00205     0.00130
+       PJM_RECO           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       HMRCTY             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PJM_J2             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       CHTEAGAY           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PHASE_2            0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+
+       _NYCA_            26.68875    15.67284    14.68534     7.45509     4.96787     3.87013     3.55865     0.19731     0.06029
+       _PJM_              1.05933     1.05933     1.05933     1.05933     1.05933     1.05933     1.05933     0.55993     0.51933
+       _ISONE_            4.75740     4.75740     4.75740     4.75740     4.75740     4.75740     4.75740     0.65069     0.59415
+       _IESO_            35.53677    35.53677    35.53677    35.53677    35.53677    35.53677    35.53677     0.53351     0.45976
+       _HQ_               3.68444     3.29395     3.25085     3.09999     2.99145     2.94604     2.94566     0.39564     0.39557
+
+       NYBA              26.56873    15.53651    14.53471     7.44624     4.95471     3.86765     3.55623     0.19731     0.06029
+       ZONE_G2J          22.27818    11.91710    10.94517     6.50601     4.16764     3.21304     3.00838     0.18692     0.05355
+       NY_SENY           25.53049    15.33016    14.38115     7.14587     4.75330     3.66413     3.35506     0.19731     0.06029
+       NY-PJM            26.91383    15.98835    14.99781     8.02738     5.61581     4.57042     4.27628     0.58908     0.52847
+       NY-NE             29.52689    18.91289    17.96008    11.25342     8.99268     8.01444     7.72668     0.68027     0.60057
+       NY-IESO           53.73104    45.40088    44.71816    39.49340    38.04377    37.42570    37.22591     0.54505     0.46582
+       NY-HQ             29.24974    18.30942    17.31542    10.25834     7.78812     6.70326     6.39530     0.59294     0.45587
+       EXTERNAL          39.89163    39.50769    39.46477    39.32283    39.21874    39.17345    39.17321     1.56042     1.49646
+       DUMMYALL          22.35295    12.07269    11.13249     6.46644     4.14597     3.20214     2.99936     0.18509     0.05324
+       SYSTEM            56.98920    48.84454    48.18923    42.92123    41.51692    40.91715    40.72836     1.57042     1.50221                                         MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             4
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                           EXPECTED UNSERVED ENERGY (MWH) PER YEAR AT SPECIFIED MARGIN STATES FOR 2033
+                                                   ON AN INTERCONNECTED BASIS
+
+
+                                                                     MARGIN STATE
+     AREA OR POOL            1           2           3           4           5           6           7           8           9
+     ------------        --------    --------    --------    --------    --------    --------    --------    --------    --------
+       NY_A                71.404       8.163       6.876       6.825       4.525       4.507       4.507       0.000       0.000
+       NY_B              4613.495    2356.545    2179.695    1511.676     960.057     750.439     696.131      30.874       9.823
+       NY_C                 5.280       1.140       0.811       0.358       0.085       0.034       0.021       0.000       0.000
+       NY_D                 2.092       0.021       0.008       0.006       0.004       0.004       0.004       0.000       0.000
+       NY_E              2926.402    1448.340    1289.473     909.173     537.676     425.266     395.238      18.238       6.033
+       NY_F                61.176      13.451      12.566       9.537       3.417       2.829       2.654       0.080       0.001
+       NY_G               153.715      60.401      46.346      36.123      19.465      10.070       9.907       0.054       0.000
+       NY_H              1825.820     918.686     800.439     559.922     370.810     283.136     262.040      11.709       3.730
+       NY_I              4233.305    2127.091    1803.637    1271.532     830.778     619.618     574.100      25.966       8.292
+       NY_J              8449.624    3306.753    2968.296    1298.664     543.044     321.405     313.137      28.693       5.217
+       NY_K              4150.411    2677.127    2538.008     310.792     261.333     182.461     127.477       8.899       2.713
+       PJM               3082.776    3082.775    3082.775    3082.775    3082.775    3082.775    3082.775    1786.558    1641.871
+       NWENGLND          5847.654    5847.649    5847.649    5847.649    5847.649    5847.649    5847.649     570.902     539.703
+       ONTARIO          38239.387   38239.352   38239.352   38239.352   38239.352   38239.352   38239.352     469.494     394.669
+       HYDQUE            4503.567    3875.879    3768.051    3482.101    3225.268    3130.977    3126.197     241.129     240.916
+       NY_SALES           861.784     446.799     414.840     276.707     180.767     137.786     126.933       5.436       1.581
+       NY_J3                0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       NY_J4                0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       NY_J5               73.900      24.178      21.715       9.498       4.935       3.022       2.569       0.030       0.003
+       NY_J6              162.981      74.865      69.121      39.036      23.517      16.489      14.961       0.001       0.000
+       NY_K1                0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       NY_K2               42.578      26.593      25.603       3.463       1.711       1.158       1.029       0.065       0.014
+       PJM_RECO             0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       HMRCTY               0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       PJM_J2               0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       CHTEAGAY             0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+       PHASE_2              0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000       0.000
+
+       _NYCA_           27633.965   13490.153   12177.433    6243.314    3742.126    2758.224    2530.707     130.044      37.406
+       _PJM_             3082.776    3082.775    3082.775    3082.775    3082.775    3082.775    3082.775    1786.558    1641.871
+       _ISONE_           5847.654    5847.649    5847.649    5847.649    5847.649    5847.649    5847.649     570.902     539.703
+       _IESO_           38239.387   38239.352   38239.352   38239.352   38239.352   38239.352   38239.352     469.494     394.669
+       _HQ_              4503.567    3875.879    3768.051    3482.101    3225.268    3130.977    3126.197     241.129     240.916
+
+       NYBA             26492.723   12917.720   11646.153    5914.609    3531.195    2599.769    2385.216     124.512      35.808
+       ZONE_G2J         14736.365    6437.108    5640.434    3175.740    1769.033    1237.251    1161.754      66.452      17.242
+       NY_SENY          18929.352    9140.829    8204.044    3489.995    2032.076    1420.869    1290.259      75.416      19.969
+       NY-PJM           29575.498   16000.494   14728.928    8997.383    6613.969    5682.545    5467.991    1911.070    1677.679
+       NY-NE            32340.375   18765.367   17493.803   11762.258    9378.843    8447.418    8232.864     695.414     575.511
+       NY-IESO          64732.113   51157.070   49885.504   44153.953   41770.543   40839.117   40624.566     594.006     430.477
+       NY-HQ            30996.287   16793.598   15414.205    9396.711    6756.462    5730.746    5511.413     365.641     276.724
+       EXTERNAL         51673.391   51045.648   50937.820   50651.871   50395.047   50300.750   50295.977    3068.083    2817.158
+       DUMMYALL           978.262     497.570     462.158     289.668     187.414     141.966     130.530       5.532       1.598
+       SYSTEM           79144.359   64460.934   63046.141   56856.148   54113.648   53042.488   52811.719    3198.127    2854.565                                         MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             5
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                                                         INTERFACE FLOWS FOR 2033
+
+
+                                ***********  POSITIVE DIRECTION  ***********       ***********  NEGATIVE DIRECTION  ***********
+                                ---------  MW  ---------   ----  HOURS  ----       ---------  MW  ---------   ----  HOURS  ----
+ INTERFACE OR INTERFACE GROUP    LIMIT  MAXIMUM  AVERAGE   AT LIMIT    TOTAL        LIMIT  MAXIMUM  AVERAGE   AT LIMIT    TOTAL
+ ----------------------------    -----  -------  -------   --------    -----        -----  -------  -------   --------    -----
+ DYSINGER EAST                  2100.0   1742.1     90.4        0.0    340.4       1999.0   1506.5    704.8        0.0   8419.6
+ WEST CENTRAL                   1500.0    643.8     29.4        0.0    247.2       2275.0   2275.0   1331.6      112.7   8512.8
+ VOLNEY EAST                    5650.0   3755.4    332.0        0.0   8313.0       1999.0   1999.0    373.0        0.1    447.0
+ MOSES SOUTH                    3500.0   2660.6    558.3        0.0   1847.5       1600.0   1046.3    678.0        0.1      8.1
+ CENTRAL EAST                   3925.0   2889.4     41.4        0.0   8317.7       1999.0   1937.7    402.8        0.1    442.3
+ MARCY SOUTH                    2300.0   2300.0     71.2       34.0   8700.3       1600.0   1600.0    337.0        0.3     59.7
+ CAPITAL HUDSON VALLEY          5400.0   4390.0     85.3        0.0   8606.5       1999.0    984.5    158.9        0.0    153.5
+ UPNY - CONED                   7050.0   6897.9    563.3        0.1   8758.5       1999.0    524.4    181.7        0.0      0.5
+ MILLWOOD SOUTH                 8450.0   6428.6   1030.4        0.0   2096.2       1999.0   1006.6    167.6        0.0     10.8
+ SPRNBRK/DUNWOODIE SOUTH        4400.0   4367.5    672.8        0.3    933.8       1999.0   1851.2    628.9        0.0   7678.0
+ Y49/Y50                        1293.0   1293.0    355.6        8.1    772.9        475.0    475.0    134.5       36.3   1227.3
+ JAMAICA TIES                    305.0    305.0    204.4      201.2    574.9        505.0    505.0    234.5      222.9    732.7
+ AREA J TO AREA J3               315.0     21.0    225.0        0.0      0.0        815.0    418.6    314.0        0.0   7905.5
+ AREA J TO AREA J4 (HTP)           0.0      0.0      0.0        0.0      0.0        660.0    271.1    209.5        0.0      0.2
+ AREA J3 TO AREA J5 (VFT)        315.0     21.0    253.1        0.0      0.0        315.0    315.0    314.0     7904.4   7905.5
+ AREA K TO AREA K1 (CSC)         330.0     84.7    279.3        0.3      0.5        330.0    258.6    202.7        0.3      0.7
+ AREA K TO AREA K2 (NEPT)          0.0      0.0      0.0        0.0      0.0        660.0    660.0    660.0     4799.5   4800.1
+ AREA J TO AREA J6 (CHPE)          0.0      0.0      0.0        0.0      0.0          0.0   1250.0   1249.9     3998.4   3998.9
+ AREA A TO HOMER CITY            550.0    379.3     69.6        0.6   8758.0        550.0    212.2    366.5        0.8      2.0
+ AREA J3 TO AREA J2                0.0      0.0      0.0        0.0      0.0        500.0    103.6     78.4        0.0      0.4
+ AREA A TO ONTARIO              1650.0    541.7    581.6        0.0      2.5       1800.0   1015.6    297.1        0.0      3.6
+ AREA J TO AREA J2                 0.0      0.0      0.0        0.0      0.0          0.0      0.0      0.0        0.0      0.0
+ AREA C TO HOMER CITY            200.0     75.8     15.1        0.3   8717.1        600.0    101.1      7.2        0.0     42.9
+ AREA C TO PJM                   300.0    139.8     32.6        0.4   8759.2        300.0     92.6    184.0        0.2      0.8
+ AREA D TO CHTEAGAY             1000.0    691.5    556.3        0.6      7.1       1770.0   1770.0   1060.4      132.1   8752.9
+ AREA D TO NEW ENGLAND             0.0      0.0      0.0        0.0      0.0          0.0      0.0      0.0        0.0      0.0
+ AREA D TO ONTARIO               300.0    280.0    243.0        2.1      3.3        300.0    295.1    152.7        0.8      3.4
+ AREA F TO NEW ENGLAND           800.0    482.6    341.0        0.6   8758.3        800.0    318.6    388.5        0.3      1.7
+ AREA G TO PJM RECO            99999.0    425.0    329.2        0.0   8760.0          0.0      0.0      0.0        0.0      0.0
+ AREA G TO NEW ENGLAND           800.0    275.2     41.1        0.2   8756.4        600.0    531.1    361.8        1.1      3.6
+ AREA J4 (HTP) TO PJM            660.0      0.0      0.0        0.0      0.0        660.0    271.1    207.5        0.0      0.2
+ AREA J3A (VFT) TO PJM           315.0     97.2    249.3        0.2      0.3        315.0    155.3    133.0        0.0      0.3
+ AREA J6 (CHPE) TO HQ          99999.0      0.0      0.0        0.0      0.0      99999.0    973.7    567.4        0.0      0.5
+ AREA G TO AREA J2                 0.0      0.0      0.0        0.0      0.0        150.0      7.0     45.2        0.0      0.1
+ AREA K TO NEW ENGLAND           414.0     86.1    170.8        0.0      0.5        404.0    404.0    155.0        0.7      3.2
+ AREA K1 TO NEW ENGLAND          330.0     84.7    279.3        0.3      0.5        330.0    258.6    202.7        0.3      0.7
+ AREA K2 TO PJM                99999.0    203.6    453.5        0.0      1.1      99999.0    129.9    135.4        0.0      0.1
+ AREA G TO PJM                  1000.0    308.5    452.3        0.4      1.6       1000.0    622.9    263.4        0.2   8758.4
+ CHTEAGAY TO HQ                99999.0   1111.9    817.5        0.0     11.6      99999.0   1162.0    344.6        0.0    192.3
+ PJM TO AREA J2                99999.0    386.5    168.9        0.0      0.8      99999.0     97.2    248.1        0.0      0.3
+ HOMER CITY TO PJM             99999.0    414.4     64.8        0.0   8757.9      99999.0    332.8    404.3        0.0      2.1
+ HQ TO NEW ENGLAND               200.0    200.0    173.9        6.6      8.6        100.0     69.1     96.5        0.9      1.0
+ HQ TO PHASE II                 1400.0    953.7    837.3        2.3      6.4          0.0      0.0      0.0        0.0      0.0
+ HYDRO QUEBEC TO ONTARIO        2665.0   2615.4   1046.0        3.4     35.6       2060.0   1127.1    700.6        0.4      5.6
+ PHASE II TO NEW ENGLAND       99999.0    953.7    837.6        0.0      6.4      99999.0      0.0      0.0        0.0      0.0
+ SALES FROM NY_A               99999.0    265.1    117.6        0.0    391.3          0.0      0.0      0.0        0.2      0.2
+ SALES FROM NY_C               99999.0    265.1    256.0        0.0   8196.5          0.0      0.0      0.0        0.0      0.0
+ SALES FROM NY_D               99999.0    265.1    146.9        0.0   1162.2          0.0      0.0      0.0        0.1      0.1
+ SALES FROM NY_F               99999.0    190.5     28.3        0.0    259.7          0.0      0.0      0.0        0.0      0.0
+ SALES FROM NY_G                   0.0      0.0      0.0        0.0      0.0          0.0      0.0      0.0        0.0      0.0
+
+ CE AND MARCY GROUP             5650.0   5139.7    113.2        0.0   8373.3       3400.0   2999.4    471.4        0.0    386.7
+ DS plus Y49/Y50                5693.0   5289.4    879.7        0.0    973.6      99999.0   1922.9    635.3        0.0   7786.0
+ ConEd To LIPA (I,J TO K)       1598.0   1598.0    369.9        1.4    812.9        190.0    189.8    134.8      131.4   1819.2
+ LI GRP + NEPTUNE              99999.0   1644.3    138.2        0.0   4498.3        104.0    152.8     94.5     1351.8   1632.9
+ PJM_5018 AND G_RECO           99999.0    284.4    385.0        0.0      1.1      99999.0    482.4    539.0        0.0      2.6
+ TOTAL EAST GROUP              99999.0   5100.9    890.6        0.0    439.2      99999.0   3057.0    477.9        0.0    425.4
+ UPSTATE TO DOWNSTATE           7150.0   6728.1    116.5        0.0   8564.9      99999.0   2192.8    238.3        0.0    195.1
+ UPNYSENY + ISONE-K Ties       99999.0   6868.5    116.5        0.0   8564.9      99999.0   2192.8    238.3        0.0    195.1
+ ISONE TO AREA K               99999.0    641.5    192.9        0.0      3.1      99999.0    108.1    189.9        0.0      0.9
+ OUT OF ZONE A EAST             2450.0   2026.0    125.4        0.0    458.8      99999.0   1612.7    644.7        0.0   8301.2
+ PJM TO A & C                  99999.0    351.8    387.2        0.0      1.9      99999.0    652.5    183.0        0.0   8758.1
+ PJM to G                        705.0    285.9    389.0        0.1      1.1      99999.0    482.4    539.0        0.0      2.6
+ PJM to J                      99999.0    689.7    314.1        0.0   7905.5      99999.0     21.0    225.0        0.0      0.0
+ PJM to G - K                  99999.0    813.7    263.4        0.0   8758.2      99999.0    609.4    626.4        0.0      1.8
+ NEW ENGLAND IMPORTS            1400.0    696.1    382.1        0.5   8757.2       1400.0    735.0    644.9        0.4      2.8
+ NORTHERN EXPORT - AREA D      99999.0    798.1    141.3        0.0    178.0      99999.0   1490.0    964.4        0.0   8582.0
+ IMPORTS - AREA J              99999.0   4942.6    805.4        0.0   1428.3      99999.0   1771.1    383.7        0.0   7331.5
+ IMPORTS - G-J LOCALITY        99999.0   6276.5    374.9        0.0   7811.2      99999.0   1881.7    135.0        0.0    948.8
+ IMPORTS - AREA K              99999.0   2196.5    600.4        0.0   5469.0      99999.0    154.4     90.3        0.0    662.3
+ IMPORTS INTO SENY             99999.0   7139.1    718.5        0.0   8421.6      99999.0   1874.1     79.3        0.0    338.4
+ PJM IMPORTS                   99999.0    933.3   1498.9        0.0      0.8      99999.0    838.9    146.3        0.0   8759.2
+ A_LINE AND BC_LINE              105.0    103.6     78.4        0.2      0.4          0.0      0.0      0.0        0.0      0.0
+ NEW YORK TO ONTARIO            1800.0    811.7    664.3        0.3      3.3       2100.0   1310.7    400.1        0.0      3.9
+ NEW YORK IMPORT EA             3500.0   2152.5    418.8        0.0     25.5      99999.0   1838.1    561.1        0.0   8734.5
+ SENY VOLTAGE MONITOR          99999.0  10806.8   1206.4        0.0   1214.2      99999.0   3692.7    577.2        0.0   7545.8
+ SALES GROUP                   99999.0    265.1    265.1        0.0   8760.0          0.0      0.0      0.0        0.0      0.0
+
+
+       NOTE:  Limits shown are as of the beginning of the year.
+              Because all load levels and/or margin states may not have been calculated (in order to speed 
+              up the calculations), the quantities in this summary may not be completely accurate.                                         MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             6
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                                                   ANNUAL CONTRACT CURTAILMENTS FOR 2033
+
+
+                                                                       CONTRACT       ****  CURTAILMENT  ****
+                              CONTRACT     FROM AREA     TO AREA     ENERGY (MWH)     HOURS      ENERGY (MWH)
+                              --------     ---------     -------     ------------     -----      ------------
+                              IMP_HQ       HYDQUE        NY_D          6592992.00       0.4            117.22
+                              CON_CSC      NY_K1         NY_K                0.00       0.0              0.00
+                              CON_HTP      NY_J4         NY_J                0.00       0.0              0.00
+                              CON_NPT      NY_K2         NY_K          5781600.00    3325.1        2194560.22
+                              CON_VFT      NY_J5         NY_J          2759400.00      84.1          10272.77
+                              CON_CHPE     NY_J6         NY_J          5520000.00     222.8         278512.48
+                              ETCNL        PJM           NY_C           332880.00    8712.9         331074.07
+                              NE_SLS       NY_SALES      NWENGLND       718320.00       0.0              0.00
+                              NE_FCM       NY_SALES      NWENGLND            0.00       0.0              0.00
+                              PJM_SLS      NY_SALES      PJM           1603954.50       0.0              0.00
+                              RECO_JOA     PJM           PJM_RECO      2883840.00       0.0              0.00
+                              HQ_WHEEL     HYDQUE        NWENGLND      2628000.00       0.0              0.00                                         MULTI-AREA RELIABILITY SIMULATION   Version5.0.2186              Run Date:   10162023
+                                           COPYRIGHT 1988-     - GENERAL ELECTRIC COMPANY                 Job Number:   255831
+
+2023 Planning Base Case                                                                                  Output Section   9
+Created on 2023-07-25                                                                                    Page             7
+Updated Model Used for the 2023 STAR Q3 Case                            
+
+
+
+                                         ANNUAL EOP USAGE ON INTERCONNECTED BASIS FOR 2033
+                                                (EXPECTED NUMBER OF TIMES PER YEAR)
+
+
+                                                        EMERGENCY OPERATING PROCEDURE
+
+         AREA                2           3           4           5           6           7           8           9
+       --------          --------    --------    --------    --------    --------    --------    --------    --------
+       NY_A               1.21351     0.14451     0.00000     0.11938     0.07991     0.00000     0.00000     0.00000
+                         21.43962    11.92139     0.00000     6.60969     4.26560     0.00000     0.00000     0.00000
+                          0.92710     1.01621     0.00000     0.57384     0.53802     0.00000     0.00000     0.00000
+       NY_B              22.68571    12.08246     0.00000     6.76668     4.34859     0.00000     0.00000     0.00000
+                          0.00188     0.00269     0.00000     0.00000     0.00043     0.00000     0.00000     0.00000
+                          0.93409     1.01858     0.00000     0.58944     0.54248     0.00000     0.00000     0.00000
+       NY_C               0.07590     0.02379     0.00000     0.01246     0.00502     0.00000     0.00000     0.00000
+                         18.81233    11.40495     0.00000     5.82737     4.14017     0.00000     0.00000     0.00000
+                          1.13452     1.05375     0.00000     0.72652     0.56658     0.00000     0.00000     0.00000
+       NY_D               0.16689     0.00193     0.00000     0.00043     0.00000     0.00000     0.00000     0.00000
+                         14.62526    11.04131     0.00000     5.40028     0.00000     0.00000     0.00000     0.00000
+                          1.33261     1.08432     0.00000     0.77214     0.00000     0.00000     0.00000     0.00000
+       NY_E              21.68984    11.73529     0.00000     6.46371     4.11915     0.00000     0.00000     0.00000
+                          0.00787     0.00519     0.00000     0.00116     0.02858     0.00000     0.00000     0.00000
+                          1.12863     1.06477     0.00000     0.74616     0.56732     0.00000     0.00000     0.00000
+       NY_F               0.97789     0.23161     0.00000     0.17583     0.06746     0.00000     0.00000     0.00371
+                         15.92009    10.70366     0.00000     5.24377     4.06727     0.00000     0.00000     0.18327
+                          1.08423     1.03066     0.00000     0.68716     0.56604     0.00000     0.00000     0.17260
+       NY_G               2.49547     1.02369     0.00000     0.56969     0.29581     0.00000     0.00000     0.00203
+                         17.77802    10.25904     0.00000     5.82863     3.83898     0.00000     0.00000     0.18489
+                          0.98096     1.03557     0.00000     0.60888     0.56597     0.00000     0.00000     0.16174
+       NY_H              21.83466    11.84242     0.00000     6.48001     4.15675     0.00000     0.00000     0.00000
+                          0.00694     0.00433     0.00000     0.00225     0.00141     0.00000     0.00000     0.00000
+                          0.91317     1.01395     0.00000     0.57127     0.54072     0.00000     0.00000     0.00000
+       NY_I              21.87355    11.84643     0.00000     6.48195     4.15687     0.00000     0.00000     0.00000
+                          0.00688     0.00421     0.00000     0.00104     0.00135     0.00000     0.00000     0.00000
+                          0.78895     1.00090     0.00000     0.55643     0.53974     0.00000     0.00000     0.00000
+       NY_J              21.83567    11.33059    10.05142     4.39262     1.93356     0.00000     0.00000     0.14267
+                          0.11831     0.51044     0.90186     1.99814     2.12112     0.00000     0.00000     0.04437
+                          0.77502     0.97790     0.97320     0.54839     0.53355     0.00000     0.00000     0.13362
+       NY_K              22.01525    13.99461    13.08287     1.51310     1.30129     0.89309     0.00000     0.08839
+                          0.61337     0.49924     0.46539     3.00892     2.36432     2.35338     0.00000     0.10600
+                          0.24704     0.44056     0.32696     0.16043     0.16951     0.10541     0.00000     0.13044
+       PJM                0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NWENGLND           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       ONTARIO            0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       HYDQUE             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_SALES           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J3              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J4              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J5              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_J6              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_K1              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       NY_K2              0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PJM_RECO           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       HMRCTY             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PJM_J2             0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       CHTEAGAY           0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+       PHASE_2            0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+                          0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
+
+
+       NOTE:  Line 1 - Number of times EOP initiated by area to meet its own deficiency.
+              Line 2 - Number of times EOP initiated to assist other areas in the same pool.
+              Line 3 - Number of times EOP initiated to assist areas in other pools.
