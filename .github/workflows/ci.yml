@@ -1,5 +1,11 @@
-  name: Upload coverage reports to Codecov
-  uses: codecov/codecov-action@v4.0.1
-  with:
-    token: ${{ secrets.CODECOV_TOKEN }}
-    slug: JosifFP/CompositeSystems.jl
+name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 0 * * 3' # on every Wednesday
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4.0.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: JosifFP/CompositeSystems.jl
