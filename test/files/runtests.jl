@@ -11,7 +11,6 @@ include("common.jl")
 
 @testset verbose=true "Testset of OPF formulations + Load Curtailment minimization, using Juniper solver" begin
     BaseModule.silence()
-    PowerModels.silence()
     include("SystemModel.jl")
     include("opf_formulations.jl")
     include("load_minimization_dcp.jl")
@@ -23,7 +22,6 @@ end;
 @testset verbose=true "Test sequential Monte Carlo Simulations using Gurobi License" begin
     @info "These testsets require Gurobi license."
     BaseModule.silence()
-    PowerModels.silence()
     a = Ref{Ptr{Cvoid}}()
     ret = Gurobi.GRBloadenv(a, C_NULL)
     @test ret == 0

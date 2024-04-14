@@ -13,7 +13,6 @@
     import Random123: Philox4x
     import StatsBase: mean, std, stderror
     import TimeZones: ZonedDateTime
-    import LinearAlgebra: qr, mul!
     import XLSX: rename!, addsheet!, openxlsx
     import Distributions: ccdf, Normal
     import Base: minimum, maximum, extrema

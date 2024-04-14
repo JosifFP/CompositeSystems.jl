@@ -12,7 +12,6 @@ and returns a power model.
 # Returns
 - An instance of an `AbstractPowerModel`.
 """
-
 function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env)
     
     @assert settings.jump_modelmode === JuMP.AUTOMATIC "A fatal error occurred. 
@@ -20,7 +19,7 @@ function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env
 
     jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
 
-    settings.optimizer_name = MathOptInterface.get(jump_model, MathOptInterface.SolverName())
+    settings.optimizer_name = MOI.get(jump_model, MOI.SolverName())
     settings.optimizer_name != "Gurobi" && throw(DomainError("Optimizer $(settings.optimizer_name) not attached"))
     
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
@@ -29,6 +28,7 @@ function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env
     return pm(jump_model, topology, settings.powermodel_formulation)
 end
 
+""
 function abstract_model(system::SystemModel, settings::Settings)
     
     @assert settings.jump_modelmode === JuMP.AUTOMATIC "A fatal error occurred. 

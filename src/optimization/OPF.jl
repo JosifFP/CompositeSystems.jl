@@ -3,7 +3,7 @@
     using ..BaseModule
     import LinearAlgebra: pinv
     import Base: ==
-    import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE, MAX_SENSE, is_empty
+    import MathOptInterface: MathOptInterface, OptimizerWithAttributes, MIN_SENSE
     import JuMP.Containers: DenseAxisArray
     import JuMP: @variable, @constraint, @objective, @expression, JuMP, fix, 
         optimize!, Model, direct_model, optimizer_with_attributes, ModelMode,

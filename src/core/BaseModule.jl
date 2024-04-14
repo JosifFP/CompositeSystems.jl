@@ -5,9 +5,7 @@
         Period, Hour, Day, Year, Date, hour, now, format
     import TimeZones: TimeZone, ZonedDateTime
     import StatsBase: mean, std, stderror
-    import LinearAlgebra
     import Memento
-    import SparseArrays: SparseMatrixCSC, sparse, nonzeros
     import InfrastructureModels
     import PowerModels
     const _IM = InfrastructureModels
@@ -41,7 +39,7 @@
         Memento.info(_LOGGER, "Suppressing information and warning messages for the rest of this session. 
         Use the Memento package for more fine-grained control of logging.")
         Memento.setlevel!(Memento.getlogger(_IM), "error")
-        Memento.setlevel!(Memento.getlogger(PowerModels), "error")
+        Memento.setlevel!(Memento.getlogger(_PM), "error")
         Memento.setlevel!(Memento.getlogger(BaseModule), "error")
     end
  

@@ -131,7 +131,7 @@ mutable struct Settings
         )
 
         optimizer === nothing && throw(DomainError("Solver/Optimizer not attached"))
-        optimizer_name = MathOptInterface.get(JuMP.Model(optimizer), MathOptInterface.SolverName())
+        optimizer_name = MOI.get(JuMP.Model(optimizer), MOI.SolverName())
 
         new(optimizer, optimizer_name, jump_modelmode, powermodel_formulation, 
             select_largest_splitnetwork, deactivate_isolated_bus_gens_stors,
