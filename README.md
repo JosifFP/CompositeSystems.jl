@@ -10,7 +10,8 @@
 
 Status:
 [![CI](https://github.com/JosifFP/CompositeSystems.jl/workflows/CI/badge.svg)](https://github.com/JosifFP/CompositeSystems.jl/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/JosifFP/CompositeSystems.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JosifFP/CompositeSystems.jl)
+[![codecov](https://codecov.io/gh/JosifFP/CompositeSystems.jl/graph/badge.svg?token=KRVQ19YRIO)](https://codecov.io/gh/JosifFP/CompositeSystems.jl)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJosifFP%2FCompositeSystems.jl.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2FJosifFP%2FCompositeSystems.jl?ref=badge_shield&issueType=license)
 </p>
 
 <!-- PROJECT LOGO -->

@@ -42,7 +42,6 @@ jobs:
             ${{ runner.os }}-
       - run: julia -e 'import Pkg;
                        Pkg.Registry.add("General");
-                       Pkg.Registry.add(Pkg.RegistrySpec(url="https://github.com/NREL/JuliaRegistry.git"))'
         shell: bash
       - uses: julia-actions/julia-buildpkg@latest
       - run: |
