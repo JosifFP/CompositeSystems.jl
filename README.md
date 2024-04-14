@@ -155,6 +155,8 @@ Project Link: [https://github.com/JosifFP/CompositeSystems.jl](https://github.co
 ## Acknowledgments
 
 This work was supported by MITACS through the Mitacs Accelerate program, Atlantic Canada Opportunities Agency, and Énergie NB Power, NB, Canada, under Grant IT27416.
+* Project supervised by Ph.D, P.Eng. Kush Bubbar. https://www.sysmodel.ca/
+* Logo designed by Claudio Ferrada IG: @unoilustrado
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

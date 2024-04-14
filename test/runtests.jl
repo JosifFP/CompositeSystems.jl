@@ -6,17 +6,17 @@ import BenchmarkTools: @btime
 import Gurobi, Juniper, Ipopt
 import Distributed
 
-include("solvers.jl")
-include("common.jl")
+include("files/solvers.jl")
+include("files/common.jl")
 
 @testset verbose=true "Testset of OPF formulations + Load Curtailment minimization, using Juniper solver" begin
     BaseModule.silence()
-    include("SystemModel.jl")
-    include("opf_formulations.jl")
-    include("load_minimization_dcp.jl")
-    include("load_minimization_dcmp.jl")
-    include("load_minimization_lpacc.jl")
-    include("storage_model.jl")
+    include("files/SystemModel.jl")
+    include("files/opf_formulations.jl")
+    include("files/load_minimization_dcp.jl")
+    include("files/load_minimization_dcmp.jl")
+    include("files/load_minimization_lpacc.jl")
+    include("files/storage_model.jl")
 end;
 
 @testset verbose=true "Test sequential Monte Carlo Simulations using Gurobi License" begin
@@ -28,10 +28,10 @@ end;
     #Gurobi._check_ret(a[], ret)
     if ret == 0
         #These testsets require Gurobi license.
-        include("smcs_nonthreaded.jl")
-        include("smcs_threaded.jl")
-        include("smcs_additionals.jl")
-        include("ELCC.jl")
-        include("ETC.jl")
+        include("files/smcs_nonthreaded.jl")
+        include("files/smcs_threaded.jl")
+        include("files/smcs_additionals.jl")
+        include("files/ELCC.jl")
+        include("files/ETC.jl")
     end
 end
