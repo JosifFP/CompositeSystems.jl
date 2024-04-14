@@ -7,6 +7,7 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJosifFP%2FCompositeSystems.jl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FJosifFP%2FCompositeSystems.jl?ref=badge_shield)
 
 Status:
 [![CI](https://github.com/JosifFP/CompositeSystems.jl/workflows/CI/badge.svg)](https://github.com/JosifFP/CompositeSystems.jl/actions?query=workflow%3ACI)
@@ -63,6 +64,9 @@ Status:
 </details>
 
 <!-- ABOUT THE PROJECT -->
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJosifFP%2FCompositeSystems.jl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FJosifFP%2FCompositeSystems.jl?ref=badge_large)
 
 ## About The Project
 
