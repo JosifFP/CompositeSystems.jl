@@ -166,7 +166,7 @@ This work was supported by MITACS through the Mitacs Accelerate program, Atlanti
 [issues-shield]: https://img.shields.io/github/issues/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
 [issues-url]: https://github.com/JosifFP/CompositeSystems.jl/issues
 [license-shield]: https://img.shields.io/github/license/JosifFP/CompositeSystems.jl.svg?style=for-the-badge
-[license-url]: https://github.com/JosifFP/CompositeSystems.jl/blob/master/LICENSE.txt
+[license-url]: https://github.com/JosifFP/CompositeSystems.jl/LICENSE.md
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/josif-figueroa-parra/
 [product-screenshot]: docs/images/logo_white.png
