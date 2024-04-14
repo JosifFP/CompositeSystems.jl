@@ -8,6 +8,11 @@
 [![Issues][issues-shield]][issues-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
+Status:
+[![CI](https://github.com/JosifFP/CompositeSystems.jl/workflows/CI/badge.svg)](https://github.com/JosifFP/CompositeSystems.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/JosifFP/CompositeSystems.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JosifFP/CompositeSystems.jl)
+</p>
+
 <!-- PROJECT LOGO -->
 
 <br />
