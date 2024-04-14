@@ -1,22 +1,20 @@
 <!--  -->
-
-``<a name="readme-top"></a>```
-
+<a name="readme-top"></a>
 <!---->
 
-[Contributors][contributors-url]
-[Forks][forks-url]
-[Stargazers][stars-url]
-[Issues][issues-url]
-[MIT License][license-url]
-[LinkedIn][linkedin-url]
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
 <!-- PROJECT LOGO -->
 
 <br />
 <div align="center">
   <a href="https://github.com/JosifFP/CompositeSystems.jl">
-    <img src="docs/images/logo_white.png" alt="Logo" height="300">
+    <img src="docs/images/logo_white.svg" alt="Logo" width="500">
   </a>
 
 <h3 align="center">Generation & Transmission Reliability Tool</h3>
