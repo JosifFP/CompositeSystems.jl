@@ -12,13 +12,11 @@
     import Gurobi
     import InfrastructureModels
     import PowerModels
-
     const _IM = InfrastructureModels
     const _PM = PowerModels
     const MOI = MathOptInterface
 
     export
-
         #Abstract PowerModel Formulations
         AbstractPowerModel, AbstractDCPowerModel, AbstractDCPModel, AbstractDCMPPModel, 
         AbstractNFAModel, AbstractAPLossLessModels, AbstractPolarModels,
@@ -27,12 +25,10 @@
         Settings, Topology,
 
         #functions
-        field, var, con, abstract_model, build_problem!, update_problem!, finalize_model!,
-        topology, solve!, solve_opf!, peakload, update_states!, record_states!
-
+        field, var, con, abstract_model, build_problem!,
+        topology, build_opf!, solve!, peakload, update_states!, check_optimizer!
         #reexports
         MOI, JuMP
-
     #
 
     include("types.jl")

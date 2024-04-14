@@ -1,7 +1,3 @@
-import Ipopt, Juniper, Gurobi
-import JuMP: JuMP, optimizer_with_attributes
-#const GRB_ENV = Gurobi.Env()
-
 ipopt_optimizer = JuMP.optimizer_with_attributes(
     Ipopt.Optimizer, 
     "tol" => 1e-6, 

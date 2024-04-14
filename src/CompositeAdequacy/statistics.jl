@@ -116,8 +116,6 @@ function Base.show(io::IO, x::EDLC{N,L,T}) where {N,L,T}
     print(io, "EDLC = ", x.EDLC, " ", L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")", "/", N*L == 1 ? "" : N*L, t_symbol)
 end
 
-
-
 ###########################################################################################################################
 "Expected Energy Not Supplied (EENS in MWh/y)"
 struct EENS{N,L,T<:Period,E<:EnergyUnit} <: ReliabilityMetric
@@ -140,7 +138,6 @@ function Base.show(io::IO, x::EENS{N,L,T,E}) where {N,L,T,E}
 end
 
 
-
 ###########################################################################################################################
 "Severity Index (SI in system-minutes/y).
 A normalized form of EENS index divided by the system peak load. Its unit is expressed as a system-minutes."
@@ -160,7 +157,7 @@ val(x::SI) = val(x.SI)
 stderror(x::SI) = stderror(x.SI)
 
 function Base.show(io::IO, x::SI{N,L,T}) where {N,L,T}
-    print(io, "SI = ", x.SI, " ", "sys.mins", "/", N*L == 1 ? "" : N*L, unitsymbol(T))
+    print(io, "SI = ", x.SI, " ", "sys.hours", "/", N*L == 1 ? "" : N*L, unitsymbol(T))
 end
 
 val(x::Int) = x

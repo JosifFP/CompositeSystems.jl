@@ -18,7 +18,6 @@ A structure defining the Sequential Monte Carlo Simulation (SequentialMCS) metho
 - `seed::UInt64`: Random seed for reproducibility.
 - `verbose::Bool`: Flag to control verbose output.
 - `threaded::Bool`: Flag to control if the simulation uses multi-threading.
-- `count_samples::Bool`: Flag to decide whether to count samples or not.
 - `include_master::Bool`: Flag to determine if the master process should be included in the simulation.
 
 # Constructor
@@ -31,7 +30,6 @@ struct SequentialMCS <: SimulationSpec
     seed::UInt64
     verbose::Bool
     threaded::Bool
-    count_samples::Bool
     include_master::Bool
 
     function SequentialMCS(;
@@ -39,7 +37,6 @@ struct SequentialMCS <: SimulationSpec
         seed::Int=rand(UInt64),
         verbose::Bool=false,
         threaded::Bool=true,
-        count_samples::Bool=false,
         include_master::Bool=false
     )
         samples <= 0 && throw(DomainError("Sample count must be positive"))
@@ -54,6 +51,6 @@ struct SequentialMCS <: SimulationSpec
         _, remainder = divrem(samples, workers)
         remainder != 0 && throw(DomainError("The ratio of #samples to workers +- master must be an integer number"))
 
-        new(samples, UInt64(seed), verbose, threaded, count_samples, include_master)
+        new(samples, UInt64(seed), verbose, threaded, include_master)
     end
 end

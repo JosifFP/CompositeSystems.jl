@@ -26,7 +26,7 @@ True means the component is available, and False means it's not.
 function Topology(system::SystemModel{N}) where {N}
 
     nbranches = length(system.branches)
-    ncommonbranches = length(system.commonbranches)
+    ninterfaces = length(system.interfaces)
     ngens = length(system.generators)
     nstors = length(system.storages)
     nbuses = length(system.buses)
@@ -35,8 +35,8 @@ function Topology(system::SystemModel{N}) where {N}
 
     branches_available = fill(true, nbranches)
     branches_pasttransition = fill(true, nbranches)
-    commonbranches_available = fill(true, ncommonbranches)
-    commonbranches_pasttransition = fill(true, ncommonbranches)
+    interfaces_available = fill(true, ninterfaces)
+    interfaces_pasttransition = fill(true, ninterfaces)
     generators_available = fill(true, ngens)
     generators_pasttransition = fill(true, ngens)
     storages_available = fill(true, nstors)
@@ -93,17 +93,17 @@ function Topology(system::SystemModel{N}) where {N}
 
     ref_buses = slack_buses(system.buses)
 
-    branches_flow_from = zeros(Float64, nbranches)
-    branches_flow_to = zeros(Float64, nbranches)
-    buses_curtailed_pd = zeros(Float64, nbuses)
-    buses_curtailed_qd = zeros(Float64, nbuses)
+    branchflow_from = zeros(Float64, nbranches)
+    branchflow_to = zeros(Float64, nbranches)
+    busshortfall_pd = zeros(Float64, nbuses)
+    busshortfall_qd = zeros(Float64, nbuses)
     stored_energy = zeros(Float64, nstors)
 
     failed_systemstate = fill(true, N)
 
     return Topology(
-        branches_available, branches_pasttransition, commonbranches_available, 
-        commonbranches_pasttransition, generators_available, generators_pasttransition,
+        branches_available, branches_pasttransition, interfaces_available, 
+        interfaces_pasttransition, generators_available, generators_pasttransition,
         storages_available, storages_pasttransition, buses_available, buses_pasttransition,
         loads_available, loads_pasttransition, shunts_available, shunts_pasttransition,
         buses_generators_available, buses_storages_available, buses_loads_base, 
@@ -111,16 +111,16 @@ function Topology(system::SystemModel{N}) where {N}
         arcs_from_base, arcs_to_base, arcs_from_available, arcs_to_available,
         arcs_available, busarcs_available, buspairs_available, delta_bounds, ref_buses, 
         branches_idxs, generators_idxs, storages_idxs, buses_idxs, loads_idxs, 
-        shunts_idxs, buses_curtailed_pd, buses_curtailed_qd, branches_flow_from, 
-        branches_flow_to, stored_energy, failed_systemstate
+        shunts_idxs, busshortfall_pd, busshortfall_qd, branchflow_from, 
+        branchflow_to, stored_energy, failed_systemstate
     )
 end
 
 Base.:(==)(x::T, y::T) where {T <: Topology} =
         x.branches_available == y.branches_available &&
         x.branches_pasttransition == y.branches_pasttransition &&
-        x.commonbranches_available == y.commonbranches_available &&
-        x.commonbranches_pasttransition == y.commonbranches_pasttransition &&
+        x.interfaces_available == y.interfaces_available &&
+        x.interfaces_pasttransition == y.interfaces_pasttransition &&
         x.generators_available == y.generators_available &&
         x.generators_pasttransition == y.generators_pasttransition &&
         x.storages_available == y.storages_available &&
@@ -150,10 +150,10 @@ Base.:(==)(x::T, y::T) where {T <: Topology} =
         x.buses_idxs == y.buses_idxs &&
         x.loads_idxs == y.loads_idxs &&
         x.shunts_idxs == y.shunts_idxs &&
-        x.buses_curtailed_pd == y.buses_curtailed_pd &&
-        x.buses_curtailed_qd == y.buses_curtailed_qd &&
-        x.branches_flow_from == y.branches_flow_from &&
-        x.branches_flow_to == y.branches_flow_to &&
+        x.busshortfall_pd == y.busshortfall_pd &&
+        x.busshortfall_qd == y.busshortfall_qd &&
+        x.branchflow_from == y.branchflow_from &&
+        x.branchflow_to == y.branchflow_to &&
         x.stored_energy == y.stored_energy &&
         x.failed_systemstate == y.failed_systemstate
 
@@ -173,6 +173,7 @@ This function:
 - `t`: The current timestep.
 """
 function update_topology!(topology::Topology, system::SystemModel, settings::Settings, t::Int)
+
     if any(topology.branches_available .== 0) || any(topology.branches_pasttransition .== 0)
         update_buses_assets!(topology, system)
         simplify!(topology, system, settings)
@@ -185,10 +186,11 @@ function update_topology!(topology::Topology, system::SystemModel, settings::Set
     end
 
     topology.failed_systemstate[t] = any(topology.generators_available .== 0) || 
-                                     any(topology.branches_available .== 0) || 
+                                     any(topology.generators_pasttransition .== 0) ||
+                                     any(topology.branches_available .== 0) ||
+                                     any(topology.branches_pasttransition .== 0) ||
                                      any(topology.storages_available .== 0)
 end
-
 
 
 """
@@ -206,7 +208,7 @@ The function:
 function update_states!(topology::Topology, statetransition::StateTransition, t::Int)
 
     topology.branches_available .= statetransition.branches_available
-    topology.commonbranches_available .= statetransition.commonbranches_available
+    topology.interfaces_available .= statetransition.interfaces_available
     topology.generators_available .= statetransition.generators_available
     topology.storages_available .= statetransition.storages_available
     fill!(topology.buses_available, 1)
@@ -217,13 +219,12 @@ function update_states!(topology::Topology, statetransition::StateTransition, t:
 end
 
 
-
 "The functions update_states! are updating the state of the power system's topology 
 according to the provided state transition."
 function update_states!(topology::Topology, statetransition::StateTransition)
 
     topology.branches_available .= statetransition.branches_available
-    topology.commonbranches_available .= statetransition.commonbranches_available
+    topology.interfaces_available .= statetransition.interfaces_available
     topology.generators_available .= statetransition.generators_available
     topology.storages_available .= statetransition.storages_available
     fill!(topology.buses_available, 1)
@@ -234,12 +235,11 @@ function update_states!(topology::Topology, statetransition::StateTransition)
 end
 
 
-
 """
     record_states!(topology::Topology)
 
 Save the current availability states of system components, such as branches, 
-common branches, generators, storages, buses, loads, and shunts, into their 
+interfaces, generators, storages, buses, loads, and shunts, into their 
 respective 'pasttransition' fields within the topology. This function provides 
 a way to keep track of recent state transitions of these components.
 
@@ -248,7 +248,7 @@ a way to keep track of recent state transitions of these components.
 """
 function record_states!(topology::Topology)
     topology.branches_pasttransition .= topology.branches_available
-    topology.commonbranches_pasttransition .= topology.commonbranches_available
+    topology.interfaces_pasttransition .= topology.interfaces_available
     topology.generators_pasttransition .= topology.generators_available
     topology.storages_pasttransition .= topology.storages_available
     topology.buses_pasttransition .= topology.buses_available
@@ -256,7 +256,6 @@ function record_states!(topology::Topology)
     topology.shunts_pasttransition .= topology.shunts_available
     return
 end
-
 
 
 """
@@ -480,7 +479,6 @@ function update_buses_assets!(topology::Topology, system::SystemModel)
 end
 
 
-
 """
 computes the connected components of the network graph
 returns a set of sets of bus ids, each set is a connected component
@@ -600,7 +598,6 @@ function buses_asset!(
 end
 
 
-
 """
     update_buspair_parameters!(buspairs, branches, branch_lookup)
 
@@ -659,7 +656,6 @@ function update_buspair_parameters!(
 end
 
 
-
 """
     calc_theta_delta_bounds(topology, branches)
 
@@ -699,7 +695,6 @@ function calc_theta_delta_bounds(topology::Topology, branches::Branches)
 end
 
 
-
 """
     calc_theta_delta_bounds(key_buses, branches_idxs, branches)
 
@@ -737,7 +732,6 @@ function calc_theta_delta_bounds(key_buses::Vector{Int}, branches_idxs::Vector{I
 
     return angle_min_val, angle_max_val
 end
-
 
 """
     calc_buspair_parameters(branches, branch_lookup)
@@ -779,7 +773,6 @@ function calc_buspair_parameters(branches::Branches, branch_lookup::Vector{Int})
     return buspairs
 end
 
-
 """
     slack_buses(buses::Buses)
 
@@ -810,33 +803,4 @@ function slack_buses(buses::Buses)
     end
 
     return ref_buses
-end
-
-
-
-"""
-    _reset!(topology::Topology)
-
-Reset the availability and flows of various assets within the topology to 
-their default states. This prepares the topology for a new round of 
-calculations or simulations.
-
-# Arguments
-- `topology`: The topology data structure to reset.
-"""
-function _reset!(topology::Topology)
-
-    fill!(topology.branches_available, 1)
-    fill!(topology.branches_flow_from, 0)
-    fill!(topology.branches_flow_to, 0)
-    fill!(topology.generators_available, 1)
-    fill!(topology.storages_available, 1)
-    fill!(topology.buses_curtailed_pd, 0)
-    fill!(topology.buses_curtailed_qd, 0)
-    fill!(topology.loads_available, 1)
-    fill!(topology.shunts_available, 1)
-    fill!(topology.commonbranches_available, 1)
-    fill!(topology.buses_available, 1)
-
-    return
 end

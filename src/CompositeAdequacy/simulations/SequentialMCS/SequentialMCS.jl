@@ -25,7 +25,6 @@ function assess(
 
     # Compute on worker processes
     if nworkers > 1
-
         method.include_master ? 
             compute_with_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...) :
             compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...)
@@ -35,7 +34,7 @@ function assess(
         put!(results, master_result)
     end
 
-    return finalize(results, system, nworkers)
+    return finalize!(results, system, nworkers)
 end
 
 ""
@@ -48,7 +47,8 @@ function compute_with_master_included(
     results::Distributed.RemoteChannel{R}, 
     resultspecs::ResultSpec...) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+    method.verbose && @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+
     @sync begin
         @async begin
             # Compute on the master process/worker
@@ -67,8 +67,17 @@ function compute_with_master_included(
 end
 
 ""
-function compute_without_master_included(system, method, settings, nworkers, nthreads, results, resultspecs...)
-    @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+function compute_without_master_included(
+    system::SystemModel{N},
+    method::SequentialMCS,
+    settings::Settings, 
+    nworkers::Int, 
+    nthreads::Int, 
+    results::Distributed.RemoteChannel{R}, 
+    resultspecs::ResultSpec...) where {N, R <: Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}    
+
+    method.verbose && @info("CompositeSystems will distribute the workload across $(nworkers) nodes")
+
     for k in 1:nworkers
         @async begin
             result = fetch(Distributed.pmap(
@@ -77,8 +86,6 @@ function compute_without_master_included(system, method, settings, nworkers, nth
         end
     end
 end
-
-
 
 """
 This code snippet is using multi-threading to parallelize the assess function by running 
@@ -103,7 +110,9 @@ function assess(
     start_index = (worker - 1) * nsamples_per_worker + 1
     end_index = min(worker * nsamples_per_worker, method.nsamples)
     Threads.@spawn makeseeds(sampleseeds, start_index, end_index)
-    settings.optimizer === nothing && CompositeAdequacy.init_gurobi_env(nthreads)
+
+    check_optimizer!(settings)
+    settings.optimizer_name === "Gurobi" && CompositeAdequacy.init_gurobi_env(nthreads)
 
     if method.threaded && nthreads > 1
         for _ in 1:nthreads
@@ -114,11 +123,9 @@ function assess(
     end
     
     outcome = take_Results!(results, nthreads)
-    settings.optimizer === nothing && CompositeAdequacy.end_gurobi_env()
+    settings.optimizer_name === "Gurobi" && CompositeAdequacy.end_gurobi_env()
     return outcome
 end
-
-
 
 """
 This assess function is designed to perform a Monte Carlo simulation using the Sequential Monte 
@@ -140,9 +147,9 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N, R<:Channel{<:Tuple{Vararg{ResultAccumulator{SequentialMCS}}}}}
 
-    pm = settings.optimizer === nothing ? 
+    pm = settings.optimizer_name === "Gurobi" ? 
         abstract_model(system, settings, CompositeAdequacy.GRB_ENV[]) : 
-        abstract_model(system, settings, nothing)
+        abstract_model(system, settings)
 
     statetransition = StateTransition(system)
     build_problem!(pm, system)
@@ -161,7 +168,7 @@ function assess(
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        method.count_samples && @info("sample = $(s)")
+        method.verbose && @info("Replication #$(s)")
     end
 
     Base.finalize(JuMP.backend(pm.model).optimizer)
@@ -178,9 +185,8 @@ function assess(
     resultspecs::ResultSpec...
 ) where {N}
 
-    pm = settings.optimizer === nothing ? 
-        abstract_model(system, settings, CompositeAdequacy.GRB_ENV[]) : 
-        abstract_model(system, settings, nothing)
+    pm = settings.optimizer_name === "Gurobi" ? 
+        abstract_model(system, settings, CompositeAdequacy.GRB_ENV[]) : abstract_model(system, settings)
 
     statetransition = StateTransition(system)
     build_problem!(pm, system)
@@ -188,18 +194,18 @@ function assess(
     rng = Philox4x((0, 0), 10)
 
     for s in sampleseeds
-
+        method.verbose && @info("Replication #$(s)")
         seed!(rng, (method.seed, s))  #using the same seed for entire period.
         initialize!(rng, statetransition, pm.topology, system) #creates the up/down sequence for each device.
 
         for t in 1:N
+            #println("t=$(t)")
             update!(rng, statetransition, pm.topology, system, t)
             solve!(pm, system, settings, t)
             foreach(recorder -> record!(recorder, pm.topology, system, s, t), recorders)
         end
 
         foreach(recorder -> reset!(recorder, s), recorders)
-        method.count_samples && @info("sample = $(s)")
     end
 
     Base.finalize(JuMP.backend(pm.model).optimizer)
@@ -207,12 +213,10 @@ function assess(
     return results
 end
 
-
-
 """
 The initialize! function creates an initial state of the system by using the Philox4x 
 random number generator to randomly determine the availability of different assets 
-(buses, branches, common branches, generators, and storages) for each time step.
+(buses, branches, interfaces, generators, and storages) for each time step.
 """
 function initialize!(rng::AbstractRNG, 
     statetransition::StateTransition, topology::Topology, system::SystemModel{N}) where N
@@ -220,8 +224,8 @@ function initialize!(rng::AbstractRNG,
     initialize_availability!(rng, statetransition.branches_available, 
         statetransition.branches_nexttransition, system.branches, N)
 
-    initialize_availability!(rng, statetransition.commonbranches_available, 
-        statetransition.commonbranches_nexttransition, system.commonbranches, N) 
+    initialize_availability!(rng, statetransition.interfaces_available, 
+        statetransition.interfaces_nexttransition, system.interfaces, N) 
     
     initialize_availability!(rng, statetransition.generators_available, 
         statetransition.generators_nexttransition, system.generators, N)
@@ -240,8 +244,8 @@ function update!(rng::AbstractRNG,
     update_availability!(rng, statetransition.branches_available, 
         statetransition.branches_nexttransition, system.branches, t, N)
     
-    update_availability!(rng, statetransition.commonbranches_available, 
-        statetransition.commonbranches_nexttransition, system.commonbranches, t, N)
+    update_availability!(rng, statetransition.interfaces_available, 
+        statetransition.interfaces_nexttransition, system.interfaces, t, N)
 
     update_availability!(rng, statetransition.generators_available, 
         statetransition.generators_nexttransition, system.generators, t, N)

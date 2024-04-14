@@ -67,7 +67,7 @@ function merge!(
 end
 
 ""
-function finalize(
+function finalize!(
     results::Channel{R}, 
     system::SystemModel{N,L,T}, 
     threads::Int) where {N,L,T, R <: Tuple{Vararg{ResultAccumulator}}}
@@ -84,7 +84,7 @@ function finalize(
 end
 
 ""
-function finalize(
+function finalize!(
     results::RemoteChannel{Channel{R}}, 
     system::SystemModel{N,L,T},
     workers::Int) where {N,L,T, R <: Tuple{Vararg{ResultAccumulator}}}
@@ -116,7 +116,7 @@ function take_Results!(
 end
 
 ""
-function finalize(
+function finalize!(
     results::RemoteChannel{Channel{R}}, 
     system::SystemModel{N,L,T},
     workers::Int) where {N,L,T, R <: ResultAccumulator}

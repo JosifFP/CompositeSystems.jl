@@ -81,7 +81,6 @@ function con_theta_ref(
 end
 
 
-
 """
 This constraint captures problem agnostic constraints that are used to link
 the model's voltage variables together, in addition to the standard problem
@@ -90,7 +89,6 @@ formulation constraints.
 function con_model_voltage_on_off(
     pm::AbstractDCPowerModel, system::SystemModel; nw::Int=1)
 end
-
 
 
 """
@@ -415,7 +413,6 @@ function update_con_thermal_limits(
     end
 end
 
-
 "Nothing to do, no voltage angle variables"
 function _update_con_ohms_yt_from(
     pm::AbstractNFAModel, l::Int, nw::Int, f_bus::Int, t_bus::Int,
@@ -440,7 +437,6 @@ function _update_con_ohms_yt_from(
     end
 
 end
-
 
 "DC Line Flow Constraints"
 function _update_con_ohms_yt_from(

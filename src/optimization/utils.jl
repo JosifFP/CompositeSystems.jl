@@ -97,7 +97,6 @@ function initialize_pm_containers!(pm::AbstractLPACModel, system::SystemModel; t
 end
 
 
-
 """
 Returns the container specification for the selected type of JuMP Model
 """
@@ -188,7 +187,6 @@ function add_var_container!(
     _assign_container!(container, var_key, var_container)
     return
 end
-
 
 ""
 function add_var_container!(
@@ -299,92 +297,110 @@ function objective_value(opf_model::Model)
 end
 
 ""
-function record_curtailed_load!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1, is_solved::Bool=true)
+function record_event_results!(pm::AbstractDCPowerModel, system::SystemModel, t::Int; nw::Int=1, is_solved::Bool=true)
 
     if is_solved
-        var = OPF.var(pm, :z_demand, nw)
+
+        var_z_demand = OPF.var(pm, :z_demand, nw)
+        var_p = OPF.var(pm, :p, nw)
+        var_stor = OPF.var(pm, :stored_energy, nw)
+        f_bus = field(system, :branches, :f_bus)
+        t_bus = field(system, :branches, :t_bus)
 
         for i in field(system, :loads, :buses)
-            
-            topology(pm, :buses_curtailed_pd)[i] = sum(
-                field(system, :loads, :pd)[k,t]*(
-                    1.0 - _IM.build_solution_values(var[k])) for k in topology(pm, :buses_loads_base)[i])
-
+                topology(pm, :busshortfall_pd)[i] = sum(
+                    field(system, :loads, :pd)[k,t]*(1.0 - _IM.build_solution_values(var_z_demand[k])) 
+                    for k in topology(pm, :buses_loads_base)[i]
+                )
         end
-    else
-        fill!(topology(pm, :buses_curtailed_pd), 0.0)
-    end
-end
-
-""
-function record_curtailed_load!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, is_solved::Bool=true)
-
-    if is_solved
-        var = OPF.var(pm, :z_demand, nw)
-
-        for i in field(system, :loads, :buses)
-            
-            topology(pm, :buses_curtailed_pd)[i] = sum(
-                field(system, :loads, :pd)[k,t]*(
-                    1.0 - _IM.build_solution_values(var[k])) for k in topology(pm, :buses_loads_base)[i]; init=0.0)
-
-            topology(pm, :buses_curtailed_qd)[i] = sum(
-                field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k]*(
-                    1.0 - _IM.build_solution_values(var[k])) for k in topology(pm, :buses_loads_base)[i]; init=0.0)
-
-        end
-    else
-        fill!(topology(pm, :buses_curtailed_pd), 0.0)
-        fill!(topology(pm, :buses_curtailed_qd), 0.0)
-    end
-end
-
-
-
-""
-function record_stored_energy!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, is_solved::Bool=true)
-    
-    if is_solved
-        var = OPF.var(pm, :stored_energy, nw)
 
         for i in field(system, :storages, :keys)
             if topology(pm, :storages_available)[i]
-                axs =  axes(var)[1]
+                axs =  axes(var_stor)[1]
                 if i in axs
-                    topology(pm, :stored_energy)[i] = _IM.build_solution_values(var[i])
+                    topology(pm, :stored_energy)[i] = _IM.build_solution_values(var_stor[i])
                 end
             else
                 topology(pm, :stored_energy)[i] = 0.0
             end
         end
+
+        for (l,i,j) in keys(var_p)
+            if topology(pm, :branches_available)[l]
+                if f_bus[l] == i && t_bus[l] == j
+                    topology(pm, :branchflow_from)[l] = _IM.build_solution_values(var_p[(l,i,j)]) # Active power withdrawn at the from bus
+                elseif f_bus[l] == j && t_bus[l] == i
+                    topology(pm, :branchflow_to)[l] = _IM.build_solution_values(var_p[(l,i,j)]) # Active power withdrawn at the to bus
+                end
+            else
+                topology(pm, :branchflow_from)[l] = 0.0
+                topology(pm, :branchflow_to)[l] =  0.0
+            end
+        end
+
     else
+        fill!(topology(pm, :busshortfall_pd), 0.0)
+        fill!(topology(pm, :branchflow_from), 0.0)
+        fill!(topology(pm, :branchflow_to), 0.0)
         fill!(topology(pm, :stored_energy), 0.0)
     end
 end
 
 ""
-function record_flow_branch!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, is_solved::Bool=true)
+function record_event_results!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, is_solved::Bool=true)
 
     if is_solved
-        var = OPF.var(pm, :p, nw)
+
+        var_z_demand = OPF.var(pm, :z_demand, nw)
+        var_p = OPF.var(pm, :p, nw)
+        var_stor = OPF.var(pm, :stored_energy, nw)
         f_bus = field(system, :branches, :f_bus)
         t_bus = field(system, :branches, :t_bus)
 
-        for (l,i,j) in keys(var)
-            if topology(pm, :branches_available)[l]
-                if f_bus[l] == i && t_bus[l] == j
-                    topology(pm, :branches_flow_from)[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the from bus
-                elseif f_bus[l] == j && t_bus[l] == i
-                    topology(pm, :branches_flow_to)[l] = _IM.build_solution_values(var[(l,i,j)]) # Active power withdrawn at the to bus
+        for i in field(system, :loads, :buses)
+            topology(pm, :busshortfall_pd)[i] = max(0, sum(
+                field(system, :loads, :pd)[k,t]*(
+                    1.0 - _IM.build_solution_values(var_z_demand[k])) 
+                    for k in topology(pm, :buses_loads_base)[i]; init=0.0
+            ))
+
+            topology(pm, :busshortfall_qd)[i] = max(0, sum(
+                field(system, :loads, :pd)[k,t]*field(system, :loads, :pf)[k]*(
+                    1.0 - _IM.build_solution_values(var_z_demand[k])) 
+                    for k in topology(pm, :buses_loads_base)[i]; init=0.0
+            ))
+        end
+
+        for i in field(system, :storages, :keys)
+            if topology(pm, :storages_available)[i]
+                axs =  axes(var_stor)[1]
+                if i in axs
+                    topology(pm, :stored_energy)[i] = abs(_IM.build_solution_values(var_stor[i]))
                 end
             else
-                topology(pm, :branches_flow_from)[l] = 0.0
-                topology(pm, :branches_flow_to)[l] =  0.0
+                topology(pm, :stored_energy)[i] = 0.0
             end
         end
+
+        for (l,i,j) in keys(var_p)
+            if topology(pm, :branches_available)[l]
+                if f_bus[l] == i && t_bus[l] == j
+                    topology(pm, :branchflow_from)[l] = _IM.build_solution_values(var_p[(l,i,j)]) # Active power withdrawn at the from bus
+                elseif f_bus[l] == j && t_bus[l] == i
+                    topology(pm, :branchflow_to)[l] = _IM.build_solution_values(var_p[(l,i,j)]) # Active power withdrawn at the to bus
+                end
+            else
+                topology(pm, :branchflow_from)[l] = 0.0
+                topology(pm, :branchflow_to)[l] =  0.0
+            end
+        end
+
     else
-        fill!(topology(pm, :branches_flow_from), 0.0)
-        fill!(topology(pm, :branches_flow_to), 0.0)
+        fill!(topology(pm, :busshortfall_pd), 0.0)
+        fill!(topology(pm, :busshortfall_qd), 0.0)
+        fill!(topology(pm, :branchflow_from), 0.0)
+        fill!(topology(pm, :branchflow_to), 0.0)
+        fill!(topology(pm, :stored_energy), 0.0)
     end
 end
 
@@ -493,4 +509,10 @@ function finalize_model!(pm::AbstractPowerModel, settings::Settings)
     Base.finalize(JuMP.backend(pm.model).optimizer)
     Base.finalize(settings.env)
     return
+end
+
+""
+function check_optimizer!(settings::Settings)
+    settings.optimizer === nothing && throw(DomainError("Solver/Optimizer not attached"))
+    settings.optimizer_name = MOI.get(JuMP.Model(settings.optimizer), MOI.SolverName())
 end

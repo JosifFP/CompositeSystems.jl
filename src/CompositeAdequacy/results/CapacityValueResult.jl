@@ -1,6 +1,6 @@
 abstract type CapacityValuationMethod{M<:ReliabilityMetric} end
 
-struct CapacityCreditResult{S <: CapacityValuationMethod, M <: ReliabilityMetric, P <: PowerUnit}
+struct CapacityValueResult{S <: CapacityValuationMethod, M <: ReliabilityMetric, P <: PowerUnit}
 
     target_metric::M
     si_metric::SI
@@ -13,7 +13,7 @@ struct CapacityCreditResult{S <: CapacityValuationMethod, M <: ReliabilityMetric
     eens_metrics::Vector{EENS}
     edlc_metrics::Vector{EDLC}
 
-    function CapacityCreditResult{S,M,P}(
+    function CapacityValueResult{S,M,P}(
         target_metric::M, 
         si_metric::SI, 
         eens_metric::EENS, 

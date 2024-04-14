@@ -12,7 +12,8 @@ conversionfactor(::Type{Hour}, ::Type{Hour}) = 1
 conversionfactor(::Type{Hour}, ::Type{Day}) = 1 / 24
 conversionfactor(::Type{Day}, ::Type{Hour}) = 24
 
-timeunits = Dict(unitsymbol(T) => T for T in [Hour, Day, Year])
+timeunits = Dict(unitsymbol(T) => T for T in [Hour])
+#timeunits = Dict(unitsymbol(T) => T for T in [Hour, Day, Year])
 
 # Define power units
 abstract type PowerUnit end
@@ -31,8 +32,8 @@ conversionfactor(::Type{MW}, ::Type{kW}) = 1000
 conversionfactor(::Type{MW}, ::Type{MW}) = 1
 conversionfactor(::Type{MW}, ::Type{GW}) = 1 / 1000
 conversionfactor(::Type{GW}, ::Type{MW}) = 1000
-
-powerunits = Dict(unitsymbol(T) => T for T in [kW, MW, GW])
+powerunits = Dict(unitsymbol(T) => T for T in [MW])
+#powerunits = Dict(unitsymbol(T) => T for T in [kW, MW, GW])
 
 # Define energy units
 abstract type EnergyUnit end
@@ -52,7 +53,14 @@ subunits(::Type{GWh}) = (GW, Hour)
 subunits(::Type{kW}) = (kW)
 subunits(::Type{MW}) = (MW)
 subunits(::Type{GW}) = (GW)
-energyunits = Dict(unitsymbol(T) => T for T in [kWh, MWh, GWh])
+energyunits = Dict(unitsymbol(T) => T for T in [MWh])
+#energyunits = Dict(unitsymbol(T) => T for T in [kWh, MWh, GWh])
+
+abstract type VoltageUnit end
+struct kV <: VoltageUnit end
+unitsymbol(T::Type{<:VoltageUnit}) = string(T)
+unitsymbol(::Type{kV}) = "kV"
+voltageunits = Dict(unitsymbol(T) => T for T in [kV])
 
 function conversionfactor(F::Type{<:EnergyUnit}, T::Type{<:EnergyUnit})
     from_power, from_time = subunits(F)
@@ -98,10 +106,3 @@ energytopower(
     e::Real, E::Type{<:EnergyUnit},
     L::Real, T::Type{<:Period},
     P::Type{<:PowerUnit}) = e*conversionfactor(L, T, E, P)
-
-
-abstract type VoltageUnit end
-struct kV <: VoltageUnit end
-unitsymbol(T::Type{<:VoltageUnit}) = string(T)
-unitsymbol(::Type{kV}) = "kV"
-voltageunits = Dict(unitsymbol(T) => T for T in [kV])

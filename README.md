@@ -63,10 +63,11 @@
 ## About The Project
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://github.com/JosifFP/CompositeSystems.jl) -->
-**[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl)** is the first open-source Composite System Reliability (CSR) tool written in Julia. 
+
+**[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl)** is the first open-source Composite System Reliability (CSR) tool written in Julia.
 The methodology is based on sequential Monte Carlo sampling of generation and transmission component availability such as: generators, transmission lines,
-transformers, shunts, loads and storage systems. Remedial actions, energy storage dispatch and load curtailment are carried out by an efficient linear 
-programming routine (DC Optimal Power Flow) based on JuMP modeling language and linear solver provided by the user. The program is demonstrated in case 
+transformers, shunts, loads and storage systems. Remedial actions, energy storage dispatch and load curtailment are carried out by an efficient linear
+programming routine (DC Optimal Power Flow) based on JuMP modeling language and linear solver provided by the user. The program is demonstrated in case
 studies with 6-Bus Roy Billiton Test System (RBTS) and the 24-Bus IEEE RTS.
 
 *Powered and inspired by [PowerModels](https://github.com/lanl-ansi/PowerModels.jl) and *NREL's* Probabilistic Resource Adequacy Suite [PRAS](https://github.com/NREL/PRAS)*
@@ -98,6 +99,10 @@ Soon
    git clone https://github.com/JosifFP/CompositeSystems.jl.git
    ```
 3. Install dependent packages and Gurobi license
+
+   1. Install Gurobi license: https://www.gurobi.com/features/academic-named-user-license
+   2. Request license https://portal.gurobi.com/iam/licenses/request
+   3. Follow instructions here: https://github.com/jump-dev/Gurobi.jl
 4. Run runtests.jl
 
 <!-- USAGE EXAMPLES -->

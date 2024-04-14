@@ -8,13 +8,25 @@ Arguments:
 - `rawfile`: Path to the raw network data file.
 """
 function SystemModel(rawfile::String)
+
     #load network data
     network = build_network(rawfile)
-    SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
+    if haskey(network, :timestep_unit) && 
+        haskey(network, :timestep_count) && 
+        haskey(network, :timestep_length) &&
+        haskey(network, :start_timestamp) &&
+        haskey(network, :timezone)
+    
+        start_timestamp::DateTime = Dates.DateTime(network[:start_timestamp])
+        timezone::String = network[:timezone]
+        SParametrics = static_parameters{1,1,Hour}(start_timestamp, timezone)
+    else
+        SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
+    end
     get!(network, :timeseries_load, "")
+
     return _SystemModel(network, SParametrics)
 end
-
 
 
 """
@@ -30,11 +42,22 @@ function SystemModel(rawfile::String, reliabilityfile::String)
     #load network data
     network = build_network(rawfile)
     reliability_data = extract_reliability_data(reliabilityfile)
-    SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
     merge_compositesystems_data!(network, reliability_data)
+    if haskey(network, :timestep_unit) && 
+        haskey(network, :timestep_count) && 
+        haskey(network, :timestep_length) &&
+        haskey(network, :start_timestamp) &&
+        haskey(network, :timezone)
+    
+        start_timestamp::DateTime = Dates.DateTime(network[:start_timestamp])
+        timezone::String = network[:timezone]
+        SParametrics = static_parameters{1,1,Hour}(start_timestamp, timezone)
+    else
+        SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
+    end
+    get!(network, :timeseries_load, "")
     return _SystemModel(network, SParametrics)
 end
-
 
 
 """
@@ -51,11 +74,27 @@ function SystemModel(rawfile::String, reliabilityfile::String, timeseriesfile::S
     #load network data
     network = build_network(rawfile)
     reliability_data = extract_reliability_data(reliabilityfile)
-    timeseries_data, SParametrics = extract_timeseriesload(timeseriesfile)
+    timeseries_data = extract_timeseriesload(timeseriesfile)
     merge_compositesystems_data!(network, reliability_data, timeseries_data)
+
+    if haskey(network, :timestep_unit) && 
+        haskey(network, :timestep_count) && 
+        haskey(network, :timestep_length) &&
+        haskey(network, :start_timestamp) &&
+        haskey(network, :timezone)
+
+        T::Type{<:Period} = timeunits[network[:timestep_unit]]
+        N::Int = network[:timestep_count]
+        L::Int = network[:timestep_length]
+        start_timestamp::DateTime = Dates.DateTime(network[:start_timestamp])
+        timezone::String = network[:timezone]
+        SParametrics = static_parameters{N,L,T}(start_timestamp, timezone)
+    else
+        SParametrics = static_parameters{1,1,Hour}(Dates.now(), "UTC")
+    end
+
     return _SystemModel(network, SParametrics)
 end
-
 
 
 """
@@ -87,7 +126,6 @@ function fetch_component(network::Dict{Symbol, Any}, key::Symbol, default::Any)
 end
 
 
-
 """
     _SystemModel(network::Dict{Symbol, Any}, SParametrics::static_parameters{N,L,T})
 
@@ -104,7 +142,7 @@ function _SystemModel(
     baseMVA =  Float64(fetch_component(network, :baseMVA, Float64))
     network_bus = fetch_component(network, :bus, Dict{Int, Any}())
     network_branch = fetch_component(network, :branch, Dict{Int, Any}())
-    network_commonbranch = fetch_component(network, :commonbranch, Dict{Int, Any}())
+    network_interface = fetch_component(network, :interface, Dict{Int, Any}())
     network_shunt = fetch_component(network, :shunt, Dict{Int, Any}())
     network_gen = fetch_component(network, :gen, Dict{Int, Any}())
     network_load = fetch_component(network, :load, Dict{Int, Any}())
@@ -164,9 +202,9 @@ function _SystemModel(
         shunts = Shunts(Int[], Int[], Float32[], Float32[], Vector{Bool}())
     end
 
-    if !isempty(network_commonbranch)
-        data = container(network_commonbranch, commonbranch_fields)
-        commonbranches = CommonBranches(
+    if !isempty(network_interface)
+        data = container(network_interface, interface_fields)
+        interfaces = Interfaces(
             data["index"], 
             data["f_bus"], 
             data["t_bus"], 
@@ -174,7 +212,7 @@ function _SystemModel(
             data["μ_updn"]
         )
     else
-        commonbranches = CommonBranches(Int[], Int[], Int[], Float64[], Float64[])
+        interfaces = Interfaces(Int[], Int[], Int[], Float64[], Float64[])
     end
 
     if !isempty(network_gen)
@@ -260,8 +298,8 @@ function _SystemModel(
             Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float32[], Float64[], Float64[], Vector{Bool}())
     end
 
-    _check_consistency(network, buses, loads, branches, shunts, generators, storages)
-    _check_connectivity(network, buses, loads, branches, shunts, generators, storages)
+    check_consistency(network, buses, loads, branches, shunts, generators, storages)
+    check_connectivity(network, buses, loads, branches, shunts, generators, storages)
 
-    return SystemModel(loads, generators, storages, buses, branches, commonbranches, shunts, baseMVA, SParametrics.timestamps)
+    return SystemModel(loads, generators, storages, buses, branches, interfaces, shunts, baseMVA, SParametrics.timestamps)
 end

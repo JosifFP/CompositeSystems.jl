@@ -13,7 +13,6 @@ function Base.map!(f, dict::Dict)
     return
 end
 
-
 ""
 function findfirstunique_directional(a::AbstractVector{<:Pair}, i::Pair)
     i_idx = findfirst(isequal(i), a)
@@ -69,8 +68,6 @@ function _sol(sol::Dict, args...)
     return sol
 end
 
-
-
 """
     print_results(system::SystemModel, shortfall::ShortfallResult)
 
@@ -101,8 +98,8 @@ comprehensive understanding and subsequent reviews.
 # Output
 The function writes an Excel file named "Shortfall_<current_time>.xlsx" to the disk and doesn't return 
 any values in the Julia environment.
-
 """
+
 function print_results(system::SystemModel, shortfall::ShortfallResult)
     # Get current time for unique filename
     hour = Dates.format(Dates.now(), "HH_MM_SS")
@@ -206,7 +203,6 @@ function print_results(system::SystemModel, shortfall::ShortfallResult)
     return
 end
 
-
 """
     print_results(system::SystemModel, utilization::UtilizationResult)
 
@@ -268,15 +264,15 @@ function print_results(system::SystemModel, utilization::UtilizationResult)
 end
 
 """
-    print_results(system::SystemModel, capcredit::CapacityCreditResult)
+    print_results(system::SystemModel, capvalue::CapacityValueResult)
 
-Export the results of the `capcredit` (Capacity Credit) analysis into an Excel file. 
+Export the results of the `capvalue` (Capacity Value) analysis into an Excel file. 
 The filename is generated based on the current timestamp to ensure its uniqueness.
 
 Within the Excel file:
 1. A primary 'summary' sheet captures essential data.
 2. If storages are present in the `system`, their specifications, such as energy rating, buses, charge rating, discharge rating, and thermal rating, are logged.
-3. Metrics related to the capacity credit are saved, including:
+3. Metrics related to the Capacity Value are saved, including:
     - Value and standard error of target metric
     - Value and standard error of SI (System Index) metric
     - Value and standard error of EENS (Expected Energy Not Supplied) metric
@@ -285,9 +281,9 @@ Within the Excel file:
 4. Metrics are organized in a structured manner for comprehensive data presentation. 
 This includes the bound capacities and their corresponding SI, EENS, and EDLC metrics, both in terms of values and standard errors.
 
-The function is designed to provide a quick and systematic snapshot of the capacity credit analysis for further review and decision-making processes.
+The function is designed to provide a quick and systematic snapshot of the Capacity Value analysis for further review and decision-making processes.
 """
-function print_results(system::SystemModel, capcredit::CapacityCreditResult)
+function print_results(system::SystemModel, capvalue::CapacityValueResult)
 
     hour = Dates.format(Dates.now(),"HH_MM_SS")
     
@@ -314,45 +310,45 @@ function print_results(system::SystemModel, capcredit::CapacityCreditResult)
         end
 
         xf[1]["C1"] = "val (target_metric)"
-        xf[1]["D1"] = val(capcredit.target_metric)
+        xf[1]["D1"] = val(capvalue.target_metric)
         xf[1]["C2"] = "stderror (target_metric)"
-        xf[1]["D2"] = stderror(capcredit.target_metric)
+        xf[1]["D2"] = stderror(capvalue.target_metric)
 
         xf[1]["C3"] = "val (SI_metric)"
-        xf[1]["D3"] = val(capcredit.si_metric)
+        xf[1]["D3"] = val(capvalue.si_metric)
         xf[1]["C4"] = "stderror (SI_metric)"
-        xf[1]["D4"] = stderror(capcredit.si_metric)
+        xf[1]["D4"] = stderror(capvalue.si_metric)
 
         xf[1]["C5"] = "val (EENS_metric)"
-        xf[1]["D5"] = val(capcredit.eens_metric)
+        xf[1]["D5"] = val(capvalue.eens_metric)
         xf[1]["C6"] = "stderror (EENS_metric)"
-        xf[1]["D6"] = stderror(capcredit.eens_metric)
+        xf[1]["D6"] = stderror(capvalue.eens_metric)
 
         xf[1]["C7"] = "val (EDLC_metric)"
-        xf[1]["D7"] = val(capcredit.edlc_metric)
+        xf[1]["D7"] = val(capvalue.edlc_metric)
         xf[1]["C8"] = "stderror (EDLC_metric)"
-        xf[1]["D8"] = stderror(capcredit.edlc_metric)
+        xf[1]["D8"] = stderror(capvalue.edlc_metric)
 
         xf[1]["C9"] = "capacity_value"
-        xf[1]["D9"] = capcredit.capacity_value
+        xf[1]["D9"] = capvalue.capacity_value
         xf[1]["C10"] = "tolerance_error"
-        xf[1]["D10"] = capcredit.tolerance_error
+        xf[1]["D10"] = capvalue.tolerance_error
 
         xf[1]["F1"] = "bound_capacities"
-        xf[1]["F2", dim=1] = collect(capcredit.bound_capacities)
+        xf[1]["F2", dim=1] = collect(capvalue.bound_capacities)
         xf[1]["G1"] = "SI_metrics - val"
-        xf[1]["G2", dim=1] = collect(val.(capcredit.si_metrics))
+        xf[1]["G2", dim=1] = collect(val.(capvalue.si_metrics))
         xf[1]["H1"] = "SI_metrics - stderror"
-        xf[1]["H2", dim=1] = collect(stderror.(capcredit.si_metrics))
+        xf[1]["H2", dim=1] = collect(stderror.(capvalue.si_metrics))
         xf[1]["I1"] = "EENS_metrics - val"
-        xf[1]["I2", dim=1] = collect(val.(capcredit.eens_metrics))
+        xf[1]["I2", dim=1] = collect(val.(capvalue.eens_metrics))
         xf[1]["J1"] = "EENS_metrics - stderror"
-        xf[1]["J2", dim=1] = collect(stderror.(capcredit.eens_metrics))
+        xf[1]["J2", dim=1] = collect(stderror.(capvalue.eens_metrics))
 
         xf[1]["K1"] = "EDLC_metrics - val"
-        xf[1]["K2", dim=1] = collect(val.(capcredit.edlc_metrics))
+        xf[1]["K2", dim=1] = collect(val.(capvalue.edlc_metrics))
         xf[1]["L1"] = "EDLC_metrics - stderror"
-        xf[1]["L2", dim=1] = collect(stderror.(capcredit.edlc_metrics))
+        xf[1]["L2", dim=1] = collect(stderror.(capvalue.edlc_metrics))
     end
     return
 end

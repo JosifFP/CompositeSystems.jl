@@ -98,7 +98,6 @@ function finalize(acc::SMCSBranchAvailabilityAccumulator,system::SystemModel{N,L
     return BranchAvailabilityResult{N,L,T}(field(system, :branches, :keys), field(system, :timestamps), acc.available)
 end
 
-
 "ShuntAvailability"
 struct SMCSShuntAvailabilityAccumulator <: ResultAccumulator{SequentialMCS,ShuntAvailability}
     available::Array{Bool,3}

@@ -5,6 +5,11 @@ mpc.version = '2';
 %%-----  Power Flow Data  -----%%
 %% system MVA base
 mpc.baseMVA = 100.0;
+mpc.start_timestamp = 2022;
+mpc.timezone = 'UTC';
+mpc.timestep_count = 8736;
+mpc.timestep_length = 1;
+mpc.timestep_unit = 'h';
 
 %% bus data
 %    bus_i    type    Pd    Qd    	Gs    Bs    area    Vm    Va    baseKV    zone    Vmax    Vmin
