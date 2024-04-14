@@ -1,9 +1,9 @@
 """
-    EESC{M} <: CapacityValuationMethod{M}
+    ETC{M} <: CapacityValuationMethod{M}
 
 Represents the Energy Storage Capacity valuation method parameters.
 
-This structure captures essential parameters for assessing energy storage capacity credit.
+This structure captures essential parameters for assessing energy storage Capacity Value.
 It details the energy capacity range, the power capacity of the storage, and the specific energy storage device key.
 Furthermore, it also includes the target for Effective Load Carrying Capability (ELCC), the desired solution tolerance,
 the significance level for statistical tests, and the load scaling information for different scenarios.
@@ -19,21 +19,21 @@ the significance level for statistical tests, and the load scaling information f
 - `verbose`: A flag indicating if detailed log outputs should be displayed.
 
 ## Constructor:
-The EESC constructor asserts the validity of its input parameters and provides default values for the tolerance,
+The ETC constructor asserts the validity of its input parameters and provides default values for the tolerance,
 significance level, and verbosity.
 """
-struct EESC{M} <: CapacityValuationMethod{M}
+struct ETC{M} <: CapacityValuationMethod{M}
     
-    energy_capacity_range::Tuple{Float64,Float64}
-    power_capacity::Float64
+    energy_capacity_range::Tuple{Float64,Float64} # Range in MW
+    power_capacity::Float64 #Value in MW
     storage_key::Int
-    elcc_target::Int
+    elcc_target::Int #Value in MW
     tolerance::Float64
     p_value::Float64
     loads::Vector{Tuple{Int,Float64}}
     verbose::Bool
 
-    function EESC{M}(
+    function ETC{M}(
         energy_capacity_range::Tuple{Float64,Float64},
         power_capacity::Float64,
         storage_key::Int,
@@ -65,32 +65,31 @@ struct EESC{M} <: CapacityValuationMethod{M}
     end
 end
 
-
 """
-    assess(sys_transmission_solved::S, sys_storage_augmented::S, params::EESC{M}, settings::Settings, simulationspec::SimulationSpec)
+    assess(sys_transmission_solved::S, sys_storage_augmented::S, params::ETC{M}, settings::Settings, simulationspec::SimulationSpec)
         where {N, L, T, S <: SystemModel{N,L,T}, M <: ReliabilityMetric}
 
-Assess the capacity credit of a system using the Newton-Raphson iterative method.
+Assess the Capacity Value of a system using the Newton-Raphson iterative method.
 
-This function evaluates the capacity credit, a measure of the capacity contribution of a system configuration to 
+This function evaluates the Capacity Value, a measure of the capacity contribution of a system configuration to 
 maintain reliability. The assessment process utilizes a Newton-Raphson iterative method to find the optimal 
 energy capacity that achieves a target metric value.
 
 ## Parameters:
 - `sys_transmission_solved`: The transmission system configuration.
 - `sys_storage_augmented`: The system configuration with energy storage devices.
-- `params`: Parameters for the capacity valuation method (EESC).
+- `params`: Parameters for the capacity valuation method (ETC).
 - `settings`: General settings for the assessment.
 - `simulationspec`: Specifications for the simulation process.
 
 ## Returns:
-- `CapacityCreditResult`: A structured result capturing the assessed capacity credit, its associated metrics, 
+- `CapacityValueResult`: A structured result capturing the assessed Capacity Value, its associated metrics, 
   and error tolerances.
 """
 function assess(
     sys_transmission_solved::S, 
     sys_storage_augmented::S, 
-    params::EESC{M}, 
+    params::ETC{M}, 
     settings::Settings, 
     simulationspec::SimulationSpec
     ) where {N, L, T, S <: SystemModel{N,L,T}, M <: ReliabilityMetric}
@@ -115,7 +114,7 @@ function assess(
     si_metric = SI(shortfall)
     eens_metric = EENS(shortfall)
     edlc_metric = EDLC(shortfall)
-    @info("si_metric=$(CompositeAdequacy.val(CompositeAdequacy.SI(shortfall)))")
+    @info("si_metric=$(round(val(si_metric), digits=6)))")
 
     energy_capacities = Int[]
     target_metrics = typeof(target_metric)[]
@@ -133,7 +132,7 @@ function assess(
     push!(si_metrics, SI(shortfall))
     push!(eens_metrics, EENS(shortfall))
     push!(edlc_metrics, EDLC(shortfall))
-    params.verbose && @info("lower_bound_metric=$(CompositeAdequacy.val(CompositeAdequacy.SI(shortfall)))")
+    params.verbose && @info("lower_bound_metric=$(round(val(lower_bound_metric), digits=6))")
 
     # Calculate target metrics for the upper bound energy capacity
     upper_bound = params.energy_capacity_range[1]
@@ -145,26 +144,25 @@ function assess(
     push!(si_metrics, SI(shortfall))
     push!(eens_metrics, EENS(shortfall))
     push!(edlc_metrics, EDLC(shortfall))
-    params.verbose && @info("upper_bound_metric=$(CompositeAdequacy.val(CompositeAdequacy.SI(shortfall)))")
+    params.verbose && @info("upper_bound_metric=$(round(val(upper_bound_metric), digits=6))")
 
     # Check if the target metric falls within the bounds
     if val(target_metric) >= val(lower_bound_metric) && val(target_metric) <= val(upper_bound_metric)
         params.verbose && @info(
-            "target_metric=$(val(target_metric)), lower_bound_metric=$(val(lower_bound_metric)), "*
-            "upper_bound_metric=$(val(upper_bound_metric))")
+            "target_metric=$(round(val(target_metric), digits=6)), lower_bound_metric=$(round(val(lower_bound_metric), digits=6)), "*
+            "upper_bound_metric=$(round(val(upper_bound_metric), digits=6))")
     else
         error("Choose a different energy_capacity_range! "*
-            "target_metric=$(val(target_metric)), lower_bound_metric=$(val(lower_bound_metric)), "*
-            "upper_bound_metric=$(val(upper_bound_metric))")
+            "target_metric=$(round(val(target_metric), digits=6)), lower_bound_metric=$(round(val(lower_bound_metric), digits=6)), "*
+            "upper_bound_metric=$(round(val(upper_bound_metric), digits=6))")
     end
     
     x_1 = x_n_1 = f_1 = tolerance = 0
 
     while true
-    
-        params.verbose && @info(
-            "\n$(lower_bound) $P\t< Energy Capacity $(E) <\t$(upper_bound) $P\n",
-            "$(lower_bound_metric)\t< $(target_metric) <\t$(upper_bound_metric)")
+
+        params.verbose && @info("\n$(lower_bound)$P\t< Energy Capacity $(E) <\t$(upper_bound)$P\n " *
+            "\n$(lower_bound_metric)\t< $(target_metric) <\t$(upper_bound_metric)\n")
 
         #the tangent of f(x) at x0 to improve on the estimate of the root (x1)
         #gradient
@@ -217,8 +215,8 @@ function assess(
         end
     end
 
-    # Construct and return the CapacityCreditResult
-    return CapacityCreditResult{typeof(params), typeof(target_metric), P}(
+    # Construct and return the CapacityValueResult
+    return CapacityValueResult{typeof(params), typeof(target_metric), P}(
         target_metric,
         si_metric,
         eens_metric,

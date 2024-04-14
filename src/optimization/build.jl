@@ -1,5 +1,5 @@
 """
-    abstract_model(system::SystemModel, settings::Settings, env::Union{Gurobi.Env, Nothing}=nothing)
+    abstract_model(system::SystemModel, settings::Settings, env::Gurobi)
 
 Constructs an `AbstractPowerModel` modeling object. The function checks settings, initializes a `JuMP` model, 
 and returns a power model.
@@ -7,31 +7,39 @@ and returns a power model.
 # Arguments
 - `system::SystemModel`: A data structure containing power system data.
 - `settings::Settings`: Modeling settings and configuration parameters.
-- `env::Union{Gurobi.Env, Nothing}=nothing`: Optional environment for the Gurobi optimizer.
+- `env::Gurobi.Env`: Optional environment for the Gurobi optimizer.
 
 # Returns
 - An instance of an `AbstractPowerModel`.
 """
 
-function abstract_model(system::SystemModel, settings::Settings, env::Union{Gurobi.Env, Nothing}=nothing)
+function abstract_model(system::SystemModel, settings::Settings, env::Gurobi.Env)
     
     @assert settings.jump_modelmode === JuMP.AUTOMATIC "A fatal error occurred. 
         Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
 
-    if env !== nothing
-        jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
-    else
-        jump_model = Model(settings.optimizer; add_bridges = false)
-    end
+    jump_model = Model(optimizer_with_attributes(()-> Gurobi.Optimizer(env)))
 
+    settings.optimizer_name = MathOptInterface.get(jump_model, MathOptInterface.SolverName())
+    settings.optimizer_name != "Gurobi" && throw(DomainError("Optimizer $(settings.optimizer_name) not attached"))
+    
     JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
     JuMP.set_silent(jump_model)
     topology = Topology(system)
-    
     return pm(jump_model, topology, settings.powermodel_formulation)
 end
 
+function abstract_model(system::SystemModel, settings::Settings)
+    
+    @assert settings.jump_modelmode === JuMP.AUTOMATIC "A fatal error occurred. 
+        Please use JuMP.AUTOMATIC, mode $(settings.jump_modelmode) is not supported."
 
+    jump_model = Model(settings.optimizer; add_bridges = false)
+    JuMP.set_string_names_on_creation(jump_model, settings.set_string_names_on_creation)
+    JuMP.set_silent(jump_model)
+    topology = Topology(system)
+    return pm(jump_model, topology, settings.powermodel_formulation)
+end
 
 """
     pm(model::JuMP.Model, topology::Topology, ::Type{M}) where {M<:AbstractPowerModel}
@@ -52,8 +60,6 @@ function pm(model::JuMP.Model, topology::Topology, ::Type{M}) where {M<:Abstract
     con = Dict{Symbol, AbstractArray}()
     return M(model, topology, var, con)
 end
-
-
 
 """
 Given a JuMP model and a PowerModels network data structure, it builds an DC-OPF or AC-OPF 
@@ -108,15 +114,36 @@ function build_problem!(pm::AbstractPowerModel, system::SystemModel; t::Int=1)
     return
 end
 
-
-
 """
-This solve! function performs the optimization and state updating processes for a given power model and system model.
-It first updates the system topology to reflect changes, such as outages. Depending on whether there are storage 
-components in the system, it updates the power model accordingly and performs optimization. If the system has a 
-failed state, it updates and solves the problem. Upon completion of optimization, the function checks if the 
-solution is locally or globally optimal. It then records the system's branch flows, curtailed load, and stored energy 
-for the current timestep based on the optimization solution's status.
+    solve!(pm::AbstractPowerModel, system::SystemModel, settings::Settings, t::Int; force::Bool=false)
+
+Perform optimization and state updating for a given power model (`pm`) and system model (`system`).
+
+# Description
+This function is a key part of managing power system operations. It performs several critical tasks:
+
+1. **Update System Topology**: Reflects any changes in the system, such as outages, by updating the topology of `pm`.
+
+2. **Update Problem Based on Storage Components**: If the system includes storage components, the power model is updated to account for this. 
+The function then proceeds with the optimization process.
+
+3. **Optimization**: The function decides whether to perform optimization based on the presence of storage components and the system's state. 
+It forces optimization if `force` is set to `true` or if the system is in a failed state.
+
+4. **Check Optimization Status**: After optimization, it checks if the solution is either locally or globally optimal.
+
+5. **Record System States**: Records critical system parameters such as branch flows, curtailed load, and stored energy 
+for the current timestep based on the outcome of the optimization.
+
+# Arguments
+- `pm::AbstractPowerModel`: The power model to be optimized and updated.
+- `system::SystemModel`: The system model representing the current state of the power system.
+- `settings::Settings`: Settings and parameters for the optimization process.
+- `t::Int`: The current timestep for which the optimization is performed.
+- `force::Bool=false`: A flag to force optimization, defaulting to `false`.
+
+# Returns
+The function does not return a value but updates the power model `pm` and the system model `system` based on the optimization results.
 """
 function solve!(
     pm::AbstractPowerModel, system::SystemModel, settings::Settings, t::Int; force::Bool=false)
@@ -124,21 +151,17 @@ function solve!(
     update_topology!(pm.topology, system, settings, t)
     update_problem!(pm, system, t)
 
-    should_optimize = isempty(field(system, :storages, :keys)) ? (topology(pm, :failed_systemstate)[t] || force) : true
-    
-    should_optimize && JuMP.optimize!(pm.model)
+    force_opt = isempty(field(system, :storages, :keys)) ? (topology(pm, :failed_systemstate)[t] || force) : true
+    force_opt && JuMP.optimize!(pm.model)
 
-    is_solved = (JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED) || 
+    solved = (JuMP.termination_status(pm.model) == JuMP.LOCALLY_SOLVED) || 
                 (JuMP.termination_status(pm.model) == JuMP.OPTIMAL)
 
     
     record_states!(pm.topology)
-    record_flow_branch!(pm, system, t, is_solved=is_solved)
-    record_curtailed_load!(pm, system, t, is_solved=is_solved)
-    record_stored_energy!(pm, system, t, is_solved=is_solved)
+    record_event_results!(pm, system, t, is_solved=solved)
     return
 end
-
 
 
 """
@@ -258,15 +281,6 @@ function update_loads!(pm::AbstractPowerModel, system::SystemModel)
     end
 end
 
-"Classic OPF from _PM.jl."
-function solve_opf!(system::SystemModel, settings::Settings)
-
-    pm = abstract_model(system, settings)
-    build_opf!(pm, system)
-    JuMP.optimize!(pm.model)
-    return pm
-end
-
 "Internal function to build classic OPF from _PM.jl. It requires internal function 
 'con_power_balance_nolc' since it does not have power curtailment variables."
 function build_opf!(pm::AbstractPowerModel, system::SystemModel)
@@ -332,8 +346,6 @@ function objective_min_fuel_and_flow_cost(pm::AbstractPowerModel, system::System
     return JuMP.@objective(pm.model, MIN_SENSE, sum(gen_cost[i] for i in eachindex(gen_idxs)))
 end
 
-
-
 """
     obj_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1)
 
@@ -368,8 +380,6 @@ function obj_min_stor_load_curtailment(pm::AbstractPowerModel, system::SystemMod
     
     return @objective(pm.model, MIN_SENSE, load_var_cost + load_stor_cost)
 end
-
-
 
 """
     update_obj_min_stor_load_curtailment!(pm::AbstractPowerModel, system::SystemModel, t::Int; nw::Int=1, loads::Bool=true)

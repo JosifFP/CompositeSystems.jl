@@ -127,7 +127,6 @@ function _con_thermal_limit_to_on_off(pm::AbstractPowerModel, n::Int, l::Int, t_
     con(pm, :thermal_limit_to, n)[l] = @constraint(pm.model, p_to^2 + q_to^2 <= rate_a^2*z^2)
 end
 
-
 "Adds the (upper and lower) thermal limit constraints for the desired branch to the PowerModel."
 function con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::Int=1)
 
@@ -207,15 +206,13 @@ function con_storage_state(pm::AbstractPowerModel, system::SystemModel{N,L,T}, i
 end
 
 ""
-function _con_storage_state_initial(
-    pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
+function _con_storage_state_initial(pm::AbstractPowerModel, n::Int, i::Int, energy, charge_eff, discharge_eff, time_elapsed)
 
     sc = var(pm, :sc, n)[i]
     sd = var(pm, :sd, n)[i]
     stored_energy = var(pm, :stored_energy, n)[i]
     
-    con(pm, :storage_state, n)[i] = @constraint(
-        pm.model, stored_energy - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
+    con(pm, :storage_state, n)[i] = @constraint(pm.model, stored_energy - time_elapsed*(charge_eff*sc - sd/discharge_eff) == energy)
 end
 
 ""

@@ -11,7 +11,7 @@ Fields:
 - `storages`: Energy storage units in the system, across nodes and periods.
 - `buses`: Bus structure defining connection points in the network.
 - `branches`: Branches defining interconnections or transmission lines.
-- `commonbranches`: Specialized set of branches with shared/common attributes or behavior.
+- `interfaces`: Specialized set of branches with shared/common attributes or behavior.
 - `shunts`: Shunts, usually devices used to adjust voltage or to phase-shift load currents.
 - `baseMVA`: Base apparent power (used for per unit system calculations in power systems).
 - `timestamps`: Timestamps defining the different time periods the system is modeled over.
@@ -27,7 +27,7 @@ struct SystemModel{N,L,T<:Period}
     #generatorstorages::GeneratorStorages{N,L,T}
     buses::Buses
     branches::Branches
-    commonbranches::CommonBranches
+    interfaces::Interfaces
     shunts::Shunts
     baseMVA::Float64
     timestamps::StepRange{ZonedDateTime,T}
@@ -38,7 +38,7 @@ struct SystemModel{N,L,T<:Period}
         storages::Storages{N,L,T},
         buses::Buses,
         branches::Branches,
-        commonbranches::CommonBranches,
+        interfaces::Interfaces,
         shunts::Shunts,
         baseMVA::Float64,
         timestamps::StepRange{ZonedDateTime,T}
@@ -50,7 +50,7 @@ struct SystemModel{N,L,T<:Period}
     end
 
     new{N,L,T}(
-        loads, generators, storages, buses, branches, commonbranches, shunts, baseMVA, timestamps)
+        loads, generators, storages, buses, branches, interfaces, shunts, baseMVA, timestamps)
     end
 
 end
@@ -61,7 +61,7 @@ Base.:(==)(x::T, y::T) where {T <: SystemModel} =
     x.storages == y.storages &&
     x.buses == y.buses &&
     x.branches == y.branches &&
-    x.commonbranches == y.commonbranches &&
+    x.interfaces == y.interfaces &&
     x.shunts == y.shunts &&
     x.baseMVA == y.baseMVA &&
     x.timestamps == y.timestamps

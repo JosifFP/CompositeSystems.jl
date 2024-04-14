@@ -87,7 +87,7 @@ end
 
 ""
 function update_con_thermal_limits(pm::AbstractPowerModel, system::SystemModel, l::Int; nw::Int=1)
-    thermal_limit = topology(pm, :branches_available)[l] * (field(system, :branches, :rate_a)[l]^2)
+    thermal_limit = topology(pm, :branches_available)[l] * field(system, :branches, :rate_a)[l]^2
     JuMP.set_normalized_rhs(con(pm, :thermal_limit_from, nw)[l], thermal_limit)
     JuMP.set_normalized_rhs(con(pm, :thermal_limit_to, nw)[l], thermal_limit)
 end

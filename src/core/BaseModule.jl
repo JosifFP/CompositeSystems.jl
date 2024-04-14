@@ -1,6 +1,6 @@
 @reexport module BaseModule
 
-    import XLSX
+    import CSV, DataFrames
     import Dates: Dates, @dateformat_str, AbstractDateTime, DateTime, Time, 
         Period, Hour, Day, Year, Date, hour, now, format
     import TimeZones: TimeZone, ZonedDateTime
@@ -15,12 +15,13 @@
 
     export
         # System assets
-        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, CommonBranches,
+        AbstractAssets, Buses, Loads, Branches, Shunts, Generators, Storages, Interfaces,
 
         # Units
-        Period, Hour, Day, Year,
-        PowerUnit, kW, MW, GW,
-        EnergyUnit, kWh, MWh, GWh,
+        Period, Hour, PowerUnit, MW, EnergyUnit, MWh, 
+        #Period, Hour, Day, Year,
+        #PowerUnit, kW, MW, GW,
+        #EnergyUnit, kWh, MWh, GWh,
 
         unitsymbol, conversionfactor, powertoenergy, energytopower,
 
@@ -28,7 +29,7 @@
         SystemModel, StateTransition,
 
         #utils
-        assetgrouplist, makeidxlist, field, build_network
+        assetgrouplist, makeidxlist, field, build_network, check_consistency, check_connectivity, ref_initialize, DataSanityCheck
     #
 
     # Create our module level logger (this will get precompiled)
@@ -51,5 +52,4 @@
     include("utils.jl")
     include("load.jl")
     include("states.jl")
-
 end

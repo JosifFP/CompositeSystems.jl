@@ -64,13 +64,12 @@ function build_network(rawfile::String; replace::Bool=false, export_file::Bool=f
             _PM.export_file(target_file, data)
         end
 
-        symbol ? Dict{Symbol, Any}(ref_initialize!(data)) : Dict{String, Any}(data)
+        symbol ? Dict{Symbol, Any}(ref_initialize(data)) : Dict{String, Any}(data)
     end
 
     return network
 
 end
-
 
 "Parses a Matpower .m `file` or PTI (PSS(R)E-v33) .raw `file` into a
 PowerModels data structure. All fields from PTI files will be imported if
@@ -86,7 +85,6 @@ function parse_model(io::IO, filetype::String)
     end
     return pm_data
 end
-
 
 
 """
@@ -218,7 +216,7 @@ function DataSanityCheck(pm_data::Dict{String, <:Any})
         end
     end
 
-    data["commonbranch"] = Dict{Int, Any}()
+    data["interface"] = Dict{Int, Any}()
     get!(data, "Sanity_check", true)
 
     return data
@@ -248,7 +246,6 @@ function _biggest_generator(gens::Dict)::Dict
 end
 
 
-
 """
 given a component dict returns a new dict where inactive components have been
 removed.
@@ -264,7 +261,6 @@ function _filter_inactive_components(comp_dict::Dict{String,<:Any}; status_key="
 
     return filtered_dict
 end
-
 
 
 """
@@ -286,7 +282,7 @@ function _renumber_components(comp_dict::Dict{String,<:Any})
 end
 
 "Converts keys from string type to symbol type"
-function ref_initialize!(data::Dict{String, <:Any})
+function ref_initialize(data::Dict{String, <:Any})
     # Initialize the refs dictionary.
     refs = Dict{Symbol, Any}()
     for (key,item) in data

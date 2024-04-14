@@ -19,7 +19,6 @@ function initialize_availability!(
     return availability
 end
 
-
 "Update the availability of different types of assets (branches, generators, etc.) 
 using availability and nexttransition vectors"
 function update_availability!(
@@ -33,7 +32,6 @@ function update_availability!(
         end
     end
 end
-
 
 
 """
@@ -81,9 +79,9 @@ end
 ""
 # THIS FUNCTION MUST BE FIXED
 function apply_common_outages!(topology::Topology, branches::Branches, t::Int)
-    if !all(topology.commonbranches_available)
+    if !all(topology.interfaces_available)
         for k in eachindex(branches.keys)
-            if branches.common_mode[k] ≠ 0 && topology.commonbranches_available[branches.common_mode[k]] == false
+            if branches.common_mode[k] ≠ 0 && topology.interfaces_available[branches.common_mode[k]] == false
                 topology.branches_available[k] = false
             end
         end

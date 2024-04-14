@@ -148,7 +148,6 @@ function EDLC(x::ShortfallResult{N,L,T}, r::Int, t::ZonedDateTime) where {N,L,T<
                                     x.nsamples))
 end
 
-
 EENS(x::ShortfallResult{N,L,T,P,E}) where {N,L,T,P,E} = EENS{N,L,T,E}(MeanEstimate(x[]..., x.nsamples))
 EENS(x::ShortfallResult{N,L,T,P,E}, r::Int) where {N,L,T,P,E} = EENS{N,L,T,E}(MeanEstimate(x[r]..., x.nsamples))
 EENS(x::ShortfallResult{N,L,T,P,E}, t::ZonedDateTime) where {N,L,T,P,E} = EENS{1,L,T,E}(MeanEstimate(x[t]..., x.nsamples))
@@ -184,7 +183,6 @@ function SI(x::ShortfallResult{N,L,T}, r::Int, t::ZonedDateTime) where {N,L,T<:P
                                     x.shortfall_busperiod_std[i_r, i_t].*(60/x.system_peakload),
                                     x.nsamples))
 end
-
 
 # Full shortfall data
 struct ShortfallSamples <: ResultSpec end

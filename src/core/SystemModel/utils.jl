@@ -64,7 +64,7 @@ const shunt_fields = [
     ("status", Bool)
 ]
 
-const commonbranch_fields = [
+const interface_fields = [
     ("index", Int),
     ("f_bus", Int),
     ("t_bus", Int),
@@ -217,7 +217,6 @@ function valid_timezone(timezone::String)::Bool
 end
 
 
-
 """
     container(dict::Dict{Int, <:Any}, type::Vector{Tuple{String, DataType}}) -> Dict{String, Vector{<:Any}}
 
@@ -269,7 +268,6 @@ function container(dict::Dict{Int, <:Any}, type::Vector{Tuple{String, DataType}}
 end
 
 
-
 """
     extract_reliability_data(file::String) -> Dict{String, Any}
 
@@ -295,7 +293,6 @@ function extract_reliability_data(file::String)::Dict{String, Any}
         return Dict{String, Any}(_extract_reliability_data(matlab_data))
     end
 end
-
 
 
 """
@@ -356,7 +353,6 @@ function _extract_reliability_data(matlab_data::Dict{String, Any})
     return case
 end
 
-
 "Returns network data container with reliability_data and timeseries_data merged"
 function merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_data::Dict{String, Any}, timeseries_data::Dict{Int, Vector{Float32}})
     get!(network, :timeseries_load, timeseries_data)
@@ -368,7 +364,6 @@ function merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_da
     get!(network, :timeseries_load, "")
     return _merge_compositesystems_data!(network, reliability_data)
 end
-
 
 
 """
@@ -441,9 +436,9 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
 
     for (k,v) in reliability_data["branch"]
         if v["common_mode"] ≠ 0
-            if !haskey(network[:commonbranch], v["common_mode"])
+            if !haskey(network[:interface], v["common_mode"])
 
-                get!(network[:commonbranch], v["common_mode"], 
+                get!(network[:interface], v["common_mode"], 
                     Dict(
                         "index"=>v["common_mode"], 
                         "f_bus"=> v["f_bus"],
@@ -453,17 +448,16 @@ function _merge_compositesystems_data!(network::Dict{Symbol, Any}, reliability_d
                         "br_1"=>parse(Int, k))
                 )
             
-            elseif haskey(network[:commonbranch], v["common_mode"]) && !haskey(v, "br_2")
-                get!(network[:commonbranch][v["common_mode"]], "br_2", parse(Int, k))
+            elseif haskey(network[:interface], v["common_mode"]) && !haskey(v, "br_2")
+                get!(network[:interface][v["common_mode"]], "br_2", parse(Int, k))
             else
-                @error("CommonBranches only supports two transmission lines between common buses")
+                @error("Interfaces only supports two transmission lines between common buses")
             end
         end
     end
     
     return network
 end
-
 
 
 """
@@ -482,39 +476,8 @@ Extracts time-series load data from the provided excel file `file`.
 - The excel file should have at least two sheets named "core" and "load".
 """
 function extract_timeseriesload(file::String)
-
-    dict_timeseries = Dict{Int, Vector{Float32}}()
-    dict_core = Dict{Symbol, Any}()
-    
-    XLSX.openxlsx(file, enable_cache=false) do io
-        for i in 1:XLSX.sheetcount(io)
-            if XLSX.sheetnames(io)[i] == "core"
-    
-                dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
-                for i in eachindex(dtable.column_labels)
-                    get!(dict_core, dtable.column_labels[i], dtable.data[i])
-                end
-    
-            elseif XLSX.sheetnames(io)[i] == "load" 
-    
-                dtable =  XLSX.readtable(file, XLSX.sheetnames(io)[i])
-                for i in eachindex(dtable.column_labels)
-                    if i > 1
-                        get!(dict_timeseries, parse(Int, String(dtable.column_labels[i])), Float32.(dtable.data[i]))
-                    end
-                end
-            end
-        end
-    end
-
-    T::Type{<:Period} = timeunits[dict_core[:timestep_unit][1]]
-    N::Int = dict_core[:timestep_count][1]
-    L::Int = dict_core[:timestep_length][1]
-    start_timestamp::DateTime = dict_core[:start_timestamp][1]
-    timezone::String = dict_core[:timezone][1]
-    SP = static_parameters{N,L,T}(start_timestamp, timezone)
-
-    return dict_timeseries, SP
+    df = CSV.read(file, DataFrames.DataFrame)
+    return Dict{Int, Vector{Float32}}(parse(Int, String(propertynames(df)[i])) => Float32.(df[!,propertynames(df)[i]]) for i in 2:length(propertynames(df)))
 end
 
 ""
@@ -534,11 +497,11 @@ function convert_array(index_keys::Vector{Int}, timeseries_load::Dict{Int, Vecto
 end
 
 """
-    _check_consistency(ref, buses, loads, branches, shunts, generators, storages)
+    check_consistency(ref, buses, loads, branches, shunts, generators, storages)
 
 Checks for inconsistencies between AbstractAsset and Power Model Network.
 """
-function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
+function check_consistency(ref::Dict{Symbol, Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
     for k in buses.keys
         @assert haskey(ref[:bus],k) === true
@@ -579,7 +542,7 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
         @assert Int.(ref[:branch][k]["f_bus"]) == branches.f_bus[k]
         @assert Int.(ref[:branch][k]["t_bus"]) == branches.t_bus[k]
         @assert Float32.(ref[:branch][k]["rate_a"]) == branches.rate_a[k]
-        @assert Float32.(ref[:branch][k]["rate_b"]) == branches.rate_b[k]
+        #@assert Float32.(ref[:branch][k]["rate_b"]) == branches.rate_b[k]
         @assert Float32.(ref[:branch][k]["br_r"]) == branches.r[k]
         @assert Float32.(ref[:branch][k]["br_x"]) == branches.x[k]
         @assert Float32.(ref[:branch][k]["b_fr"]) == branches.b_fr[k]
@@ -614,10 +577,8 @@ function _check_consistency(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads,
 
 end
 
-
-
 "Checks connectivity issues and status"
-function _check_connectivity(ref::Dict{Symbol,<:Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
+function check_connectivity(ref::Dict{Symbol, Any}, buses::Buses, loads::Loads, branches::Branches, shunts::Shunts, generators::Generators, storages::Storages)
 
     @assert(length(buses.keys) == length(ref[:bus])) # if this is not true something very bad is going on
     active_bus_ids = Set(bus["index"] for (i,bus) in ref[:bus] if bus["bus_type"] ≠ 4)

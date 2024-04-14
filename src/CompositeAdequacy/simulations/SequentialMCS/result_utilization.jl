@@ -40,12 +40,12 @@ end
 function record!(
     acc::SMCUtilizationAccumulator, topology::Topology, system::SystemModel, sampleid::Int, t::Int)
 
-    for l in eachindex(topology.branches_flow_from)
+    for l in eachindex(topology.branchflow_from)
 
         util = utilization(
-            topology.branches_flow_from[l], topology.branches_flow_to[l], system.branches.rate_a[l])
+            topology.branchflow_from[l], topology.branchflow_to[l], system.branches.rate_a[l])
         ptv = prob_thermal_violation(
-            topology.branches_flow_from[l], topology.branches_flow_to[l], system.branches.rate_a[l])
+            topology.branchflow_from[l], topology.branchflow_to[l], system.branches.rate_a[l])
 
         acc.util_branch_currentsim[l] += util
         acc.ptv_branch_currentsim[l] += ptv
@@ -116,9 +116,9 @@ end
 function record!(
     acc::SMCUtilizationSamplesAccumulator, pm::AbstractPowerModel, system::SystemModel, sampleid::Int, t::Int)
 
-    for l in eachindex(topology.branches_flow_from)
+    for l in eachindex(topology.branchflow_from)
         acc.utilization[l, t, sampleid] = utilization(
-            topology.branches_flow_from[l], topology.branches_flow_to[l], system.branches.rate_a[l])
+            topology.branchflow_from[l], topology.branchflow_to[l], system.branches.rate_a[l])
     end
     return
 end

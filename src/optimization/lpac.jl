@@ -17,7 +17,6 @@ function var_bus_voltage_on_off(pm::AbstractLPACModel, system::SystemModel; kwar
     var_branch_cosine_on_off(pm, system; kwargs...)
 end
 
-
 ""
 function var_bus_voltage_magnitude(
     pm::AbstractLPACModel, system::SystemModel; nw::Int=1, bounded::Bool=true)
@@ -194,7 +193,6 @@ function _con_power_balance_nolc(
 end
 
 
-
 """
 This constraint captures problem agnostic constraints that are used to link
 the model's voltage variables together, in addition to the standard problem
@@ -228,7 +226,6 @@ function con_model_voltage_on_off(pm::AbstractLPACModel, system::SystemModel; nw
     end
 end
 
-
 "general relaxation of a cosine term, in -pi/2 to pi/2"
 function con_relaxation_cos_on_off(pm::AbstractLPACModel, l::Int, td, cs, z, td_max; nw::Int=1)
 
@@ -259,7 +256,6 @@ function _con_ohms_yt_from_on_off(
         pm.model, q_fr == -(b+b_fr)/tm^2*(z + 2*phi_fr) - (-b*tr-g*ti)/tm^2*(cs + phi_fr + phi_to) + (-g*tr+b*ti)/tm^2*(td))
 
 end
-
 
 
 """
@@ -331,7 +327,6 @@ function _con_storage_losses(
     con(pm, :storage_losses_q, n)[i] = @constraint(pm.model, qs == qsc + q_loss + x*ccms)
     con(pm, :storage_losses, n)[i] = @constraint(pm.model, ps^2 + qs^2 <= vmax*ccms)
 end
-
 
 #***************************************************** UPDATES *************************************************************************
 

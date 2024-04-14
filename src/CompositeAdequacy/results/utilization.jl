@@ -49,7 +49,6 @@ function PTV(x::UtilizationResult, i::Pair{<:Int,<:Int}, t::ZonedDateTime)
     return x.ptv_mean[i_i, i_t], x.ptv_branchperiod_std[i_i, i_t]
 end
 
-
 # Full utilization data
 
 struct UtilizationSamples <: ResultSpec end
@@ -64,7 +63,6 @@ function getindex(x::UtilizationSamplesResult, i::Pair{<:Int,<:Int})
     i_i, _ = findfirstunique_directional(x.branches, i)
     return vec(mean(view(x.utilization, i_i, :, :), dims=1))
 end
-
 
 function getindex(x::UtilizationSamplesResult, i::Pair{<:Int,<:Int}, t::ZonedDateTime)
     i_i, _ = findfirstunique_directional(x.branches, i)
