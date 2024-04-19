@@ -1,15 +1,15 @@
 
 @testset "test SystemModel" begin
 
-   data_mp = PowerModels.parse_file("test/data/others/case7_tplgy.m")
-   data_pti = PowerModels.parse_file("test/data/others/case7_tplgy.raw")
+   data_mp = PowerModels.parse_file("./test/data/others/case7_tplgy.m")
+   data_pti = PowerModels.parse_file("./test/data/others/case7_tplgy.raw")
    PowerModels.deactivate_isolated_components!(data_mp)
    PowerModels.simplify_network!(data_mp)
    PowerModels.deactivate_isolated_components!(data_pti)
    PowerModels.simplify_network!(data_pti)
    
-   sys_mp = BaseModule.SystemModel("test/data/others/case7_tplgy.m")
-   sys_pti = BaseModule.SystemModel("test/data/others/case7_tplgy.m")
+   sys_mp = BaseModule.SystemModel("./test/data/others/case7_tplgy.m")
+   sys_pti = BaseModule.SystemModel("./test/data/others/case7_tplgy.m")
 
    active_buses_pm = active_buses_pti = 0
    active_branches_pm = active_branches_pti = 0
