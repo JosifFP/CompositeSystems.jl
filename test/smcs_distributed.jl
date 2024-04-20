@@ -1,3 +1,4 @@
+import Distributed
 #This test should be the last one. After finished, close restart terminal.
 addprocs(2)
 #julia -p 2 --threads 2

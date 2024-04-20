@@ -94,9 +94,9 @@
    @test length(sys_mp.storages) == length(sys_pti.storages) == active_storage_pm == active_storage_pti
 
    data_mp = CompositeSystems.DataSanityCheck(data_mp)
-   data_mp_symbol = CompositeSystems.ref_initialize(data_mp)
+   data_mp_symbol = CompositeSystems.convert_keys(data_mp)
    data_pti = CompositeSystems.DataSanityCheck(data_pti)
-   data_pti_symbol = CompositeSystems.ref_initialize(data_pti)   
+   data_pti_symbol = CompositeSystems.convert_keys(data_pti)   
    @test CompositeSystems.check_consistency(data_mp_symbol, sys_pti.buses, sys_pti.loads, sys_pti.branches, sys_pti.shunts, sys_pti.generators, sys_pti.storages) == false
    @test CompositeSystems.check_connectivity(data_pti_symbol, sys_pti.buses, sys_pti.loads, sys_pti.branches, sys_pti.shunts, sys_pti.generators, sys_pti.storages) === nothing
 end

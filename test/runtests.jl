@@ -1,10 +1,8 @@
 using CompositeSystems
 using Test
-import PowerModels, Ipopt, BenchmarkTools, JuMP, Dates
+import PowerModels, Ipopt, JuMP, Dates
 import JuMP: JuMP, optimizer_with_attributes, termination_status
-import BenchmarkTools: @btime
 import Gurobi, Juniper, Ipopt
-import Distributed
 
 include("solvers.jl")
 include("common.jl")

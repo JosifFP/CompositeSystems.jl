@@ -64,7 +64,7 @@ function build_network(rawfile::String; replace::Bool=false, export_file::Bool=f
             _PM.export_file(target_file, data)
         end
 
-        symbol ? Dict{Symbol, Any}(ref_initialize(data)) : Dict{String, Any}(data)
+        symbol ? Dict{Symbol, Any}(convert_keys(data)) : Dict{String, Any}(data)
     end
 
     return network
@@ -282,15 +282,27 @@ function _renumber_components(comp_dict::Dict{String,<:Any})
 end
 
 "Converts keys from string type to symbol type"
-function ref_initialize(data::Dict{String, <:Any})
+function convert_keys(data::Dict{String, <:Any}; type::String="Symbol")
     # Initialize the refs dictionary.
-    refs = Dict{Symbol, Any}()
-    for (key,item) in data
-        if isa(item, Dict{String, Any})
-            refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
-        else
-            refs[Symbol(key)] = item
-        end        
+
+    if type=="Int"
+        refs = Dict{Int, Any}()
+        for (key,item) in data
+            if isa(item, Dict{String, Any})
+                refs[Int(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
+            else
+                refs[Int(key)] = item
+            end        
+        end
+    else
+        refs = Dict{Symbol, Any}()
+        for (key,item) in data
+            if isa(item, Dict{String, Any})
+                refs[Symbol(key)] = Dict{Int, Any}([(parse(Int, k), v) for (k, v) in item])
+            else
+                refs[Symbol(key)] = item
+            end        
+        end
     end
     # Return the final refs object.
     return refs

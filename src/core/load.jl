@@ -252,7 +252,7 @@ function _SystemModel(
                 data["status"]
             )
         else
-            timeseries_load::Dict{Int64, Vector{Float32}} = network[:timeseries_load]
+            timeseries_load::Dict{Int, Vector{Float32}} = network[:timeseries_load]
             timeseries_pd = convert_array(data["index"], timeseries_load, baseMVA)
             loads = Loads{N,L,T}(
                 data["index"], 

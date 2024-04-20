@@ -27,7 +27,7 @@
         SystemModel, StateTransition,
 
         #utils
-        assetgrouplist, makeidxlist, field, build_network, check_consistency, check_connectivity, ref_initialize, DataSanityCheck
+        assetgrouplist, makeidxlist, field, build_network, check_consistency, check_connectivity, convert_keys, DataSanityCheck
     #
 
     # Create our module level logger (this will get precompiled)

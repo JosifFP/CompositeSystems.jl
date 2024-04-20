@@ -430,8 +430,8 @@ build_sol_values(var::Dict{Tuple{Int, Int, Int}, Any}) = _IM.build_solution_valu
 "Build solution dictionary of active flows per branch"
 function build_sol_values(var::Dict{Tuple{Int, Int, Int}, JuMP.VariableRef}, branches::Branches)
 
-    dict_p = sort(_IM.build_solution_values(var))
-    tuples = keys(sort(var))
+    dict_p = _IM.build_solution_values(var)
+    tuples = sort(collect(keys(var)))
     sol = Dict{Int, Any}()
 
     for (l,i,j) in tuples
@@ -456,8 +456,8 @@ end
 "Build solution dictionary of active flows per branch"
 function build_sol_values(var::Dict{Tuple{Int, Int, Int}, Any}, branches::Branches)
 
-    dict_p = sort(_IM.build_solution_values(var))
-    tuples = keys(sort(var))
+    dict_p = _IM.build_solution_values(var)
+    tuples = sort(collect(keys(var)))
     sol = Dict{Int, Any}()
 
     for (l,i,j) in tuples
