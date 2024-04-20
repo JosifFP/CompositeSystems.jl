@@ -61,11 +61,11 @@ settings_LPACCPowerModel = CompositeSystems.Settings(;
    deactivate_isolated_bus_gens_stors = false
 )
 
-rawfile_rbts = "./test/data/RBTS/Base/RBTS.m"
-relfile_rbts = "./test/data/RBTS/Base/R_RBTS.m"
-tseriesfile_rbts = "./test/data/RBTS/SYSTEM_LOADS.csv"
-rawfile_rbts_strg = "./test/data/RBTS/Storage/RBTS.m"
-relfile_rbts_strg = "./test/data/RBTS/Storage/R_RBTS.m"
+rawfile_rbts = "../test/data/RBTS/Base/RBTS.m"
+relfile_rbts = "../test/data/RBTS/Base/R_RBTS.m"
+tseriesfile_rbts = "../test/data/RBTS/SYSTEM_LOADS.csv"
+rawfile_rbts_strg = "../test/data/RBTS/Storage/RBTS.m"
+relfile_rbts_strg = "../test/data/RBTS/Storage/R_RBTS.m"
 
 sys_rbts = BaseModule.SystemModel(rawfile_rbts, relfile_rbts)
 sys_rbts_tseries = BaseModule.SystemModel(rawfile_rbts, relfile_rbts, tseriesfile_rbts)
@@ -93,11 +93,11 @@ for t in 1:8736
    end
 end
 
-rawfile_rts = "./test/data/RTS_79_A/Base/RTS_highrate.m"
-relfile_rts = "./test/data/RTS_79_A/Base/R_RTS.m"
-tseriesfile_rts = "./test/data/RTS_79_A/SYSTEM_LOADS.csv"
-rawfile_rts_strg = "./test/data/RTS_79_A/Storage/RTS_highrate.m"
-relfile_rts_strg = "./test/data/RTS_79_A/Storage/R_RTS.m"
+rawfile_rts = "../test/data/RTS_79_A/Base/RTS_highrate.m"
+relfile_rts = "../test/data/RTS_79_A/Base/R_RTS.m"
+tseriesfile_rts = "../test/data/RTS_79_A/SYSTEM_LOADS.csv"
+rawfile_rts_strg = "../test/data/RTS_79_A/Storage/RTS_highrate.m"
+relfile_rts_strg = "../test/data/RTS_79_A/Storage/R_RTS.m"
 
 sys_rts = BaseModule.SystemModel(rawfile_rts, relfile_rts)
 sys_rts_tseries = BaseModule.SystemModel(rawfile_rts, relfile_rts, tseriesfile_rts)

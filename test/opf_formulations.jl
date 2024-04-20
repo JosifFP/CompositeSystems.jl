@@ -159,7 +159,7 @@ end
 
 @testset verbose=true "test OPF, case5 system" begin
 
-    rawfile = "./test/data/others/case5.m"
+    rawfile = "../test/data/others/case5.m"
     system = BaseModule.SystemModel(rawfile)
 
     @testset "NFAPowerModel formulation, case 5" begin
@@ -338,7 +338,7 @@ end
 
 @testset "test OPF, case9 system" begin
 
-    rawfile = "./test/data/others/case9.m"
+    rawfile = "../test/data/others/case9.m"
     system = BaseModule.SystemModel(rawfile)
 
     @testset " NFAPowerModel formulation, case9" begin
