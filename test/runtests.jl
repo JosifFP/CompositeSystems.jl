@@ -22,9 +22,9 @@ end;
     BaseModule.silence()
     a = Ref{Ptr{Cvoid}}()
     ret = Gurobi.GRBloadenv(a, C_NULL)
-    @test ret == 0
     #Gurobi._check_ret(a[], ret)
     if ret == 0
+        @test ret == 0
         #These testsets require Gurobi license.
         include("smcs_nonthreaded.jl")
         include("smcs_threaded.jl")
