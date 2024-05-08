@@ -51,9 +51,6 @@ Status:
     </li>
     <li>
       <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#contributing">Contributing</a></li>
@@ -93,22 +90,7 @@ studies with 6-Bus Roy Billiton Test System (RBTS) and the 24-Bus IEEE RTS.
 
 ## Getting Started
 
-Soon
-
-### Installation
-
-1. Get a free academic gurobi licence at [https://www.gurobi.com/academia/academic-program-and-licenses/](https://www.gurobi.com/academia/academic-program-and-licenses/)
-2. Clone the repo
-
-   ```sh
-   git clone https://github.com/JosifFP/CompositeSystems.jl.git
-   ```
-3. Install dependent packages and Gurobi license
-
-   1. Install Gurobi license: https://www.gurobi.com/features/academic-named-user-license
-   2. Request license https://portal.gurobi.com/iam/licenses/request
-   3. Follow instructions here: https://github.com/jump-dev/Gurobi.jl
-4. Run runtests.jl
+Installation steps and Quick Start at [https://github.com/JosifFP/CompositeSystems.jl/wiki](https://github.com/JosifFP/CompositeSystems.jl/wiki)
 
 <!-- USAGE EXAMPLES -->
 
