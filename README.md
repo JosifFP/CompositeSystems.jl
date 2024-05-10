@@ -1,4 +1,4 @@
-# CompositeSystems.jll
+# CompositeSystems.jl
 **[CompositeSystems](https://github.com/JosifFP/CompositeSystems.jl)** is the first open-source Composite System Reliability (CSR) tool written in Julia.
 The methodology is based on sequential Monte Carlo sampling of generation and transmission component availability such as: generators, transmission lines,
 transformers, shunts, loads and storage systems. Remedial actions, energy storage dispatch and load curtailment are carried out by an efficient linear
