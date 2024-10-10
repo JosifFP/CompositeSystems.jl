@@ -147,7 +147,7 @@ This work was supported by MITACS through the Mitacs Accelerate program, Atlanti
 
 <!--Citing CompositeSystems -->
 
-## Citing CompositeSystems
+## Citing
 
 If you find CompositeSystems useful in your work, we kindly request that you cite the following [publication](https://www.mdpi.com/1996-1073/17/20/5023):
 ```
