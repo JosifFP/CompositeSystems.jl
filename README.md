@@ -22,7 +22,7 @@ Status:
     <img src="docs/images/logo_white.svg" alt="Logo" width="500">
   </a>
 
-<h3 align="center">Generation & Transmission Reliability Tool</h3>
+<h3 align="center">Generation & Transmission Adequacy Evaluation Tool</h3>
 
 <p align="center">
     <!-- project_description -->
@@ -35,6 +35,8 @@ Status:
     <a href="https://github.com/JosifFP/CompositeSystems.jl/issues">Report Bug</a>
     ·
     <a href="https://github.com/JosifFP/CompositeSystems.jl/issues">Request Feature</a>
+    ·
+    <a href="https://www.mdpi.com/1996-1073/17/20/5023">Article</a>
   </p>
 </div>
 
@@ -57,6 +59,7 @@ Status:
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
+    <li><a href="#citing">Citing CompositeSystems</a></li>
   </ol>
 </details>
 
@@ -139,6 +142,30 @@ Project Link: [https://github.com/JosifFP/CompositeSystems.jl](https://github.co
 This work was supported by MITACS through the Mitacs Accelerate program, Atlantic Canada Opportunities Agency, and Énergie NB Power, NB, Canada, under Grant IT27416.
 * Project supervised by Ph.D, P.Eng. Kush Bubbar. https://www.sysmodel.ca/
 * Logo designed by Claudio Ferrada IG: @unoilustrado
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!--Citing CompositeSystems -->
+
+## Citing CompositeSystems
+
+If you find CompositeSystems useful in your work, we kindly request that you cite the following [publication](https://www.mdpi.com/1996-1073/17/20/5023):
+```
+@Article{en17205023,
+  AUTHOR = {Figueroa, Josif and Bubbar, Kush and Young-Morris, Greg},
+  TITLE = {An Open-Source Tool for Composite Power System Reliability Assessment in Julia™},
+  JOURNAL = {Energies},
+  VOLUME = {17},
+  YEAR = {2024},
+  NUMBER = {20},
+  ARTICLE-NUMBER = {5023},
+  URL = {https://www.mdpi.com/1996-1073/17/20/5023},
+  ISSN = {1996-1073},
+  ABSTRACT = {This paper introduces an open-source tool capable of performing the Composite System Reliability evaluation developed in the high-level, dynamic Julia™ programming language. Employing Monte Carlo Simulation and parallel computing, the tool evaluates probabilistic adequacy indices for combined generation and transmission systems, focusing on both individual delivery points and the broader system. Proficiency in Optimal Power Flow problem formulations is demonstrated through two distinct methods: DC and linearized AC, enabling comprehensive resource and transmission adequacy analysis with high-performance solvers. Addressing replicability and the insufficiency of available software, the tool supports diverse analyses on a unified platform. The paper discusses the tool’s design and validation, particularly focusing on the two optimal power flow problem formulations. These insights significantly contribute to understanding transmission system performance and have implications for power system planning.},
+  DOI = {10.3390/en17205023}
+}
+```
+Citation of the original works for problem definitions (e.g. OPF) and [power flow formulations](https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
