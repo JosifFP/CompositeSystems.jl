@@ -1166,7 +1166,6 @@ end
 
     @testset "t=3, Outages on G3, G7, G8 and G9" begin
         t=3
-        OPF.topology(pm, :stored_energy)[1] = 1.0
         pm.topology.generators_available[3] = 0
         pm.topology.generators_available[7] = 0
         pm.topology.generators_available[8] = 0
@@ -1182,7 +1181,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.500000; atol = 1e-4)
-        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
@@ -1204,7 +1203,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0.20; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0.20; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.5553; atol = 1e-4)
-        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
@@ -1227,7 +1226,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.976389; atol = 1e-4)
-        @test isapprox(OPF.topology(pm, :stored_energy)[1], 1.0; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.5; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0; atol = 1e-4)
@@ -1252,7 +1251,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0.129255; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.15110; atol = 1e-4)
-        @test isapprox(OPF.topology(pm, :stored_energy)[1], 1.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0; atol = 1e-4)
