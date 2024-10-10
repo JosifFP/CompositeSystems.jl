@@ -165,7 +165,7 @@ If you find CompositeSystems useful in your work, we kindly request that you cit
   DOI = {10.3390/en17205023}
 }
 ```
-Citation of the original works for problem definitions (e.g. OPF) and [power flow formulations](https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/)
+Citation of the work for problem definitions (e.g. OPF): [power flow formulations](https://lanl-ansi.github.io/PowerModels.jl/stable/formulation-details/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
