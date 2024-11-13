@@ -1,4 +1,3 @@
-
 @testset verbose=true "RBTS system, seq. outages, storage at bus 6, DCPPowerModel form." begin
     
     sys_rbts_tseries_strg.storages.buses[1] = 6
@@ -238,7 +237,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[4], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4) 
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4) 
         @test isapprox(sys_rbts_tseries_strg.storages.charge_rating[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
@@ -259,7 +258,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[4], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4) 
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4) 
         @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.5; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
@@ -283,7 +282,7 @@ end
         @test isapprox(pm.topology.busshortfall_pd[4], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
-        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) - sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) - 0.25; atol = 1e-4)
         @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
@@ -301,17 +300,16 @@ end
         @test isapprox(sum(pm.topology.busshortfall_pd[:]), 0.40; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[1], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[2], 0; atol = 1e-4)
-        @test isapprox(pm.topology.busshortfall_pd[3], 0; atol = 1e-4) #without storage it should be 0.35
+        @test isapprox(pm.topology.busshortfall_pd[3], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[4], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[5], 0.20; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0.20; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.50; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
         _reset!(pm.topology)
-        #The tests below are failing when running them online.
-        #@test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        #@test isapprox(OPF.topology(pm, :stored_energy)[1], 0.50; atol = 1e-4)
-        #@test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        #@test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        #@test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
     end
 
     @testset "t=5, Outages on L3, L4 and L8" begin
@@ -330,12 +328,11 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
         _reset!(pm.topology)
-        #The tests below are failing when running them online.
-        #@test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
     end
 
     @testset "t=6, Outages on L2 and L7, generation reduced" begin
@@ -355,14 +352,13 @@ end
         @test isapprox(pm.topology.busshortfall_pd[4], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
+        @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 1.00; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), sys_rbts_tseries_strg.branches)[3]["from"], 0.71; atol = 1e-4)
         _reset!(pm.topology)
-        #The tests below are failing when running them online.
-        #@test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4)
-        #@test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
-        #@test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        #@test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        #@test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0; atol = 1e-4)
     end
 
     @testset "t=7, Outage on L2, generation reduced" begin
@@ -381,12 +377,11 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) - 0.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], -sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
-        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0; atol = 1e-4)
+        @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         _reset!(pm.topology)
-        #The tests below are failing when running them online.
-        #@test isapprox(OPF.topology(pm, :stored_energy)[1], 0.5; atol = 1e-4)
     end
 
     @testset "t=8, Outages on L1 and L6" begin
@@ -404,14 +399,13 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 1.00; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), sys_rbts_tseries_strg.branches)[2]["from"], 0.71; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :p, :), sys_rbts_tseries_strg.branches)[7]["from"], 0.71; atol = 1e-4)
         _reset!(pm.topology)
-        #The tests below are failing when running them online.
-        #@test isapprox(OPF.topology(pm, :stored_energy)[1], 0.75; atol = 1e-4)
     end
 
     @testset "t=9, Outages on L1 and L6" begin
@@ -428,12 +422,11 @@ end
         @test isapprox(pm.topology.busshortfall_pd[5], 0; atol = 1e-4)
         @test isapprox(pm.topology.busshortfall_pd[6], 0; atol = 1e-4)
         @test isapprox(sum(values(OPF.build_sol_values(OPF.var(pm, :pg, :)))), 1.85 - sum(pm.topology.busshortfall_pd[:]) + 0.25; atol = 1e-4)
+        @test isapprox(OPF.topology(pm, :stored_energy)[1], 1.25; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :ps, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sc, 1))[1], sys_rbts_tseries_strg.storages.charge_rating[1]; atol = 1e-4)
         @test isapprox(OPF.build_sol_values(OPF.var(pm, :sd, 1))[1], 0.0; atol = 1e-4)
         _reset!(pm.topology)
-        #The tests below are failing when running them online.
-        #@test isapprox(OPF.topology(pm, :stored_energy)[1], 1.0; atol = 1e-4)
     end    
 end
 

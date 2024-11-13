@@ -1,15 +1,14 @@
-
 @testset "test SystemModel" begin
 
-   data_mp = PowerModels.parse_file("../test/data/others/case7_tplgy.m")
-   data_pti = PowerModels.parse_file("../test/data/others/case7_tplgy.raw")
+   data_mp = PowerModels.parse_file(joinpath(@__DIR__, "data/others/case7_tplgy.m"))
+   data_pti = PowerModels.parse_file(joinpath(@__DIR__, "data/others/case7_tplgy.raw"))
    PowerModels.deactivate_isolated_components!(data_mp)
    PowerModels.simplify_network!(data_mp)
    PowerModels.deactivate_isolated_components!(data_pti)
    PowerModels.simplify_network!(data_pti)
    
-   sys_mp = BaseModule.SystemModel("../test/data/others/case7_tplgy.m")
-   sys_pti = BaseModule.SystemModel("../test/data/others/case7_tplgy.m")
+   sys_mp = BaseModule.SystemModel(joinpath(@__DIR__, "data/others/case7_tplgy.m"))
+   sys_pti = BaseModule.SystemModel(joinpath(@__DIR__, "data/others/case7_tplgy.raw"))
 
    active_buses_pm = active_buses_pti = 0
    active_branches_pm = active_branches_pti = 0
@@ -96,7 +95,9 @@
    data_mp = CompositeSystems.DataSanityCheck(data_mp)
    data_mp_symbol = CompositeSystems.convert_keys(data_mp)
    data_pti = CompositeSystems.DataSanityCheck(data_pti)
-   data_pti_symbol = CompositeSystems.convert_keys(data_pti)   
-   @test CompositeSystems.check_consistency(data_mp_symbol, sys_pti.buses, sys_pti.loads, sys_pti.branches, sys_pti.shunts, sys_pti.generators, sys_pti.storages) == false
+   data_pti_symbol = CompositeSystems.convert_keys(data_pti)
+   @test CompositeSystems.check_consistency(data_mp_symbol, sys_mp.buses, sys_mp.loads, sys_mp.branches, sys_mp.shunts, sys_mp.generators, sys_mp.storages) == false
+   @test CompositeSystems.check_connectivity(data_mp_symbol, sys_mp.buses, sys_mp.loads, sys_mp.branches, sys_mp.shunts, sys_mp.generators, sys_mp.storages) === nothing   
+   @test CompositeSystems.check_consistency(data_pti_symbol, sys_pti.buses, sys_pti.loads, sys_pti.branches, sys_pti.shunts, sys_pti.generators, sys_pti.storages) == false
    @test CompositeSystems.check_connectivity(data_pti_symbol, sys_pti.buses, sys_pti.loads, sys_pti.branches, sys_pti.shunts, sys_pti.generators, sys_pti.storages) === nothing
 end
